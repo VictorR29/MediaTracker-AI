@@ -1,0 +1,5 @@
+{
+  "name": "MediaTracker AI",
+  "description": "Una biblioteca inteligente para el seguimiento de Anime, Series y Manhwas impulsada por Gemini con Google Search.",
+  "requestFramePermissions": []
+}

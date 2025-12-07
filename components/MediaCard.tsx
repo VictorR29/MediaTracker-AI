@@ -1,0 +1,593 @@
+import React, { useEffect, useState, useRef } from 'react';
+import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X } from 'lucide-react';
+
+interface MediaCardProps {
+  item: MediaItem;
+  onUpdate: (updatedItem: MediaItem) => void;
+  isNew?: boolean;
+}
+
+export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false }) => {
+  const [tracking, setTracking] = useState<UserTrackingData>(item.trackingData);
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [characterInput, setCharacterInput] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Use the AI provided color or fall back to a default Indigo-ish color if missing
+  const dynamicColor = item.aiData.primaryColor || '#6366f1';
+
+  const getGenerativeFallback = () => 
+    `https://image.pollinations.ai/prompt/official%20key%20visual%20poster%20for%20${encodeURIComponent(item.aiData.title)}%20${item.aiData.mediaType}%20anime%20series%20high%20quality?width=400&height=600&model=flux&nologo=true&seed=${item.createdAt}`;
+
+  const getPlaceholder = () => 
+    `https://placehold.co/400x600/1e293b/white?text=${encodeURIComponent(item.aiData.title)}`;
+
+  const initialImage = (item.aiData.coverImage && (item.aiData.coverImage.startsWith('http') || item.aiData.coverImage.startsWith('data:')))
+    ? item.aiData.coverImage
+    : getGenerativeFallback();
+
+  const [imgSrc, setImgSrc] = useState(initialImage);
+
+  // Sync state if item changes
+  useEffect(() => {
+    setTracking(item.trackingData);
+    setImgSrc(
+      (item.aiData.coverImage && (item.aiData.coverImage.startsWith('http') || item.aiData.coverImage.startsWith('data:')))
+        ? item.aiData.coverImage
+        : getGenerativeFallback()
+    );
+  }, [item.id]);
+
+  useEffect(() => {
+    const { watchedEpisodes, totalEpisodesInSeason } = tracking;
+    if (totalEpisodesInSeason > 0) {
+      const percent = Math.min(100, Math.max(0, (watchedEpisodes / totalEpisodesInSeason) * 100));
+      setProgressPercent(percent);
+    } else {
+      setProgressPercent(0);
+    }
+  }, [tracking.watchedEpisodes, tracking.totalEpisodesInSeason]);
+
+  const handleInputChange = (field: keyof UserTrackingData, value: any) => {
+    const updated = { ...tracking, [field]: value };
+    setTracking(updated);
+    onUpdate({ ...item, trackingData: updated });
+  };
+
+  const handleCompleteSeason = () => {
+    const nextSeason = tracking.currentSeason + 1;
+    const isSeries = item.aiData.mediaType === 'Serie' || item.aiData.mediaType === 'Anime';
+    
+    if (isSeries && tracking.totalSeasons > 0 && tracking.currentSeason >= tracking.totalSeasons) {
+       handleInputChange('status', 'Completado');
+       return;
+    }
+
+    const updated = {
+      ...tracking,
+      currentSeason: nextSeason,
+      watchedEpisodes: 0,
+      status: 'Viendo/Leyendo' as const
+    };
+    setTracking(updated);
+    onUpdate({ ...item, trackingData: updated });
+  };
+
+  const toggleTag = (tag: string) => {
+    const currentTags = tracking.emotionalTags;
+    const newTags = currentTags.includes(tag)
+      ? currentTags.filter(t => t !== tag)
+      : [...currentTags, tag];
+    handleInputChange('emotionalTags', newTags);
+  };
+
+  // Character Tag Logic
+  const getSafeCharacters = (chars: any): string[] => {
+    if (Array.isArray(chars)) return chars;
+    if (typeof chars === 'string') return chars.split(',').filter(c => c.trim() !== '');
+    return [];
+  };
+
+  const handleCharacterKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = characterInput.trim();
+        if (val) {
+            const current = getSafeCharacters(tracking.favoriteCharacters);
+            if (!current.includes(val)) {
+                const newChars = [...current, val];
+                handleInputChange('favoriteCharacters', newChars);
+            }
+            setCharacterInput('');
+        }
+    }
+  };
+
+  const removeCharacter = (charToRemove: string) => {
+    const current = getSafeCharacters(tracking.favoriteCharacters);
+    handleInputChange('favoriteCharacters', current.filter(c => c !== charToRemove));
+  };
+
+  const handleImageError = () => {
+    if (imgSrc === item.aiData.coverImage) {
+      setImgSrc(getGenerativeFallback());
+    } else if (imgSrc !== getPlaceholder()) {
+      setImgSrc(getPlaceholder());
+    }
+  };
+
+  const extractDominantColor = (imageSrc: string): Promise<string> => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = imageSrc;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) { resolve(dynamicColor); return; }
+
+            canvas.width = 50;
+            canvas.height = 50;
+            ctx.drawImage(img, 0, 0, 50, 50);
+
+            const imageData = ctx.getImageData(0, 0, 50, 50).data;
+            let r = 0, g = 0, b = 0, count = 0;
+
+            for (let i = 0; i < imageData.length; i += 4) {
+                const currentR = imageData[i];
+                const currentG = imageData[i + 1];
+                const currentB = imageData[i + 2];
+                
+                const brightness = (currentR + currentG + currentB) / 3;
+                const saturation = Math.max(currentR, currentG, currentB) - Math.min(currentR, currentG, currentB);
+
+                if (brightness > 20 && brightness < 235 && saturation > 20) {
+                    r += currentR;
+                    g += currentG;
+                    b += currentB;
+                    count++;
+                }
+            }
+
+            if (count > 0) {
+                r = Math.round(r / count);
+                g = Math.round(g / count);
+                b = Math.round(b / count);
+                const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+                resolve(hex);
+            } else {
+                resolve(dynamicColor);
+            }
+        };
+        img.onerror = () => resolve(dynamicColor);
+    });
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const processFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert("Por favor selecciona un archivo de imagen válido.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const result = e.target?.result as string;
+      if (result) {
+        setImgSrc(result);
+        const newColor = await extractDominantColor(result);
+        onUpdate({ 
+            ...item, 
+            aiData: { 
+                ...item.aiData, 
+                coverImage: result,
+                primaryColor: newColor 
+            } 
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const triggerFileInput = () => fileInputRef.current?.click();
+
+  const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(item.aiData.mediaType);
+
+  const TypeIcon = () => {
+    switch (item.aiData.mediaType) {
+      case 'Anime': return <Tv className="w-5 h-5" />;
+      case 'Manhwa': 
+      case 'Manga': return <BookOpen className="w-5 h-5" />;
+      case 'Comic': return <FileText className="w-5 h-5" />;
+      case 'Libro': return <Book className="w-5 h-5" />;
+      default: return <Clapperboard className="w-5 h-5" />;
+    }
+  };
+
+  const RATING_CONFIG: Record<string, { icon: React.ElementType, label: string, shortLabel: string }> = {
+    "God Tier (Épico memorable)": { icon: Crown, label: "God Tier", shortLabel: "God Tier" },
+    "Obra Maestra": { icon: Trophy, label: "Obra Maestra", shortLabel: "Masterpiece" },
+    "Excelente": { icon: Star, label: "Excelente", shortLabel: "Excelente" },
+    "Muy Bueno": { icon: ThumbsUp, label: "Muy Bueno", shortLabel: "Muy Bueno" },
+    "Bueno": { icon: Smile, label: "Bueno", shortLabel: "Bueno" },
+    "Regular": { icon: Meh, label: "Regular", shortLabel: "Regular" },
+    "Malo": { icon: Frown, label: "Malo", shortLabel: "Malo" },
+    "Pérdida de tiempo": { icon: Trash2, label: "Pérdida de tiempo", shortLabel: "Basura" },
+  };
+
+  return (
+    <div 
+      className="bg-surface rounded-2xl shadow-xl overflow-hidden border w-full max-w-5xl mx-auto transition-all duration-500"
+      style={{
+        boxShadow: `0 0 40px -10px ${dynamicColor}40`,
+        borderColor: `${dynamicColor}40`
+      }}
+    >
+      
+      <div className="md:flex">
+        <div 
+          className="md:w-1/3 p-6 flex flex-col relative overflow-hidden"
+          style={{ backgroundColor: '#0f172a' }}
+        >
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `linear-gradient(135deg, ${dynamicColor}20 0%, transparent 100%)`
+            }}
+          />
+
+          <div 
+            className={`aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-800 shadow-2xl mb-4 relative group cursor-pointer transition-all z-10 ${isDragging ? 'scale-105' : ''}`}
+            style={{ 
+               boxShadow: isDragging ? `0 0 0 4px ${dynamicColor}` : `0 20px 25px -5px rgba(0, 0, 0, 0.5)`,
+               border: `2px solid ${dynamicColor}`
+            }}
+            onClick={triggerFileInput}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+             <img 
+               src={imgSrc}
+               alt={item.aiData.title}
+               onError={handleImageError}
+               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+             />
+             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white backdrop-blur-sm">
+                <ImagePlus className="w-10 h-10 mb-2" style={{ color: dynamicColor }} />
+                <span className="font-semibold text-sm">Cambiar Portada</span>
+             </div>
+             <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent p-4 pointer-events-none">
+                <span 
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-white text-xs font-bold uppercase tracking-wider shadow-lg backdrop-blur-sm"
+                  style={{ backgroundColor: dynamicColor }}
+                >
+                  <TypeIcon />
+                  {item.aiData.mediaType}
+                </span>
+             </div>
+             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect}/>
+          </div>
+
+          <h2 
+            className="text-2xl font-bold mb-1 leading-tight z-10" 
+            style={{ color: dynamicColor, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
+          >
+              {item.aiData.title}
+          </h2>
+          {item.aiData.originalTitle && (
+            <p className="text-slate-400 text-sm mb-4 italic z-10">{item.aiData.originalTitle}</p>
+          )}
+          
+          <div className="space-y-3 text-sm text-slate-300 z-10">
+             <div>
+                <span className="text-slate-500 font-semibold block text-xs uppercase">Estado Publicación</span>
+                {item.aiData.status}
+             </div>
+             <div>
+                <span className="text-slate-500 font-semibold block text-xs uppercase">Contenido Total</span>
+                {item.aiData.totalContent}
+             </div>
+             <div>
+                <span className="text-slate-500 font-semibold block text-xs uppercase">Géneros</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {item.aiData.genres.map(g => (
+                    <span key={g} className="px-2 py-0.5 bg-slate-800 rounded text-xs text-slate-300 border border-slate-700">{g}</span>
+                  ))}
+                </div>
+             </div>
+             
+             {item.aiData.sourceUrls && item.aiData.sourceUrls.length > 0 && (
+               <div className="pt-4 border-t border-slate-700/50">
+                  <span className="text-slate-500 font-semibold block text-xs uppercase mb-1 flex items-center gap-1">
+                    <LinkIcon className="w-3 h-3"/> Fuentes
+                  </span>
+                  <ul className="space-y-1">
+                    {item.aiData.sourceUrls.slice(0, 2).map((source, idx) => (
+                      <li key={idx}>
+                        <a 
+                          href={source.uri} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="text-xs hover:underline truncate block flex items-center gap-1"
+                          style={{ color: dynamicColor }}
+                        >
+                          <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{source.title}</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+               </div>
+             )}
+          </div>
+        </div>
+
+        <div className="md:w-2/3 p-6 md:p-8 flex flex-col gap-6 bg-gradient-to-br from-surface to-slate-800">
+          
+          <div className="prose prose-invert max-w-none">
+            <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+              <BookOpen className="w-5 h-5" style={{ color: dynamicColor }} />
+              Sinopsis
+            </h3>
+            <p className="text-slate-300 text-sm leading-relaxed bg-slate-900/30 p-4 rounded-lg border border-slate-700/50">
+              {item.aiData.synopsis}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div 
+              className="bg-slate-900/50 p-5 rounded-xl border relative overflow-hidden transition-colors duration-500"
+              style={{ borderColor: `${dynamicColor}40` }}
+            >
+              <div 
+                className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-16 translate-x-16 pointer-events-none opacity-20"
+                style={{ backgroundColor: dynamicColor }}
+              ></div>
+              
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5" style={{ color: dynamicColor }} />
+                Mi Progreso
+              </h3>
+              
+              <div className="space-y-4 relative z-10">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Estado</label>
+                  <select 
+                    value={tracking.status}
+                    onChange={(e) => handleInputChange('status', e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none transition-shadow focus:ring-1"
+                    style={{ borderColor: `${dynamicColor}50` }}
+                  >
+                    <option value="Viendo/Leyendo">
+                        {isReadingContent ? 'Leyendo' : 'Viendo'}
+                    </option>
+                    <option value="Completado">Completado</option>
+                    <option value="En Pausa">En Pausa</option>
+                    <option value="Descartado">Descartado</option>
+                  </select>
+                </div>
+
+                {!isReadingContent && (
+                   <div className="flex gap-3">
+                      <div className="flex-1">
+                         <label className="block text-xs font-medium text-slate-400 mb-1">Temp. Actual</label>
+                         <input 
+                           type="number" min="1"
+                           value={tracking.currentSeason}
+                           onChange={(e) => handleInputChange('currentSeason', parseInt(e.target.value) || 1)}
+                           className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center focus:border-opacity-100 outline-none focus:ring-1"
+                           style={{ focusRing: dynamicColor, borderColor: `${dynamicColor}30` }}
+                         />
+                      </div>
+                      <div className="flex-1">
+                         <label className="block text-xs font-medium text-slate-400 mb-1">Total Temps.</label>
+                         <input 
+                           type="number" min="1"
+                           value={tracking.totalSeasons || 1}
+                           onChange={(e) => handleInputChange('totalSeasons', parseInt(e.target.value) || 1)}
+                           className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-1"
+                           style={{ borderColor: `${dynamicColor}30` }}
+                         />
+                      </div>
+                   </div>
+                )}
+
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-slate-400 mb-1">
+                        {isReadingContent ? 'Caps. Leídos' : 'Caps. Vistos'}
+                    </label>
+                    <input 
+                      type="number" min="0"
+                      value={tracking.watchedEpisodes}
+                      onChange={(e) => handleInputChange('watchedEpisodes', parseInt(e.target.value) || 0)}
+                      className="w-full border border-slate-600 rounded-lg px-2 py-2 text-sm text-center font-bold text-white bg-slate-700/50 outline-none focus:ring-1"
+                      style={{ borderColor: `${dynamicColor}50` }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Total {isReadingContent ? 'Existentes' : 'Temp'}</label>
+                    <input 
+                      type="number" min="1"
+                      value={tracking.totalEpisodesInSeason}
+                      onChange={(e) => handleInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)}
+                      className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-1"
+                      style={{ borderColor: `${dynamicColor}30` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-2">
+                  <div className="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>
+                         {isReadingContent ? 'Progreso Lectura' : `Progreso Temporada ${tracking.currentSeason}`}
+                    </span>
+                    <span style={{ color: progressPercent === 100 ? '#4ade80' : dynamicColor, fontWeight: 'bold' }}>
+                        {Math.round(progressPercent)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                    <div 
+                      className="h-2.5 rounded-full transition-all duration-500 ease-out"
+                      style={{ 
+                          width: `${progressPercent}%`,
+                          backgroundColor: progressPercent === 100 ? '#4ade80' : dynamicColor,
+                          boxShadow: `0 0 10px ${dynamicColor}80`
+                      }} 
+                    ></div>
+                  </div>
+                  
+                  {progressPercent === 100 && !isReadingContent && (
+                     <button 
+                       onClick={handleCompleteSeason}
+                       className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-medium text-white py-2 rounded-lg transition-colors shadow-lg"
+                       style={{ backgroundColor: '#16a34a' }}
+                     >
+                       <CheckCircle2 className="w-3 h-3" />
+                       Completar Temporada {tracking.currentSeason}
+                       <ChevronRight className="w-3 h-3 opacity-70" />
+                     </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div 
+                className="bg-slate-900/50 p-5 rounded-xl border border-slate-700/50 flex flex-col h-full"
+                style={{ borderColor: `${dynamicColor}40` }}
+            >
+               <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-yellow-500" />
+                Reflexión
+              </h3>
+              
+              <div className="space-y-4 flex-grow flex flex-col">
+                <div>
+                   <label className="block text-xs font-medium text-slate-400 mb-2">Resumen Emocional</label>
+                   <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                      {EMOTIONAL_TAGS_OPTIONS.map(opt => {
+                        const isActive = tracking.emotionalTags.includes(opt.label);
+                        return (
+                          <button
+                            key={opt.label}
+                            onClick={() => toggleTag(opt.label)}
+                            className={`text-[10px] px-2 py-2 rounded-md text-left transition-all border flex items-center gap-2 h-auto min-h-[36px] ${
+                              isActive 
+                              ? 'text-white shadow-[0_0_10px_rgba(0,0,0,0.3)]' 
+                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                            }`}
+                            style={isActive ? {
+                                backgroundColor: `${dynamicColor}20`,
+                                borderColor: dynamicColor,
+                                color: 'white',
+                                boxShadow: `0 0 8px ${dynamicColor}40`
+                            } : {}}
+                          >
+                            <span className={`text-sm ${isActive ? 'opacity-100 scale-110' : 'opacity-50 grayscale'} transition-all flex-shrink-0`}>
+                                {opt.emoji}
+                            </span>
+                            <span className="whitespace-normal leading-tight break-words">{opt.label}</span>
+                          </button>
+                        );
+                      })}
+                   </div>
+                </div>
+
+                <div className="flex-grow flex flex-col justify-end mt-2">
+                  <label className="block text-xs font-medium text-slate-400 mb-2">Calificación</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {RATING_OPTIONS.map(option => {
+                        const config = RATING_CONFIG[option] || { icon: Star, label: option, shortLabel: option };
+                        const Icon = config.icon;
+                        const isSelected = tracking.rating === option;
+                        
+                        return (
+                          <button
+                            key={option}
+                            onClick={() => handleInputChange('rating', option)}
+                            className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-200 ${
+                                isSelected 
+                                ? 'bg-opacity-20 border-opacity-100 shadow-lg scale-105' 
+                                : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:border-slate-500'
+                            }`}
+                            style={isSelected ? {
+                                backgroundColor: `${dynamicColor}`, 
+                                borderColor: dynamicColor,
+                                color: 'white'
+                            } : {}}
+                            title={config.label}
+                          >
+                            <Icon className={`w-5 h-5 mb-1 ${isSelected ? 'text-white' : ''}`} style={!isSelected ? { color: dynamicColor } : {}} />
+                            <span className="text-[10px] font-medium leading-none text-center">{config.shortLabel}</span>
+                          </button>
+                        );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-700/50">
+             <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Personajes memorables</label>
+                <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2 mb-2 min-h-[32px]">
+                        {getSafeCharacters(tracking.favoriteCharacters).map((char, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-xs text-white animate-fade-in shadow-sm" style={{ borderColor: `${dynamicColor}40` }}>
+                                {char}
+                                <button onClick={() => removeCharacter(char)} className="hover:text-red-400 text-slate-400 transition-colors"><X className="w-3 h-3" /></button>
+                            </span>
+                        ))}
+                    </div>
+                    <input 
+                        type="text"
+                        value={characterInput}
+                        onChange={(e) => setCharacterInput(e.target.value)}
+                        onKeyDown={handleCharacterKeyDown}
+                        placeholder="Escribe un nombre y presiona Enter..."
+                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 transition-all"
+                        style={{ borderColor: `${dynamicColor}30`, focusRing: dynamicColor }}
+                    />
+                </div>
+             </div>
+             <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Comentario Final / Deseos</label>
+                <textarea 
+                  className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none transition-all resize-none h-24 focus:ring-1"
+                  style={{ borderColor: `${dynamicColor}30`, focusRing: dynamicColor }}
+                  placeholder="Pensamientos finales..."
+                  value={tracking.comment}
+                  onChange={(e) => handleInputChange('comment', e.target.value)}
+                />
+             </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  );
+};
