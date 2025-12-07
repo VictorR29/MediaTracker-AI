@@ -1,6 +1,7 @@
+
 import React, { useMemo, useState } from 'react';
 import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
-import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save } from 'lucide-react';
+import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film } from 'lucide-react';
 
 interface StatsViewProps {
   library: MediaItem[];
@@ -11,14 +12,18 @@ interface StatsViewProps {
 export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUpdateProfile }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [animeDuration, setAnimeDuration] = useState(userProfile.preferences?.animeEpisodeDuration || 24);
+  const [movieDuration, setMovieDuration] = useState(userProfile.preferences?.movieDuration || 90);
   const [mangaDuration, setMangaDuration] = useState(userProfile.preferences?.mangaChapterDuration || 3);
+  const [bookDuration, setBookDuration] = useState(userProfile.preferences?.bookChapterDuration || 15);
 
   const saveSettings = () => {
       onUpdateProfile({
           ...userProfile,
           preferences: {
               animeEpisodeDuration: animeDuration,
-              mangaChapterDuration: mangaDuration
+              movieDuration: movieDuration,
+              mangaChapterDuration: mangaDuration,
+              bookChapterDuration: bookDuration
           }
       });
       setIsSettingsOpen(false);
@@ -92,23 +97,61 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     });
 
 
-    // --- Personal Recap (Time) Logic ---
+    // --- Personal Recap (Granular) Logic ---
     const animeMin = userProfile.preferences?.animeEpisodeDuration || 24;
+    const movieMin = userProfile.preferences?.movieDuration || 90;
     const mangaMin = userProfile.preferences?.mangaChapterDuration || 3;
+    const bookMin = userProfile.preferences?.bookChapterDuration || 15;
     
-    let totalMinutesConsumed = 0;
-    let totalUnitsConsumed = 0;
+    // Counters
+    let animeEpisodes = 0;
+    let seriesEpisodes = 0;
+    let moviesWatched = 0;
+    let readingChapters = 0; // Manhwa, Manga, Comic
+    let bookChapters = 0;
+
+    // Time
+    let visualMinutes = 0;
+    let readingMinutes = 0;
+    
     let maxTimeItem = { title: "N/A", time: 0 };
 
     library.forEach(item => {
-        const isReading = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(item.aiData.mediaType);
-        const durationPerUnit = isReading ? mangaMin : animeMin;
-        const units = item.trackingData.watchedEpisodes; // "watchedEpisodes" stores chapters too
+        const type = item.aiData.mediaType;
+        const units = item.trackingData.watchedEpisodes; // "watchedEpisodes" stores progress
 
         if (units > 0) {
-            const itemTime = units * durationPerUnit;
-            totalMinutesConsumed += itemTime;
-            totalUnitsConsumed += units;
+            let itemTime = 0;
+            
+            // Visual
+            if (type === 'Anime') {
+                animeEpisodes += units;
+                itemTime = units * animeMin;
+                visualMinutes += itemTime;
+            } else if (type === 'Serie') {
+                seriesEpisodes += units;
+                itemTime = units * animeMin; // Using same pref for Series/Anime based on simplified user model
+                visualMinutes += itemTime;
+            } else if (type === 'Pelicula') {
+                // If it's a movie, usually watchedEpisodes is 1 or 0.
+                // If units > 0, we count it.
+                moviesWatched += units; 
+                itemTime = units * movieMin;
+                visualMinutes += itemTime;
+            } 
+            // Reading
+            else if (['Manhwa', 'Manga', 'Comic'].includes(type)) {
+                readingChapters += units;
+                itemTime = units * mangaMin;
+                readingMinutes += itemTime;
+            } else if (type === 'Libro') {
+                bookChapters += units;
+                itemTime = units * bookMin;
+                readingMinutes += itemTime;
+            } else {
+                // Other fallback
+                itemTime = units * 10; // Unknown
+            }
 
             if (itemTime > maxTimeItem.time) {
                 maxTimeItem = { title: item.aiData.title, time: itemTime };
@@ -116,19 +159,26 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         }
     });
 
-    // Format Time
-    const timeDays = Math.floor(totalMinutesConsumed / (24 * 60));
-    const timeHours = Math.floor((totalMinutesConsumed % (24 * 60)) / 60);
-    const timeDisplay = timeDays > 0 
-        ? `${timeDays}d ${timeHours}h` 
-        : `${Math.floor(totalMinutesConsumed / 60)}h ${totalMinutesConsumed % 60}m`;
+    const formatTime = (totalMins: number) => {
+        const days = Math.floor(totalMins / (24 * 60));
+        const hours = Math.floor((totalMins % (24 * 60)) / 60);
+        const mins = totalMins % 60;
+        
+        if (days > 0) return `${days}d ${hours}h`;
+        if (hours > 0) return `${hours}h ${mins}m`;
+        return `${mins}m`;
+    };
 
 
     return { 
         total, completed, onHold, watching, typeCount, 
         topGenre, maxGenreCount, ratingCount,
         averageScore, highestRatedGenre,
-        totalUnitsConsumed, timeDisplay, maxTimeItem
+        maxTimeItem,
+        // Granular
+        animeEpisodes, seriesEpisodes, moviesWatched, readingChapters, bookChapters,
+        visualTimeDisplay: formatTime(visualMinutes),
+        readingTimeDisplay: formatTime(readingMinutes)
     };
   }, [library, userProfile.preferences]);
 
@@ -165,47 +215,93 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        </div>
 
        {/* Personal Recap Section */}
-       <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-            
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2 relative z-10">
-                <Crown className="w-6 h-6 text-yellow-400" />
-                Recap Personal
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-                <div className="flex flex-col">
-                    <span className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-2">Tiempo Total Invertido</span>
-                    <div className="flex items-end gap-2">
-                        <span className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-                            {stats.timeDisplay}
-                        </span>
-                    </div>
-                    <span className="text-xs text-slate-500 mt-1">Calculado con tus preferencias</span>
-                </div>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+           
+           {/* Visual Time Card */}
+           <div className="bg-gradient-to-br from-indigo-900/50 to-slate-900 border border-slate-700 rounded-2xl p-6 relative overflow-hidden shadow-xl">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                 
-                <div className="flex flex-col">
-                    <span className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-2">Total Episodios/Caps</span>
-                    <div className="flex items-end gap-2">
-                         <span className="text-4xl font-extrabold text-white">{stats.totalUnitsConsumed}</span>
-                         <span className="text-sm text-slate-400 mb-1.5">vistos/leídos</span>
-                    </div>
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2 relative z-10">
+                    <MonitorPlay className="w-5 h-5 text-indigo-400" />
+                    Tiempo Visual
+                </h3>
+
+                <div className="mb-6">
+                    <span className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                        {stats.visualTimeDisplay}
+                    </span>
+                    <p className="text-xs text-slate-400 mt-1">Invertidos en pantallas</p>
                 </div>
 
-                <div className="flex flex-col">
-                    <span className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-2">Más Tiempo Dedicado</span>
-                    <div className="flex items-center gap-2">
-                        <Trophy className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-                        <span className="text-lg font-bold text-white truncate" title={stats.maxTimeItem.title}>
-                             {stats.maxTimeItem.title}
+                <div className="space-y-3 relative z-10">
+                    <div className="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                        <span className="text-sm text-slate-300 flex items-center gap-2">
+                            <Tv className="w-4 h-4 text-slate-500"/> Episodios Anime
                         </span>
+                        <span className="font-bold text-white">{stats.animeEpisodes}</span>
                     </div>
-                    <span className="text-xs text-slate-500 mt-1">
-                        {(stats.maxTimeItem.time / 60).toFixed(1)} horas estimadas
-                    </span>
+                    <div className="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                        <span className="text-sm text-slate-300 flex items-center gap-2">
+                            <Layers className="w-4 h-4 text-slate-500"/> Episodios Series
+                        </span>
+                        <span className="font-bold text-white">{stats.seriesEpisodes}</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                        <span className="text-sm text-slate-300 flex items-center gap-2">
+                            <Film className="w-4 h-4 text-slate-500"/> Películas
+                        </span>
+                        <span className="font-bold text-white">{stats.moviesWatched}</span>
+                    </div>
                 </div>
-            </div>
+           </div>
+
+           {/* Reading Time Card */}
+           <div className="bg-gradient-to-br from-emerald-900/50 to-slate-900 border border-slate-700 rounded-2xl p-6 relative overflow-hidden shadow-xl">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2 relative z-10">
+                    <BookOpen className="w-5 h-5 text-emerald-400" />
+                    Tiempo Lectura
+                </h3>
+
+                <div className="mb-6">
+                    <span className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
+                        {stats.readingTimeDisplay}
+                    </span>
+                    <p className="text-xs text-slate-400 mt-1">Sumergido en historias</p>
+                </div>
+
+                <div className="space-y-3 relative z-10">
+                    <div className="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                        <span className="text-sm text-slate-300 flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-slate-500"/> Manhwa/Manga
+                        </span>
+                        <span className="font-bold text-white">{stats.readingChapters} <span className="text-[10px] text-slate-500 font-normal">caps</span></span>
+                    </div>
+                    <div className="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                        <span className="text-sm text-slate-300 flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-slate-500"/> Libros/Novelas
+                        </span>
+                        <span className="font-bold text-white">{stats.bookChapters} <span className="text-[10px] text-slate-500 font-normal">caps</span></span>
+                    </div>
+                     {/* Spacer to align heights if needed */}
+                     <div className="h-[38px] opacity-0"></div>
+                </div>
+           </div>
+
        </div>
+
+        {/* Most Time Dedicated Banner */}
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex items-center justify-between shadow-sm">
+             <div className="flex flex-col">
+                 <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">Tu mayor obsesión</span>
+                 <span className="text-white font-bold text-lg truncate max-w-[200px] md:max-w-md">{stats.maxTimeItem.title}</span>
+             </div>
+             <div className="flex items-center gap-2 text-yellow-500">
+                 <Clock className="w-5 h-5" />
+                 <span className="font-mono font-bold">{(stats.maxTimeItem.time / 60).toFixed(1)}h</span>
+             </div>
+        </div>
 
        {/* KPIs Row */}
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -250,20 +346,23 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 <p className="text-slate-500 text-sm text-center py-4">No hay datos aún.</p>
              ) : (
                 <div className="space-y-4">
-                    {Object.entries(stats.typeCount).map(([type, count]) => (
-                    <div key={type}>
-                        <div className="flex justify-between text-sm mb-1.5">
-                            <span className="text-slate-300 font-medium">{type}</span>
-                            <span className="text-slate-500 font-mono">{count}</span>
+                    {Object.entries(stats.typeCount).map(([type, count]) => {
+                      const percentage = stats.total > 0 ? (count / stats.total) * 100 : 0;
+                      return (
+                        <div key={type}>
+                            <div className="flex justify-between text-sm mb-1.5">
+                                <span className="text-slate-300 font-medium">{type}</span>
+                                <span className="text-slate-500 font-mono">{count}</span>
+                            </div>
+                            <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                                <div 
+                                className="bg-primary h-2.5 rounded-full transition-all duration-1000" 
+                                style={{ width: `${percentage}%` }}
+                                />
+                            </div>
                         </div>
-                        <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
-                            <div 
-                            className="bg-primary h-2.5 rounded-full transition-all duration-1000" 
-                            style={{ width: `${((count as number) / ((stats.total as number) || 1)) * 100}%` }}
-                            />
-                        </div>
-                    </div>
-                    ))}
+                      );
+                    })}
                 </div>
              )}
           </div>
@@ -294,6 +393,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                             let barColor = 'bg-secondary';
                             if (rating.includes('God Tier') || rating.includes('Maestra')) barColor = 'bg-yellow-500';
                             if (rating.includes('Malo') || rating.includes('Basura')) barColor = 'bg-red-500';
+                            
+                            const percentage = stats.total > 0 ? (count / stats.total) * 100 : 0;
 
                             return (
                                 <div key={rating}>
@@ -304,7 +405,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                                     <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
                                         <div 
                                         className={`${barColor} h-2.5 rounded-full transition-all duration-1000`} 
-                                        style={{ width: `${((count as number) / ((stats.total as number) || 1)) * 100}%` }}
+                                        style={{ width: `${percentage}%` }}
                                         />
                                     </div>
                                 </div>
@@ -328,36 +429,58 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                            <X className="w-5 h-5" />
                        </button>
                    </div>
-                   <div className="p-6 space-y-6">
-                       <p className="text-sm text-slate-400">
-                           Ajusta la duración promedio para calcular con mayor precisión tu "Recap Personal".
+                   <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                       <p className="text-sm text-slate-400 mb-2">
+                           Ajusta la duración promedio (minutos) para calcular tus estadísticas de tiempo.
                        </p>
                        
-                       <div>
-                           <label className="block text-sm font-medium text-slate-300 mb-2">Duración Episodio Anime/Serie (min)</label>
-                           <input 
-                               type="number" 
-                               min="1" 
-                               value={animeDuration}
-                               onChange={(e) => setAnimeDuration(Number(e.target.value))}
-                               className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-primary outline-none"
-                           />
+                       <div className="space-y-1">
+                           <label className="block text-xs font-bold text-indigo-400 uppercase tracking-wider">Visual</label>
+                           <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1">Episodio Anime/Serie</label>
+                                    <input 
+                                        type="number" min="1" value={animeDuration}
+                                        onChange={(e) => setAnimeDuration(Number(e.target.value))}
+                                        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white outline-none focus:border-indigo-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1">Película</label>
+                                    <input 
+                                        type="number" min="1" value={movieDuration}
+                                        onChange={(e) => setMovieDuration(Number(e.target.value))}
+                                        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white outline-none focus:border-indigo-500"
+                                    />
+                                </div>
+                           </div>
                        </div>
 
-                       <div>
-                           <label className="block text-sm font-medium text-slate-300 mb-2">Duración Capítulo Manhwa/Manga (min)</label>
-                           <input 
-                               type="number" 
-                               min="1" 
-                               value={mangaDuration}
-                               onChange={(e) => setMangaDuration(Number(e.target.value))}
-                               className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-primary outline-none"
-                           />
+                       <div className="space-y-1 pt-2">
+                           <label className="block text-xs font-bold text-emerald-400 uppercase tracking-wider">Lectura</label>
+                           <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1">Cap. Manhwa/Manga</label>
+                                    <input 
+                                        type="number" min="1" value={mangaDuration}
+                                        onChange={(e) => setMangaDuration(Number(e.target.value))}
+                                        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white outline-none focus:border-emerald-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1">Cap. Libro/Novela</label>
+                                    <input 
+                                        type="number" min="1" value={bookDuration}
+                                        onChange={(e) => setBookDuration(Number(e.target.value))}
+                                        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white outline-none focus:border-emerald-500"
+                                    />
+                                </div>
+                           </div>
                        </div>
 
                        <button 
                          onClick={saveSettings}
-                         className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-indigo-600 text-white font-bold py-3 rounded-xl transition-colors shadow-lg"
+                         className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-indigo-600 text-white font-bold py-3 rounded-xl transition-colors shadow-lg mt-4"
                        >
                            <Save className="w-4 h-4" />
                            Guardar Cambios

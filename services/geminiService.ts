@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { AIWorkData } from "../types";
 
@@ -16,7 +17,7 @@ export const searchMediaInfo = async (query: string): Promise<AIWorkData> => {
     {
       "title": "Main title in Spanish or English",
       "originalTitle": "Original title if different",
-      "mediaType": "One of: Anime, Serie, Manhwa, Manga, Comic, Libro, Otro",
+      "mediaType": "One of: Anime, Serie, Pelicula, Manhwa, Manga, Comic, Libro, Otro",
       "synopsis": "A concise synopsis in Spanish (max 300 chars)",
       "genres": ["Genre1", "Genre2"],
       "status": "Publication/Broadcast status (e.g., En emisión, Finalizado, En pausa)",

@@ -42,8 +42,14 @@ export default function App() {
           if (!profile.preferences) {
             profile.preferences = {
                 animeEpisodeDuration: 24,
-                mangaChapterDuration: 3
+                mangaChapterDuration: 3,
+                movieDuration: 90,
+                bookChapterDuration: 15
             };
+          } else {
+             // Migration for existing preferences without new fields
+             if (profile.preferences.movieDuration === undefined) profile.preferences.movieDuration = 90;
+             if (profile.preferences.bookChapterDuration === undefined) profile.preferences.bookChapterDuration = 15;
           }
           setUserProfile(profile);
           applyTheme(profile.accentColor);
@@ -71,7 +77,12 @@ export default function App() {
     // Set defaults on onboarding
     const profileWithPrefs = {
         ...profile,
-        preferences: { animeEpisodeDuration: 24, mangaChapterDuration: 3 }
+        preferences: { 
+            animeEpisodeDuration: 24, 
+            mangaChapterDuration: 3,
+            movieDuration: 90,
+            bookChapterDuration: 15
+        }
     };
     setUserProfile(profileWithPrefs);
     applyTheme(profile.accentColor);

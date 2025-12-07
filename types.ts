@@ -2,7 +2,7 @@
 export interface AIWorkData {
   title: string;
   originalTitle?: string;
-  mediaType: 'Anime' | 'Serie' | 'Manhwa' | 'Manga' | 'Comic' | 'Libro' | 'Otro';
+  mediaType: 'Anime' | 'Serie' | 'Pelicula' | 'Manhwa' | 'Manga' | 'Comic' | 'Libro' | 'Otro';
   synopsis: string;
   genres: string[];
   status: string;
@@ -34,7 +34,9 @@ export interface MediaItem {
 
 export interface UserPreferences {
   animeEpisodeDuration: number; // in minutes
+  movieDuration: number; // in minutes
   mangaChapterDuration: number; // in minutes
+  bookChapterDuration: number; // in minutes
 }
 
 export interface UserProfile {
