@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -7,9 +6,9 @@ import { Onboarding } from './components/Onboarding';
 import { LibraryFilters, FilterState } from './components/LibraryFilters';
 import { StatsView } from './components/StatsView';
 import { searchMediaInfo } from './services/geminiService';
-import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB } from './services/storage';
+import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
 import { MediaItem, UserProfile } from './types';
-import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2 } from 'lucide-react';
+import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
@@ -19,6 +18,12 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<'search' | 'library' | 'details' | 'stats'>('search');
   const [dbReady, setDbReady] = useState(false);
+  
+  // Search Error State
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Delete Confirmation State
+  const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null);
 
   // Filters State
   const [filters, setFilters] = useState<FilterState>({
@@ -98,11 +103,19 @@ export default function App() {
   const handleSearch = async (query: string) => {
     setIsLoading(true);
     setCurrentMedia(null);
+    setSearchError(null);
     setView('search');
 
     try {
       const aiData = await searchMediaInfo(query);
       
+      // Check for soft failure/generic fallback
+      if (aiData.synopsis.includes("No se pudo obtener información automática")) {
+         setSearchError("No se encontraron resultados precisos. ¿Seguro que está bien escrito?");
+         setIsLoading(false);
+         return;
+      }
+
       const newItem: MediaItem = {
         id: uuidv4(),
         aiData,
@@ -116,14 +129,15 @@ export default function App() {
           emotionalTags: [],
           favoriteCharacters: [],
           rating: '',
-          comment: ''
+          comment: '',
+          recommendedBy: ''
         }
       };
 
       setCurrentMedia(newItem);
     } catch (error) {
       console.error("Error searching media", error);
-      alert("Hubo un error buscando la información. Intenta de nuevo.");
+      setSearchError("Hubo un error de conexión buscando la información. Intenta de nuevo.");
     } finally {
       setIsLoading(false);
     }
@@ -141,6 +155,71 @@ export default function App() {
     // Persist to DB if it's already in library or if we are actively saving it
     if (itemExists) {
        await saveMediaItem(updatedItem);
+    }
+  };
+
+  // Delete Logic
+  const handleDeleteRequest = (item: MediaItem) => {
+      setDeleteTarget(item);
+  };
+
+  const confirmDelete = async () => {
+      if (deleteTarget) {
+          await deleteMediaItem(deleteTarget.id);
+          setLibrary(prev => prev.filter(i => i.id !== deleteTarget.id));
+          
+          if (currentMedia?.id === deleteTarget.id) {
+              setView('library');
+              setCurrentMedia(null);
+          }
+          setDeleteTarget(null);
+      }
+  };
+
+  const cancelDelete = () => {
+      setDeleteTarget(null);
+  };
+
+
+  const handleQuickIncrement = async (item: MediaItem) => {
+    const { trackingData, aiData } = item;
+    const isSeries = ['Anime', 'Serie'].includes(aiData.mediaType);
+    
+    let updatedTracking = { ...trackingData };
+    
+    // Check if ready to complete season/series (Current watched >= Total)
+    if (trackingData.totalEpisodesInSeason > 0 && trackingData.watchedEpisodes >= trackingData.totalEpisodesInSeason) {
+        // Complete Logic
+        if (isSeries) {
+            // If it's the last season, complete the work
+            if (trackingData.totalSeasons > 0 && trackingData.currentSeason >= trackingData.totalSeasons) {
+                updatedTracking.status = 'Completado';
+            } else {
+                // Otherwise move to next season
+                updatedTracking.currentSeason += 1;
+                updatedTracking.watchedEpisodes = 0;
+                updatedTracking.status = 'Viendo/Leyendo';
+            }
+        } else {
+             // For reading or single season stuff, just mark complete
+             updatedTracking.status = 'Completado';
+        }
+    } else {
+        // Simple Increment
+        updatedTracking.watchedEpisodes += 1;
+    }
+
+    const updatedItem = { ...item, trackingData: updatedTracking };
+    
+    // Update Library State
+    setLibrary(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+    
+    // Persist
+    await saveMediaItem(updatedItem);
+    
+    // Also update currentMedia if open (though this is mostly for library view)
+    if (currentMedia && currentMedia.id === updatedItem.id) {
+        setCurrentMedia(updatedItem);
     }
   };
 
@@ -202,7 +281,7 @@ export default function App() {
           return progB - progA;
         case 'updated':
         default:
-          return b.createdAt - a.createdAt; // Using createdAt as proxy for update currently, could add updatedAt field later
+          return b.createdAt - a.createdAt; 
       }
     });
 
@@ -286,6 +365,14 @@ export default function App() {
             </div>
 
             <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+            
+            {/* Search Error Message */}
+            {searchError && (
+               <div className="animate-fade-in w-full max-w-md mx-auto mb-8 p-4 bg-red-900/20 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-200">
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <p className="text-sm font-medium">{searchError}</p>
+               </div>
+            )}
 
             {isLoading && (
               <div className="flex flex-col items-center justify-center py-12 text-slate-500 animate-pulse">
@@ -360,6 +447,7 @@ export default function App() {
                     key={item.id} 
                     item={item} 
                     onClick={() => openDetail(item)}
+                    onIncrement={handleQuickIncrement}
                   />
                 ))}
               </div>
@@ -384,6 +472,7 @@ export default function App() {
               <MediaCard 
                    item={currentMedia} 
                    onUpdate={handleUpdateMedia} 
+                   onDelete={library.find(i => i.id === currentMedia.id) ? () => handleDeleteRequest(currentMedia) : undefined}
               />
            </div>
         )}
@@ -393,6 +482,39 @@ export default function App() {
       <footer className="max-w-7xl mx-auto px-4 mt-10 text-center text-slate-600 text-sm py-8 border-t border-slate-800/50">
         <p>Potenciado por Gemini 2.5 Flash & Google Search Grounding</p>
       </footer>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
+              <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-fade-in-up">
+                  <div className="p-6 text-center">
+                      <div className="w-12 h-12 bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Trash2 className="w-6 h-6 text-red-500" />
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">¿Eliminar esta obra?</h3>
+                      <p className="text-slate-400 text-sm mb-6">
+                          Estás a punto de borrar "{deleteTarget.aiData.title}" de tu biblioteca. 
+                          <br/>Perderás todo tu progreso y notas.
+                      </p>
+                      <div className="flex gap-3">
+                          <button 
+                            onClick={cancelDelete}
+                            className="flex-1 py-2.5 rounded-lg border border-slate-600 text-slate-300 font-medium hover:bg-slate-700 transition-colors"
+                          >
+                              Cancelar
+                          </button>
+                          <button 
+                            onClick={confirmDelete}
+                            className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium shadow-lg shadow-red-900/20 transition-colors"
+                          >
+                              Eliminar
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
     </div>
   );
 }

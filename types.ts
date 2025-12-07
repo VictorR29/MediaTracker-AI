@@ -23,6 +23,7 @@ export interface UserTrackingData {
   favoriteCharacters: string[]; // Changed to array of strings for tags
   rating: string; // e.g., "God Tier", "Bueno", etc.
   comment: string;
+  recommendedBy?: string; // New field for social aspect
 }
 
 export interface MediaItem {

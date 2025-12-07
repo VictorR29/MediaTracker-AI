@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
 import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film } from 'lucide-react';
@@ -7,6 +6,27 @@ interface StatsViewProps {
   library: MediaItem[];
   userProfile: UserProfile;
   onUpdateProfile: (profile: UserProfile) => void;
+}
+
+interface StatsData {
+  total: number;
+  completed: number;
+  onHold: number;
+  watching: number;
+  typeCount: Record<string, number>;
+  topGenre: string;
+  maxGenreCount: number;
+  ratingCount: Record<string, number>;
+  averageScore: string;
+  highestRatedGenre: string;
+  maxTimeItem: { title: string; time: number };
+  animeEpisodes: number;
+  seriesEpisodes: number;
+  moviesWatched: number;
+  readingChapters: number;
+  bookChapters: number;
+  visualTimeDisplay: string;
+  readingTimeDisplay: string;
 }
 
 export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUpdateProfile }) => {
@@ -29,7 +49,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
       setIsSettingsOpen(false);
   };
 
-  const stats = useMemo(() => {
+  const stats: StatsData = useMemo(() => {
     const total = library.length;
     const completed = library.filter(i => i.trackingData.status === 'Completado').length;
     const onHold = library.filter(i => i.trackingData.status === 'En Pausa').length;
@@ -314,7 +334,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
           <StatCard 
              title="Completados" 
              value={stats.completed} 
-             subtext={`${Math.round(((stats.completed as number) / ((stats.total as number) || 1)) * 100)}% del total`}
+             subtext={`${Math.round((stats.completed / (stats.total || 1)) * 100)}% del total`}
              icon={Trophy} 
              color={{ bg: 'bg-green-500', text: 'text-green-500' }} 
           />

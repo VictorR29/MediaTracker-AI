@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { MediaItem } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText } from 'lucide-react';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
   onClick: () => void;
+  onIncrement: (item: MediaItem) => void;
 }
 
-export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClick }) => {
+export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClick, onIncrement }) => {
   const { aiData, trackingData } = item;
 
   // Use dynamic color if available, else fallback to primary variable (approx)
-  // We'll default to a purple-ish fallback if variable is not resolved by hex logic, 
-  // but since we want specific styling we can use a safe fallback hex.
   const dynamicColor = aiData.primaryColor || '#6366f1';
 
   // Calculate progress
@@ -21,6 +20,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
     : 0;
 
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
+  const isCompleteSeason = trackingData.totalEpisodesInSeason > 0 && trackingData.watchedEpisodes >= trackingData.totalEpisodesInSeason;
 
   // Icon based on type
   const TypeIcon = () => {
@@ -71,15 +71,15 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
     }
   };
 
+  const handleQuickAction = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onIncrement(item);
+  };
+
   return (
     <div 
       onClick={onClick}
-      className="group bg-surface rounded-xl overflow-hidden shadow-lg border border-slate-800 hover:border-opacity-50 cursor-pointer transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-2xl"
-      style={{
-        // We apply a hover style via a dynamic class logic or just standard style
-        // However, for clean hover effects with dynamic colors, we might need a wrapper or simpler logic.
-        // Let's rely on the progress bar and badge for color pop.
-      }}
+      className="group bg-surface rounded-xl overflow-hidden shadow-lg border border-slate-800 hover:border-opacity-50 cursor-pointer transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-2xl relative"
     >
       <div className="relative aspect-[2/3] overflow-hidden bg-slate-900">
         <img 
@@ -97,6 +97,24 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
                 {aiData.mediaType}
             </span>
         </div>
+        
+        {/* Quick Action Button - Floating on Image */}
+        {trackingData.status === 'Viendo/Leyendo' && (
+             <button
+                onClick={handleQuickAction}
+                className={`absolute bottom-14 right-2 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all transform active:scale-90 z-20 md:opacity-0 md:group-hover:opacity-100 opacity-100 ${
+                    isCompleteSeason ? 'bg-green-500 hover:bg-green-600' : 'bg-white/90 hover:bg-white text-slate-900'
+                }`}
+                title={isCompleteSeason ? "Completar Temporada" : "+1 Capítulo"}
+             >
+                 {isCompleteSeason ? (
+                     <Check className="w-5 h-5 text-white" />
+                 ) : (
+                     <Plus className="w-5 h-5" style={{ color: dynamicColor }} />
+                 )}
+             </button>
+        )}
+
         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent p-3 pt-12">
            <h3 className="text-white font-bold text-sm leading-tight line-clamp-2">{aiData.title}</h3>
            <p className="text-slate-400 text-xs mt-1 truncate">{trackingData.status}</p>
@@ -109,7 +127,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
            className="h-full transition-all duration-500" 
            style={{ 
                width: `${progressPercent}%`,
-               backgroundColor: dynamicColor 
+               backgroundColor: progressPercent === 100 ? '#4ade80' : dynamicColor 
             }}
          />
       </div>

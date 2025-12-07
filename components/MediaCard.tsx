@@ -1,19 +1,21 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Copy, Image as ImageIcon } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
   onUpdate: (updatedItem: MediaItem) => void;
   isNew?: boolean;
+  onDelete?: () => void;
 }
 
-export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false }) => {
+export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false, onDelete }) => {
   const [tracking, setTracking] = useState<UserTrackingData>(item.trackingData);
   const [progressPercent, setProgressPercent] = useState(0);
   const [characterInput, setCharacterInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [imgHasError, setImgHasError] = useState(false);
 
   // Use the AI provided color or fall back to a default Indigo-ish color if missing
   const dynamicColor = item.aiData.primaryColor || '#6366f1';
@@ -21,11 +23,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const getGenerativeFallback = () => 
     `https://image.pollinations.ai/prompt/official%20key%20visual%20poster%20for%20${encodeURIComponent(item.aiData.title)}%20${item.aiData.mediaType}%20anime%20series%20high%20quality?width=400&height=600&model=flux&nologo=true&seed=${item.createdAt}`;
 
-  const getPlaceholder = () => 
-    `https://placehold.co/400x600/1e293b/white?text=${encodeURIComponent(item.aiData.title)}`;
+  // Helper to check if string is a valid image source (URL or Data URI)
+  const isValidSource = (src?: string) => 
+    src && (src.startsWith('http') || src.startsWith('data:'));
 
-  const initialImage = (item.aiData.coverImage && (item.aiData.coverImage.startsWith('http') || item.aiData.coverImage.startsWith('data:')))
-    ? item.aiData.coverImage
+  const initialImage = isValidSource(item.aiData.coverImage)
+    ? item.aiData.coverImage!
     : getGenerativeFallback();
 
   const [imgSrc, setImgSrc] = useState(initialImage);
@@ -33,12 +36,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   // Sync state if item changes
   useEffect(() => {
     setTracking(item.trackingData);
-    setImgSrc(
-      (item.aiData.coverImage && (item.aiData.coverImage.startsWith('http') || item.aiData.coverImage.startsWith('data:')))
-        ? item.aiData.coverImage
-        : getGenerativeFallback()
-    );
-  }, [item.id]);
+    if (isValidSource(item.aiData.coverImage)) {
+        setImgSrc(item.aiData.coverImage!);
+        setImgHasError(false);
+    } else {
+        setImgSrc(getGenerativeFallback());
+        // Don't set error yet, try generative first
+    }
+  }, [item.id, item.aiData.coverImage]);
 
   useEffect(() => {
     const { watchedEpisodes, totalEpisodesInSeason } = tracking;
@@ -111,10 +116,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   };
 
   const handleImageError = () => {
-    if (imgSrc === item.aiData.coverImage) {
+    if (imgSrc === item.aiData.coverImage && isValidSource(item.aiData.coverImage)) {
+      // If user/AI provided image fails, try generative
       setImgSrc(getGenerativeFallback());
-    } else if (imgSrc !== getPlaceholder()) {
-      setImgSrc(getPlaceholder());
+    } else {
+      // If generative fails, show placeholder div
+      setImgHasError(true);
     }
   };
 
@@ -197,6 +204,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
       const result = e.target?.result as string;
       if (result) {
         setImgSrc(result);
+        setImgHasError(false);
         const newColor = await extractDominantColor(result);
         onUpdate({ 
             ...item, 
@@ -211,18 +219,27 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     reader.readAsDataURL(file);
   };
 
+  const handleShare = () => {
+    const { title } = item.aiData;
+    const { rating, emotionalTags, comment } = tracking;
+    const shareText = `📺 *${title}*\n⭐ Calificación: ${rating || 'Sin calificar'}\n🎭 Mood: ${emotionalTags.join(', ') || 'N/A'}\n📝 "${comment || 'Sin comentarios'}"\n\nTracked with MediaTracker AI`;
+    
+    navigator.clipboard.writeText(shareText);
+    alert("¡Recomendación copiada al portapapeles! Lista para compartir.");
+  };
+
   const triggerFileInput = () => fileInputRef.current?.click();
 
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(item.aiData.mediaType);
 
-  const TypeIcon = () => {
+  const TypeIcon = ({ className = "w-5 h-5" }: { className?: string }) => {
     switch (item.aiData.mediaType) {
-      case 'Anime': return <Tv className="w-5 h-5" />;
+      case 'Anime': return <Tv className={className} />;
       case 'Manhwa': 
-      case 'Manga': return <BookOpen className="w-5 h-5" />;
-      case 'Comic': return <FileText className="w-5 h-5" />;
-      case 'Libro': return <Book className="w-5 h-5" />;
-      default: return <Clapperboard className="w-5 h-5" />;
+      case 'Manga': return <BookOpen className={className} />;
+      case 'Comic': return <FileText className={className} />;
+      case 'Libro': return <Book className={className} />;
+      default: return <Clapperboard className={className} />;
     }
   };
 
@@ -269,12 +286,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-             <img 
-               src={imgSrc}
-               alt={item.aiData.title}
-               onError={handleImageError}
-               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-             />
+             {!imgHasError ? (
+                 <img 
+                   src={imgSrc}
+                   alt={item.aiData.title}
+                   onError={handleImageError}
+                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                 />
+             ) : (
+                 <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-900 p-4 text-center">
+                    <div className="p-4 rounded-full bg-slate-800 mb-2">
+                       <TypeIcon className="w-10 h-10" />
+                    </div>
+                    <span className="text-xs font-medium uppercase tracking-wider">{item.aiData.title}</span>
+                 </div>
+             )}
+
              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white backdrop-blur-sm">
                 <ImagePlus className="w-10 h-10 mb-2" style={{ color: dynamicColor }} />
                 <span className="font-semibold text-sm">Cambiar Portada</span>
@@ -291,12 +318,24 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect}/>
           </div>
 
-          <h2 
-            className="text-2xl font-bold mb-1 leading-tight z-10" 
-            style={{ color: dynamicColor, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
-          >
-              {item.aiData.title}
-          </h2>
+          <div className="flex items-start justify-between gap-2 z-10 mb-1">
+            <h2 
+                className="text-2xl font-bold leading-tight" 
+                style={{ color: dynamicColor, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
+            >
+                {item.aiData.title}
+            </h2>
+            {onDelete && (
+                <button 
+                  onClick={onDelete} 
+                  className="text-slate-500 hover:text-red-500 transition-colors p-1"
+                  title="Eliminar de biblioteca"
+                >
+                    <Trash2 className="w-5 h-5" />
+                </button>
+            )}
+          </div>
+
           {item.aiData.originalTitle && (
             <p className="text-slate-400 text-sm mb-4 italic z-10">{item.aiData.originalTitle}</p>
           )}
@@ -428,15 +467,27 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                       style={{ borderColor: `${dynamicColor}50` }}
                     />
                   </div>
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-slate-400 mb-1">Total {isReadingContent ? 'Existentes' : 'Temp'}</label>
-                    <input 
-                      type="number" min="1"
-                      value={tracking.totalEpisodesInSeason}
-                      onChange={(e) => handleInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)}
-                      className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-1"
-                      style={{ borderColor: `${dynamicColor}30` }}
-                    />
+                  <div className="flex-1 relative">
+                    <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center justify-between">
+                        <span>Total {isReadingContent ? 'Existentes' : 'Temp'}</span>
+                        {!tracking.totalEpisodesInSeason && (
+                            <span className="text-amber-500" title="Dato faltante"><AlertTriangle className="w-3 h-3 inline"/></span>
+                        )}
+                    </label>
+                    <div className="relative">
+                        <input 
+                        type="number" min="1"
+                        value={tracking.totalEpisodesInSeason}
+                        onChange={(e) => handleInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)}
+                        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-1"
+                        style={{ borderColor: !tracking.totalEpisodesInSeason ? '#f59e0b' : `${dynamicColor}30` }}
+                        />
+                        {!tracking.totalEpisodesInSeason && (
+                            <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
+                                <AlertTriangle className="w-4 h-4 text-amber-500 animate-pulse" />
+                            </div>
+                        )}
+                    </div>
                   </div>
                 </div>
 
@@ -485,6 +536,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
               </h3>
               
               <div className="space-y-4 flex-grow flex flex-col">
+                
+                {/* Recommended By Field */}
+                <div>
+                   <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
+                      <Users className="w-3 h-3" /> Recomendado por
+                   </label>
+                   <input 
+                     type="text"
+                     value={tracking.recommendedBy || ''}
+                     onChange={(e) => handleInputChange('recommendedBy', e.target.value)}
+                     className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1"
+                     placeholder="Ej: Laura, r/anime..."
+                     style={{ borderColor: `${dynamicColor}30`, focusRing: dynamicColor }}
+                   />
+                </div>
+
                 <div>
                    <label className="block text-xs font-medium text-slate-400 mb-2">Resumen Emocional</label>
                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
@@ -547,6 +614,16 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                     })}
                   </div>
                 </div>
+                
+                {/* Share Button */}
+                <button 
+                  onClick={handleShare}
+                  className="w-full flex items-center justify-center gap-2 py-2 mt-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-colors"
+                >
+                  <Share2 className="w-3 h-3" />
+                  Copiar Mi Recomendación
+                </button>
+
               </div>
             </div>
           </div>
@@ -556,12 +633,27 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                 <label className="block text-sm font-medium text-slate-300 mb-2">Personajes memorables</label>
                 <div className="space-y-2">
                     <div className="flex flex-wrap gap-2 mb-2 min-h-[32px]">
-                        {getSafeCharacters(tracking.favoriteCharacters).map((char, idx) => (
-                            <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-xs text-white animate-fade-in shadow-sm" style={{ borderColor: `${dynamicColor}40` }}>
-                                {char}
-                                <button onClick={() => removeCharacter(char)} className="hover:text-red-400 text-slate-400 transition-colors"><X className="w-3 h-3" /></button>
-                            </span>
-                        ))}
+                        {getSafeCharacters(tracking.favoriteCharacters).map((char, idx) => {
+                            // Top 5 Visual Hierarchy
+                            const isTop5 = idx < 5;
+                            return (
+                                <span 
+                                  key={idx} 
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs text-white animate-fade-in shadow-sm transition-all ${
+                                      isTop5 ? 'font-bold pl-1.5 pr-2' : 'bg-slate-800 border-slate-700'
+                                  }`}
+                                  style={isTop5 ? { 
+                                      backgroundColor: `${dynamicColor}20`, 
+                                      borderColor: dynamicColor,
+                                      boxShadow: `0 0 5px ${dynamicColor}20` 
+                                  } : { borderColor: `${dynamicColor}40` }}
+                                >
+                                    {isTop5 && <span className="text-[10px] mr-1 opacity-70">#{idx+1}</span>}
+                                    {char}
+                                    <button onClick={() => removeCharacter(char)} className="hover:text-red-400 text-slate-400 transition-colors ml-1"><X className="w-3 h-3" /></button>
+                                </span>
+                            );
+                        })}
                     </div>
                     <input 
                         type="text"
