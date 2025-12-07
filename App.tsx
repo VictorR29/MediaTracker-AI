@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
 import { CompactMediaCard } from './components/CompactMediaCard';
@@ -8,7 +8,7 @@ import { StatsView } from './components/StatsView';
 import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
 import { MediaItem, UserProfile } from './types';
-import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2 } from 'lucide-react';
+import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
@@ -18,6 +18,10 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<'search' | 'library' | 'details' | 'stats'>('search');
   const [dbReady, setDbReady] = useState(false);
+  
+  // User Menu State
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Search Error State
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -241,6 +245,79 @@ export default function App() {
     setCurrentMedia(null);
   };
 
+  // --- DATA MANAGEMENT ---
+  const handleExportData = () => {
+    if (!userProfile) return;
+    const data = {
+        profile: userProfile,
+        library: library,
+        version: 1,
+        exportedAt: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mediatracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setIsUserMenuOpen(false);
+  };
+
+  const triggerImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const content = event.target?.result as string;
+            const data = JSON.parse(content);
+
+            if (!data.profile || !Array.isArray(data.library)) {
+                alert("El archivo no tiene un formato válido de respaldo.");
+                return;
+            }
+
+            if (confirm(`Se importarán ${data.library.length} obras y el perfil de "${data.profile.username}". \n\nEsto sobrescribirá los datos existentes con el mismo ID y combinará los nuevos.`)) {
+                setIsLoading(true);
+                
+                // Update Profile
+                await saveUserProfile(data.profile);
+                setUserProfile(data.profile);
+                applyTheme(data.profile.accentColor);
+
+                // Update Library (Merge/Update strategy)
+                for (const item of data.library) {
+                    await saveMediaItem(item);
+                }
+                
+                // Reload library from DB to ensure sync
+                const updatedLibrary = await getLibrary();
+                setLibrary(updatedLibrary);
+                
+                setIsLoading(false);
+                setIsUserMenuOpen(false);
+                alert("¡Datos importados correctamente!");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Error crítico al procesar el archivo.");
+            setIsLoading(false);
+        }
+    };
+    reader.readAsText(file);
+    // Reset input to allow selecting same file again
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+
   // Filter Logic
   const filteredLibrary = useMemo(() => {
     let result = [...library];
@@ -339,13 +416,52 @@ export default function App() {
             </nav>
 
             {userProfile && (
-              <div className="flex items-center gap-2 pl-4 border-l border-slate-700">
-                 <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center border border-slate-600">
-                    <User className="w-4 h-4 text-slate-400" />
-                 </div>
-                 <span className="text-sm font-medium text-slate-300 hidden sm:block">
-                   {userProfile.username}
-                 </span>
+              <div className="relative pl-4 border-l border-slate-700 ml-2">
+                 <button 
+                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                   className="flex items-center gap-2 hover:bg-slate-800 p-1.5 pr-3 rounded-full transition-colors group"
+                 >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center border border-slate-500 group-hover:border-primary transition-colors shadow-sm">
+                        <User className="w-4 h-4 text-slate-300" />
+                    </div>
+                    <span className="text-sm font-medium text-slate-300 hidden sm:block group-hover:text-white transition-colors">
+                      {userProfile.username}
+                    </span>
+                    <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                 </button>
+
+                 {/* Dropdown Menu */}
+                 {isUserMenuOpen && (
+                    <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)}></div>
+                        <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in py-1">
+                            <div className="px-4 py-3 border-b border-slate-700/50">
+                                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Gestión de Datos</p>
+                            </div>
+                            <button 
+                                onClick={handleExportData}
+                                className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white flex items-center gap-2 transition-colors"
+                            >
+                                <Download className="w-4 h-4" />
+                                Exportar Backup
+                            </button>
+                            <button 
+                                onClick={triggerImport}
+                                className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white flex items-center gap-2 transition-colors"
+                            >
+                                <Upload className="w-4 h-4" />
+                                Importar Backup
+                            </button>
+                        </div>
+                    </>
+                 )}
+                 <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleImportData} 
+                    className="hidden" 
+                    accept=".json" 
+                 />
               </div>
             )}
           </div>
