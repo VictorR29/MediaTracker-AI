@@ -1,3 +1,4 @@
+
 export interface AIWorkData {
   title: string;
   originalTitle?: string;
@@ -31,9 +32,15 @@ export interface MediaItem {
   createdAt: number;
 }
 
+export interface UserPreferences {
+  animeEpisodeDuration: number; // in minutes
+  mangaChapterDuration: number; // in minutes
+}
+
 export interface UserProfile {
   username: string;
   accentColor: string; // e.g. 'indigo', 'purple', 'emerald'
+  preferences?: UserPreferences;
 }
 
 export const EMOTIONAL_TAGS_OPTIONS = [
@@ -59,6 +66,17 @@ export const RATING_OPTIONS = [
   "Malo",
   "Pérdida de tiempo"
 ];
+
+export const RATING_TO_SCORE: Record<string, number> = {
+  "God Tier (Épico memorable)": 10,
+  "Obra Maestra": 9,
+  "Excelente": 8,
+  "Muy Bueno": 7,
+  "Bueno": 6,
+  "Regular": 5,
+  "Malo": 3,
+  "Pérdida de tiempo": 1
+};
 
 export const THEME_COLORS = [
   { name: 'Indigo', value: '99 102 241', hex: '#6366f1' },

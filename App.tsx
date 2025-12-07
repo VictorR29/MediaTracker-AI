@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -37,6 +38,13 @@ export default function App() {
         const items = await getLibrary();
         
         if (profile) {
+          // Ensure preferences exist with defaults if they were missing (migration)
+          if (!profile.preferences) {
+            profile.preferences = {
+                animeEpisodeDuration: 24,
+                mangaChapterDuration: 3
+            };
+          }
           setUserProfile(profile);
           applyTheme(profile.accentColor);
         }
@@ -60,9 +68,20 @@ export default function App() {
   };
 
   const handleOnboardingComplete = async (profile: UserProfile) => {
-    setUserProfile(profile);
+    // Set defaults on onboarding
+    const profileWithPrefs = {
+        ...profile,
+        preferences: { animeEpisodeDuration: 24, mangaChapterDuration: 3 }
+    };
+    setUserProfile(profileWithPrefs);
     applyTheme(profile.accentColor);
-    await saveUserProfile(profile);
+    await saveUserProfile(profileWithPrefs);
+  };
+
+  const handleUpdateUserProfile = async (updatedProfile: UserProfile) => {
+      setUserProfile(updatedProfile);
+      applyTheme(updatedProfile.accentColor);
+      await saveUserProfile(updatedProfile);
   };
 
   const handleSearch = async (query: string) => {
@@ -337,8 +356,8 @@ export default function App() {
           </div>
         )}
 
-        {view === 'stats' && (
-          <StatsView library={library} />
+        {view === 'stats' && userProfile && (
+          <StatsView library={library} userProfile={userProfile} onUpdateProfile={handleUpdateUserProfile} />
         )}
 
         {view === 'details' && currentMedia && (
