@@ -11,6 +11,8 @@ export interface AIWorkData {
   coverImage?: string; // New field for the image URL
   sourceUrls?: { title: string; uri: string }[];
   primaryColor?: string; // Hex code for dynamic theming
+  releaseDate?: string; // New: Release year or date
+  endDate?: string; // New: End year or date
 }
 
 export interface UserTrackingData {
@@ -26,6 +28,7 @@ export interface UserTrackingData {
   recommendedBy?: string; // New field for social aspect
   isSaga?: boolean; // New: For books that are part of a series
   finishedAt?: string; // New: Date string (ISO) for when a movie was watched
+  customLinks?: { id: string; url: string; title?: string }[]; // New: User added links
 }
 
 export interface MediaItem {

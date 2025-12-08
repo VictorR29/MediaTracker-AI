@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Copy, Image as ImageIcon, Calendar } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Copy, Image as ImageIcon, Calendar, Plus, Globe } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -14,6 +14,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const [tracking, setTracking] = useState<UserTrackingData>(item.trackingData);
   const [progressPercent, setProgressPercent] = useState(0);
   const [characterInput, setCharacterInput] = useState('');
+  const [customLinkUrl, setCustomLinkUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [imgHasError, setImgHasError] = useState(false);
@@ -21,8 +22,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   // Use the AI provided color or fall back to a default Indigo-ish color if missing
   const dynamicColor = item.aiData.primaryColor || '#6366f1';
 
-  const getGenerativeFallback = () => 
-    `https://image.pollinations.ai/prompt/official%20key%20visual%20poster%20for%20${encodeURIComponent(item.aiData.title)}%20${item.aiData.mediaType}%20anime%20series%20high%20quality?width=400&height=600&model=flux&nologo=true&seed=${item.createdAt}`;
+  const getPlaceholder = () => 
+    `https://placehold.co/400x600/1e293b/94a3b8?text=${encodeURIComponent(item.aiData.title || 'Sin Imagen')}&font=roboto`;
 
   // Helper to check if string is a valid image source (URL or Data URI)
   const isValidSource = (src?: string) => 
@@ -30,7 +31,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
   const initialImage = isValidSource(item.aiData.coverImage)
     ? item.aiData.coverImage!
-    : getGenerativeFallback();
+    : getPlaceholder();
 
   const [imgSrc, setImgSrc] = useState(initialImage);
 
@@ -45,7 +46,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
         setImgSrc(item.aiData.coverImage!);
         setImgHasError(false);
     } else {
-        setImgSrc(getGenerativeFallback());
+        setImgSrc(getPlaceholder());
     }
   }, [item.id, item.aiData.coverImage]);
 
@@ -151,9 +152,33 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     handleInputChange('favoriteCharacters', current.filter(c => c !== charToRemove));
   };
 
+  // Custom Links Logic
+  const handleAddCustomLink = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!customLinkUrl.trim()) return;
+      
+      let finalUrl = customLinkUrl.trim();
+      if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl;
+
+      const newLink = {
+          id: Date.now().toString(),
+          url: finalUrl,
+          title: new URL(finalUrl).hostname
+      };
+
+      const updatedLinks = [...(tracking.customLinks || []), newLink];
+      handleInputChange('customLinks', updatedLinks);
+      setCustomLinkUrl('');
+  };
+
+  const removeCustomLink = (id: string) => {
+      const updatedLinks = (tracking.customLinks || []).filter(l => l.id !== id);
+      handleInputChange('customLinks', updatedLinks);
+  };
+
   const handleImageError = () => {
     if (imgSrc === item.aiData.coverImage && isValidSource(item.aiData.coverImage)) {
-      setImgSrc(getGenerativeFallback());
+      setImgSrc(getPlaceholder());
     } else {
       setImgHasError(true);
     }
@@ -297,8 +322,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
       
       <div className="md:flex">
         <div 
-          className="md:w-1/3 p-6 flex flex-col relative overflow-hidden"
-          style={{ backgroundColor: '#0f172a' }}
+          className="md:w-1/3 p-6 flex flex-col relative overflow-hidden bg-slate-900"
         >
           <div 
             className="absolute inset-0 pointer-events-none"
@@ -375,8 +399,28 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
           <div className="space-y-3 text-sm text-slate-300 z-10">
              <div>
                 <span className="text-slate-500 font-semibold block text-xs uppercase">Estado Publicación</span>
-                {item.aiData.status}
+                <span className="flex items-center gap-1">
+                   {item.aiData.status}
+                </span>
              </div>
+             {/* Dates Section */}
+             {(item.aiData.releaseDate || item.aiData.endDate) && (
+                <div className="grid grid-cols-2 gap-2">
+                    {item.aiData.releaseDate && (
+                         <div>
+                            <span className="text-slate-500 font-semibold block text-xs uppercase">Estreno</span>
+                            {item.aiData.releaseDate}
+                         </div>
+                    )}
+                    {item.aiData.endDate && (
+                         <div>
+                            <span className="text-slate-500 font-semibold block text-xs uppercase">Finalización</span>
+                            {item.aiData.endDate}
+                         </div>
+                    )}
+                </div>
+             )}
+
              <div>
                 <span className="text-slate-500 font-semibold block text-xs uppercase">Contenido Total</span>
                 {item.aiData.totalContent}
@@ -390,29 +434,79 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                 </div>
              </div>
              
-             {item.aiData.sourceUrls && item.aiData.sourceUrls.length > 0 && (
-               <div className="pt-4 border-t border-slate-700/50">
-                  <span className="text-slate-500 font-semibold block text-xs uppercase mb-1 flex items-center gap-1">
-                    <LinkIcon className="w-3 h-3"/> Fuentes
-                  </span>
-                  <ul className="space-y-1">
-                    {item.aiData.sourceUrls.slice(0, 2).map((source, idx) => (
-                      <li key={idx}>
-                        <a 
-                          href={source.uri} 
-                          target="_blank" 
-                          rel="noreferrer" 
-                          className="text-xs hover:underline truncate block flex items-center gap-1"
-                          style={{ color: dynamicColor }}
+             {/* Sources & Links Section */}
+             <div className="pt-4 border-t border-slate-700/50 space-y-4">
+               {/* Official Sources */}
+               {item.aiData.sourceUrls && item.aiData.sourceUrls.length > 0 && (
+                  <div>
+                    <span className="text-slate-500 font-semibold block text-xs uppercase mb-1 flex items-center gap-1">
+                        <LinkIcon className="w-3 h-3"/> Fuentes Info
+                    </span>
+                    <ul className="space-y-1">
+                        {item.aiData.sourceUrls.slice(0, 2).map((source, idx) => (
+                        <li key={idx}>
+                            <a 
+                            href={source.uri} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="text-xs hover:underline truncate block flex items-center gap-1 opacity-70 hover:opacity-100"
+                            style={{ color: dynamicColor }}
+                            >
+                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{source.title}</span>
+                            </a>
+                        </li>
+                        ))}
+                    </ul>
+                  </div>
+               )}
+
+               {/* Custom Links Section */}
+               <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
+                   <span className="text-slate-400 font-bold block text-xs uppercase mb-2 flex items-center gap-1">
+                       <Globe className="w-3 h-3"/> Mis Enlaces
+                   </span>
+                   
+                   <ul className="space-y-2 mb-2">
+                       {tracking.customLinks?.map((link) => (
+                           <li key={link.id} className="flex items-center justify-between group/link">
+                               <a 
+                                 href={link.url} 
+                                 target="_blank" 
+                                 rel="noreferrer"
+                                 className="text-xs text-slate-300 hover:text-white truncate flex items-center gap-1 flex-1"
+                               >
+                                   <ExternalLink className="w-3 h-3 flex-shrink-0 text-slate-500" />
+                                   <span className="truncate" title={link.url}>{link.title || 'Enlace'}</span>
+                               </a>
+                               <button 
+                                 onClick={() => removeCustomLink(link.id)}
+                                 className="opacity-0 group-hover/link:opacity-100 text-slate-500 hover:text-red-400 transition-all p-1"
+                               >
+                                   <X className="w-3 h-3" />
+                               </button>
+                           </li>
+                       ))}
+                   </ul>
+
+                   <form onSubmit={handleAddCustomLink} className="flex gap-1 relative">
+                        <input 
+                            type="text" 
+                            placeholder="Añadir URL..." 
+                            className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                            value={customLinkUrl}
+                            onChange={(e) => setCustomLinkUrl(e.target.value)}
+                        />
+                        <button 
+                            type="submit"
+                            disabled={!customLinkUrl.trim()}
+                            className="bg-slate-700 hover:bg-slate-600 text-white rounded px-2 flex items-center justify-center disabled:opacity-50"
                         >
-                          <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{source.title}</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
+                            <Plus className="w-3 h-3" />
+                        </button>
+                   </form>
                </div>
-             )}
+             </div>
           </div>
         </div>
 

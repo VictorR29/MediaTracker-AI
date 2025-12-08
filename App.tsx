@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -453,7 +454,7 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 pt-8 w-full flex-grow">
+      <main className="max-w-7xl mx-auto px-4 pt-8 w-full flex-grow pb-32">
         
         {view === 'search' && (
           <div className="flex flex-col items-center">
@@ -579,7 +580,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="max-w-7xl mx-auto px-4 mt-10 text-center text-slate-600 text-sm py-8 border-t border-slate-800/50 w-full">
+      <footer className="fixed bottom-0 left-0 w-full z-30 bg-surface/90 backdrop-blur-md border-t border-slate-800 py-6 text-center text-slate-600 text-sm">
         <p>Potenciado por Gemini 2.5 Flash & Google Search Grounding</p>
       </footer>
 

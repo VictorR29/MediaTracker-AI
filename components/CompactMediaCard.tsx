@@ -43,11 +43,8 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
     }
   };
 
-  const getGenerativeFallback = () => 
-    `https://image.pollinations.ai/prompt/official%20key%20visual%20poster%20for%20${encodeURIComponent(aiData.title)}%20${aiData.mediaType}%20anime%20series%20high%20quality?width=300&height=450&nologo=true&model=flux&seed=${item.createdAt}`;
-  
   const getPlaceholder = () => 
-    `https://placehold.co/300x450/1e293b/white?text=${encodeURIComponent(aiData.title)}`;
+    `https://placehold.co/300x450/1e293b/94a3b8?text=${encodeURIComponent(aiData.title || 'Sin Imagen')}&font=roboto`;
 
   // Helper to check if string is a valid image source (URL or Data URI)
   const isValidSource = (src?: string) => 
@@ -56,7 +53,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
   // Determine initial image
   const initialImage = isValidSource(aiData.coverImage)
     ? aiData.coverImage!
-    : getGenerativeFallback();
+    : getPlaceholder();
 
   const [imgSrc, setImgSrc] = useState(initialImage);
 
@@ -65,17 +62,13 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
     if (isValidSource(aiData.coverImage)) {
       setImgSrc(aiData.coverImage!);
     } else {
-      setImgSrc(getGenerativeFallback());
+      setImgSrc(getPlaceholder());
     }
   }, [aiData.coverImage, aiData.title]);
 
   const handleImageError = () => {
-    // If the current failed image was the AI provided one (or user uploaded), try the generative one
-    if (imgSrc === aiData.coverImage) {
-      setImgSrc(getGenerativeFallback());
-    } 
-    // If the generative one failed, fallback to placeholder text
-    else if (imgSrc !== getPlaceholder()) {
+    // If current image fails, fallback to placeholder
+    if (imgSrc !== getPlaceholder()) {
       setImgSrc(getPlaceholder());
     }
   };
