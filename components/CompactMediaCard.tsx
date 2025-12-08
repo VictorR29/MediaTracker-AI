@@ -1,7 +1,8 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { MediaItem } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check } from 'lucide-react';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
@@ -18,6 +19,17 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
   const isMovie = aiData.mediaType === 'Pelicula';
   const isBook = aiData.mediaType === 'Libro';
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
+
+  // Return Date Logic
+  const isPaused = trackingData.status === 'En Pausa';
+  const returnDate = trackingData.scheduledReturnDate;
+  let isReturnDue = false;
+  if (isPaused && returnDate) {
+      const today = new Date().toISOString().split('T')[0];
+      if (today >= returnDate) {
+          isReturnDue = true;
+      }
+  }
 
   // Calculate progress
   let progressPercent = 0;
@@ -104,8 +116,14 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
   return (
     <div 
       onClick={onClick}
-      className="group bg-surface rounded-xl overflow-hidden shadow-lg border border-slate-800 hover:border-opacity-50 cursor-pointer transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-2xl relative"
+      className={`group bg-surface rounded-xl overflow-hidden shadow-lg border border-slate-800 hover:border-opacity-50 cursor-pointer transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-2xl relative ${isReturnDue ? 'ring-2 ring-red-500 shadow-red-900/40' : ''}`}
     >
+      {isReturnDue && (
+          <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-[10px] font-bold px-2 py-1 text-center z-30 flex items-center justify-center gap-1 shadow-md animate-pulse">
+              <Bell className="w-3 h-3 fill-current" /> ¡Hora de Volver!
+          </div>
+      )}
+
       <div className="relative aspect-[2/3] overflow-hidden bg-slate-900">
         <img 
           src={imgSrc} 

@@ -1,7 +1,8 @@
 
+
 import React, { useEffect, useState, useRef } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -587,6 +588,21 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                     <option value="Descartado">Descartado</option>
                   </select>
                 </div>
+
+                {/* Scheduled Return Date (Only when Paused) */}
+                {tracking.status === 'En Pausa' && (
+                    <div className="animate-fade-in-up mt-2 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                        <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
+                            <Bell className="w-3 h-3 text-yellow-500" /> Fecha de Retorno Programada
+                        </label>
+                        <input 
+                            type="date"
+                            value={tracking.scheduledReturnDate || ''}
+                            onChange={(e) => handleInputChange('scheduledReturnDate', e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:ring-1 focus:border-primary transition-colors"
+                        />
+                    </div>
+                )}
 
                 {/* MOVIE LOGIC */}
                 {isMovie && (

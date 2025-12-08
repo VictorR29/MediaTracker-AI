@@ -1,4 +1,5 @@
 
+
 export interface AIWorkData {
   title: string;
   originalTitle?: string;
@@ -29,6 +30,7 @@ export interface UserTrackingData {
   isSaga?: boolean; // New: For books that are part of a series
   finishedAt?: string; // New: Date string (ISO) for when a movie was watched
   customLinks?: { id: string; url: string; title?: string }[]; // New: User added links
+  scheduledReturnDate?: string; // New: Scheduled return date for "En Pausa" items
 }
 
 export interface MediaItem {
