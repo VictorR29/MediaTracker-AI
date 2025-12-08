@@ -8,10 +8,11 @@ import { LoginScreen } from './components/LoginScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { LibraryFilters, FilterState } from './components/LibraryFilters';
 import { StatsView } from './components/StatsView';
+import { DiscoveryView } from './components/DiscoveryView'; // Import DiscoveryView
 import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
 import { MediaItem, UserProfile } from './types';
-import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings } from 'lucide-react';
+import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
@@ -19,7 +20,7 @@ export default function App() {
   const [currentMedia, setCurrentMedia] = useState<MediaItem | null>(null);
   const [library, setLibrary] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [view, setView] = useState<'search' | 'library' | 'details' | 'stats'>('search');
+  const [view, setView] = useState<'search' | 'library' | 'details' | 'stats' | 'discovery'>('search');
   const [dbReady, setDbReady] = useState(false);
   
   // App Lock State
@@ -410,6 +411,13 @@ export default function App() {
                 <span className="hidden sm:inline">Biblioteca</span>
               </button>
               <button 
+                onClick={() => setView('discovery')}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${view === 'discovery' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-white'}`}
+              >
+                <Compass className="w-4 h-4" />
+                <span className="hidden sm:inline">Descubrir</span>
+              </button>
+              <button 
                 onClick={() => setView('stats')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${view === 'stats' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-white'}`}
               >
@@ -568,6 +576,14 @@ export default function App() {
               </div>
             )}
           </div>
+        )}
+
+        {view === 'discovery' && userProfile && (
+           <DiscoveryView 
+              library={library} 
+              apiKey={userProfile.apiKey} 
+              onSelectRecommendation={handleSearch}
+           />
         )}
 
         {view === 'stats' && userProfile && (

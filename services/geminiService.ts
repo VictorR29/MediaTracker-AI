@@ -85,3 +85,69 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
     };
   }
 };
+
+export interface RecommendationResult {
+  title: string;
+  synopsis: string;
+  reason: string;
+  mediaType: string;
+}
+
+export const getRecommendations = async (
+  likedTitles: string[],
+  topGenres: string[],
+  excludedTitles: string[],
+  mediaType: string,
+  apiKey: string
+): Promise<RecommendationResult[]> => {
+  const ai = new GoogleGenAI({ apiKey });
+  const modelId = "gemini-2.5-flash";
+
+  const prompt = `
+    Act as a sophisticated media recommendation engine.
+    
+    USER PROFILE:
+    - Highly Rated Titles: ${likedTitles.slice(0, 20).join(", ") || "None yet"}
+    - Favorite Genres: ${topGenres.join(", ") || "General High Quality"}
+    
+    TASK:
+    Recommend 4 NEW ${mediaType} titles that perfectly match this user's taste.
+    
+    CONSTRAINTS:
+    1. EXCLUDE these titles (already in library): ${excludedTitles.join(", ")}.
+    2. Focus on hidden gems or highly acclaimed masterpieces that match the mood of the liked titles.
+    3. Ensure the recommendations are actually of type "${mediaType}".
+    
+    OUTPUT FORMAT:
+    Return a strict JSON array of objects. Do not use Markdown.
+    Structure:
+    [
+      {
+        "title": "Title Name",
+        "synopsis": "One sentence summary.",
+        "reason": "Why this specific user would like it based on their history.",
+        "mediaType": "${mediaType}"
+      }
+    ]
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelId,
+      contents: prompt,
+    });
+
+    const text = response.text || "";
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    } else {
+      console.warn("Could not parse recommendations JSON", text);
+      return [];
+    }
+  } catch (error) {
+    console.error("Recommendation Error:", error);
+    return [];
+  }
+};
