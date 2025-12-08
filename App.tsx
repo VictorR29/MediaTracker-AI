@@ -158,7 +158,7 @@ export default function App() {
           currentSeason: 1,
           totalSeasons: 1, 
           watchedEpisodes: 0,
-          totalEpisodesInSeason: 12, 
+          totalEpisodesInSeason: aiData.mediaType === 'Pelicula' ? 1 : 12, 
           emotionalTags: [],
           favoriteCharacters: [],
           rating: '',

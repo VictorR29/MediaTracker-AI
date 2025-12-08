@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
 import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film } from 'lucide-react';
@@ -27,6 +28,12 @@ interface StatsData {
   bookChapters: number;
   visualTimeDisplay: string;
   readingTimeDisplay: string;
+  // Consumed Items Counts
+  consumedAnimes: number;
+  consumedSeries: number;
+  consumedMovies: number;
+  consumedManhwas: number;
+  consumedBooks: number;
 }
 
 export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUpdateProfile }) => {
@@ -126,7 +133,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     // Counters
     let animeEpisodes = 0;
     let seriesEpisodes = 0;
-    let moviesWatched = 0;
+    let moviesWatched = 0; // Total movie minutes / duration (or direct count)
     let readingChapters = 0; // Manhwa, Manga, Comic
     let bookChapters = 0;
 
@@ -139,38 +146,40 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     library.forEach(item => {
         const type = item.aiData.mediaType;
         const units = item.trackingData.watchedEpisodes; // "watchedEpisodes" stores progress
+        // For movies, if status is 'Completado', units might be 0 or 1 depending on logic, but we can trust progress.
+        // Or if logic changed to 1.
 
-        if (units > 0) {
+        // Count logic
+        if (units > 0 || (type === 'Pelicula' && item.trackingData.status === 'Completado')) {
             let itemTime = 0;
+            const effectiveUnits = (type === 'Pelicula' && item.trackingData.status === 'Completado') ? 1 : units;
             
             // Visual
             if (type === 'Anime') {
-                animeEpisodes += units;
-                itemTime = units * animeMin;
+                animeEpisodes += effectiveUnits;
+                itemTime = effectiveUnits * animeMin;
                 visualMinutes += itemTime;
             } else if (type === 'Serie') {
-                seriesEpisodes += units;
-                itemTime = units * animeMin; // Using same pref for Series/Anime based on simplified user model
+                seriesEpisodes += effectiveUnits;
+                itemTime = effectiveUnits * animeMin; 
                 visualMinutes += itemTime;
             } else if (type === 'Pelicula') {
-                // If it's a movie, usually watchedEpisodes is 1 or 0.
-                // If units > 0, we count it.
-                moviesWatched += units; 
-                itemTime = units * movieMin;
+                // effectiveUnits is usually 1 here
+                moviesWatched += effectiveUnits; 
+                itemTime = effectiveUnits * movieMin;
                 visualMinutes += itemTime;
             } 
             // Reading
             else if (['Manhwa', 'Manga', 'Comic'].includes(type)) {
-                readingChapters += units;
-                itemTime = units * mangaMin;
+                readingChapters += effectiveUnits;
+                itemTime = effectiveUnits * mangaMin;
                 readingMinutes += itemTime;
             } else if (type === 'Libro') {
-                bookChapters += units;
-                itemTime = units * bookMin;
+                bookChapters += effectiveUnits;
+                itemTime = effectiveUnits * bookMin;
                 readingMinutes += itemTime;
             } else {
-                // Other fallback
-                itemTime = units * 10; // Unknown
+                itemTime = effectiveUnits * 10; // Unknown
             }
 
             if (itemTime > maxTimeItem.time) {
@@ -178,6 +187,17 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
             }
         }
     });
+
+    // Helper to count "Consumed" items (at least started or completed)
+    const countConsumed = (types: string[]) => 
+        library.filter(i => types.includes(i.aiData.mediaType) && (i.trackingData.watchedEpisodes > 0 || i.trackingData.status === 'Completado')).length;
+
+    const consumedAnimes = countConsumed(['Anime']);
+    const consumedSeries = countConsumed(['Serie']);
+    const consumedMovies = countConsumed(['Pelicula']);
+    const consumedManhwas = countConsumed(['Manhwa', 'Manga', 'Comic']);
+    const consumedBooks = countConsumed(['Libro']);
+
 
     const formatTime = (totalMins: number) => {
         const days = Math.floor(totalMins / (24 * 60));
@@ -198,7 +218,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         // Granular
         animeEpisodes, seriesEpisodes, moviesWatched, readingChapters, bookChapters,
         visualTimeDisplay: formatTime(visualMinutes),
-        readingTimeDisplay: formatTime(readingMinutes)
+        readingTimeDisplay: formatTime(readingMinutes),
+        consumedAnimes, consumedSeries, consumedMovies, consumedManhwas, consumedBooks
     };
   }, [library, userProfile.preferences]);
 
@@ -256,21 +277,27 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 <div className="space-y-3 relative z-10">
                     <div className="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
                         <span className="text-sm text-slate-300 flex items-center gap-2">
-                            <Tv className="w-4 h-4 text-slate-500"/> Episodios Anime
+                            <Tv className="w-4 h-4 text-slate-500"/> Animes
                         </span>
-                        <span className="font-bold text-white">{stats.animeEpisodes}</span>
+                        <div className="text-right">
+                           <span className="font-bold text-white block leading-none">{stats.consumedAnimes} <span className="text-[10px] text-slate-500 font-normal">obras</span></span>
+                           <span className="text-[10px] text-slate-500">{stats.animeEpisodes} caps</span>
+                        </div>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
                         <span className="text-sm text-slate-300 flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-slate-500"/> Episodios Series
+                            <Layers className="w-4 h-4 text-slate-500"/> Series
                         </span>
-                        <span className="font-bold text-white">{stats.seriesEpisodes}</span>
+                        <div className="text-right">
+                           <span className="font-bold text-white block leading-none">{stats.consumedSeries} <span className="text-[10px] text-slate-500 font-normal">obras</span></span>
+                           <span className="text-[10px] text-slate-500">{stats.seriesEpisodes} caps</span>
+                        </div>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
                         <span className="text-sm text-slate-300 flex items-center gap-2">
                             <Film className="w-4 h-4 text-slate-500"/> Películas
                         </span>
-                        <span className="font-bold text-white">{stats.moviesWatched}</span>
+                        <span className="font-bold text-white">{stats.consumedMovies} <span className="text-[10px] text-slate-500 font-normal">vistas</span></span>
                     </div>
                 </div>
            </div>
@@ -296,13 +323,19 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                         <span className="text-sm text-slate-300 flex items-center gap-2">
                             <BookOpen className="w-4 h-4 text-slate-500"/> Manhwa/Manga
                         </span>
-                        <span className="font-bold text-white">{stats.readingChapters} <span className="text-[10px] text-slate-500 font-normal">caps</span></span>
+                        <div className="text-right">
+                           <span className="font-bold text-white block leading-none">{stats.consumedManhwas} <span className="text-[10px] text-slate-500 font-normal">obras</span></span>
+                           <span className="text-[10px] text-slate-500">{stats.readingChapters} caps</span>
+                        </div>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
                         <span className="text-sm text-slate-300 flex items-center gap-2">
                             <BookOpen className="w-4 h-4 text-slate-500"/> Libros/Novelas
                         </span>
-                        <span className="font-bold text-white">{stats.bookChapters} <span className="text-[10px] text-slate-500 font-normal">caps</span></span>
+                        <div className="text-right">
+                           <span className="font-bold text-white block leading-none">{stats.consumedBooks} <span className="text-[10px] text-slate-500 font-normal">obras</span></span>
+                           <span className="text-[10px] text-slate-500">{stats.bookChapters} págs</span>
+                        </div>
                     </div>
                      {/* Spacer to align heights if needed */}
                      <div className="h-[38px] opacity-0"></div>

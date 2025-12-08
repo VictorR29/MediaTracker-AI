@@ -108,6 +108,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
           watchedEpisodes: isCompleted ? 0 : 1,
           totalEpisodesInSeason: 1
       };
+      // If completing, set date to today if empty
+      if (!isCompleted && !tracking.finishedAt) {
+          updated.finishedAt = new Date().toISOString().split('T')[0];
+      }
       setTracking(updated);
       onUpdate({ ...item, trackingData: updated });
   };
