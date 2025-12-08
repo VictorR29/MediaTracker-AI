@@ -37,6 +37,7 @@ export interface MediaItem {
 
 export interface UserPreferences {
   animeEpisodeDuration: number; // in minutes
+  seriesEpisodeDuration: number; // in minutes
   movieDuration: number; // in minutes
   mangaChapterDuration: number; // in minutes
   bookChapterDuration: number; // in minutes

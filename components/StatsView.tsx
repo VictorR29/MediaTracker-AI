@@ -39,6 +39,7 @@ interface StatsData {
 export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUpdateProfile }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [animeDuration, setAnimeDuration] = useState(userProfile.preferences?.animeEpisodeDuration || 24);
+  const [seriesDuration, setSeriesDuration] = useState(userProfile.preferences?.seriesEpisodeDuration || 45);
   const [movieDuration, setMovieDuration] = useState(userProfile.preferences?.movieDuration || 90);
   const [mangaDuration, setMangaDuration] = useState(userProfile.preferences?.mangaChapterDuration || 3);
   const [bookDuration, setBookDuration] = useState(userProfile.preferences?.bookChapterDuration || 15);
@@ -48,6 +49,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
           ...userProfile,
           preferences: {
               animeEpisodeDuration: animeDuration,
+              seriesEpisodeDuration: seriesDuration,
               movieDuration: movieDuration,
               mangaChapterDuration: mangaDuration,
               bookChapterDuration: bookDuration
@@ -126,6 +128,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
     // --- Personal Recap (Granular) Logic ---
     const animeMin = userProfile.preferences?.animeEpisodeDuration || 24;
+    const seriesMin = userProfile.preferences?.seriesEpisodeDuration || 45;
     const movieMin = userProfile.preferences?.movieDuration || 90;
     const mangaMin = userProfile.preferences?.mangaChapterDuration || 3;
     const bookMin = userProfile.preferences?.bookChapterDuration || 15;
@@ -161,7 +164,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 visualMinutes += itemTime;
             } else if (type === 'Serie') {
                 seriesEpisodes += effectiveUnits;
-                itemTime = effectiveUnits * animeMin; 
+                itemTime = effectiveUnits * seriesMin; 
                 visualMinutes += itemTime;
             } else if (type === 'Pelicula') {
                 // effectiveUnits is usually 1 here
@@ -491,10 +494,18 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                            <label className="block text-xs font-bold text-indigo-400 uppercase tracking-wider">Visual</label>
                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs text-slate-400 mb-1">Episodio Anime/Serie</label>
+                                    <label className="block text-xs text-slate-400 mb-1">Episodio Anime</label>
                                     <input 
                                         type="number" min="1" value={animeDuration}
                                         onChange={(e) => setAnimeDuration(Number(e.target.value))}
+                                        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white outline-none focus:border-indigo-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1">Episodio Serie</label>
+                                    <input 
+                                        type="number" min="1" value={seriesDuration}
+                                        onChange={(e) => setSeriesDuration(Number(e.target.value))}
                                         className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white outline-none focus:border-indigo-500"
                                     />
                                 </div>

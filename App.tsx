@@ -57,6 +57,7 @@ export default function App() {
           if (!profile.preferences) {
             profile.preferences = {
                 animeEpisodeDuration: 24,
+                seriesEpisodeDuration: 45,
                 mangaChapterDuration: 3,
                 movieDuration: 90,
                 bookChapterDuration: 15
@@ -64,6 +65,7 @@ export default function App() {
           } else {
              if (profile.preferences.movieDuration === undefined) profile.preferences.movieDuration = 90;
              if (profile.preferences.bookChapterDuration === undefined) profile.preferences.bookChapterDuration = 15;
+             if (profile.preferences.seriesEpisodeDuration === undefined) profile.preferences.seriesEpisodeDuration = 45;
           }
 
           // Check for missing apiKey (migration from old version)
@@ -104,6 +106,7 @@ export default function App() {
         ...profile,
         preferences: { 
             animeEpisodeDuration: 24, 
+            seriesEpisodeDuration: 45,
             mangaChapterDuration: 3,
             movieDuration: 90,
             bookChapterDuration: 15
