@@ -43,6 +43,8 @@ export interface UserPreferences {
 export interface UserProfile {
   username: string;
   accentColor: string; // e.g. 'indigo', 'purple', 'emerald'
+  apiKey: string; // User provided API Key
+  password?: string; // Optional access password (simple hash or plain for this demo)
   preferences?: UserPreferences;
 }
 

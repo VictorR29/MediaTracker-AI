@@ -1,14 +1,17 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
 import { CompactMediaCard } from './components/CompactMediaCard';
 import { Onboarding } from './components/Onboarding';
+import { LoginScreen } from './components/LoginScreen';
+import { SettingsModal } from './components/SettingsModal';
 import { LibraryFilters, FilterState } from './components/LibraryFilters';
 import { StatsView } from './components/StatsView';
 import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
 import { MediaItem, UserProfile } from './types';
-import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown } from 'lucide-react';
+import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
@@ -19,9 +22,12 @@ export default function App() {
   const [view, setView] = useState<'search' | 'library' | 'details' | 'stats'>('search');
   const [dbReady, setDbReady] = useState(false);
   
+  // App Lock State
+  const [isLocked, setIsLocked] = useState(false);
+
   // User Menu State
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Search Error State
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -47,7 +53,7 @@ export default function App() {
         const items = await getLibrary();
         
         if (profile) {
-          // Ensure preferences exist with defaults if they were missing (migration)
+          // Check for migration or missing prefs
           if (!profile.preferences) {
             profile.preferences = {
                 animeEpisodeDuration: 24,
@@ -56,12 +62,22 @@ export default function App() {
                 bookChapterDuration: 15
             };
           } else {
-             // Migration for existing preferences without new fields
              if (profile.preferences.movieDuration === undefined) profile.preferences.movieDuration = 90;
              if (profile.preferences.bookChapterDuration === undefined) profile.preferences.bookChapterDuration = 15;
           }
+
+          // Check for missing apiKey (migration from old version)
+          if (!profile.apiKey) {
+              profile.apiKey = ""; // Will prompt user or fail gracefully
+          }
+
           setUserProfile(profile);
           applyTheme(profile.accentColor);
+
+          // Lock if password exists
+          if (profile.password) {
+              setIsLocked(true);
+          }
         }
         
         setLibrary(items);
@@ -98,6 +114,14 @@ export default function App() {
     await saveUserProfile(profileWithPrefs);
   };
 
+  const handleUnlock = (passwordAttempt: string) => {
+      if (userProfile && userProfile.password === passwordAttempt) {
+          setIsLocked(false);
+          return true;
+      }
+      return false;
+  };
+
   const handleUpdateUserProfile = async (updatedProfile: UserProfile) => {
       setUserProfile(updatedProfile);
       applyTheme(updatedProfile.accentColor);
@@ -105,17 +129,22 @@ export default function App() {
   };
 
   const handleSearch = async (query: string) => {
+    if (!userProfile?.apiKey) {
+        setSearchError("No tienes una API Key configurada. Ve a Configuración.");
+        return;
+    }
+
     setIsLoading(true);
     setCurrentMedia(null);
     setSearchError(null);
     setView('search');
 
     try {
-      const aiData = await searchMediaInfo(query);
+      const aiData = await searchMediaInfo(query, userProfile.apiKey);
       
       // Check for soft failure/generic fallback
       if (aiData.synopsis.includes("No se pudo obtener información automática")) {
-         setSearchError("No se encontraron resultados precisos. ¿Seguro que está bien escrito?");
+         setSearchError(aiData.synopsis); // Use the message returned by service
          setIsLoading(false);
          return;
       }
@@ -127,9 +156,9 @@ export default function App() {
         trackingData: {
           status: 'Viendo/Leyendo',
           currentSeason: 1,
-          totalSeasons: 1, // Default assumption
+          totalSeasons: 1, 
           watchedEpisodes: 0,
-          totalEpisodesInSeason: 12, // Default guess
+          totalEpisodesInSeason: 12, 
           emotionalTags: [],
           favoriteCharacters: [],
           rating: '',
@@ -149,29 +178,21 @@ export default function App() {
 
   const handleUpdateMedia = async (updatedItem: MediaItem) => {
     setCurrentMedia(updatedItem);
-    
-    // Update local state
     const itemExists = library.some(i => i.id === updatedItem.id);
     if (itemExists) {
         setLibrary(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
     }
-    
-    // Persist to DB if it's already in library or if we are actively saving it
     if (itemExists) {
        await saveMediaItem(updatedItem);
     }
   };
 
-  // Delete Logic
-  const handleDeleteRequest = (item: MediaItem) => {
-      setDeleteTarget(item);
-  };
+  const handleDeleteRequest = (item: MediaItem) => setDeleteTarget(item);
 
   const confirmDelete = async () => {
       if (deleteTarget) {
           await deleteMediaItem(deleteTarget.id);
           setLibrary(prev => prev.filter(i => i.id !== deleteTarget.id));
-          
           if (currentMedia?.id === deleteTarget.id) {
               setView('library');
               setCurrentMedia(null);
@@ -180,51 +201,33 @@ export default function App() {
       }
   };
 
-  const cancelDelete = () => {
-      setDeleteTarget(null);
-  };
-
+  const cancelDelete = () => setDeleteTarget(null);
 
   const handleQuickIncrement = async (item: MediaItem) => {
     const { trackingData, aiData } = item;
     const isSeries = ['Anime', 'Serie'].includes(aiData.mediaType);
-    
     let updatedTracking = { ...trackingData };
     
-    // Check if ready to complete season/series (Current watched >= Total)
     if (trackingData.totalEpisodesInSeason > 0 && trackingData.watchedEpisodes >= trackingData.totalEpisodesInSeason) {
-        // Complete Logic
         if (isSeries) {
-            // If it's the last season, complete the work
             if (trackingData.totalSeasons > 0 && trackingData.currentSeason >= trackingData.totalSeasons) {
                 updatedTracking.status = 'Completado';
             } else {
-                // Otherwise move to next season
                 updatedTracking.currentSeason += 1;
                 updatedTracking.watchedEpisodes = 0;
                 updatedTracking.status = 'Viendo/Leyendo';
             }
         } else {
-             // For reading or single season stuff, just mark complete
              updatedTracking.status = 'Completado';
         }
     } else {
-        // Simple Increment
         updatedTracking.watchedEpisodes += 1;
     }
 
     const updatedItem = { ...item, trackingData: updatedTracking };
-    
-    // Update Library State
     setLibrary(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
-    
-    // Persist
     await saveMediaItem(updatedItem);
-    
-    // Also update currentMedia if open (though this is mostly for library view)
-    if (currentMedia && currentMedia.id === updatedItem.id) {
-        setCurrentMedia(updatedItem);
-    }
+    if (currentMedia && currentMedia.id === updatedItem.id) setCurrentMedia(updatedItem);
   };
 
   const addToLibrary = async () => {
@@ -240,11 +243,6 @@ export default function App() {
     setView('details');
   };
 
-  const backToLibrary = () => {
-    setView('library');
-    setCurrentMedia(null);
-  };
-
   // --- DATA MANAGEMENT ---
   const handleExportData = () => {
     if (!userProfile) return;
@@ -254,7 +252,6 @@ export default function App() {
         version: 1,
         exportedAt: new Date().toISOString()
     };
-    
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -263,17 +260,9 @@ export default function App() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setIsUserMenuOpen(false);
   };
 
-  const triggerImport = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleImportData = (file: File) => {
     const reader = new FileReader();
     reader.onload = async (event) => {
         try {
@@ -285,25 +274,24 @@ export default function App() {
                 return;
             }
 
-            if (confirm(`Se importarán ${data.library.length} obras y el perfil de "${data.profile.username}". \n\nEsto sobrescribirá los datos existentes con el mismo ID y combinará los nuevos.`)) {
+            if (confirm(`Se importarán ${data.library.length} obras y el perfil de "${data.profile.username}". \n\nEsto sobrescribirá los datos existentes.`)) {
                 setIsLoading(true);
-                
-                // Update Profile
                 await saveUserProfile(data.profile);
                 setUserProfile(data.profile);
                 applyTheme(data.profile.accentColor);
+                
+                // If the new profile has a password, we might need to decide whether to lock or not.
+                // For now, let's keep it unlocked until next reload or explicit lock.
 
-                // Update Library (Merge/Update strategy)
                 for (const item of data.library) {
                     await saveMediaItem(item);
                 }
                 
-                // Reload library from DB to ensure sync
                 const updatedLibrary = await getLibrary();
                 setLibrary(updatedLibrary);
-                
                 setIsLoading(false);
                 setIsUserMenuOpen(false);
+                setIsSettingsOpen(false);
                 alert("¡Datos importados correctamente!");
             }
         } catch (error) {
@@ -313,55 +301,30 @@ export default function App() {
         }
     };
     reader.readAsText(file);
-    // Reset input to allow selecting same file again
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
 
   // Filter Logic
   const filteredLibrary = useMemo(() => {
     let result = [...library];
-
-    // Filter by Query
     if (filters.query.trim()) {
       const q = filters.query.toLowerCase();
       result = result.filter(item => item.aiData.title.toLowerCase().includes(q));
     }
+    if (filters.type !== 'All') result = result.filter(item => item.aiData.mediaType === filters.type);
+    if (filters.status !== 'All') result = result.filter(item => item.trackingData.status === filters.status);
+    if (filters.rating !== 'All') result = result.filter(item => item.trackingData.rating === filters.rating);
 
-    // Filter by Type
-    if (filters.type !== 'All') {
-      result = result.filter(item => item.aiData.mediaType === filters.type);
-    }
-
-    // Filter by Status
-    if (filters.status !== 'All') {
-      result = result.filter(item => item.trackingData.status === filters.status);
-    }
-
-    // Filter by Rating
-    if (filters.rating !== 'All') {
-      result = result.filter(item => item.trackingData.rating === filters.rating);
-    }
-
-    // Sort
     result.sort((a, b) => {
       switch (filters.sortBy) {
-        case 'title':
-          return a.aiData.title.localeCompare(b.aiData.title);
+        case 'title': return a.aiData.title.localeCompare(b.aiData.title);
         case 'progress':
-          const progA = a.trackingData.totalEpisodesInSeason > 0 
-            ? (a.trackingData.watchedEpisodes / a.trackingData.totalEpisodesInSeason) 
-            : 0;
-          const progB = b.trackingData.totalEpisodesInSeason > 0 
-            ? (b.trackingData.watchedEpisodes / b.trackingData.totalEpisodesInSeason) 
-            : 0;
+          const progA = a.trackingData.totalEpisodesInSeason > 0 ? (a.trackingData.watchedEpisodes / a.trackingData.totalEpisodesInSeason) : 0;
+          const progB = b.trackingData.totalEpisodesInSeason > 0 ? (b.trackingData.watchedEpisodes / b.trackingData.totalEpisodesInSeason) : 0;
           return progB - progA;
-        case 'updated':
-        default:
-          return b.createdAt - a.createdAt; 
+        case 'updated': default: return b.createdAt - a.createdAt; 
       }
     });
-
     return result;
   }, [library, filters]);
 
@@ -373,10 +336,28 @@ export default function App() {
     );
   }
 
+  // --- RENDER GATES ---
+
+  if (!userProfile) {
+      return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
+
+  if (isLocked) {
+      return <LoginScreen onUnlock={handleUnlock} />;
+  }
+
   return (
     <div className="min-h-screen bg-background text-slate-200 font-sans selection:bg-primary selection:text-white pb-20">
       
-      {!userProfile && <Onboarding onComplete={handleOnboardingComplete} />}
+      {/* Settings Modal */}
+      <SettingsModal 
+         isOpen={isSettingsOpen} 
+         onClose={() => setIsSettingsOpen(false)} 
+         userProfile={userProfile}
+         onUpdateProfile={handleUpdateUserProfile}
+         onExportData={handleExportData}
+         onImportData={handleImportData}
+      />
 
       {/* Header */}
       <header className="bg-surface/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-40 transition-colors duration-500">
@@ -415,8 +396,7 @@ export default function App() {
               </button>
             </nav>
 
-            {userProfile && (
-              <div className="relative pl-4 border-l border-slate-700 ml-2">
+            <div className="relative pl-4 border-l border-slate-700 ml-2">
                  <button 
                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                    className="flex items-center gap-2 hover:bg-slate-800 p-1.5 pr-3 rounded-full transition-colors group"
@@ -436,34 +416,27 @@ export default function App() {
                         <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)}></div>
                         <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in py-1">
                             <div className="px-4 py-3 border-b border-slate-700/50">
-                                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Gestión de Datos</p>
+                                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Mi Cuenta</p>
                             </div>
+                            <button 
+                                onClick={() => { setIsSettingsOpen(true); setIsUserMenuOpen(false); }}
+                                className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white flex items-center gap-2 transition-colors"
+                            >
+                                <Settings className="w-4 h-4" />
+                                Configuración
+                            </button>
+                            <div className="border-t border-slate-700/50 my-1"></div>
                             <button 
                                 onClick={handleExportData}
                                 className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white flex items-center gap-2 transition-colors"
                             >
                                 <Download className="w-4 h-4" />
-                                Exportar Backup
-                            </button>
-                            <button 
-                                onClick={triggerImport}
-                                className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white flex items-center gap-2 transition-colors"
-                            >
-                                <Upload className="w-4 h-4" />
-                                Importar Backup
+                                Exportar Datos
                             </button>
                         </div>
                     </>
                  )}
-                 <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleImportData} 
-                    className="hidden" 
-                    accept=".json" 
-                 />
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </header>
@@ -578,7 +551,7 @@ export default function App() {
         {view === 'details' && currentMedia && (
            <div className="animate-fade-in">
               <button 
-                onClick={backToLibrary}
+                onClick={() => setView('library')}
                 className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 group px-4 py-2 hover:bg-slate-800 rounded-lg transition-colors w-fit"
               >
                 <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />

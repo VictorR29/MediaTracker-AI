@@ -2,10 +2,10 @@
 import { GoogleGenAI } from "@google/genai";
 import { AIWorkData } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-export const searchMediaInfo = async (query: string): Promise<AIWorkData> => {
-  const modelId = "gemini-2.5-flash"; // Using 2.5 Flash as requested for speed/efficiency
+export const searchMediaInfo = async (query: string, apiKey: string): Promise<AIWorkData> => {
+  // Initialize AI client with the user-provided key
+  const ai = new GoogleGenAI({ apiKey });
+  const modelId = "gemini-2.5-flash"; 
   
   const prompt = `
     Act as a media database expert. Search for information about the entertainment title: "${query}".
@@ -65,7 +65,7 @@ export const searchMediaInfo = async (query: string): Promise<AIWorkData> => {
     return {
       title: query,
       mediaType: "Otro",
-      synopsis: "No se pudo obtener información automática. Por favor rellena los datos manualmente o intenta de nuevo.",
+      synopsis: "No se pudo obtener información automática. Por favor verifica tu API Key o conexión.",
       genres: [],
       status: "Desconocido",
       totalContent: "?",
