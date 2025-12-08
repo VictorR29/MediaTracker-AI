@@ -454,7 +454,7 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 pt-8 w-full flex-grow pb-32">
+      <main className="max-w-7xl mx-auto px-4 pt-8 w-full flex-grow pb-8">
         
         {view === 'search' && (
           <div className="flex flex-col items-center">
@@ -580,7 +580,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 left-0 w-full z-30 bg-surface/90 backdrop-blur-md border-t border-slate-800 py-6 text-center text-slate-600 text-sm">
+      <footer className="w-full bg-surface border-t border-slate-800 py-6 text-center text-slate-600 text-sm mt-auto">
         <p>Potenciado por Gemini 2.5 Flash & Google Search Grounding</p>
       </footer>
 

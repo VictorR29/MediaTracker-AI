@@ -38,6 +38,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const isMovie = item.aiData.mediaType === 'Pelicula';
   const isBook = item.aiData.mediaType === 'Libro';
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(item.aiData.mediaType);
+  const isSeriesContent = ['Anime', 'Serie'].includes(item.aiData.mediaType);
 
   // Sync state if item changes
   useEffect(() => {
@@ -72,17 +73,16 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
   const handleCompleteSeason = () => {
     const nextSeason = tracking.currentSeason + 1;
-    const isSeries = ['Anime', 'Serie'].includes(item.aiData.mediaType);
     const isBookSaga = isBook && tracking.isSaga;
     
     // Logic for ending content
     let isFinished = false;
-    if (isSeries || isBookSaga) {
+    if (isSeriesContent || isBookSaga) {
         if (tracking.totalSeasons > 0 && tracking.currentSeason >= tracking.totalSeasons) {
             isFinished = true;
         }
     } else {
-        // Single volume or unknown
+        // Single volume or unknown or reading content without seasons
         isFinished = true;
     }
 
@@ -608,7 +608,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                 {!isMovie && (
                   <>
                      {/* Season / Book Number (Only for Series or Sagas) */}
-                    {(!isBook || (isBook && tracking.isSaga)) && (
+                    { (isSeriesContent || (isBook && tracking.isSaga)) && (
                         <div className="flex gap-3">
                             <div className="flex-1">
                                 <label className="block text-xs font-medium text-slate-400 mb-1">
@@ -705,7 +705,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                         style={{ backgroundColor: '#16a34a' }}
                         >
                         <CheckCircle2 className="w-3 h-3" />
-                        {isBook && tracking.isSaga ? `Terminar Libro ${tracking.currentSeason}` : `Completar Temporada ${tracking.currentSeason}`}
+                        { (isSeriesContent || (isBook && tracking.isSaga)) 
+                             ? (isBook ? `Terminar Libro ${tracking.currentSeason}` : `Completar Temporada ${tracking.currentSeason}`)
+                             : "Marcar como Completado"
+                        }
                         <ChevronRight className="w-3 h-3 opacity-70" />
                         </button>
                     )}
