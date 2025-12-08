@@ -29,8 +29,9 @@ export default function App() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
-  // Search Error State
+  // Search State
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchKey, setSearchKey] = useState(0); // Used to reset search bar
 
   // Delete Confirmation State
   const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null);
@@ -247,6 +248,10 @@ export default function App() {
       const newLib = [currentMedia, ...library];
       setLibrary(newLib);
       await saveMediaItem(currentMedia);
+      
+      // Clear the search view and reset the search bar
+      setCurrentMedia(null);
+      setSearchKey(prev => prev + 1);
     }
   };
 
@@ -465,7 +470,7 @@ export default function App() {
                </p>
             </div>
 
-            <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+            <SearchBar key={searchKey} onSearch={handleSearch} isLoading={isLoading} />
             
             {/* Search Error Message */}
             {searchError && (
