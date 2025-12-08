@@ -16,24 +16,40 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Analyze Library for Preferences
-  const { topGenres, likedTitles, excludedTitles } = useMemo(() => {
+  // Analyze Library for Preferences based on Selected Type
+  const { topGenres, likedTitles, excludedTitles, relevantCount } = useMemo(() => {
     const genreCounts: Record<string, number> = {};
     const liked: string[] = [];
     const excluded: string[] = [];
-    
+    let count = 0;
+
+    // Mapping for grouping similar types
+    // If user selects Manhwa, we look for Manhwa, Manga, and Comics for context
+    const targetTypes = selectedType === 'Manhwa' 
+        ? ['Manhwa', 'Manga', 'Comic'] 
+        : [selectedType];
+
     library.forEach(item => {
+      // Exclude everything in library from results to avoid duplicates
       excluded.push(item.aiData.title);
       
-      const rating = item.trackingData.rating;
-      const score = RATING_TO_SCORE[rating] || 0;
-      
-      // Consider "liked" if score >= 7 or specific positive status
-      if (score >= 7 || item.trackingData.status === 'Completado') {
-        liked.push(item.aiData.title);
-        item.aiData.genres.forEach(g => {
-           genreCounts[g] = (genreCounts[g] || 0) + 1;
-        });
+      // Only use items matching the selected type for the "Taste Profile"
+      if (targetTypes.includes(item.aiData.mediaType)) {
+          count++;
+          const rating = item.trackingData.rating;
+          const score = RATING_TO_SCORE[rating] || 0;
+          
+          // Filter out items explicitly rated as bad (Score 1-5)
+          const isBad = score > 0 && score < 6; 
+          
+          // Consider "liked" if high score (>=7) OR completed (and not rated bad)
+          // If unrated but completed, we assume it was at least engaging enough to finish
+          if (!isBad && (score >= 7 || (score === 0 && item.trackingData.status === 'Completado'))) {
+            liked.push(item.aiData.title);
+            item.aiData.genres.forEach(g => {
+              genreCounts[g] = (genreCounts[g] || 0) + 1;
+            });
+          }
       }
     });
 
@@ -42,8 +58,13 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       .map(([g]) => g)
       .slice(0, 3);
 
-    return { topGenres: sortedGenres, likedTitles: liked, excludedTitles: excluded };
-  }, [library]);
+    return { 
+        topGenres: sortedGenres, 
+        likedTitles: liked, 
+        excludedTitles: excluded,
+        relevantCount: count 
+    };
+  }, [library, selectedType]);
 
   const handleDiscovery = async () => {
     if (!apiKey) {
@@ -99,8 +120,13 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
          <div className="relative z-10 max-w-3xl">
              <h3 className="text-xl font-bold text-white mb-2">¿Qué quieres descubrir hoy?</h3>
              <p className="text-slate-400 mb-6 text-sm leading-relaxed">
-                Analizaremos tus <strong>{likedTitles.length} obras favoritas</strong> 
-                {topGenres.length > 0 && <span> y tu amor por el género <strong>{topGenres[0]}</strong></span>} para encontrar joyas ocultas.
+                Analizando tus <strong>{relevantCount} obras de {selectedType === 'Manhwa' ? 'Manga/Manhwa' : selectedType}</strong> guardadas 
+                {likedTitles.length > 0 ? (
+                    <span>, basándonos en tus favoritos como <em>{likedTitles.slice(0,2).join(", ")}</em></span>
+                ) : (
+                   <span> (aún no tienes favoritos en esta categoría)</span>
+                )}
+                {topGenres.length > 0 && <span> y tu afinidad por <strong>{topGenres[0]}</strong></span>}.
              </p>
 
              <div className="flex flex-wrap gap-3 mb-8">
