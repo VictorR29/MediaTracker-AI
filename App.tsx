@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -359,7 +358,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-slate-200 font-sans selection:bg-primary selection:text-white pb-20">
+    <div className="min-h-screen bg-background text-slate-200 font-sans selection:bg-primary selection:text-white flex flex-col">
       
       {/* Settings Modal */}
       <SettingsModal 
@@ -454,7 +453,7 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 pt-8">
+      <main className="max-w-7xl mx-auto px-4 pt-8 w-full flex-grow">
         
         {view === 'search' && (
           <div className="flex flex-col items-center">
@@ -580,7 +579,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="max-w-7xl mx-auto px-4 mt-10 text-center text-slate-600 text-sm py-8 border-t border-slate-800/50">
+      <footer className="max-w-7xl mx-auto px-4 mt-10 text-center text-slate-600 text-sm py-8 border-t border-slate-800/50 w-full">
         <p>Potenciado por Gemini 2.5 Flash & Google Search Grounding</p>
       </footer>
 
