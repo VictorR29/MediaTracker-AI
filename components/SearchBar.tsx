@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, Loader2, ArrowRight } from 'lucide-react';
 
@@ -28,7 +29,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => 
         </div>
         <input
           type="text"
-          className="block w-full pl-10 md:pl-12 pr-14 md:pr-32 py-3 md:py-4 bg-surface border border-slate-700 rounded-xl 
+          className="block w-full pl-10 md:pl-12 pr-24 md:pr-32 py-3 md:py-4 bg-surface border border-slate-700 rounded-xl 
                      text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary 
                      focus:border-transparent transition-all shadow-lg text-base md:text-lg truncate"
           placeholder="Busca un Anime, Serie o Manhwa..."
@@ -36,6 +37,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => 
           onChange={(e) => setQuery(e.target.value)}
           disabled={isLoading}
         />
+        
         <button
           type="submit"
           disabled={isLoading || !query.trim()}

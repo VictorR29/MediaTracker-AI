@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Copy, Image as ImageIcon, Calendar, Plus, Globe } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -234,6 +234,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) processFile(file);
+    // Reset to allow selecting same file
+    if (e.target) e.target.value = '';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -258,21 +260,38 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
       alert("Por favor selecciona un archivo de imagen válido.");
       return;
     }
+
+    // Just read the file and update the cover image
     const reader = new FileReader();
     reader.onload = async (e) => {
       const result = e.target?.result as string;
       if (result) {
         setImgSrc(result);
         setImgHasError(false);
-        const newColor = await extractDominantColor(result);
-        onUpdate({ 
-            ...item, 
-            aiData: { 
-                ...item.aiData, 
-                coverImage: result,
-                primaryColor: newColor 
-            } 
-        });
+        
+        try {
+            // Extract color from the new image
+            const newColor = await extractDominantColor(result);
+            
+            onUpdate({ 
+                ...item, 
+                aiData: { 
+                    ...item.aiData, 
+                    coverImage: result,
+                    primaryColor: newColor || item.aiData.primaryColor 
+                } 
+            });
+
+        } catch (error) {
+            console.error("Error processing image color", error);
+            onUpdate({ 
+                ...item, 
+                aiData: { 
+                    ...item.aiData, 
+                    coverImage: result
+                } 
+            });
+        }
       }
     };
     reader.readAsDataURL(file);
@@ -360,7 +379,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white backdrop-blur-sm">
                 <ImagePlus className="w-10 h-10 mb-2" style={{ color: dynamicColor }} />
-                <span className="font-semibold text-sm">Cambiar Portada</span>
+                <span className="font-semibold text-sm">Cambiar Imagen</span>
              </div>
              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent p-4 pointer-events-none">
                 <span 

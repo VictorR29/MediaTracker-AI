@@ -471,11 +471,15 @@ export default function App() {
             <div className="text-center mb-8 max-w-2xl">
                <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">¿Qué estás viendo hoy?</h2>
                <p className="text-slate-400">
-                 Busca cualquier Anime, Serie, Película o Libro.
+                 Busca cualquier Anime, Serie, Película o Libro para añadir a tu biblioteca.
                </p>
             </div>
 
-            <SearchBar key={searchKey} onSearch={handleSearch} isLoading={isLoading} />
+            <SearchBar 
+                key={searchKey} 
+                onSearch={handleSearch} 
+                isLoading={isLoading} 
+            />
             
             {/* Search Error Message */}
             {searchError && (
@@ -488,7 +492,7 @@ export default function App() {
             {isLoading && (
               <div className="flex flex-col items-center justify-center py-12 text-slate-500 animate-pulse">
                 <Sparkles className="w-12 h-12 mb-4 text-primary opacity-50" />
-                <p>Consultando a la IA y buscando datos en Google...</p>
+                <p>Consultando a la IA y analizando contenido...</p>
               </div>
             )}
 
