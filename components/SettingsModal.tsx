@@ -25,10 +25,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) return null;
 
   const handleSaveSecurity = () => {
-     // If user is setting a new password, use that. If clearing it (empty string), set undefined. 
-     // BUT, we only want to update password if newPassword field has content OR if we explicitly want to remove it.
-     // Current logic: Password field shows current password (if simple string) or masked.
-     
      const updatedProfile = { ...userProfile, apiKey };
      
      if (newPassword.trim()) {
@@ -48,10 +44,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       }
   };
 
-  const triggerImport = () => fileInputRef.current?.click();
+  const triggerImport = () => {
+    // Trigger the file browser dialog
+    fileInputRef.current?.click();
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) onImportData(file);
+      if (file) {
+        onImportData(file);
+      }
+  };
+
+  // Clear value on click to allow selecting the same file again
+  const handleInputClick = (e: React.MouseEvent<HTMLInputElement>) => {
+      (e.target as HTMLInputElement).value = '';
   };
 
   return (
@@ -119,13 +126,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 </span>
                             </p>
                             <button 
+                                type="button"
                                 onClick={triggerImport}
                                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center gap-2"
                             >
                                 <Upload className="w-4 h-4" />
                                 Seleccionar Archivo
                             </button>
-                            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".json" />
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleFileChange} 
+                                onClick={handleInputClick}
+                                className="hidden" 
+                                accept=".json,application/json" 
+                            />
                         </div>
                     </div>
                 )}

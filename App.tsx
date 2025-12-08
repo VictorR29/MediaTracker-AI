@@ -281,43 +281,82 @@ export default function App() {
   };
 
   const handleImportData = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-        try {
-            const content = event.target?.result as string;
-            const data = JSON.parse(content);
+    console.log("Starting import for file:", file.name);
+    
+    // Validate file type (basic check)
+    if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+        alert("El archivo debe ser un JSON (.json)");
+        return;
+    }
 
-            if (!data.profile || !Array.isArray(data.library)) {
-                alert("El archivo no tiene un formato válido de respaldo.");
+    const reader = new FileReader();
+
+    reader.onerror = () => {
+        console.error("Reader error", reader.error);
+        alert("Error de lectura del archivo.");
+    };
+
+    reader.onload = async (event) => {
+        console.log("File read complete. Processing...");
+        try {
+            const content = event.target?.result;
+            if (typeof content !== 'string') {
+                console.error("Content is not string", content);
+                alert("El contenido del archivo no es válido.");
                 return;
             }
 
-            if (confirm(`Se importarán ${data.library.length} obras y el perfil de "${data.profile.username}". \n\nEsto sobrescribirá los datos existentes.`)) {
-                setIsLoading(true);
-                await saveUserProfile(data.profile);
-                setUserProfile(data.profile);
-                applyTheme(data.profile.accentColor);
-                
-                // If the new profile has a password, we might need to decide whether to lock or not.
-                // For now, let's keep it unlocked until next reload or explicit lock.
+            const data = JSON.parse(content);
+            console.log("JSON Parsed:", data);
 
+            if (!data.profile || !Array.isArray(data.library)) {
+                console.error("Invalid structure", data);
+                alert("El archivo no tiene el formato de respaldo correcto (falta perfil o biblioteca).");
+                return;
+            }
+
+            // Proceed directly with import without window.confirm blocking
+            setIsLoading(true);
+            
+            try {
+                console.log("Saving profile...");
+                await saveUserProfile(data.profile);
+                
+                console.log("Saving library items...");
+                // Batch save library
                 for (const item of data.library) {
                     await saveMediaItem(item);
                 }
                 
+                // State updates
+                setUserProfile(data.profile);
+                applyTheme(data.profile.accentColor);
+                
                 const updatedLibrary = await getLibrary();
                 setLibrary(updatedLibrary);
+                
+                // UI Clean up
                 setIsLoading(false);
                 setIsUserMenuOpen(false);
                 setIsSettingsOpen(false);
-                alert("¡Datos importados correctamente!");
+                
+                console.log("Import success.");
+                alert("¡Datos importados correctamente! Bienvenido, " + data.profile.username);
+
+            } catch (saveError) {
+                console.error("Save error during import", saveError);
+                alert("Ocurrió un error guardando los datos en la base de datos local.");
+                setIsLoading(false);
             }
+
         } catch (error) {
-            console.error(error);
-            alert("Error crítico al procesar el archivo.");
+            console.error("Critical import error / JSON Parse", error);
+            alert("Error crítico: El archivo está corrupto o no es un JSON válido.");
             setIsLoading(false);
         }
     };
+    
+    // Trigger reading
     reader.readAsText(file);
   };
 
@@ -357,7 +396,12 @@ export default function App() {
   // --- RENDER GATES ---
 
   if (!userProfile) {
-      return <Onboarding onComplete={handleOnboardingComplete} />;
+      return (
+        <Onboarding 
+            onComplete={handleOnboardingComplete} 
+            onImport={handleImportData} // Pass import function to onboarding
+        />
+      );
   }
 
   if (isLocked) {

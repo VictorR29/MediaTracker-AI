@@ -1,19 +1,21 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { UserProfile, THEME_COLORS } from '../types';
-import { Sparkles, Key, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Sparkles, Key, Lock, Eye, EyeOff, Upload } from 'lucide-react';
 
 interface OnboardingProps {
   onComplete: (profile: UserProfile) => void;
+  onImport: (file: File) => void;
 }
 
-export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
+export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) => {
   const [username, setUsername] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedColor, setSelectedColor] = useState(THEME_COLORS[0]);
   const [showPassword, setShowPassword] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +33,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     }
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        onImport(file);
+    }
+    if (e.target) e.target.value = ''; // Reset
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 overflow-y-auto">
       <div className="bg-surface border border-slate-700 p-8 rounded-2xl shadow-2xl max-w-lg w-full animate-fade-in-up my-auto">
@@ -40,6 +54,32 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">Bienvenido</h2>
           <p className="text-slate-400">Configura tu biblioteca privada en MediaTracker AI</p>
+        </div>
+
+        {/* Restore Backup Button */}
+        <div className="mb-6 p-4 bg-slate-800/50 rounded-xl border border-dashed border-slate-600 flex flex-col items-center justify-center gap-2">
+            <p className="text-xs text-slate-400">¿Ya tienes una cuenta?</p>
+            <button 
+                type="button"
+                onClick={handleImportClick}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-sm font-medium transition-colors"
+            >
+                <Upload className="w-4 h-4" />
+                Restaurar Copia de Seguridad
+            </button>
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                className="hidden" 
+                accept=".json,application/json" 
+            />
+        </div>
+
+        <div className="flex items-center gap-3 mb-6">
+            <div className="h-px bg-slate-700 flex-1"></div>
+            <span className="text-xs text-slate-500 uppercase font-bold">O empieza de cero</span>
+            <div className="h-px bg-slate-700 flex-1"></div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
