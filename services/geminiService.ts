@@ -13,6 +13,13 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
     You MUST return a JSON object containing the following details. 
     If exact numbers aren't found, estimate based on the latest available info.
     
+    CRITICAL - MEDIA TYPE CLASSIFICATION:
+    - "Pelicula": Standalone movies (e.g., Inception, Spirited Away).
+    - "Serie": TV Series or Web Series (e.g., Breaking Bad, Stranger Things).
+    - "Anime": Japanese animation series (e.g., Naruto).
+    - "Libro": Novels, Non-fiction books, Light Novels (e.g., Harry Potter, 1984).
+    - "Manhwa" / "Manga" / "Comic": Graphical novels.
+    
     The JSON structure must be:
     {
       "title": "Main title in Spanish or English",
@@ -21,7 +28,7 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
       "synopsis": "A concise synopsis in Spanish (max 300 chars)",
       "genres": ["Genre1", "Genre2"],
       "status": "Publication/Broadcast status (e.g., En emisión, Finalizado, En pausa)",
-      "totalContent": "String describing total content (e.g., '3 Temporadas, 64 Caps' or '120 Capítulos')",
+      "totalContent": "String describing total content (e.g., '3 Temporadas, 64 Caps' or '120 Capítulos' or '300 Páginas')",
       "coverDescription": "A short English visual description of the official poster (e.g. 'poster of Naruto anime')",
       "coverImage": "Find a DIRECT public URL (https) for the official poster. PREFER URLs from 'upload.wikimedia.org', 'm.media-amazon.com', 'cdn.myanimelist.net' or 'static.wikia.nocookie.net'. The URL MUST end in .jpg, .png or .webp. If uncertain, leave empty.",
       "primaryColor": "Identify the DOMINANT HEX COLOR associated with the work's cover art or branding (e.g. '#FF5733' for Naruto orange, '#4B0082' for Gachiakuta purple). It MUST be a 6-digit HEX code."

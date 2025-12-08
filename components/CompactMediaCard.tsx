@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { MediaItem } from '../types';
 import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check } from 'lucide-react';
@@ -14,13 +15,21 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
   // Use dynamic color if available, else fallback to primary variable (approx)
   const dynamicColor = aiData.primaryColor || '#6366f1';
 
-  // Calculate progress
-  const progressPercent = trackingData.totalEpisodesInSeason > 0
-    ? Math.min(100, (trackingData.watchedEpisodes / trackingData.totalEpisodesInSeason) * 100)
-    : 0;
-
+  const isMovie = aiData.mediaType === 'Pelicula';
+  const isBook = aiData.mediaType === 'Libro';
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
-  const isCompleteSeason = trackingData.totalEpisodesInSeason > 0 && trackingData.watchedEpisodes >= trackingData.totalEpisodesInSeason;
+
+  // Calculate progress
+  let progressPercent = 0;
+  if (isMovie) {
+      progressPercent = trackingData.status === 'Completado' ? 100 : 0;
+  } else {
+      progressPercent = trackingData.totalEpisodesInSeason > 0
+        ? Math.min(100, (trackingData.watchedEpisodes / trackingData.totalEpisodesInSeason) * 100)
+        : 0;
+  }
+
+  const isCompleteSeason = !isMovie && trackingData.totalEpisodesInSeason > 0 && trackingData.watchedEpisodes >= trackingData.totalEpisodesInSeason;
 
   // Icon based on type
   const TypeIcon = () => {
@@ -76,6 +85,29 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       onIncrement(item);
   };
 
+  const renderProgressText = () => {
+      if (isMovie) {
+          return trackingData.status === 'Completado' ? <span className="text-green-400 font-bold">Visto</span> : 'Pendiente';
+      }
+      
+      const label = isBook ? 'Pág.' : 'Cap.';
+      const progress = `${trackingData.watchedEpisodes}/${trackingData.totalEpisodesInSeason}`;
+      return (
+         <span className="flex items-center gap-1">
+            {isReadingContent ? <BookOpen className="w-3 h-3" /> : <PlayCircle className="w-3 h-3" />}
+            {progress}
+         </span>
+      );
+  };
+
+  const renderSeasonText = () => {
+      if (isMovie) return null;
+      if (isBook) {
+          return trackingData.isSaga ? <span>Libro {trackingData.currentSeason}</span> : <span>Novela</span>;
+      }
+      return isReadingContent ? <span>Leído</span> : <span>Temp {trackingData.currentSeason}</span>;
+  };
+
   return (
     <div 
       onClick={onClick}
@@ -98,14 +130,14 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
             </span>
         </div>
         
-        {/* Quick Action Button - Floating on Image */}
-        {trackingData.status === 'Viendo/Leyendo' && (
+        {/* Quick Action Button - Floating on Image - Not for Movies */}
+        {!isMovie && trackingData.status === 'Viendo/Leyendo' && (
              <button
                 onClick={handleQuickAction}
                 className={`absolute bottom-14 right-2 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all transform active:scale-90 z-20 md:opacity-0 md:group-hover:opacity-100 opacity-100 ${
                     isCompleteSeason ? 'bg-green-500 hover:bg-green-600' : 'bg-white/90 hover:bg-white text-slate-900'
                 }`}
-                title={isCompleteSeason ? "Completar Temporada" : "+1 Capítulo"}
+                title={isCompleteSeason ? "Completar" : "+1"}
              >
                  {isCompleteSeason ? (
                      <Check className="w-5 h-5 text-white" />
@@ -134,13 +166,8 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       
       <div className="p-3">
           <div className="flex justify-between items-center text-xs text-slate-400">
-              <span>
-                  {isReadingContent ? 'Progreso' : `Temp ${trackingData.currentSeason}`}
-              </span>
-              <span className="flex items-center gap-1">
-                 {isReadingContent ? <BookOpen className="w-3 h-3" /> : <PlayCircle className="w-3 h-3" />}
-                 {trackingData.watchedEpisodes}/{trackingData.totalEpisodesInSeason}
-              </span>
+              {renderSeasonText()}
+              {renderProgressText()}
           </div>
       </div>
     </div>

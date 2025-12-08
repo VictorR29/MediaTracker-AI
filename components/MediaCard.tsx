@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Copy, Image as ImageIcon } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Copy, Image as ImageIcon, Calendar } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -33,6 +34,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
   const [imgSrc, setImgSrc] = useState(initialImage);
 
+  const isMovie = item.aiData.mediaType === 'Pelicula';
+  const isBook = item.aiData.mediaType === 'Libro';
+  const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(item.aiData.mediaType);
+
   // Sync state if item changes
   useEffect(() => {
     setTracking(item.trackingData);
@@ -41,19 +46,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
         setImgHasError(false);
     } else {
         setImgSrc(getGenerativeFallback());
-        // Don't set error yet, try generative first
     }
   }, [item.id, item.aiData.coverImage]);
 
   useEffect(() => {
     const { watchedEpisodes, totalEpisodesInSeason } = tracking;
-    if (totalEpisodesInSeason > 0) {
-      const percent = Math.min(100, Math.max(0, (watchedEpisodes / totalEpisodesInSeason) * 100));
-      setProgressPercent(percent);
+    if (isMovie) {
+        setProgressPercent(tracking.status === 'Completado' ? 100 : 0);
     } else {
-      setProgressPercent(0);
+        if (totalEpisodesInSeason > 0) {
+            const percent = Math.min(100, Math.max(0, (watchedEpisodes / totalEpisodesInSeason) * 100));
+            setProgressPercent(percent);
+        } else {
+            setProgressPercent(0);
+        }
     }
-  }, [tracking.watchedEpisodes, tracking.totalEpisodesInSeason]);
+  }, [tracking.watchedEpisodes, tracking.totalEpisodesInSeason, tracking.status, isMovie]);
 
   const handleInputChange = (field: keyof UserTrackingData, value: any) => {
     const updated = { ...tracking, [field]: value };
@@ -63,9 +71,21 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
   const handleCompleteSeason = () => {
     const nextSeason = tracking.currentSeason + 1;
-    const isSeries = item.aiData.mediaType === 'Serie' || item.aiData.mediaType === 'Anime';
+    const isSeries = ['Anime', 'Serie'].includes(item.aiData.mediaType);
+    const isBookSaga = isBook && tracking.isSaga;
     
-    if (isSeries && tracking.totalSeasons > 0 && tracking.currentSeason >= tracking.totalSeasons) {
+    // Logic for ending content
+    let isFinished = false;
+    if (isSeries || isBookSaga) {
+        if (tracking.totalSeasons > 0 && tracking.currentSeason >= tracking.totalSeasons) {
+            isFinished = true;
+        }
+    } else {
+        // Single volume or unknown
+        isFinished = true;
+    }
+
+    if (isFinished) {
        handleInputChange('status', 'Completado');
        return;
     }
@@ -78,6 +98,18 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     };
     setTracking(updated);
     onUpdate({ ...item, trackingData: updated });
+  };
+
+  const handleMovieToggle = () => {
+      const isCompleted = tracking.status === 'Completado';
+      const updated = {
+          ...tracking,
+          status: isCompleted ? 'Viendo/Leyendo' : 'Completado' as const,
+          watchedEpisodes: isCompleted ? 0 : 1,
+          totalEpisodesInSeason: 1
+      };
+      setTracking(updated);
+      onUpdate({ ...item, trackingData: updated });
   };
 
   const toggleTag = (tag: string) => {
@@ -117,10 +149,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
   const handleImageError = () => {
     if (imgSrc === item.aiData.coverImage && isValidSource(item.aiData.coverImage)) {
-      // If user/AI provided image fails, try generative
       setImgSrc(getGenerativeFallback());
     } else {
-      // If generative fails, show placeholder div
       setImgHasError(true);
     }
   };
@@ -229,8 +259,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   };
 
   const triggerFileInput = () => fileInputRef.current?.click();
-
-  const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(item.aiData.mediaType);
 
   const TypeIcon = ({ className = "w-5 h-5" }: { className?: string }) => {
     switch (item.aiData.mediaType) {
@@ -412,6 +440,20 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
               </h3>
               
               <div className="space-y-4 relative z-10">
+                {/* Book Saga Toggle */}
+                {isBook && (
+                    <div className="flex items-center gap-2 mb-2">
+                        <button 
+                            onClick={() => handleInputChange('isSaga', !tracking.isSaga)}
+                            className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${tracking.isSaga ? 'bg-primary' : 'bg-slate-700'}`}
+                        >
+                            <div className={`w-3 h-3 bg-white rounded-full absolute top-1 transition-all duration-300 ${tracking.isSaga ? 'left-6' : 'left-1'}`}></div>
+                        </button>
+                        <span className="text-xs text-slate-300">Es una Saga/Serie de Libros</span>
+                    </div>
+                )}
+
+                {/* Status Dropdown */}
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Estado</label>
                   <select 
@@ -429,100 +471,149 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                   </select>
                 </div>
 
-                {!isReadingContent && (
-                   <div className="flex gap-3">
-                      <div className="flex-1">
-                         <label className="block text-xs font-medium text-slate-400 mb-1">Temp. Actual</label>
-                         <input 
-                           type="number" min="1"
-                           value={tracking.currentSeason}
-                           onChange={(e) => handleInputChange('currentSeason', parseInt(e.target.value) || 1)}
-                           className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center focus:border-opacity-100 outline-none focus:ring-1"
-                           style={{ focusRing: dynamicColor, borderColor: `${dynamicColor}30` }}
-                         />
-                      </div>
-                      <div className="flex-1">
-                         <label className="block text-xs font-medium text-slate-400 mb-1">Total Temps.</label>
-                         <input 
-                           type="number" min="1"
-                           value={tracking.totalSeasons || 1}
-                           onChange={(e) => handleInputChange('totalSeasons', parseInt(e.target.value) || 1)}
-                           className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-1"
-                           style={{ borderColor: `${dynamicColor}30` }}
-                         />
-                      </div>
-                   </div>
-                )}
+                {/* MOVIE LOGIC */}
+                {isMovie && (
+                    <div className="flex flex-col gap-4 mt-2">
+                        <button 
+                            onClick={handleMovieToggle}
+                            className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 transition-all border ${
+                                tracking.status === 'Completado' 
+                                ? 'bg-green-600/20 border-green-500 text-green-400' 
+                                : 'bg-slate-800 border-slate-600 text-slate-400 hover:bg-slate-700'
+                            }`}
+                        >
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${tracking.status === 'Completado' ? 'border-green-500 bg-green-500' : 'border-slate-500'}`}>
+                                {tracking.status === 'Completado' && <CheckCircle2 className="w-4 h-4 text-white" />}
+                            </div>
+                            <span className="font-bold">
+                                {tracking.status === 'Completado' ? 'Vista / Completada' : 'Marcar como Vista'}
+                            </span>
+                        </button>
 
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-slate-400 mb-1">
-                        {isReadingContent ? 'Caps. Leídos' : 'Caps. Vistos'}
-                    </label>
-                    <input 
-                      type="number" min="0"
-                      value={tracking.watchedEpisodes}
-                      onChange={(e) => handleInputChange('watchedEpisodes', parseInt(e.target.value) || 0)}
-                      className="w-full border border-slate-600 rounded-lg px-2 py-2 text-sm text-center font-bold text-white bg-slate-700/50 outline-none focus:ring-1"
-                      style={{ borderColor: `${dynamicColor}50` }}
-                    />
-                  </div>
-                  <div className="flex-1 relative">
-                    <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center justify-between">
-                        <span>Total {isReadingContent ? 'Existentes' : 'Temp'}</span>
-                        {!tracking.totalEpisodesInSeason && (
-                            <span className="text-amber-500" title="Dato faltante"><AlertTriangle className="w-3 h-3 inline"/></span>
-                        )}
-                    </label>
-                    <div className="relative">
-                        <input 
-                        type="number" min="1"
-                        value={tracking.totalEpisodesInSeason}
-                        onChange={(e) => handleInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)}
-                        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-1"
-                        style={{ borderColor: !tracking.totalEpisodesInSeason ? '#f59e0b' : `${dynamicColor}30` }}
-                        />
-                        {!tracking.totalEpisodesInSeason && (
-                            <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
-                                <AlertTriangle className="w-4 h-4 text-amber-500 animate-pulse" />
+                        {tracking.status === 'Completado' && (
+                            <div className="animate-fade-in-up">
+                                <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" /> Fecha de Visualización
+                                </label>
+                                <input 
+                                    type="date"
+                                    value={tracking.finishedAt || ''}
+                                    onChange={(e) => handleInputChange('finishedAt', e.target.value)}
+                                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:ring-1 focus:border-primary"
+                                />
                             </div>
                         )}
                     </div>
-                  </div>
-                </div>
+                )}
 
-                <div className="mt-2">
-                  <div className="flex justify-between text-xs text-slate-400 mb-1">
-                    <span>
-                         {isReadingContent ? 'Progreso Lectura' : `Progreso Temporada ${tracking.currentSeason}`}
-                    </span>
-                    <span style={{ color: progressPercent === 100 ? '#4ade80' : dynamicColor, fontWeight: 'bold' }}>
-                        {Math.round(progressPercent)}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                    <div 
-                      className="h-2.5 rounded-full transition-all duration-500 ease-out"
-                      style={{ 
-                          width: `${progressPercent}%`,
-                          backgroundColor: progressPercent === 100 ? '#4ade80' : dynamicColor,
-                          boxShadow: `0 0 10px ${dynamicColor}80`
-                      }} 
-                    ></div>
-                  </div>
-                  
-                  {progressPercent === 100 && !isReadingContent && (
-                     <button 
-                       onClick={handleCompleteSeason}
-                       className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-medium text-white py-2 rounded-lg transition-colors shadow-lg"
-                       style={{ backgroundColor: '#16a34a' }}
-                     >
-                       <CheckCircle2 className="w-3 h-3" />
-                       Completar Temporada {tracking.currentSeason}
-                       <ChevronRight className="w-3 h-3 opacity-70" />
-                     </button>
-                  )}
-                </div>
+                {/* STANDARD & BOOK LOGIC */}
+                {!isMovie && (
+                  <>
+                     {/* Season / Book Number (Only for Series or Sagas) */}
+                    {(!isBook || (isBook && tracking.isSaga)) && (
+                        <div className="flex gap-3">
+                            <div className="flex-1">
+                                <label className="block text-xs font-medium text-slate-400 mb-1">
+                                    {isBook ? 'Libro Actual' : 'Temp. Actual'}
+                                </label>
+                                <input 
+                                type="number" min="1"
+                                value={tracking.currentSeason}
+                                onChange={(e) => handleInputChange('currentSeason', parseInt(e.target.value) || 1)}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center focus:border-opacity-100 outline-none focus:ring-1"
+                                style={{ focusRing: dynamicColor, borderColor: `${dynamicColor}30` }}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-xs font-medium text-slate-400 mb-1">
+                                    {isBook ? 'Total Libros' : 'Total Temps.'}
+                                </label>
+                                <input 
+                                type="number" min="1"
+                                value={tracking.totalSeasons || 1}
+                                onChange={(e) => handleInputChange('totalSeasons', parseInt(e.target.value) || 1)}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-1"
+                                style={{ borderColor: `${dynamicColor}30` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Episodes / Pages */}
+                    <div className="flex gap-3">
+                    <div className="flex-1">
+                        <label className="block text-xs font-medium text-slate-400 mb-1">
+                            {isBook ? 'Páginas Leídas' : (isReadingContent ? 'Caps. Leídos' : 'Caps. Vistos')}
+                        </label>
+                        <input 
+                        type="number" min="0"
+                        value={tracking.watchedEpisodes}
+                        onChange={(e) => handleInputChange('watchedEpisodes', parseInt(e.target.value) || 0)}
+                        className="w-full border border-slate-600 rounded-lg px-2 py-2 text-sm text-center font-bold text-white bg-slate-700/50 outline-none focus:ring-1"
+                        style={{ borderColor: `${dynamicColor}50` }}
+                        />
+                    </div>
+                    <div className="flex-1 relative">
+                        <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center justify-between">
+                            <span>Total {isBook ? 'Páginas' : (isReadingContent ? 'Existentes' : 'Temp')}</span>
+                            {!tracking.totalEpisodesInSeason && (
+                                <span className="text-amber-500" title="Dato faltante"><AlertTriangle className="w-3 h-3 inline"/></span>
+                            )}
+                        </label>
+                        <div className="relative">
+                            <input 
+                            type="number" min="1"
+                            value={tracking.totalEpisodesInSeason}
+                            onChange={(e) => handleInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)}
+                            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-1"
+                            style={{ borderColor: !tracking.totalEpisodesInSeason ? '#f59e0b' : `${dynamicColor}30` }}
+                            />
+                            {!tracking.totalEpisodesInSeason && (
+                                <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
+                                    <AlertTriangle className="w-4 h-4 text-amber-500 animate-pulse" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    </div>
+
+                    <div className="mt-2">
+                    <div className="flex justify-between text-xs text-slate-400 mb-1">
+                        <span>
+                            {isBook 
+                                ? (tracking.isSaga ? `Progreso Libro ${tracking.currentSeason}` : 'Progreso Lectura') 
+                                : (isReadingContent ? 'Progreso Lectura' : `Progreso Temporada ${tracking.currentSeason}`)
+                            }
+                        </span>
+                        <span style={{ color: progressPercent === 100 ? '#4ade80' : dynamicColor, fontWeight: 'bold' }}>
+                            {Math.round(progressPercent)}%
+                        </span>
+                    </div>
+                    <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                        <div 
+                        className="h-2.5 rounded-full transition-all duration-500 ease-out"
+                        style={{ 
+                            width: `${progressPercent}%`,
+                            backgroundColor: progressPercent === 100 ? '#4ade80' : dynamicColor,
+                            boxShadow: `0 0 10px ${dynamicColor}80`
+                        }} 
+                        />
+                    </div>
+                    
+                    {progressPercent === 100 && (
+                        <button 
+                        onClick={handleCompleteSeason}
+                        className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-medium text-white py-2 rounded-lg transition-colors shadow-lg"
+                        style={{ backgroundColor: '#16a34a' }}
+                        >
+                        <CheckCircle2 className="w-3 h-3" />
+                        {isBook && tracking.isSaga ? `Terminar Libro ${tracking.currentSeason}` : `Completar Temporada ${tracking.currentSeason}`}
+                        <ChevronRight className="w-3 h-3 opacity-70" />
+                        </button>
+                    )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

@@ -163,7 +163,9 @@ export default function App() {
           favoriteCharacters: [],
           rating: '',
           comment: '',
-          recommendedBy: ''
+          recommendedBy: '',
+          isSaga: false,
+          finishedAt: undefined
         }
       };
 
@@ -206,10 +208,17 @@ export default function App() {
   const handleQuickIncrement = async (item: MediaItem) => {
     const { trackingData, aiData } = item;
     const isSeries = ['Anime', 'Serie'].includes(aiData.mediaType);
+    const isBookSaga = aiData.mediaType === 'Libro' && trackingData.isSaga;
+    const isMovie = aiData.mediaType === 'Pelicula';
+
+    // No quick increment for movies from card
+    if (isMovie) return;
+
     let updatedTracking = { ...trackingData };
     
+    // Logic for Series and Book Sagas
     if (trackingData.totalEpisodesInSeason > 0 && trackingData.watchedEpisodes >= trackingData.totalEpisodesInSeason) {
-        if (isSeries) {
+        if (isSeries || isBookSaga) {
             if (trackingData.totalSeasons > 0 && trackingData.currentSeason >= trackingData.totalSeasons) {
                 updatedTracking.status = 'Completado';
             } else {
@@ -449,7 +458,7 @@ export default function App() {
             <div className="text-center mb-8 max-w-2xl">
                <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">¿Qué estás viendo hoy?</h2>
                <p className="text-slate-400">
-                 Busca cualquier Anime, Serie o Manhwa.
+                 Busca cualquier Anime, Serie, Película o Libro.
                </p>
             </div>
 

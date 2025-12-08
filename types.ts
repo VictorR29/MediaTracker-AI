@@ -24,6 +24,8 @@ export interface UserTrackingData {
   rating: string; // e.g., "God Tier", "Bueno", etc.
   comment: string;
   recommendedBy?: string; // New field for social aspect
+  isSaga?: boolean; // New: For books that are part of a series
+  finishedAt?: string; // New: Date string (ISO) for when a movie was watched
 }
 
 export interface MediaItem {
