@@ -391,7 +391,12 @@ export default function App() {
           <div className="flex items-center gap-4">
             <nav className="flex items-center gap-2 mr-2">
               <button 
-                onClick={() => setView('search')}
+                onClick={() => {
+                    setView('search');
+                    // Reset search state when clicking 'New' to avoid stale data
+                    setCurrentMedia(null);
+                    setSearchKey(prev => prev + 1);
+                }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${view === 'search' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-white'}`}
               >
                 <PlusCircle className="w-4 h-4" />
