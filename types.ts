@@ -17,7 +17,7 @@ export interface AIWorkData {
 }
 
 export interface UserTrackingData {
-  status: 'Viendo/Leyendo' | 'Completado' | 'En Pausa' | 'Descartado';
+  status: 'Viendo/Leyendo' | 'Completado' | 'En Pausa' | 'Descartado' | 'Planeado / Pendiente';
   currentSeason: number;
   totalSeasons: number; // User defined total seasons
   watchedEpisodes: number;

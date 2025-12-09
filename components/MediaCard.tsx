@@ -586,6 +586,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                     <option value="Completado">Completado</option>
                     <option value="En Pausa">En Pausa</option>
                     <option value="Descartado">Descartado</option>
+                    <option value="Planeado / Pendiente">Planeado / Próximo Estreno</option>
                   </select>
                 </div>
 

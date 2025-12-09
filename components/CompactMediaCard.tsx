@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { MediaItem } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell } from 'lucide-react';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
@@ -30,6 +30,29 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
           isReturnDue = true;
       }
   }
+
+  // Upcoming / Wishlist Logic
+  const isPlanned = trackingData.status === 'Planeado / Pendiente';
+  
+  // Calculate Time Remaining for Upcoming Releases
+  const getCountdown = (dateStr?: string) => {
+    if (!dateStr || !isPlanned) return null;
+    const target = new Date(dateStr);
+    const now = new Date();
+    if (isNaN(target.getTime())) return null; // Invalid date
+    
+    // Set both to midnight to compare just days roughly, or precise time
+    const diffTime = target.getTime() - now.getTime();
+    if (diffTime <= 0) return null; // Already passed
+
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 365) return `Estreno en ${Math.floor(diffDays/365)} años`;
+    if (diffDays > 30) return `Estreno en ${Math.floor(diffDays/30)} meses`;
+    return `Estreno en ${diffDays} días`;
+  };
+
+  const timeRemaining = getCountdown(aiData.releaseDate);
 
   // Calculate progress
   let progressPercent = 0;
@@ -141,8 +164,19 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
             </span>
         </div>
         
-        {/* Quick Action Button - Floating on Image - Not for Movies */}
-        {!isMovie && trackingData.status === 'Viendo/Leyendo' && (
+        {/* Countdown Overlay for Upcoming Releases */}
+        {timeRemaining && (
+             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white backdrop-blur-sm p-4 text-center z-20">
+                  <div className="bg-slate-900/80 p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
+                      <Hourglass className="w-6 h-6 text-yellow-400 animate-pulse" />
+                  </div>
+                  <span className="font-bold text-lg leading-tight">{timeRemaining}</span>
+                  <span className="text-xs text-slate-300 mt-1">{aiData.releaseDate}</span>
+             </div>
+        )}
+
+        {/* Quick Action Button - Floating on Image - Not for Movies and Not for Planned */}
+        {!isMovie && !isPlanned && trackingData.status === 'Viendo/Leyendo' && (
              <button
                 onClick={handleQuickAction}
                 className={`absolute bottom-14 right-2 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all transform active:scale-90 z-20 md:opacity-0 md:group-hover:opacity-100 opacity-100 ${
@@ -165,12 +199,13 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       </div>
       
       {/* Progress Bar Mini - Dynamic Color */}
+      {/* If it's upcoming, maybe hide progress bar or show full width distinct color? Keeping standard for consistency but with different logic if needed */}
       <div className="h-1 w-full bg-slate-700">
          <div 
            className="h-full transition-all duration-500" 
            style={{ 
                width: `${progressPercent}%`,
-               backgroundColor: progressPercent === 100 ? '#4ade80' : dynamicColor 
+               backgroundColor: isPlanned ? '#fbbf24' : (progressPercent === 100 ? '#4ade80' : dynamicColor) 
             }}
          />
       </div>
@@ -178,7 +213,11 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       <div className="p-3">
           <div className="flex justify-between items-center text-xs text-slate-400">
               {renderSeasonText()}
-              {renderProgressText()}
+              {isPlanned ? (
+                  <span className="text-yellow-500 font-medium">Estreno</span>
+              ) : (
+                  renderProgressText()
+              )}
           </div>
       </div>
     </div>

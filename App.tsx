@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -12,7 +13,7 @@ import { DiscoveryView } from './components/DiscoveryView'; // Import DiscoveryV
 import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
 import { MediaItem, UserProfile } from './types';
-import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass } from 'lucide-react';
+import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
@@ -20,7 +21,7 @@ export default function App() {
   const [currentMedia, setCurrentMedia] = useState<MediaItem | null>(null);
   const [library, setLibrary] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [view, setView] = useState<'search' | 'library' | 'details' | 'stats' | 'discovery'>('search');
+  const [view, setView] = useState<'search' | 'library' | 'details' | 'stats' | 'discovery' | 'upcoming'>('search');
   const [dbReady, setDbReady] = useState(false);
   
   // App Lock State
@@ -361,7 +362,7 @@ export default function App() {
   };
 
 
-  // Filter Logic
+  // Filter Logic for Main Library
   const filteredLibrary = useMemo(() => {
     let result = [...library];
     if (filters.query.trim()) {
@@ -384,6 +385,27 @@ export default function App() {
     });
     return result;
   }, [library, filters]);
+
+  // Filter Logic for Upcoming Releases
+  const upcomingLibrary = useMemo(() => {
+     const now = new Date();
+     return library.filter(item => {
+         const isPlanned = item.trackingData.status === 'Planeado / Pendiente';
+         if (!isPlanned) return false;
+         
+         const releaseStr = item.aiData.releaseDate;
+         if (!releaseStr) return false;
+
+         const releaseDate = new Date(releaseStr);
+         // Check if valid date and if it is in the future
+         return !isNaN(releaseDate.getTime()) && releaseDate > now;
+     }).sort((a, b) => {
+         // Sort by nearest release date first
+         const dateA = new Date(a.aiData.releaseDate || '');
+         const dateB = new Date(b.aiData.releaseDate || '');
+         return dateA.getTime() - dateB.getTime();
+     });
+  }, [library]);
 
   if (!dbReady) {
     return (
@@ -443,6 +465,7 @@ export default function App() {
                     setSearchKey(prev => prev + 1);
                 }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${view === 'search' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-white'}`}
+                title="Nuevo"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Nuevo</span>
@@ -450,13 +473,23 @@ export default function App() {
               <button 
                 onClick={() => setView('library')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${view === 'library' || view === 'details' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-white'}`}
+                title="Biblioteca"
               >
                 <LayoutGrid className="w-4 h-4" />
                 <span className="hidden sm:inline">Biblioteca</span>
               </button>
               <button 
+                onClick={() => setView('upcoming')}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${view === 'upcoming' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-white'}`}
+                title="Próximos Estrenos"
+              >
+                <CalendarClock className="w-4 h-4" />
+                <span className="hidden sm:inline">Wishlist</span>
+              </button>
+              <button 
                 onClick={() => setView('discovery')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${view === 'discovery' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-white'}`}
+                title="Descubrir"
               >
                 <Compass className="w-4 h-4" />
                 <span className="hidden sm:inline">Descubrir</span>
@@ -464,6 +497,7 @@ export default function App() {
               <button 
                 onClick={() => setView('stats')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${view === 'stats' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-white'}`}
+                title="Estadísticas"
               >
                 <BarChart2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Stats</span>
@@ -619,6 +653,41 @@ export default function App() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {view === 'upcoming' && (
+          <div className="animate-fade-in">
+             <div className="flex items-center gap-3 mb-6 border-l-4 border-yellow-500 pl-4">
+                 <h2 className="text-2xl font-bold text-white">Próximos Estrenos / Wishlist</h2>
+                 <CalendarClock className="w-5 h-5 text-yellow-500" />
+                 {upcomingLibrary.length > 0 && <span className="text-slate-400 text-sm bg-slate-800 px-2 py-1 rounded-md">{upcomingLibrary.length} pendientes</span>}
+             </div>
+
+             {upcomingLibrary.length === 0 ? (
+                <div className="text-center py-20 bg-surface rounded-2xl border border-dashed border-slate-700">
+                    <CalendarClock className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                    <p className="text-slate-400 text-lg mb-4">No tienes estrenos futuros en seguimiento.</p>
+                    <p className="text-sm text-slate-500 mb-6">Añade obras y márcalas como 'Planeado / Pendiente' para verlas aquí.</p>
+                    <button 
+                        onClick={() => setView('search')}
+                        className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-primary rounded-lg transition-colors"
+                    >
+                        Buscar Estrenos
+                    </button>
+                </div>
+             ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 pb-10">
+                    {upcomingLibrary.map((item) => (
+                        <CompactMediaCard 
+                            key={item.id} 
+                            item={item} 
+                            onClick={() => openDetail(item)}
+                            onIncrement={handleQuickIncrement}
+                        />
+                    ))}
+                </div>
+             )}
           </div>
         )}
 

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Search, ArrowUpDown } from 'lucide-react';
 import { RATING_OPTIONS } from '../types';
@@ -67,6 +68,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
              <option value="Completado">Completado</option>
              <option value="En Pausa">En Pausa</option>
              <option value="Descartado">Descartado</option>
+             <option value="Planeado / Pendiente">Planeado / Pendiente</option>
            </select>
         </div>
 

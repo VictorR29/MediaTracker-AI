@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI } from "@google/genai";
 import { AIWorkData } from "../types";
 
@@ -32,7 +33,7 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
       "coverDescription": "A short English visual description of the official poster (e.g. 'poster of Naruto anime')",
       "coverImage": "Find a DIRECT public URL (https) for the official poster. PREFER URLs from 'upload.wikimedia.org', 'm.media-amazon.com', 'cdn.myanimelist.net' or 'static.wikia.nocookie.net'. The URL MUST end in .jpg, .png or .webp. If uncertain, leave empty.",
       "primaryColor": "Identify the DOMINANT HEX COLOR associated with the work's cover art or branding (e.g. '#FF5733' for Naruto orange, '#4B0082' for Gachiakuta purple). It MUST be a 6-digit HEX code.",
-      "releaseDate": "The release date or year (e.g. '2023' or '2023-10-05').",
+      "releaseDate": "The release date or year. PREFER ISO FORMAT 'YYYY-MM-DD' if a specific future or past date is known. If only year is known, use 'YYYY'.",
       "endDate": "The end date or year. Use 'Presente' or 'En curso' if ongoing. Leave empty if it's a Movie."
     }
 
