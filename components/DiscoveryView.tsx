@@ -2,13 +2,65 @@
 import React, { useState, useMemo } from 'react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
 import { getRecommendations, RecommendationResult } from '../services/geminiService';
-import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle } from 'lucide-react';
+import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface DiscoveryViewProps {
   library: MediaItem[];
   apiKey: string;
   onSelectRecommendation: (title: string) => void;
 }
+
+// Subcomponent to handle individual card state (expand/collapse)
+const RecommendationCard: React.FC<{ 
+    rec: RecommendationResult; 
+    onSelect: (title: string) => void 
+}> = ({ rec, onSelect }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    return (
+        <div 
+            className="bg-surface border border-slate-700 rounded-xl p-6 hover:border-slate-500 transition-all shadow-lg flex flex-col group h-full"
+        >
+            <div className="flex justify-between items-start mb-2">
+                <h4 className="text-lg font-bold text-white group-hover:text-primary transition-colors">{rec.title}</h4>
+                <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700 shrink-0 ml-2">
+                    {rec.mediaType}
+                </span>
+            </div>
+            
+            <div className="mb-4 flex-grow">
+                <p className={`text-slate-400 text-sm transition-all duration-300 ${isExpanded ? '' : 'line-clamp-3'}`}>
+                    {rec.synopsis}
+                </p>
+                <button 
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="text-xs text-primary mt-1 hover:underline focus:outline-none flex items-center gap-1"
+                >
+                    {isExpanded ? (
+                        <><ChevronUp className="w-3 h-3" /> Leer menos</>
+                    ) : (
+                        <><ChevronDown className="w-3 h-3" /> Leer más</>
+                    )}
+                </button>
+            </div>
+
+            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 mb-4">
+                <p className="text-xs text-indigo-300 italic flex gap-2">
+                    <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span className={isExpanded ? '' : 'line-clamp-2'}>"{rec.reason}"</span>
+                </p>
+            </div>
+
+            <button 
+                onClick={() => onSelect(rec.title)}
+                className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 rounded-lg transition-colors border border-slate-700 hover:border-primary/50 group/btn mt-auto"
+            >
+                <Plus className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                Agregar a Biblioteca
+            </button>
+        </div>
+    );
+};
 
 export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, onSelectRecommendation }) => {
   const [selectedType, setSelectedType] = useState<string>('Anime');
@@ -171,36 +223,11 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       {recommendations.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up">
               {recommendations.map((rec, idx) => (
-                  <div 
-                    key={idx} 
-                    className="bg-surface border border-slate-700 rounded-xl p-6 hover:border-slate-500 transition-all shadow-lg flex flex-col group"
-                  >
-                      <div className="flex justify-between items-start mb-2">
-                          <h4 className="text-lg font-bold text-white group-hover:text-primary transition-colors">{rec.title}</h4>
-                          <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700">
-                             {rec.mediaType}
-                          </span>
-                      </div>
-                      
-                      <p className="text-slate-400 text-sm mb-4 flex-grow line-clamp-3">
-                          {rec.synopsis}
-                      </p>
-
-                      <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 mb-4">
-                          <p className="text-xs text-indigo-300 italic flex gap-2">
-                              <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                              "{rec.reason}"
-                          </p>
-                      </div>
-
-                      <button 
-                        onClick={() => onSelectRecommendation(rec.title)}
-                        className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 rounded-lg transition-colors border border-slate-700 hover:border-primary/50 group/btn"
-                      >
-                          <Plus className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
-                          Agregar a Biblioteca
-                      </button>
-                  </div>
+                  <RecommendationCard 
+                      key={idx} 
+                      rec={rec} 
+                      onSelect={onSelectRecommendation} 
+                  />
               ))}
           </div>
       )}

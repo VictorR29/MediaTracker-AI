@@ -117,6 +117,7 @@ export const getRecommendations = async (
     1. EXCLUDE these titles (already in library): ${excludedTitles.join(", ")}.
     2. Focus on hidden gems or highly acclaimed masterpieces that match the mood of the liked titles.
     3. Ensure the recommendations are actually of type "${mediaType}".
+    4. LANGUAGE: The response (synopsis and reason) MUST BE IN SPANISH.
     
     OUTPUT FORMAT:
     Return a strict JSON array of objects. Do not use Markdown.
@@ -124,8 +125,8 @@ export const getRecommendations = async (
     [
       {
         "title": "Title Name",
-        "synopsis": "One sentence summary.",
-        "reason": "Why this specific user would like it based on their history.",
+        "synopsis": "One sentence summary in SPANISH.",
+        "reason": "Why this specific user would like it based on their history (in SPANISH).",
         "mediaType": "${mediaType}"
       }
     ]
