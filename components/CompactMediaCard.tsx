@@ -1,8 +1,6 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { MediaItem } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass } from 'lucide-react';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
@@ -164,14 +162,28 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
             </span>
         </div>
         
-        {/* Countdown Overlay for Upcoming Releases */}
-        {timeRemaining && (
+        {/* Wishlist / Upcoming Context Overlays */}
+        {isPlanned && (
              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white backdrop-blur-sm p-4 text-center z-20">
-                  <div className="bg-slate-900/80 p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
-                      <Hourglass className="w-6 h-6 text-yellow-400 animate-pulse" />
-                  </div>
-                  <span className="font-bold text-lg leading-tight">{timeRemaining}</span>
-                  <span className="text-xs text-slate-300 mt-1">{aiData.releaseDate}</span>
+                  {timeRemaining ? (
+                    // Scenario A: Future Date Found
+                    <>
+                        <div className="bg-slate-900/80 p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
+                            <Hourglass className="w-6 h-6 text-yellow-400 animate-pulse" />
+                        </div>
+                        <span className="font-bold text-lg leading-tight text-yellow-100">{timeRemaining}</span>
+                        <span className="text-xs text-yellow-500/80 mt-1 font-medium bg-black/40 px-2 py-1 rounded-full">{aiData.releaseDate}</span>
+                    </>
+                  ) : (
+                    // Scenario B: No Date / Waiting for Announcement
+                    <>
+                         <div className="bg-slate-900/80 p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
+                            <CalendarDays className="w-6 h-6 text-slate-400" />
+                        </div>
+                        <span className="font-bold text-base leading-tight text-slate-200">Pendiente de Fecha</span>
+                        <span className="text-xs text-slate-500 mt-1">Esperando Anuncio</span>
+                    </>
+                  )}
              </div>
         )}
 
@@ -199,13 +211,12 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       </div>
       
       {/* Progress Bar Mini - Dynamic Color */}
-      {/* If it's upcoming, maybe hide progress bar or show full width distinct color? Keeping standard for consistency but with different logic if needed */}
       <div className="h-1 w-full bg-slate-700">
          <div 
            className="h-full transition-all duration-500" 
            style={{ 
                width: `${progressPercent}%`,
-               backgroundColor: isPlanned ? '#fbbf24' : (progressPercent === 100 ? '#4ade80' : dynamicColor) 
+               backgroundColor: isPlanned ? (timeRemaining ? '#fbbf24' : '#94a3b8') : (progressPercent === 100 ? '#4ade80' : dynamicColor) 
             }}
          />
       </div>
@@ -214,7 +225,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
           <div className="flex justify-between items-center text-xs text-slate-400">
               {renderSeasonText()}
               {isPlanned ? (
-                  <span className="text-yellow-500 font-medium">Estreno</span>
+                  timeRemaining ? <span className="text-yellow-500 font-medium">Estreno Próximo</span> : <span className="text-slate-500">En Wishlist</span>
               ) : (
                   renderProgressText()
               )}

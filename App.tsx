@@ -12,7 +12,7 @@ import { ContextualGreeting } from './components/ContextualGreeting'; // Import 
 import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
 import { MediaItem, UserProfile } from './types';
-import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock } from 'lucide-react';
+import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
@@ -406,24 +406,34 @@ export default function App() {
     return result;
   }, [library, filters]);
 
-  // Filter Logic for Upcoming Releases
+  // Filter Logic for Wishlist / Upcoming / Backlog
   const upcomingLibrary = useMemo(() => {
      const now = new Date();
      return library.filter(item => {
-         const isPlanned = item.trackingData.status === 'Planeado / Pendiente';
-         if (!isPlanned) return false;
-         
-         const releaseStr = item.aiData.releaseDate;
-         if (!releaseStr) return false;
-
-         const releaseDate = new Date(releaseStr);
-         // Check if valid date and if it is in the future
-         return !isNaN(releaseDate.getTime()) && releaseDate > now;
+         // Show EVERYTHING that is Planned, regardless of date presence
+         return item.trackingData.status === 'Planeado / Pendiente';
      }).sort((a, b) => {
-         // Sort by nearest release date first
-         const dateA = new Date(a.aiData.releaseDate || '');
-         const dateB = new Date(b.aiData.releaseDate || '');
-         return dateA.getTime() - dateB.getTime();
+         // Sort Strategy:
+         // 1. Items with FUTURE dates come first (sorted ascending, nearest first)
+         // 2. Items with PAST dates or NO dates come after
+         
+         const dateAStr = a.aiData.releaseDate;
+         const dateBStr = b.aiData.releaseDate;
+         
+         const dateA = dateAStr ? new Date(dateAStr) : null;
+         const dateB = dateBStr ? new Date(dateBStr) : null;
+         
+         const isFutureA = dateA && !isNaN(dateA.getTime()) && dateA > now;
+         const isFutureB = dateB && !isNaN(dateB.getTime()) && dateB > now;
+
+         if (isFutureA && isFutureB) {
+             return dateA!.getTime() - dateB!.getTime(); // Both future: Nearest first
+         }
+         if (isFutureA) return -1; // A is future, B is not -> A first
+         if (isFutureB) return 1;  // B is future, A is not -> B first
+
+         // If neither are future (both null, or both past), sort by creation date desc (newly added first)
+         return b.createdAt - a.createdAt;
      });
   }, [library]);
 
@@ -508,9 +518,9 @@ export default function App() {
               <button 
                 onClick={() => setView('upcoming')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium ${view === 'upcoming' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-white'}`}
-                title="Próximos Estrenos"
+                title="Wishlist / Pendientes"
               >
-                <CalendarClock className="w-4 h-4" />
+                <Bookmark className="w-4 h-4" />
                 <span className="hidden sm:inline">Wishlist</span>
               </button>
               <button 
@@ -696,7 +706,7 @@ export default function App() {
         {view === 'upcoming' && (
           <div className="animate-fade-in">
              <div className="flex items-center gap-3 mb-6 border-l-4 border-yellow-500 pl-4">
-                 <h2 className="text-2xl font-bold text-white">Próximos Estrenos / Wishlist</h2>
+                 <h2 className="text-2xl font-bold text-white">Mi Wishlist / Pendientes</h2>
                  <CalendarClock className="w-5 h-5 text-yellow-500" />
                  {upcomingLibrary.length > 0 && <span className="text-slate-400 text-sm bg-slate-800 px-2 py-1 rounded-md">{upcomingLibrary.length} pendientes</span>}
              </div>
@@ -704,13 +714,13 @@ export default function App() {
              {upcomingLibrary.length === 0 ? (
                 <div className="text-center py-20 bg-surface rounded-2xl border border-dashed border-slate-700">
                     <CalendarClock className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                    <p className="text-slate-400 text-lg mb-4">No tienes estrenos futuros en seguimiento.</p>
-                    <p className="text-sm text-slate-500 mb-6">Añade obras y márcalas como 'Planeado / Pendiente' para verlas aquí.</p>
+                    <p className="text-slate-400 text-lg mb-4">No tienes nada pendiente.</p>
+                    <p className="text-sm text-slate-500 mb-6">Añade obras y márcalas como 'Planeado / Pendiente' para llenar tu lista de deseos.</p>
                     <button 
                         onClick={() => setView('search')}
                         className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-primary rounded-lg transition-colors"
                     >
-                        Buscar Estrenos
+                        Buscar Obras
                     </button>
                 </div>
              ) : (
