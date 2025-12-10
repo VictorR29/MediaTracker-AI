@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -188,6 +186,7 @@ export default function App() {
 
   const handleUpdateMedia = async (updatedItem: MediaItem) => {
     // Update timestamp on any edit/save progress
+    // This covers: "Clic en Completar Temporada", "Marcar Pelicula Vista", "Guardar Progreso"
     const itemWithTimestamp = { ...updatedItem, lastInteraction: Date.now() };
     
     setCurrentMedia(itemWithTimestamp);
@@ -216,6 +215,7 @@ export default function App() {
   const cancelDelete = () => setDeleteTarget(null);
 
   const handleQuickIncrement = async (item: MediaItem) => {
+    // covers: "Clic en +1 Visto/Leído"
     const { trackingData, aiData } = item;
     const isSeries = ['Anime', 'Serie'].includes(aiData.mediaType);
     const isBookSaga = aiData.mediaType === 'Libro' && trackingData.isSaga;
@@ -243,7 +243,7 @@ export default function App() {
         updatedTracking.watchedEpisodes += 1;
     }
 
-    // Update timestamp here too
+    // Update timestamp strictly
     const updatedItem = { 
         ...item, 
         trackingData: updatedTracking,
@@ -393,7 +393,9 @@ export default function App() {
           const progA = a.trackingData.totalEpisodesInSeason > 0 ? (a.trackingData.watchedEpisodes / a.trackingData.totalEpisodesInSeason) : 0;
           const progB = b.trackingData.totalEpisodesInSeason > 0 ? (b.trackingData.watchedEpisodes / b.trackingData.totalEpisodesInSeason) : 0;
           return progB - progA;
-        case 'updated': default: return (b.lastInteraction || b.createdAt) - (a.lastInteraction || a.createdAt); 
+        case 'updated': default: 
+          // Updated default sort to use lastInteraction primarily
+          return (b.lastInteraction || b.createdAt) - (a.lastInteraction || a.createdAt); 
       }
     });
     return result;

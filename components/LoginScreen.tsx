@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Lock, ArrowRight, User, Sparkles, Unlock } from 'lucide-react';
 import { MediaItem } from '../types';
@@ -10,6 +9,14 @@ interface LoginScreenProps {
   avatarUrl?: string;
   library?: MediaItem[];
 }
+
+// Helper para selección aleatoria
+const pickRandom = (arr: string[] | string | undefined): string | null => {
+  if (!arr) return null;
+  if (typeof arr === 'string') return arr; 
+  if (arr.length === 0) return null;
+  return arr[Math.floor(Math.random() * arr.length)];
+};
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, avatarUrl, library = [] }) => {
   const [password, setPassword] = useState('');
@@ -26,8 +33,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
 
     const user = username || 'Viajero';
     
-    // SELECCIÓN DE OBRA DE ENFOQUE POR ÚLTIMA INTERACCIÓN
-    // Ordenar por lastInteraction (o createdAt como fallback) descendente
+    // 1. SELECCIÓN DE OBRA DE ENFOQUE POR ÚLTIMA INTERACCIÓN (TIMESTAMP UNIFICADO)
+    // Ordenar estrictamente por lastInteraction descendente
     const sortedByInteraction = [...library].sort((a, b) => {
         const timeA = a.lastInteraction || a.createdAt || 0;
         const timeB = b.lastInteraction || b.createdAt || 0;
@@ -35,62 +42,55 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
     });
 
     const focusWork = sortedByInteraction[0];
-
     if (!focusWork) return null;
 
-    // 3. Extraer Datos Profundos de la Obra Ganadora
+    // 2. Extraer Datos Profundos de la Obra Ganadora (Selección Aleatoria)
     const title = focusWork.aiData.title;
-    const genre = focusWork.aiData.genres[0] || 'esta historia';
     
-    // Extraer personaje favorito (random si hay varios)
-    const characters = focusWork.trackingData.favoriteCharacters;
-    const charList = Array.isArray(characters) ? characters : (typeof characters === 'string' ? (characters as string).split(',') : []);
-    const character = charList.length > 0 
-        ? charList[Math.floor(Math.random() * charList.length)].trim() 
-        : 'el protagonista';
+    // Random Genre
+    const genres = focusWork.aiData.genres || [];
+    const genre = pickRandom(genres) || 'esta historia';
+    
+    // Random Character
+    const charsRaw = focusWork.trackingData.favoriteCharacters;
+    const charList = Array.isArray(charsRaw) ? charsRaw : (typeof charsRaw === 'string' ? (charsRaw as string).split(',') : []);
+    const cleanChars = charList.filter(c => c && c.trim() !== '');
+    const character = pickRandom(cleanChars) || 'el protagonista';
 
-    // Extraer emoción dominante
-    const emotions = focusWork.trackingData.emotionalTags;
-    const emotion = emotions.length > 0 
-        ? emotions[Math.floor(Math.random() * emotions.length)].toLowerCase() 
-        : 'emoción pura';
+    // Random Emotion
+    const emotionsRaw = focusWork.trackingData.emotionalTags;
+    const emotionList = Array.isArray(emotionsRaw) ? emotionsRaw : [];
+    const emotion = pickRandom(emotionList) || 'una emoción intensa';
 
-    // 4. Plantillas de Mensajes (Variedad y Contexto)
+    // 3. Plantillas de Mensajes
     const templates = [
         // Template 1: Enfocado en Personaje y Trama
         {
-            condition: () => charList.length > 0,
+            condition: () => cleanChars.length > 0,
             title: `Bienvenido, ${user}.`,
-            subtitle: `El mundo de ${title} sigue girando. ¿Estás listo para volver a ver a ${character}?`,
+            subtitle: `El mundo de "${title}" sigue girando. ¿Estás listo para volver a ver a ${character}?`,
             cta: `Continuar con ${title}`
         },
         // Template 2: Enfocado en Emoción
         {
-            condition: () => emotions.length > 0,
+            condition: () => emotionList.length > 0,
             title: `Hola de nuevo, ${user}.`,
-            subtitle: `Esa sensación de ${emotion} en ${title} aún perdura. No la dejes enfriar.`,
+            subtitle: `Esa sensación de ${emotion.toLowerCase()} en "${title}" aún perdura.`,
             cta: `Revivir ${title}`
         },
         // Template 3: Enfocado en el Género (Obsesión)
         {
             condition: () => true,
             title: `${user}, tu viaje continúa.`,
-            subtitle: `Tu afinidad por el género ${genre} es notable. ${title} requiere tu atención.`,
+            subtitle: `Tu afinidad por el género ${genre} es notable. "${title}" requiere tu atención.`,
             cta: `Ingresar a la Colección`
         },
-        // Template 4: Desafío / Venganza (Estilo Shonen/Drama)
+        // Template 4: Desafío / Venganza (Si aplica)
         {
             condition: () => genre.toLowerCase().includes('acción') || genre.toLowerCase().includes('drama'),
-            title: `La batalla no ha terminado, ${user}.`,
-            subtitle: `Recuerda todo lo que ha pasado en ${title}. ${character} te necesita para el desenlace.`,
+            title: `La batalla no ha terminado.`,
+            subtitle: `Recuerda todo lo que ha pasado en "${title}". ${character} te necesita.`,
             cta: `Reanudar Misión`
-        },
-        // Template 5: Relax / Comfort (Estilo Slice of Life)
-        {
-            condition: () => genre.toLowerCase().includes('recuentos') || genre.toLowerCase().includes('comedia'),
-            title: `Tómate un respiro, ${user}.`,
-            subtitle: `${title} es tu lugar seguro hoy. Vuelve a sonreír con ${character}.`,
-            cta: `Desconectar un rato`
         }
     ];
 
