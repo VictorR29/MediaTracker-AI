@@ -1,6 +1,8 @@
+
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Lock, ArrowRight, User, Sparkles, Unlock } from 'lucide-react';
-import { MediaItem, RATING_TO_SCORE } from '../types';
+import { MediaItem } from '../types';
 
 interface LoginScreenProps {
   onUnlock: (password: string) => boolean;
@@ -23,34 +25,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
     if (!library || library.length === 0) return null;
 
     const user = username || 'Viajero';
-    let focusWork: MediaItem | undefined;
+    
+    // SELECCIÓN DE OBRA DE ENFOQUE POR ÚLTIMA INTERACCIÓN
+    // Ordenar por lastInteraction (o createdAt como fallback) descendente
+    const sortedByInteraction = [...library].sort((a, b) => {
+        const timeA = a.lastInteraction || a.createdAt || 0;
+        const timeB = b.lastInteraction || b.createdAt || 0;
+        return timeB - timeA;
+    });
 
-    // JERARQUÍA DE SELECCIÓN DE OBRA DE ENFOQUE
-
-    // 1. Prioridad Máxima: Obras Activas (Viendo/Leyendo o Planeado)
-    // Filtramos TODAS las que cumplen para no detenernos en la primera si hay una más reciente abajo
-    const activeWorks = library.filter(i => 
-        i.trackingData.status === 'Viendo/Leyendo' || 
-        i.trackingData.status === 'Planeado / Pendiente'
-    );
-
-    // 2. Segunda Prioridad: Obras Terminadas de Alto Impacto (God Tier)
-    const godTierWorks = library.filter(i => 
-        i.trackingData.status === 'Completado' && 
-        i.trackingData.rating.includes('God Tier')
-    );
-
-    // SELECCIÓN DEL GANADOR
-    if (activeWorks.length > 0) {
-        // Asumimos que la librería viene ordenada por creación/reciente por defecto (index 0)
-        focusWork = activeWorks[0];
-    } else if (godTierWorks.length > 0) {
-        // Si no hay activas, buscamos la God Tier más reciente
-        focusWork = godTierWorks[0];
-    } else {
-        // Fallback: La obra más reciente añadida de cualquier tipo
-        focusWork = library[0];
-    }
+    const focusWork = sortedByInteraction[0];
 
     if (!focusWork) return null;
 

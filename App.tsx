@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -159,6 +160,7 @@ export default function App() {
         id: uuidv4(),
         aiData,
         createdAt: Date.now(),
+        lastInteraction: Date.now(), // Initialize timestamp
         trackingData: {
           status: 'Viendo/Leyendo',
           currentSeason: 1,
@@ -185,13 +187,15 @@ export default function App() {
   };
 
   const handleUpdateMedia = async (updatedItem: MediaItem) => {
-    setCurrentMedia(updatedItem);
-    const itemExists = library.some(i => i.id === updatedItem.id);
+    // Update timestamp on any edit/save progress
+    const itemWithTimestamp = { ...updatedItem, lastInteraction: Date.now() };
+    
+    setCurrentMedia(itemWithTimestamp);
+    
+    const itemExists = library.some(i => i.id === itemWithTimestamp.id);
     if (itemExists) {
-        setLibrary(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
-    }
-    if (itemExists) {
-       await saveMediaItem(updatedItem);
+        setLibrary(prev => prev.map(item => item.id === itemWithTimestamp.id ? itemWithTimestamp : item));
+        await saveMediaItem(itemWithTimestamp);
     }
   };
 
@@ -239,7 +243,13 @@ export default function App() {
         updatedTracking.watchedEpisodes += 1;
     }
 
-    const updatedItem = { ...item, trackingData: updatedTracking };
+    // Update timestamp here too
+    const updatedItem = { 
+        ...item, 
+        trackingData: updatedTracking,
+        lastInteraction: Date.now() 
+    };
+    
     setLibrary(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
     await saveMediaItem(updatedItem);
     if (currentMedia && currentMedia.id === updatedItem.id) setCurrentMedia(updatedItem);
@@ -247,9 +257,12 @@ export default function App() {
 
   const addToLibrary = async () => {
     if (currentMedia && !library.find(i => i.id === currentMedia.id)) {
-      const newLib = [currentMedia, ...library];
+      // Ensure timestamp is set when adding
+      const mediaToAdd = { ...currentMedia, lastInteraction: Date.now() };
+      
+      const newLib = [mediaToAdd, ...library];
       setLibrary(newLib);
-      await saveMediaItem(currentMedia);
+      await saveMediaItem(mediaToAdd);
       
       // Clear the search view and reset the search bar
       setCurrentMedia(null);
@@ -380,7 +393,7 @@ export default function App() {
           const progA = a.trackingData.totalEpisodesInSeason > 0 ? (a.trackingData.watchedEpisodes / a.trackingData.totalEpisodesInSeason) : 0;
           const progB = b.trackingData.totalEpisodesInSeason > 0 ? (b.trackingData.watchedEpisodes / b.trackingData.totalEpisodesInSeason) : 0;
           return progB - progA;
-        case 'updated': default: return b.createdAt - a.createdAt; 
+        case 'updated': default: return (b.lastInteraction || b.createdAt) - (a.lastInteraction || a.createdAt); 
       }
     });
     return result;

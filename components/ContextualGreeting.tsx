@@ -1,80 +1,98 @@
+
+
 import React, { useMemo, useState, useEffect } from 'react';
-import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
-import { Sparkles, Coffee, Sun, Moon, Zap, Heart, Skull, Rocket, BookOpen, Smile, Crown, Flame } from 'lucide-react';
+import { MediaItem, UserProfile } from '../types';
+import { Sparkles, Coffee, Sun, Moon, Film, Tv, BookOpen, PenTool, Zap, Heart, Clock, Star } from 'lucide-react';
 
 interface ContextualGreetingProps {
   userProfile: UserProfile;
   library: MediaItem[];
 }
 
+// Interfaces for Template System
+interface Template {
+  text: string;
+  subtext: string;
+  icon: React.ElementType;
+}
+
+type TemplateBank = Record<string, Template[]>;
+
 export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProfile, library }) => {
   const [greeting, setGreeting] = useState<{ text: string; icon: React.ElementType, subtext?: string } | null>(null);
 
-  // Analyze library to find Deep Context
+  // Analyze library to find Deep Context based on Last Interaction
   const contextData = useMemo(() => {
     if (library.length === 0) return { status: 'empty' };
 
-    let focusWork: MediaItem | undefined;
+    // 1. Sort strictly by lastInteraction timestamp to find the absolute latest focus work
+    // Fallback to createdAt if lastInteraction is missing (for legacy items)
+    const sortedByInteraction = [...library].sort((a, b) => {
+        const timeA = a.lastInteraction || a.createdAt || 0;
+        const timeB = b.lastInteraction || b.createdAt || 0;
+        return timeB - timeA;
+    });
 
-    // 1. Prioridad Máxima: Obras Activas (Viendo/Leyendo o Planeado)
-    const activeWorks = library.filter(i => 
-        i.trackingData.status === 'Viendo/Leyendo' || 
-        i.trackingData.status === 'Planeado / Pendiente'
-    );
-
-    // 2. Segunda Prioridad: God Tier Completado
-    const godTierWorks = library.filter(i => 
-        i.trackingData.status === 'Completado' && 
-        i.trackingData.rating.includes('God Tier')
-    );
-
-    // Selección basada en prioridad
-    if (activeWorks.length > 0) {
-        focusWork = activeWorks[0];
-    } else if (godTierWorks.length > 0) {
-        focusWork = godTierWorks[0];
-    } else {
-        focusWork = library[0];
-    }
+    const focusWork = sortedByInteraction[0];
+    if (!focusWork) return { status: 'empty' };
 
     // Extraer Metadata
-    const title = focusWork?.aiData.title || '';
-    const genre = focusWork?.aiData.genres[0] || 'Historias';
+    const title = focusWork.aiData.title;
+    const mediaType = focusWork.aiData.mediaType;
     
-    // Character
-    const chars = focusWork?.trackingData.favoriteCharacters || [];
+    // Deep Metadata Extraction
+    const chars = focusWork.trackingData.favoriteCharacters || [];
     const charList = Array.isArray(chars) ? chars : (typeof chars === 'string' ? (chars as string).split(',') : []);
-    const character = charList.length > 0 ? charList[0].trim() : 'ese personaje especial';
+    const character = charList.length > 0 ? charList[0].trim() : (mediaType === 'Pelicula' ? 'el elenco' : 'el protagonista');
 
-    // Emotion
-    const emotions = focusWork?.trackingData.emotionalTags || [];
-    const emotion = emotions.length > 0 ? emotions[0].toLowerCase() : 'emoción';
-
-    // Genre Dominance for general stats
-    const genreCounts: Record<string, number> = {};
-    library.forEach(item => {
-        const r = item.trackingData.rating;
-        const s = RATING_TO_SCORE[r] || 0;
-        if (s >= 7 || item.trackingData.status === 'Completado') {
-             item.aiData.genres.forEach(g => genreCounts[g] = (genreCounts[g] || 0) + 1);
-        }
-    });
-    let topGenre = '';
-    let maxCount = 0;
-    Object.entries(genreCounts).forEach(([g, c]) => { if (c > maxCount) { maxCount = c; topGenre = g; } });
+    const emotions = focusWork.trackingData.emotionalTags || [];
+    const emotion = emotions.length > 0 ? emotions[0].toLowerCase() : 'esa emoción';
 
     return {
         status: 'active',
         focusWork,
         title,
+        mediaType,
         character,
-        emotion,
-        genre,
-        topGenre: topGenre || genre,
-        hasChar: charList.length > 0,
-        hasEmotion: emotions.length > 0
+        emotion
     };
   }, [library]);
+
+  // TEMPLATE BANKS BY CONTENT TYPE
+  const TEMPLATES: TemplateBank = useMemo(() => ({
+    // Bank 1: Peliculas
+    'Pelicula': [
+        { text: `Los créditos de {title} han terminado, {user}.`, subtext: `Pero la sensación de {emotion} perdura en el aire.`, icon: Film },
+        { text: `¿Sigues pensando en el final de {title}?`, subtext: `Fue un viaje corto pero intenso junto a {character}.`, icon: Star },
+        { text: `{user}, el cine tiene el poder de cambiarnos.`, subtext: `Como lo hizo {title} con su dosis de {emotion}.`, icon: Film },
+        { text: `Una historia contada en dos horas: {title}.`, subtext: `Suficiente para que {character} sea memorable.`, icon: Clock },
+        { text: `La pantalla se apaga, pero {title} se queda.`, subtext: `Esa atmósfera de {emotion} es difícil de olvidar.`, icon: Heart }
+    ],
+    // Bank 2: Series & Anime
+    'Serie': [
+        { text: `El siguiente episodio de {title} te espera, {user}.`, subtext: `{character} tiene mucho que contarte todavía.`, icon: Tv },
+        { text: `¿Maratón de {title} hoy?`, subtext: `La trama se está poniendo intensa y llena de {emotion}.`, icon: Zap },
+        { text: `No dejes a {character} en suspenso.`, subtext: `El mundo de {title} sigue girando sin ti.`, icon: Clock },
+        { text: `Esa sensación de {emotion} en {title}...`, subtext: `Es lo que hace que esta serie sea especial.`, icon: Heart },
+        { text: `{user}, es hora de volver al mundo de {title}.`, subtext: `Quedan historias por cerrar.`, icon: Tv }
+    ],
+    // Bank 3: Libros
+    'Libro': [
+        { text: `Las páginas de {title} te llaman, {user}.`, subtext: `{character} vive en tu imaginación ahora.`, icon: BookOpen },
+        { text: `Solo un capítulo más de {title}...`, subtext: `Sumérgete de nuevo en esa atmósfera de {emotion}.`, icon: Moon },
+        { text: `El marcador en {title} sigue en el mismo lugar.`, subtext: `Es hora de avanzar en la historia de {character}.`, icon: BookOpen },
+        { text: `{user}, la tinta de {title} es indeleble.`, subtext: `Sobre todo cuando te provoca tanta {emotion}.`, icon: Star },
+        { text: `Un buen libro como {title} es un amigo.`, subtext: `Vuelve a visitar a {character} hoy.`, icon: Coffee }
+    ],
+    // Bank 4: Reading Visual (Manhwa, Manga, Comic)
+    'LecturaVisual': [
+        { text: `El arte de {title} te sigue esperando.`, subtext: `Cada panel con {character} es una obra maestra.`, icon: PenTool },
+        { text: `¿Listo para el siguiente capítulo de {title}?`, subtext: `Ese cliffhanger lleno de {emotion} no se resolverá solo.`, icon: Zap },
+        { text: `{user}, el mundo de {title} es adictivo.`, subtext: `Vuelve a conectar con la historia de {character}.`, icon: BookOpen },
+        { text: `Desliza hacia el siguiente panel de {title}.`, subtext: `Donde la {emotion} cobra vida visualmente.`, icon: PenTool },
+        { text: `Tu lectura de {title} está en pausa.`, subtext: `Es hora de reanudar el viaje de {character}.`, icon: Clock }
+    ]
+  }), []);
 
   useEffect(() => {
     const generateMessage = () => {
@@ -89,62 +107,48 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
       const { username } = userProfile;
 
       // 1. EMPTY STATE
-      if (contextData.status === 'empty') {
+      if (contextData.status === 'empty' || !contextData.focusWork) {
           setGreeting({ 
-              text: `${timeGreeting}, ${username}. Tu biblioteca es un lienzo en blanco. ¿Qué descubriremos hoy?`,
+              text: `${timeGreeting}, ${username}.`,
+              subtext: "Tu biblioteca es un lienzo en blanco. ¿Qué descubriremos hoy?",
               icon: Sparkles
           });
           return;
       }
 
-      // 2. PLANTILLAS DINÁMICAS (ROTACIÓN)
-      const templates = [
-          // T1: Standard / Time based
-          {
-              condition: true,
-              text: `${timeGreeting}, ${username}. ¿Listo para continuar donde lo dejaste en ${contextData.title}?`,
-              subtext: `Tu colección de ${contextData.topGenre} sigue creciendo.`,
-              icon: TimeIcon
-          },
-          // T2: Character Focus
-          {
-              condition: contextData.hasChar,
-              text: `El destino de ${contextData.character} pende de un hilo, ${username}.`,
-              subtext: `Continúa viendo ${contextData.title}.`,
-              icon: Crown
-          },
-          // T3: Emotion Focus
-          {
-              condition: contextData.hasEmotion,
-              text: `${username}, esa sensación de ${contextData.emotion} en ${contextData.title} es única.`,
-              subtext: `Vale la pena seguir explorando.`,
-              icon: Heart
-          },
-          // T4: Action / Hype
-          {
-              condition: true,
-              text: `¡Qué buen día para consumir ${contextData.genre}, ${username}!`,
-              subtext: `${contextData.title} te está esperando.`,
-              icon: Zap
-          },
-          // T5: Obsession / God Tier Ref
-          {
-              condition: true,
-              text: `Tu obsesión actual: ${contextData.title}.`,
-              subtext: `No dejes a ${contextData.character} esperando.`,
-              icon: Flame
-          }
-      ];
+      // 2. DETERMINE CATEGORY & SELECT TEMPLATE
+      const type = contextData.mediaType;
+      let category = 'Serie'; // Default
+      if (type === 'Pelicula') category = 'Pelicula';
+      else if (type === 'Libro') category = 'Libro';
+      else if (['Manhwa', 'Manga', 'Comic'].includes(type)) category = 'LecturaVisual';
+      else if (['Anime', 'Serie'].includes(type)) category = 'Serie';
 
-      // Filter & Random Selection
-      const valid = templates.filter(t => t.condition);
-      const selected = valid[Math.floor(Math.random() * valid.length)];
+      const bank = TEMPLATES[category] || TEMPLATES['Serie'];
+      const rawTemplate = bank[Math.floor(Math.random() * bank.length)];
 
-      setGreeting({ text: selected.text, icon: selected.icon, subtext: selected.subtext });
+      // 3. REPLACE PLACEHOLDERS
+      const processedText = rawTemplate.text
+        .replace('{user}', username)
+        .replace('{title}', contextData.title || 'tu obra')
+        .replace('{character}', contextData.character)
+        .replace('{emotion}', contextData.emotion);
+
+      const processedSubtext = rawTemplate.subtext
+        .replace('{user}', username)
+        .replace('{title}', contextData.title || 'tu obra')
+        .replace('{character}', contextData.character)
+        .replace('{emotion}', contextData.emotion);
+
+      setGreeting({ 
+          text: processedText, 
+          subtext: processedSubtext, 
+          icon: rawTemplate.icon 
+      });
     };
 
     generateMessage();
-  }, [userProfile, contextData]);
+  }, [userProfile, contextData, TEMPLATES]);
 
   if (!greeting) return null;
   const Icon = greeting.icon;

@@ -38,6 +38,7 @@ export interface MediaItem {
   aiData: AIWorkData;
   trackingData: UserTrackingData;
   createdAt: number;
+  lastInteraction?: number; // New: Timestamp for the last user interaction (progress, edit, etc.)
 }
 
 export interface UserPreferences {
