@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react';
-import { Lock, ArrowRight, Sparkles } from 'lucide-react';
+import { Lock, ArrowRight, Sparkles, User } from 'lucide-react';
 
 interface LoginScreenProps {
   onUnlock: (password: string) => boolean;
+  username?: string;
+  avatarUrl?: string;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, avatarUrl }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
@@ -23,10 +25,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock }) => {
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
-           <div className="w-16 h-16 bg-slate-800 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-2xl border border-slate-700">
-               <Lock className="w-8 h-8 text-primary" />
+           <div className="w-24 h-24 rounded-full bg-slate-800 border-2 border-slate-700 mx-auto mb-6 flex items-center justify-center overflow-hidden shadow-2xl relative group">
+               {avatarUrl ? (
+                   <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
+               ) : (
+                   <User className="w-10 h-10 text-slate-400" />
+               )}
+               {/* Optional Lock Overlay if avatar present, or always present on hover to indicate lock status */}
+               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                   <Lock className="w-6 h-6 text-white" />
+               </div>
            </div>
-           <h1 className="text-2xl font-bold text-white mb-2">Colección Privada</h1>
+           
+           <h1 className="text-2xl font-bold text-white mb-2">
+               {username ? `Hola, ${username}` : 'Colección Privada'}
+           </h1>
            <p className="text-slate-400">Ingresa tu contraseña para acceder</p>
         </div>
 

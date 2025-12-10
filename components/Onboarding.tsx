@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { UserProfile, THEME_COLORS } from '../types';
-import { Sparkles, Key, Lock, Eye, EyeOff, Upload } from 'lucide-react';
+import { Sparkles, Key, Lock, Eye, EyeOff, Upload, UserCircle, Image as ImageIcon } from 'lucide-react';
 
 interface OnboardingProps {
   onComplete: (profile: UserProfile) => void;
@@ -10,12 +10,16 @@ interface OnboardingProps {
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) => {
   const [username, setUsername] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedColor, setSelectedColor] = useState(THEME_COLORS[0]);
   const [showPassword, setShowPassword] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +30,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
     if (username.trim() && apiKey.trim()) {
       onComplete({
         username: username.trim(),
+        avatarUrl: avatarUrl.trim(),
         accentColor: selectedColor.value,
         apiKey: apiKey.trim(),
         password: password.trim() || undefined
@@ -43,6 +48,38 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
         onImport(file);
     }
     if (e.target) e.target.value = ''; // Reset
+  };
+
+  // Avatar Upload Logic
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processAvatarFile(file);
+  };
+
+  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) processAvatarFile(file);
+  };
+
+  const processAvatarFile = (file: File) => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+          if (e.target?.result) setAvatarUrl(e.target.result as string);
+      };
+      reader.readAsDataURL(file);
   };
 
   return (
@@ -83,17 +120,64 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Username */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">¿Cómo te llamas?</label>
-            <input
-              type="text"
-              required
-              className="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-              placeholder="Tu nombre de usuario"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
+          {/* Identity Section */}
+          <div className="space-y-4">
+             <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">¿Cómo te llamas?</label>
+                <div className="relative">
+                  <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <input
+                    type="text"
+                    required
+                    className="w-full bg-slate-800 border border-slate-600 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                    placeholder="Tu nombre de usuario"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+             </div>
+
+             <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Foto de Perfil (Opcional)</label>
+                <div className="flex items-center gap-4">
+                    <div 
+                        className={`relative w-20 h-20 rounded-full border-2 border-dashed flex-shrink-0 flex items-center justify-center cursor-pointer overflow-hidden transition-all group ${
+                            isDragging ? 'border-primary bg-primary/10' : 'border-slate-600 hover:border-slate-500 bg-slate-800'
+                        }`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={() => avatarInputRef.current?.click()}
+                    >
+                        {avatarUrl ? (
+                            <>
+                                <img src={avatarUrl} alt="Preview" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                    <Upload className="w-5 h-5 text-white" />
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-center p-1">
+                                <Upload className="w-5 h-5 text-slate-500 mx-auto" />
+                                <span className="text-[8px] text-slate-500 uppercase font-bold block mt-1">Subir</span>
+                            </div>
+                        )}
+                        <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={handleAvatarFileSelect} />
+                    </div>
+
+                    <div className="relative flex-grow">
+                      <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                      <input
+                        type="url"
+                        className="w-full bg-slate-800 border border-slate-600 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        placeholder="O pega una URL de imagen..."
+                        value={avatarUrl}
+                        onChange={(e) => setAvatarUrl(e.target.value)}
+                      />
+                    </div>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">Arrastra una imagen o pega un enlace (jpg, png).</p>
+             </div>
           </div>
 
           {/* API Key */}

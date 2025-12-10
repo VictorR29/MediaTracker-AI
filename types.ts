@@ -50,6 +50,7 @@ export interface UserPreferences {
 
 export interface UserProfile {
   username: string;
+  avatarUrl?: string; // URL for profile picture
   accentColor: string; // e.g. 'indigo', 'purple', 'emerald'
   apiKey: string; // User provided API Key
   password?: string; // Optional access password (simple hash or plain for this demo)

@@ -427,7 +427,13 @@ export default function App() {
   }
 
   if (isLocked) {
-      return <LoginScreen onUnlock={handleUnlock} />;
+      return (
+          <LoginScreen 
+            onUnlock={handleUnlock} 
+            username={userProfile.username}
+            avatarUrl={userProfile.avatarUrl}
+          />
+      );
   }
 
   return (
@@ -509,8 +515,12 @@ export default function App() {
                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                    className="flex items-center gap-2 hover:bg-slate-800 p-1.5 pr-3 rounded-full transition-colors group"
                  >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center border border-slate-500 group-hover:border-primary transition-colors shadow-sm">
-                        <User className="w-4 h-4 text-slate-300" />
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center border border-slate-500 group-hover:border-primary transition-colors shadow-sm overflow-hidden">
+                        {userProfile.avatarUrl ? (
+                            <img src={userProfile.avatarUrl} alt={userProfile.username} className="w-full h-full object-cover" />
+                        ) : (
+                            <User className="w-4 h-4 text-slate-300" />
+                        )}
                     </div>
                     <span className="text-sm font-medium text-slate-300 hidden sm:block group-hover:text-white transition-colors">
                       {userProfile.username}

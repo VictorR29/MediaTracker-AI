@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { UserProfile } from '../types';
-import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -15,14 +15,25 @@ interface SettingsModalProps {
 export const SettingsModal: React.FC<SettingsModalProps> = ({ 
     isOpen, onClose, userProfile, onUpdateProfile, onImportData, onExportData 
 }) => {
-  const [activeTab, setActiveTab] = useState<'security' | 'data'>('data');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'data'>('profile');
+  const [username, setUsername] = useState(userProfile.username);
+  const [avatarUrl, setAvatarUrl] = useState(userProfile.avatarUrl || '');
   const [apiKey, setApiKey] = useState(userProfile.apiKey);
   const [password, setPassword] = useState(userProfile.password || '');
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleSaveProfile = () => {
+      const updatedProfile = { ...userProfile, username, avatarUrl };
+      onUpdateProfile(updatedProfile);
+      alert("Perfil actualizado correctamente.");
+  };
 
   const handleSaveSecurity = () => {
      const updatedProfile = { ...userProfile, apiKey };
@@ -61,6 +72,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       (e.target as HTMLInputElement).value = '';
   };
 
+  // Avatar Upload Logic for Settings
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processAvatarFile(file);
+  };
+
+  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) processAvatarFile(file);
+  };
+
+  const processAvatarFile = (file: File) => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+          if (e.target?.result) setAvatarUrl(e.target.result as string);
+      };
+      reader.readAsDataURL(file);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
         <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col md:flex-row h-[600px] md:h-auto">
@@ -69,6 +112,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="w-full md:w-64 bg-slate-900/50 border-b md:border-b-0 md:border-r border-slate-700 p-4 md:p-6 flex flex-col gap-2">
                 <h2 className="text-xl font-bold text-white mb-4 px-2">Configuración</h2>
                 
+                <button 
+                  onClick={() => setActiveTab('profile')}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
+                      activeTab === 'profile' ? 'bg-primary text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                    <User className="w-4 h-4" />
+                    Perfil
+                </button>
+
                 <button 
                   onClick={() => setActiveTab('data')}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
@@ -95,6 +148,80 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
                     <X className="w-5 h-5" />
                 </button>
+
+                {activeTab === 'profile' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <div>
+                            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <User className="w-5 h-5 text-indigo-400" /> Identidad
+                            </h3>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-200 mb-2">Nombre de Usuario</label>
+                                    <input 
+                                        type="text"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-primary outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
+                                        <ImageIcon className="w-4 h-4"/> Foto de Perfil
+                                    </label>
+                                    <div className="flex gap-4 items-center">
+                                        <div 
+                                            className={`relative w-16 h-16 rounded-full border-2 border-dashed flex-shrink-0 flex items-center justify-center cursor-pointer overflow-hidden transition-all group ${
+                                                isDragging ? 'border-primary bg-primary/10' : 'border-slate-600 hover:border-slate-500 bg-slate-800'
+                                            }`}
+                                            onDragOver={handleDragOver}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={handleDrop}
+                                            onClick={() => avatarInputRef.current?.click()}
+                                        >
+                                            {avatarUrl ? (
+                                                <>
+                                                    <img src={avatarUrl} className="w-full h-full object-cover" alt="Preview" onError={(e) => e.currentTarget.style.display = 'none'} />
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                        <Upload className="w-4 h-4 text-white" />
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <Upload className="w-5 h-5 text-slate-400" />
+                                            )}
+                                            <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={handleAvatarFileSelect} />
+                                        </div>
+
+                                        <div className="flex-grow">
+                                            <input 
+                                                type="url"
+                                                value={avatarUrl}
+                                                onChange={(e) => setAvatarUrl(e.target.value)}
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-primary outline-none transition-all"
+                                                placeholder="https://ejemplo.com/avatar.jpg"
+                                            />
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mt-2">
+                                        Pega un enlace o sube una imagen directamente.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-4">
+                            <button 
+                                onClick={handleSaveProfile}
+                                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-indigo-600 text-white font-bold py-2.5 rounded-xl transition-colors shadow-lg"
+                            >
+                                <Save className="w-4 h-4" />
+                                Guardar Perfil
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {activeTab === 'data' && (
                     <div className="space-y-8 animate-fade-in">
