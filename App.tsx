@@ -432,6 +432,7 @@ export default function App() {
             onUnlock={handleUnlock} 
             username={userProfile.username}
             avatarUrl={userProfile.avatarUrl}
+            library={library}
           />
       );
   }
