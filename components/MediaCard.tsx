@@ -41,21 +41,36 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(item.aiData.mediaType);
   const isSeriesContent = ['Anime', 'Serie'].includes(item.aiData.mediaType);
 
-  // Dynamic Congratulatory Message Logic
+  // --- Dynamic Congratulatory Message Logic (Updated) ---
   const completionMessage = useMemo(() => {
      if (tracking.status !== 'Completado') return null;
      
      const user = username || 'Viajero';
      const title = item.aiData.title;
      
-     if (isBook || isReadingContent) {
-         return `¡Felicidades, ${user}! Has cerrado la última página de "${title}". Una historia más para tu alma.`;
-     }
-     if (isMovie) {
-         return `¡Enhorabuena, ${user}! Has completado el viaje de "${title}". ¿Qué tal estuvo el final?`;
-     }
-     return `¡Victoria, ${user}! Has conquistado todos los episodios de "${title}". ¡Una gema más a tu colección!`;
-  }, [tracking.status, username, item.aiData.title, isBook, isReadingContent, isMovie]);
+     // Deep Info
+     const chars = tracking.favoriteCharacters;
+     const charList = Array.isArray(chars) ? chars : (typeof chars === 'string' ? (chars as string).split(',') : []);
+     const character = charList.length > 0 ? charList[0].trim() : null;
+
+     const templates = [
+         // T1: Victoria Clásica
+         `¡Victoria, ${user}! Has conquistado "${title}" y añadido otra gema a tu colección.`,
+         // T2: Despedida Personaje
+         character 
+            ? `¡Felicidades! Ha sido un largo viaje junto a ${character}. La historia de "${title}" vivirá en tu memoria.`
+            : `¡Enhorabuena! Has llegado al final de "${title}". Un viaje inolvidable.`,
+         // T3: Logro Desbloqueado
+         `¡Logro Desbloqueado! Completaste "${title}". Tu perfil de ${item.aiData.mediaType} sube de nivel.`,
+         // T4: Emocional
+         `Has cerrado el ciclo de "${title}", ${user}. Es hora de procesar lo vivido.`,
+         // T5: Coleccionista
+         `Una obra más para los libros de historia. "${title}" ha sido completada con éxito.`
+     ];
+
+     // Random selection to feel dynamic
+     return templates[Math.floor(Math.random() * templates.length)];
+  }, [tracking.status, username, item.aiData.title, tracking.favoriteCharacters, item.aiData.mediaType]);
 
   // Sync state if item changes
   useEffect(() => {

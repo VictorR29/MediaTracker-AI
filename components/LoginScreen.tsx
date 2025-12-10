@@ -19,38 +19,95 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
     setMounted(true);
   }, []);
 
-  // Analyze library for "Emotional Context"
-  const context = useMemo(() => {
+  // --- LOGICA DE MENSAJERIA CONTEXTUAL PROFUNDA ---
+  const emotionalContext = useMemo(() => {
     if (!library || library.length === 0) return null;
 
-    // 1. Find Dominant Genre (based on weighted ratings)
-    const genreCounts: Record<string, number> = {};
-    library.forEach(item => {
-        const rating = item.trackingData.rating;
-        const score = RATING_TO_SCORE[rating] || 5; // Default weight 5
-        item.aiData.genres.forEach(g => {
-            genreCounts[g] = (genreCounts[g] || 0) + score;
-        });
-    });
+    const user = username || 'Viajero';
+
+    // 1. Definir 'Obra de Enfoque' (Jerarquía: Viendo > God Tier > Reciente)
+    let focusWork = library.find(i => i.trackingData.status === 'Viendo/Leyendo');
     
-    let dominantGenre = 'Anime';
-    let maxScore = 0;
-    Object.entries(genreCounts).forEach(([g, s]) => {
-        if (s > maxScore) {
-            maxScore = s;
-            dominantGenre = g;
+    if (!focusWork) {
+        focusWork = library.find(i => i.trackingData.rating.includes('God Tier'));
+    }
+    if (!focusWork) {
+        focusWork = library[0]; // Fallback al más reciente
+    }
+
+    // 2. Extraer Datos Profundos
+    const title = focusWork.aiData.title;
+    const genre = focusWork.aiData.genres[0] || 'esta historia';
+    
+    // Extraer personaje favorito (random si hay varios)
+    const characters = focusWork.trackingData.favoriteCharacters;
+    const charList = Array.isArray(characters) ? characters : (typeof characters === 'string' ? (characters as string).split(',') : []);
+    const character = charList.length > 0 
+        ? charList[Math.floor(Math.random() * charList.length)].trim() 
+        : 'el protagonista';
+
+    // Extraer emoción dominante
+    const emotions = focusWork.trackingData.emotionalTags;
+    const emotion = emotions.length > 0 
+        ? emotions[Math.floor(Math.random() * emotions.length)].toLowerCase() 
+        : 'emoción pura';
+
+    // 3. Plantillas de Mensajes (Variedad y Contexto)
+    const templates = [
+        // Template 1: Enfocado en Personaje y Trama
+        {
+            condition: () => charList.length > 0,
+            title: `Bienvenido, ${user}.`,
+            subtitle: `El mundo de ${title} sigue girando. ¿Estás listo para volver a ver a ${character}?`,
+            cta: `Continuar con ${title}`
+        },
+        // Template 2: Enfocado en Emoción
+        {
+            condition: () => emotions.length > 0,
+            title: `Hola de nuevo, ${user}.`,
+            subtitle: `Esa sensación de ${emotion} en ${title} aún perdura. No la dejes enfriar.`,
+            cta: `Revivir ${title}`
+        },
+        // Template 3: Enfocado en el Género (Obsesión)
+        {
+            condition: () => true,
+            title: `${user}, tu viaje continúa.`,
+            subtitle: `Tu afinidad por el género ${genre} es notable. ${title} requiere tu atención.`,
+            cta: `Ingresar a la Colección`
+        },
+        // Template 4: Desafío / Venganza (Estilo Shonen/Drama)
+        {
+            condition: () => genre.toLowerCase().includes('acción') || genre.toLowerCase().includes('drama'),
+            title: `La batalla no ha terminado, ${user}.`,
+            subtitle: `Recuerda todo lo que ha pasado en ${title}. ${character} te necesita para el desenlace.`,
+            cta: `Reanudar Misión`
+        },
+        // Template 5: Relax / Comfort (Estilo Slice of Life)
+        {
+            condition: () => genre.toLowerCase().includes('recuentos') || genre.toLowerCase().includes('comedia'),
+            title: `Tómate un respiro, ${user}.`,
+            subtitle: `${title} es tu lugar seguro hoy. Vuelve a sonreír con ${character}.`,
+            cta: `Desconectar un rato`
         }
-    });
+    ];
 
-    // 2. Find "Suggested Work" (Active item, sorted by recent activity/creation)
-    // Priorities: Status 'Viendo/Leyendo' > Most Recently Added
-    const activeItems = library.filter(i => i.trackingData.status === 'Viendo/Leyendo');
-    const sortedActive = activeItems.sort((a, b) => b.createdAt - a.createdAt);
-    
-    const suggestedItem = sortedActive.length > 0 ? sortedActive[0] : library[0];
+    // Filtrar templates válidos y seleccionar uno aleatorio
+    const validTemplates = templates.filter(t => t.condition());
+    const selectedTemplate = validTemplates[Math.floor(Math.random() * validTemplates.length)];
 
-    return { dominantGenre, suggestedItem };
-  }, [library]);
+    return {
+        message: selectedTemplate,
+        bgImage: focusWork.aiData.coverImage
+    };
+
+  }, [library, username]);
+
+  // Fallback si no hay libreria
+  const displayMessage = emotionalContext?.message || {
+      title: `Bienvenido, ${username || 'Usuario'}.`,
+      subtitle: "Tu colección privada está protegida y lista.",
+      cta: "Ingresa tu llave"
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,44 +118,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
     }
   };
 
-  // Generate "Emotional Message"
-  const emotionalMessage = useMemo(() => {
-    const hour = new Date().getHours();
-    let greeting = "Hola de nuevo";
-    if (hour < 12) greeting = "Buenos días";
-    else if (hour < 20) greeting = "Buenas tardes";
-    else greeting = "Buenas noches";
-
-    if (!context) {
-        return {
-            title: `${greeting}, ${username || 'Viajero'}.`,
-            subtitle: "Tu colección privada está a salvo.",
-            cta: "Ingresa tu llave para continuar."
-        };
-    }
-
-    const { dominantGenre, suggestedItem } = context;
-    const itemTitle = suggestedItem?.aiData.title;
-
-    return {
-        title: `${greeting}, ${username}.`,
-        subtitle: `Tu obsesión actual por el género ${dominantGenre} sigue creciendo.`,
-        cta: itemTitle 
-            ? `¿Es hora de actualizar "${itemTitle}"?` 
-            : "Tus historias te están esperando."
-    };
-
-  }, [username, context]);
-
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center relative overflow-hidden">
       
       {/* Dynamic Atmospheric Background */}
-      {context?.suggestedItem?.aiData.coverImage && (
+      {emotionalContext?.bgImage && (
           <div className="absolute inset-0 z-0">
              <div className="absolute inset-0 bg-black/60 z-10"></div>
              <img 
-                src={context.suggestedItem.aiData.coverImage} 
+                src={emotionalContext.bgImage} 
                 className="w-full h-full object-cover blur-3xl opacity-40 scale-110 animate-pulse-slow"
                 alt="Atmosphere"
              />
@@ -127,15 +155,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
            </div>
            
            <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg tracking-tight">
-               {emotionalMessage.title}
+               {displayMessage.title}
            </h1>
-           <p className="text-indigo-200 text-lg font-medium drop-shadow-md mb-2">
-               {emotionalMessage.subtitle}
+           <p className="text-indigo-200 text-lg font-medium drop-shadow-md mb-2 leading-relaxed px-4">
+               {displayMessage.subtitle}
            </p>
            
-           <div className="mt-2 flex items-center gap-2 text-sm text-slate-400 bg-slate-900/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+           <div className="mt-4 flex items-center gap-2 text-sm text-slate-300 bg-slate-900/40 backdrop-blur-md px-5 py-2 rounded-full border border-white/10 shadow-lg">
               <Sparkles className="w-4 h-4 text-yellow-400 animate-spin-slow" />
-              <span>{emotionalMessage.cta}</span>
+              <span className="font-semibold tracking-wide">{displayMessage.cta}</span>
            </div>
         </div>
 
@@ -150,7 +178,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
                 type="password" 
                 autoFocus
                 className="bg-transparent border-none text-white px-4 py-3 flex-grow outline-none placeholder-slate-400 text-lg tracking-widest text-center"
-                placeholder="Ingresa tu llave..."
+                placeholder="Contraseña..."
                 value={password}
                 onChange={(e) => {
                     setPassword(e.target.value);

@@ -230,7 +230,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     };
   }, [library, userProfile.preferences]);
 
-  // Generate Closing Message
+  // Generate Closing Message (Updated)
   const closingMessage = useMemo(() => {
     const totalMinutes = stats.visualMinutes + stats.readingMinutes;
     if (totalMinutes === 0) return null;
@@ -238,21 +238,33 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     const hours = Math.round(totalMinutes / 60);
     const dominant = stats.visualMinutes > stats.readingMinutes ? 'Visual' : 'Lectura';
     const topGenre = stats.topGenre !== 'N/A' ? stats.topGenre : 'Historias';
-    const username = userProfile.username;
-
+    
+    // Titles
     let title = "Explorador Novato";
     if (hours > 50) title = "Viajero Experimentado";
     if (hours > 200) title = "Guardián de Historias";
     if (hours > 500) title = "Maestro del Archivo";
     
-    let message = "";
-    if (dominant === 'Visual') {
-        message = `¡${hours} horas invertidas! Eres un verdadero campeón del ${topGenre}. Tus ojos han visto mundos que otros solo sueñan.`;
-    } else {
-        message = `¡${hours} horas sumergido en páginas! Tu mente es una biblioteca viviente de ${topGenre}.`;
-    }
+    // Diversified Templates
+    const templates = [
+        // T1: Standard
+        `¡${hours} horas invertidas! Eres un verdadero campeón del género ${topGenre}. Tus ojos han visto mundos que otros solo sueñan.`,
+        // T2: Focus on Dedication
+        `Tu dedicación es legendaria. ${hours} horas consumiendo arte. El género ${topGenre} te debe un tributo.`,
+        // T3: Focus on Knowledge
+        `Has acumulado sabiduría por valor de ${hours} horas. Tu mente es una biblioteca viviente de ${topGenre}.`,
+        // T4: Focus on Dominant Type
+        dominant === 'Visual' 
+           ? `Tus retinas han presenciado ${hours} horas de gloria visual en ${topGenre}.`
+           : `Has devorado páginas durante ${hours} horas. ${topGenre} corre por tus venas.`,
+        // T5: Simple Praise
+        `Simplemente impresionante. ${hours} horas de pasión pura por ${topGenre}.`
+    ];
 
-    return { title, message };
+    return { 
+        title, 
+        message: templates[Math.floor(Math.random() * templates.length)] 
+    };
   }, [stats, userProfile.username]);
 
   const StatCard = ({ title, value, icon: Icon, color, subtext }: any) => (

@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
-import { Sparkles, Coffee, Sun, Moon, Zap, Heart, Skull, Rocket, BookOpen, Smile, Crown } from 'lucide-react';
+import { Sparkles, Coffee, Sun, Moon, Zap, Heart, Skull, Rocket, BookOpen, Smile, Crown, Flame } from 'lucide-react';
 
 interface ContextualGreetingProps {
   userProfile: UserProfile;
@@ -9,56 +9,54 @@ interface ContextualGreetingProps {
 }
 
 export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProfile, library }) => {
-  const [greeting, setGreeting] = useState<{ text: string; icon: React.ElementType } | null>(null);
+  const [greeting, setGreeting] = useState<{ text: string; icon: React.ElementType, subtext?: string } | null>(null);
 
-  // Analyze library to find context
+  // Analyze library to find Deep Context
   const contextData = useMemo(() => {
     if (library.length === 0) return { status: 'empty' };
 
-    let totalScore = 0;
-    let ratedCount = 0;
+    // 1. Obra de Enfoque (Focus Work)
+    // Prioridad: 1. Activa Reciente, 2. God Tier, 3. Reciente
+    let focusWork = library.find(i => i.trackingData.status === 'Viendo/Leyendo');
+    if (!focusWork) focusWork = library.find(i => i.trackingData.rating.includes('God Tier'));
+    if (!focusWork) focusWork = library[0];
+
+    // Extraer Metadata
+    const title = focusWork?.aiData.title || '';
+    const genre = focusWork?.aiData.genres[0] || 'Historias';
+    
+    // Character
+    const chars = focusWork?.trackingData.favoriteCharacters || [];
+    const charList = Array.isArray(chars) ? chars : (typeof chars === 'string' ? (chars as string).split(',') : []);
+    const character = charList.length > 0 ? charList[0].trim() : 'ese personaje especial';
+
+    // Emotion
+    const emotions = focusWork?.trackingData.emotionalTags || [];
+    const emotion = emotions.length > 0 ? emotions[0].toLowerCase() : 'emoción';
+
+    // Genre Dominance for general stats
     const genreCounts: Record<string, number> = {};
-    let completedCount = 0;
-
     library.forEach(item => {
-      // Count Completed
-      if (item.trackingData.status === 'Completado') completedCount++;
-
-      // Genre Analysis (Weighted by Rating)
-      const rating = item.trackingData.rating;
-      const score = RATING_TO_SCORE[rating] || 0;
-      
-      // We consider "Dominant" genres from things the user ACTUALLY likes (Score >= 7 or Completed)
-      if (score >= 7 || item.trackingData.status === 'Completado') {
-         item.aiData.genres.forEach(g => {
-            // High rated items give more weight to the genre
-            const weight = score >= 9 ? 2 : 1;
-            genreCounts[g] = (genreCounts[g] || 0) + weight;
-         });
-      }
-      
-      if (score > 0) {
-          totalScore += score;
-          ratedCount++;
-      }
-    });
-
-    // Find Top Genre
-    let topGenre = '';
-    let maxCount = 0;
-    Object.entries(genreCounts).forEach(([g, c]) => {
-        if (c > maxCount) {
-            maxCount = c;
-            topGenre = g;
+        const r = item.trackingData.rating;
+        const s = RATING_TO_SCORE[r] || 0;
+        if (s >= 7 || item.trackingData.status === 'Completado') {
+             item.aiData.genres.forEach(g => genreCounts[g] = (genreCounts[g] || 0) + 1);
         }
     });
+    let topGenre = '';
+    let maxCount = 0;
+    Object.entries(genreCounts).forEach(([g, c]) => { if (c > maxCount) { maxCount = c; topGenre = g; } });
 
     return {
         status: 'active',
-        topGenre,
-        completedCount,
-        totalItems: library.length,
-        avgScore: ratedCount > 0 ? totalScore / ratedCount : 0
+        focusWork,
+        title,
+        character,
+        emotion,
+        genre,
+        topGenre: topGenre || genre,
+        hasChar: charList.length > 0,
+        hasEmotion: emotions.length > 0
     };
   }, [library]);
 
@@ -68,16 +66,9 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
       let timeGreeting = "Hola";
       let TimeIcon = Sun;
       
-      if (hour >= 5 && hour < 12) {
-          timeGreeting = "Buenos días";
-          TimeIcon = Coffee;
-      } else if (hour >= 12 && hour < 20) {
-          timeGreeting = "Buenas tardes";
-          TimeIcon = Sun;
-      } else {
-          timeGreeting = "Buenas noches";
-          TimeIcon = Moon;
-      }
+      if (hour >= 5 && hour < 12) { timeGreeting = "Buenos días"; TimeIcon = Coffee; } 
+      else if (hour >= 12 && hour < 20) { timeGreeting = "Buenas tardes"; TimeIcon = Sun; } 
+      else { timeGreeting = "Buenas noches"; TimeIcon = Moon; }
 
       const { username } = userProfile;
 
@@ -90,79 +81,56 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
           return;
       }
 
-      // 2. SPECIFIC GENRE MESSAGES (If user has a clear preference)
-      // Check specific keywords in the top genre
-      const genre = contextData.topGenre?.toLowerCase() || '';
-      
-      if (genre.includes('terror') || genre.includes('horror') || genre.includes('miedo')) {
-          setGreeting({ 
-              text: hour >= 20 
-                ? `La oscuridad te llama, ${username}. ¿Listo para no dormir hoy?` 
-                : `${timeGreeting}, ${username}. ¿Buscando más escalofríos para tu colección?`,
-              icon: Skull
-          });
-          return;
-      }
-
-      if (genre.includes('romance') || genre.includes('romántico')) {
-          setGreeting({ 
-              text: `El amor está en el aire, ${username}. ¿Continuamos esa historia conmovedora?`,
+      // 2. PLANTILLAS DINÁMICAS (ROTACIÓN)
+      const templates = [
+          // T1: Standard / Time based
+          {
+              condition: true,
+              text: `${timeGreeting}, ${username}. ¿Listo para continuar donde lo dejaste en ${contextData.title}?`,
+              subtext: `Tu colección de ${contextData.topGenre} sigue creciendo.`,
+              icon: TimeIcon
+          },
+          // T2: Character Focus
+          {
+              condition: contextData.hasChar,
+              text: `El destino de ${contextData.character} pende de un hilo, ${username}.`,
+              subtext: `Continúa viendo ${contextData.title}.`,
+              icon: Crown
+          },
+          // T3: Emotion Focus
+          {
+              condition: contextData.hasEmotion,
+              text: `${username}, esa sensación de ${contextData.emotion} en ${contextData.title} es única.`,
+              subtext: `Vale la pena seguir explorando.`,
               icon: Heart
-          });
-          return;
-      }
-
-      if (genre.includes('acción') || genre.includes('aventura') || genre.includes('shonen')) {
-           setGreeting({ 
-              text: `${timeGreeting}, ${username}. La adrenalina y la aventura te esperan.`,
+          },
+          // T4: Action / Hype
+          {
+              condition: true,
+              text: `¡Qué buen día para consumir ${contextData.genre}, ${username}!`,
+              subtext: `${contextData.title} te está esperando.`,
               icon: Zap
-          });
-          return;
-      }
-
-      if (genre.includes('ciencia ficción') || genre.includes('sci-fi') || genre.includes('mecha')) {
-           setGreeting({ 
-              text: `Sistemas en línea, ${username}. El futuro (y tu biblioteca) aguardan.`,
-              icon: Rocket
-          });
-          return;
-      }
-      
-      if (genre.includes('fantasía') || genre.includes('isekai')) {
-           setGreeting({ 
-              text: `La magia fluye fuerte hoy, ${username}. ¿A qué mundo viajaremos?`,
-              icon: Crown
-          });
-          return;
-      }
-
-      // 3. COMPLETIONIST STATE (High completion rate)
-      // @ts-ignore
-      if (contextData.completedCount > 5 && (contextData.completedCount / contextData.totalItems) > 0.7) {
-           setGreeting({ 
-              text: `Imparable, ${username}. Llevas ${contextData.completedCount} obras completadas. ¡A por la siguiente!`,
-              icon: Crown
-          });
-          return;
-      }
-
-      // 4. FALLBACK / GENERAL
-      const messages = [
-          { text: `${timeGreeting}, ${username}. Tienes pendientes en tu lista. ¿Continuamos?`, icon: BookOpen },
-          { text: `¡Qué bueno verte, ${username}! Tu colección personal te extrañaba.`, icon: Smile },
-          { text: `${timeGreeting}, ${username}. Es un buen momento para desconectar y disfrutar una historia.`, icon: TimeIcon },
+          },
+          // T5: Obsession / God Tier Ref
+          {
+              condition: true,
+              text: `Tu obsesión actual: ${contextData.title}.`,
+              subtext: `No dejes a ${contextData.character} esperando.`,
+              icon: Flame
+          }
       ];
 
-      // Pick random based on minute to stay semi-consistent but dynamic
-      const index = new Date().getMinutes() % messages.length;
-      setGreeting(messages[index]);
+      // Filter & Random Selection
+      const valid = templates.filter(t => t.condition);
+      const selected = valid[Math.floor(Math.random() * valid.length)];
+
+      setGreeting({ text: selected.text, icon: selected.icon, subtext: selected.subtext });
     };
 
     generateMessage();
   }, [userProfile, contextData]);
 
   if (!greeting) return null;
-
   const Icon = greeting.icon;
 
   return (
@@ -182,12 +150,12 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
                      <Icon className="w-6 h-6 text-white" />
                  </div>
                  <div>
-                     <p className="text-white md:text-lg font-medium leading-relaxed drop-shadow-md">
+                     <p className="text-white md:text-lg font-bold leading-tight drop-shadow-md">
                         {greeting.text}
                      </p>
-                     {contextData.status === 'active' && contextData.topGenre && (
-                        <p className="text-white/60 text-xs mt-1 uppercase tracking-wider font-bold">
-                            Mood Actual: {contextData.topGenre}
+                     {greeting.subtext && (
+                        <p className="text-white/70 text-sm mt-1 font-medium">
+                            {greeting.subtext}
                         </p>
                      )}
                  </div>
