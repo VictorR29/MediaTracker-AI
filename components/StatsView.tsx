@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
-import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film, Award } from 'lucide-react';
+import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film, Award, Medal, Scroll } from 'lucide-react';
 
 interface StatsViewProps {
   library: MediaItem[];
@@ -38,6 +38,8 @@ interface StatsData {
   // Raw Minutes for calculation
   visualMinutes: number;
   readingMinutes: number;
+  // New: Total consumption units for Ranking
+  totalConsumptionUnits: number;
 }
 
 export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUpdateProfile }) => {
@@ -161,8 +163,6 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         
         if (type === 'Pelicula') {
            // For movies, we generally treat them as single units.
-           // Logic: if marked Completed, count as 1. If tracking episodes manually > 0, count that.
-           // Movies rarely use the "Next Season" archival logic, so history is usually 0.
            const isDone = item.trackingData.status === 'Completado';
            if (isDone || current > 0) {
               totalEffectiveUnits = Math.max(1, current + history);
@@ -230,6 +230,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         return `${mins}m`;
     };
 
+    const totalConsumptionUnits = animeEpisodes + seriesEpisodes + moviesWatched + readingChapters + bookChapters;
 
     return { 
         total, completed, onHold, watching, typeCount, 
@@ -241,46 +242,88 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         visualTimeDisplay: formatTime(visualMinutes),
         readingTimeDisplay: formatTime(readingMinutes),
         consumedAnimes, consumedSeries, consumedMovies, consumedManhwas, consumedBooks,
-        visualMinutes, readingMinutes
+        visualMinutes, readingMinutes,
+        totalConsumptionUnits
     };
   }, [library, userProfile.preferences]);
 
-  // Generate Closing Message (Updated)
-  const closingMessage = useMemo(() => {
-    const totalMinutes = stats.visualMinutes + stats.readingMinutes;
-    if (totalMinutes === 0) return null;
-
-    const hours = Math.round(totalMinutes / 60);
-    const dominant = stats.visualMinutes > stats.readingMinutes ? 'Visual' : 'Lectura';
-    const topGenre = stats.topGenre !== 'N/A' ? stats.topGenre : 'Historias';
+  // --- Dynamic Rank & Achievement Logic ---
+  const rankingSystem = useMemo(() => {
+    const points = stats.totalConsumptionUnits;
     
-    // Titles
-    let title = "Explorador Novato";
-    if (hours > 50) title = "Viajero Experimentado";
-    if (hours > 200) title = "Guardián de Historias";
-    if (hours > 500) title = "Maestro del Archivo";
+    // Rank Definitions
+    let rankTitle = "Explorador Novato";
+    let rankColor = "text-slate-400";
+    let RankIcon = Scroll;
     
-    // Diversified Templates
-    const templates = [
-        // T1: Standard
-        `¡${hours} horas invertidas! Eres un verdadero campeón del género ${topGenre}. Tus ojos han visto mundos que otros solo sueñan.`,
-        // T2: Focus on Dedication
-        `Tu dedicación es legendaria. ${hours} horas consumiendo arte. El género ${topGenre} te debe un tributo.`,
-        // T3: Focus on Knowledge
-        `Has acumulado sabiduría por valor de ${hours} horas. Tu mente es una biblioteca viviente de ${topGenre}.`,
-        // T4: Focus on Dominant Type
-        dominant === 'Visual' 
-           ? `Tus retinas han presenciado ${hours} horas de gloria visual en ${topGenre}.`
-           : `Has devorado páginas durante ${hours} horas. ${topGenre} corre por tus venas.`,
-        // T5: Simple Praise
-        `Simplemente impresionante. ${hours} horas de pasión pura por ${topGenre}.`
-    ];
+    if (points > 1500) {
+        rankTitle = "Maestro del Consumo";
+        rankColor = "text-amber-400";
+        RankIcon = Crown;
+    } else if (points > 750) {
+        rankTitle = "Historiador de Medios";
+        rankColor = "text-purple-400";
+        RankIcon = Trophy;
+    } else if (points > 250) {
+        rankTitle = "Coleccionista Dedicado";
+        rankColor = "text-emerald-400";
+        RankIcon = Award;
+    } else if (points > 50) {
+        rankTitle = "Aprendiz de Coleccionista";
+        rankColor = "text-blue-400";
+        RankIcon = Medal;
+    }
 
-    return { 
-        title, 
-        message: templates[Math.floor(Math.random() * templates.length)] 
+    // Message Banks with Placeholders
+    const MESSAGES: Record<string, string[]> = {
+        "Explorador Novato": [
+            "¡El viaje acaba de comenzar! Has disfrutado de [Total Animes] animes y [Total Peliculas] películas. ¡Sigue explorando!",
+            "Buen comienzo. Con [Total Capítulos de Manhwa] capítulos leídos, estás creando un hábito sólido.",
+            "Tus primeros pasos son firmes. [Total Series] series ya forman parte de tu historia."
+        ],
+        "Aprendiz de Coleccionista": [
+            "¡Estás cogiendo ritmo! [Total Consumption Units] unidades de historia consumidas no es algo que cualquiera logre.",
+            "Tu biblioteca crece rápido. Has invertido [Tiempo Visual Total] frente a la pantalla. ¡Bien hecho!",
+            "El camino se pone interesante. Con [Total Manhwa] obras visuales iniciadas, tu gusto se está refinando."
+        ],
+        "Coleccionista Dedicado": [
+            "Tu dedicación es admirable. [Tiempo Lectura Total] sumergido en lectura demuestra verdadera pasión.",
+            "¡Impresionante! Has visto [Total Animes] animes completos. Tu base de datos mental es enorme.",
+            "Un verdadero fan. [Total Consumption Units] capítulos y episodios... Eres una enciclopedia andante."
+        ],
+        "Historiador de Medios": [
+            "Tu conocimiento es vasto. Has consumido más de [Total Libros] libros y novelas. Respeto absoluto.",
+            "Una leyenda en proceso. [Tiempo Visual Total] de puro entretenimiento de calidad. El género [Top Genre] te debe un tributo.",
+            "Pocos llegan tan lejos. [Total Consumption Units] historias asimiladas. Eres un guardián de la cultura."
+        ],
+        "Maestro del Consumo": [
+            "Nivel Dios. Has trascendido. [Tiempo Visual Total] y [Tiempo Lectura Total] combinados... Tu vida es arte.",
+            "Un ser omnisciente del entretenimiento. [Total Animes] animes, [Total Series] series... Lo has visto todo.",
+            "La cima de la montaña. [Total Consumption Units] unidades de historia. Tu legado en MediaTracker es eterno."
+        ]
     };
-  }, [stats, userProfile.username]);
+
+    // Select Random Template based on Rank
+    const templates = MESSAGES[rankTitle] || MESSAGES["Explorador Novato"];
+    const rawTemplate = templates[Math.floor(Math.random() * templates.length)];
+
+    // Replacer Function
+    const processedMessage = rawTemplate
+        .replace('[Total Animes]', String(stats.consumedAnimes))
+        .replace('[Total Series]', String(stats.consumedSeries))
+        .replace('[Total Peliculas]', String(stats.consumedMovies))
+        .replace('[Total Capítulos de Manhwa]', String(stats.readingChapters))
+        .replace('[Total Manhwa]', String(stats.consumedManhwas))
+        .replace('[Total Capítulos de Libros]', String(stats.bookChapters))
+        .replace('[Total Libros]', String(stats.consumedBooks))
+        .replace('[Tiempo Visual Total]', stats.visualTimeDisplay)
+        .replace('[Tiempo Lectura Total]', stats.readingTimeDisplay)
+        .replace('[Total Consumption Units]', String(stats.totalConsumptionUnits))
+        .replace('[Top Genre]', stats.topGenre);
+
+    return { rankTitle, rankColor, RankIcon, message: processedMessage };
+
+  }, [stats]);
 
   const StatCard = ({ title, value, icon: Icon, color, subtext }: any) => (
     <div className="bg-surface border border-slate-700 p-6 rounded-2xl flex items-center justify-between hover:border-slate-500 transition-colors shadow-md">
@@ -528,27 +571,33 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
           </div>
        </div>
 
-       {/* Closing Emotional Message */}
-       {closingMessage && (
+       {/* Ranking & Achievement Banner (Dynamic) */}
+       {stats.totalConsumptionUnits > 0 && (
            <div 
-             className="w-full bg-slate-900 border border-slate-700 rounded-xl p-8 text-center relative overflow-hidden"
+             className="w-full bg-slate-900 border border-slate-700 rounded-xl p-8 text-center relative overflow-hidden transition-all duration-500 hover:border-slate-500"
              style={{ borderColor: userProfile.accentColor ? '#' + userProfile.accentColor.split(' ')[0] + '40' : '#6366f140' }}
            >
                {/* Decorative Elements */}
                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 opacity-50"></div>
-               <div className="absolute top-4 left-4 text-slate-700 opacity-20"><Trophy className="w-16 h-16" /></div>
-               <div className="absolute bottom-4 right-4 text-slate-700 opacity-20"><Crown className="w-16 h-16" /></div>
+               <div className="absolute top-4 left-4 text-slate-700 opacity-20"><rankingSystem.RankIcon className="w-16 h-16" /></div>
+               <div className="absolute bottom-4 right-4 text-slate-700 opacity-20"><rankingSystem.RankIcon className="w-16 h-16" /></div>
 
                <div className="relative z-10 max-w-2xl mx-auto">
-                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-widest mb-4">
-                       <Award className="w-4 h-4" />
-                       {closingMessage.title}
+                   <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700 shadow-xl mb-4 ${rankingSystem.rankColor}`}>
+                       <rankingSystem.RankIcon className="w-4 h-4" />
+                       <span className="text-xs font-bold uppercase tracking-widest">{rankingSystem.rankTitle}</span>
                    </div>
-                   <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 leading-tight italic">
-                       "{closingMessage.message}"
+                   <h2 className="text-xl md:text-2xl font-bold text-slate-200 mb-3 leading-tight italic">
+                       "{rankingSystem.message}"
                    </h2>
-                   <p className="text-slate-500 text-sm">
-                       — MediaTracker AI
+                   <div className="w-full bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden max-w-xs mx-auto">
+                        <div 
+                           className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
+                           style={{ width: `${Math.min(100, (stats.totalConsumptionUnits % 250) / 2.5)}%` }} // Simple visual progress per tier
+                        />
+                   </div>
+                   <p className="text-slate-500 text-[10px] mt-2 font-mono">
+                       Unidades Consumidas: {stats.totalConsumptionUnits}
                    </p>
                </div>
            </div>
