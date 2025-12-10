@@ -1,17 +1,17 @@
 
-
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
   onUpdate: (updatedItem: MediaItem) => void;
   isNew?: boolean;
   onDelete?: () => void;
+  username?: string;
 }
 
-export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false, onDelete }) => {
+export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false, onDelete, username }) => {
   const [tracking, setTracking] = useState<UserTrackingData>(item.trackingData);
   const [progressPercent, setProgressPercent] = useState(0);
   const [characterInput, setCharacterInput] = useState('');
@@ -40,6 +40,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const isBook = item.aiData.mediaType === 'Libro';
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(item.aiData.mediaType);
   const isSeriesContent = ['Anime', 'Serie'].includes(item.aiData.mediaType);
+
+  // Dynamic Congratulatory Message Logic
+  const completionMessage = useMemo(() => {
+     if (tracking.status !== 'Completado') return null;
+     
+     const user = username || 'Viajero';
+     const title = item.aiData.title;
+     
+     if (isBook || isReadingContent) {
+         return `¡Felicidades, ${user}! Has cerrado la última página de "${title}". Una historia más para tu alma.`;
+     }
+     if (isMovie) {
+         return `¡Enhorabuena, ${user}! Has completado el viaje de "${title}". ¿Qué tal estuvo el final?`;
+     }
+     return `¡Victoria, ${user}! Has conquistado todos los episodios de "${title}". ¡Una gema más a tu colección!`;
+  }, [tracking.status, username, item.aiData.title, isBook, isReadingContent, isMovie]);
 
   // Sync state if item changes
   useEffect(() => {
@@ -556,6 +572,18 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                 <CheckCircle2 className="w-5 h-5" style={{ color: dynamicColor }} />
                 Mi Progreso
               </h3>
+
+              {/* Congratulatory Message Banner */}
+              {completionMessage && (
+                  <div className="mb-4 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/30 p-3 rounded-lg flex items-start gap-3 animate-fade-in-up">
+                      <div className="p-2 bg-amber-500/20 rounded-full flex-shrink-0">
+                          <Medal className="w-5 h-5 text-amber-400" />
+                      </div>
+                      <p className="text-sm text-amber-100 font-medium leading-relaxed">
+                          {completionMessage}
+                      </p>
+                  </div>
+              )}
               
               <div className="space-y-4 relative z-10">
                 {/* Book Saga Toggle */}

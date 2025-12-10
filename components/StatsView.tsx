@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
-import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film } from 'lucide-react';
+import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film, Award } from 'lucide-react';
 
 interface StatsViewProps {
   library: MediaItem[];
@@ -34,6 +34,9 @@ interface StatsData {
   consumedMovies: number;
   consumedManhwas: number;
   consumedBooks: number;
+  // Raw Minutes for calculation
+  visualMinutes: number;
+  readingMinutes: number;
 }
 
 export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUpdateProfile }) => {
@@ -222,9 +225,35 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         animeEpisodes, seriesEpisodes, moviesWatched, readingChapters, bookChapters,
         visualTimeDisplay: formatTime(visualMinutes),
         readingTimeDisplay: formatTime(readingMinutes),
-        consumedAnimes, consumedSeries, consumedMovies, consumedManhwas, consumedBooks
+        consumedAnimes, consumedSeries, consumedMovies, consumedManhwas, consumedBooks,
+        visualMinutes, readingMinutes
     };
   }, [library, userProfile.preferences]);
+
+  // Generate Closing Message
+  const closingMessage = useMemo(() => {
+    const totalMinutes = stats.visualMinutes + stats.readingMinutes;
+    if (totalMinutes === 0) return null;
+
+    const hours = Math.round(totalMinutes / 60);
+    const dominant = stats.visualMinutes > stats.readingMinutes ? 'Visual' : 'Lectura';
+    const topGenre = stats.topGenre !== 'N/A' ? stats.topGenre : 'Historias';
+    const username = userProfile.username;
+
+    let title = "Explorador Novato";
+    if (hours > 50) title = "Viajero Experimentado";
+    if (hours > 200) title = "Guardián de Historias";
+    if (hours > 500) title = "Maestro del Archivo";
+    
+    let message = "";
+    if (dominant === 'Visual') {
+        message = `¡${hours} horas invertidas! Eres un verdadero campeón del ${topGenre}. Tus ojos han visto mundos que otros solo sueñan.`;
+    } else {
+        message = `¡${hours} horas sumergido en páginas! Tu mente es una biblioteca viviente de ${topGenre}.`;
+    }
+
+    return { title, message };
+  }, [stats, userProfile.username]);
 
   const StatCard = ({ title, value, icon: Icon, color, subtext }: any) => (
     <div className="bg-surface border border-slate-700 p-6 rounded-2xl flex items-center justify-between hover:border-slate-500 transition-colors shadow-md">
@@ -471,6 +500,32 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
              )}
           </div>
        </div>
+
+       {/* Closing Emotional Message */}
+       {closingMessage && (
+           <div 
+             className="w-full bg-slate-900 border border-slate-700 rounded-xl p-8 text-center relative overflow-hidden"
+             style={{ borderColor: userProfile.accentColor ? '#' + userProfile.accentColor.split(' ')[0] + '40' : '#6366f140' }}
+           >
+               {/* Decorative Elements */}
+               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 opacity-50"></div>
+               <div className="absolute top-4 left-4 text-slate-700 opacity-20"><Trophy className="w-16 h-16" /></div>
+               <div className="absolute bottom-4 right-4 text-slate-700 opacity-20"><Crown className="w-16 h-16" /></div>
+
+               <div className="relative z-10 max-w-2xl mx-auto">
+                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-widest mb-4">
+                       <Award className="w-4 h-4" />
+                       {closingMessage.title}
+                   </div>
+                   <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 leading-tight italic">
+                       "{closingMessage.message}"
+                   </h2>
+                   <p className="text-slate-500 text-sm">
+                       — MediaTracker AI
+                   </p>
+               </div>
+           </div>
+       )}
 
        {/* Settings Modal */}
        {isSettingsOpen && (

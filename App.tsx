@@ -619,6 +619,7 @@ export default function App() {
                    item={currentMedia} 
                    onUpdate={handleUpdateMedia} 
                    isNew={true}
+                   username={userProfile?.username}
                  />
               </div>
             )}
@@ -733,6 +734,7 @@ export default function App() {
                    item={currentMedia} 
                    onUpdate={handleUpdateMedia} 
                    onDelete={library.find(i => i.id === currentMedia.id) ? () => handleDeleteRequest(currentMedia) : undefined}
+                   username={userProfile?.username}
               />
            </div>
         )}
