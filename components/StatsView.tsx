@@ -274,52 +274,58 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         RankIcon = Medal;
     }
 
-    // Message Banks with Placeholders
-    const MESSAGES: Record<string, string[]> = {
-        "Explorador Novato": [
-            "¡El viaje acaba de comenzar! Has disfrutado de [Total Animes] animes y [Total Peliculas] películas. ¡Sigue explorando!",
-            "Buen comienzo. Con [Total Capítulos de Manhwa] capítulos leídos, estás creando un hábito sólido.",
-            "Tus primeros pasos son firmes. [Total Series] series ya forman parte de tu historia."
-        ],
-        "Aprendiz de Coleccionista": [
-            "¡Estás cogiendo ritmo! [Total Consumption Units] unidades de historia consumidas no es algo que cualquiera logre.",
-            "Tu biblioteca crece rápido. Has invertido [Tiempo Visual Total] frente a la pantalla. ¡Bien hecho!",
-            "El camino se pone interesante. Con [Total Manhwa] obras visuales iniciadas, tu gusto se está refinando."
-        ],
-        "Coleccionista Dedicado": [
-            "Tu dedicación es admirable. [Tiempo Lectura Total] sumergido en lectura demuestra verdadera pasión.",
-            "¡Impresionante! Has visto [Total Animes] animes completos. Tu base de datos mental es enorme.",
-            "Un verdadero fan. [Total Consumption Units] capítulos y episodios... Eres una enciclopedia andante."
-        ],
-        "Historiador de Medios": [
-            "Tu conocimiento es vasto. Has consumido más de [Total Libros] libros y novelas. Respeto absoluto.",
-            "Una leyenda en proceso. [Tiempo Visual Total] de puro entretenimiento de calidad. El género [Top Genre] te debe un tributo.",
-            "Pocos llegan tan lejos. [Total Consumption Units] historias asimiladas. Eres un guardián de la cultura."
-        ],
-        "Maestro del Consumo": [
-            "Nivel Dios. Has trascendido. [Tiempo Visual Total] y [Tiempo Lectura Total] combinados... Tu vida es arte.",
-            "Un ser omnisciente del entretenimiento. [Total Animes] animes, [Total Series] series... Lo has visto todo.",
-            "La cima de la montaña. [Total Consumption Units] unidades de historia. Tu legado en MediaTracker es eterno."
-        ]
-    };
+    // --- Template Banks ---
 
-    // Select Random Template based on Rank
-    const templates = MESSAGES[rankTitle] || MESSAGES["Explorador Novato"];
-    const rawTemplate = templates[Math.floor(Math.random() * templates.length)];
+    // Banco A: Foco en Tiempo (Visual vs Lectura)
+    const BANK_A_TIME = [
+        "Has pasado [Tiempo Visual Total] en pantallas, ¡pero no olvides que tu mente ha estado sumergida [Tiempo Lectura Total] en historias!",
+        "Si sumamos todo, tu vida es arte: [Tiempo Visual Total] de cine/series y [Tiempo Lectura Total] de literatura.",
+        "Tu reloj biológico marca [Tiempo Visual Total] en modo espectador y [Tiempo Lectura Total] en modo lector.",
+        "Inversión de vida: [Tiempo Visual Total] viendo tramas épicas y [Tiempo Lectura Total] leyéndolas.",
+        "Entre [Tiempo Visual Total] de maratones y [Tiempo Lectura Total] de lectura, eres un verdadero fan.",
+        "El equilibrio es la clave: has dedicado [Tiempo Visual Total] al medio audiovisual y [Tiempo Lectura Total] al texto."
+    ];
 
-    // Replacer Function
+    // Banco B: Foco en Cantidad y Contraste
+    const BANK_B_QUANTITY = [
+        "¡Has conquistado [Total Animes] animes completos! ¿Y quién diría que has devorado [Total Capítulos de Manhwa] capítulos de manhwa?",
+        "Tu lista de [Total Libros] leídos demuestra que valoras las historias largas tanto como las series cortas ([Total Series] series vistas).",
+        "Desde [Total Peliculas] películas hasta [Total Manhwa] obras gráficas. Tu rango de gustos es envidiable.",
+        "Has leído [Total Capítulos de Manhwa] capítulos. ¡Eso compite ferozmente con tus [Total Animes] animes vistos!",
+        "La suma de [Total Series] series y [Total Libros] libros crea una base de datos narrativa en tu cabeza.",
+        "Pocos pueden decir que han visto [Total Peliculas] películas y leído [Total Capítulos de Libros] capítulos de libros."
+    ];
+
+    // Banco C: Foco en Consumo Total y Rango Actual
+    const BANK_C_RANK = [
+        "Como [Rango Actual del Usuario], has acumulado [Tiempo Visual Total] invirtiendo en historias. ¡Mantén esa racha!",
+        "Tu récord de [Total Capítulos de Manhwa] leídos te hace un experto. ¡Usa esa experiencia para honrar tu rango de [Rango Actual del Usuario]!",
+        "Llevas con orgullo el título de [Rango Actual del Usuario]. Tus [Total Animes] animes completados lo demuestran.",
+        "Un [Rango Actual del Usuario] no se hace en un día. [Tiempo Lectura Total] de dedicación te respaldan.",
+        "Honor a quien honor merece: [Rango Actual del Usuario]. Más de [Total Consumption Units] unidades de historia consumidas.",
+        "Tu estatus de [Rango Actual del Usuario] se forjó con [Total Series] series y [Total Libros] libros."
+    ];
+
+    // Rotation Logic: Select Bank randomly
+    const banks = [BANK_A_TIME, BANK_B_QUANTITY, BANK_C_RANK];
+    const selectedBank = banks[Math.floor(Math.random() * banks.length)];
+    
+    // Select Template randomly from chosen bank
+    const rawTemplate = selectedBank[Math.floor(Math.random() * selectedBank.length)];
+
+    // Replacer Function for all placeholders
     const processedMessage = rawTemplate
-        .replace('[Total Animes]', String(stats.consumedAnimes))
-        .replace('[Total Series]', String(stats.consumedSeries))
-        .replace('[Total Peliculas]', String(stats.consumedMovies))
-        .replace('[Total Capítulos de Manhwa]', String(stats.readingChapters))
-        .replace('[Total Manhwa]', String(stats.consumedManhwas))
-        .replace('[Total Capítulos de Libros]', String(stats.bookChapters))
-        .replace('[Total Libros]', String(stats.consumedBooks))
-        .replace('[Tiempo Visual Total]', stats.visualTimeDisplay)
-        .replace('[Tiempo Lectura Total]', stats.readingTimeDisplay)
-        .replace('[Total Consumption Units]', String(stats.totalConsumptionUnits))
-        .replace('[Top Genre]', stats.topGenre);
+        .replace(/\[Total Animes\]/g, String(stats.consumedAnimes))
+        .replace(/\[Total Series\]/g, String(stats.consumedSeries))
+        .replace(/\[Total Peliculas\]/g, String(stats.consumedMovies))
+        .replace(/\[Total Capítulos de Manhwa\]/g, String(stats.readingChapters))
+        .replace(/\[Total Manhwa\]/g, String(stats.consumedManhwas))
+        .replace(/\[Total Capítulos de Libros\]/g, String(stats.bookChapters))
+        .replace(/\[Total Libros\]/g, String(stats.consumedBooks))
+        .replace(/\[Tiempo Visual Total\]/g, stats.visualTimeDisplay)
+        .replace(/\[Tiempo Lectura Total\]/g, stats.readingTimeDisplay)
+        .replace(/\[Total Consumption Units\]/g, String(stats.totalConsumptionUnits))
+        .replace(/\[Rango Actual del Usuario\]/g, rankTitle);
 
     return { rankTitle, rankColor, RankIcon, message: processedMessage };
 
