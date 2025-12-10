@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
 import { Sparkles, Coffee, Sun, Moon, Zap, Heart, Skull, Rocket, BookOpen, Smile, Crown, Flame } from 'lucide-react';
@@ -15,11 +14,28 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
   const contextData = useMemo(() => {
     if (library.length === 0) return { status: 'empty' };
 
-    // 1. Obra de Enfoque (Focus Work)
-    // Prioridad: 1. Activa Reciente, 2. God Tier, 3. Reciente
-    let focusWork = library.find(i => i.trackingData.status === 'Viendo/Leyendo');
-    if (!focusWork) focusWork = library.find(i => i.trackingData.rating.includes('God Tier'));
-    if (!focusWork) focusWork = library[0];
+    let focusWork: MediaItem | undefined;
+
+    // 1. Prioridad Máxima: Obras Activas (Viendo/Leyendo o Planeado)
+    const activeWorks = library.filter(i => 
+        i.trackingData.status === 'Viendo/Leyendo' || 
+        i.trackingData.status === 'Planeado / Pendiente'
+    );
+
+    // 2. Segunda Prioridad: God Tier Completado
+    const godTierWorks = library.filter(i => 
+        i.trackingData.status === 'Completado' && 
+        i.trackingData.rating.includes('God Tier')
+    );
+
+    // Selección basada en prioridad
+    if (activeWorks.length > 0) {
+        focusWork = activeWorks[0];
+    } else if (godTierWorks.length > 0) {
+        focusWork = godTierWorks[0];
+    } else {
+        focusWork = library[0];
+    }
 
     // Extraer Metadata
     const title = focusWork?.aiData.title || '';

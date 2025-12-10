@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Lock, ArrowRight, User, Sparkles, Unlock } from 'lucide-react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
@@ -24,18 +23,38 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
     if (!library || library.length === 0) return null;
 
     const user = username || 'Viajero';
+    let focusWork: MediaItem | undefined;
 
-    // 1. Definir 'Obra de Enfoque' (Jerarquía: Viendo > God Tier > Reciente)
-    let focusWork = library.find(i => i.trackingData.status === 'Viendo/Leyendo');
-    
-    if (!focusWork) {
-        focusWork = library.find(i => i.trackingData.rating.includes('God Tier'));
-    }
-    if (!focusWork) {
-        focusWork = library[0]; // Fallback al más reciente
+    // JERARQUÍA DE SELECCIÓN DE OBRA DE ENFOQUE
+
+    // 1. Prioridad Máxima: Obras Activas (Viendo/Leyendo o Planeado)
+    // Filtramos TODAS las que cumplen para no detenernos en la primera si hay una más reciente abajo
+    const activeWorks = library.filter(i => 
+        i.trackingData.status === 'Viendo/Leyendo' || 
+        i.trackingData.status === 'Planeado / Pendiente'
+    );
+
+    // 2. Segunda Prioridad: Obras Terminadas de Alto Impacto (God Tier)
+    const godTierWorks = library.filter(i => 
+        i.trackingData.status === 'Completado' && 
+        i.trackingData.rating.includes('God Tier')
+    );
+
+    // SELECCIÓN DEL GANADOR
+    if (activeWorks.length > 0) {
+        // Asumimos que la librería viene ordenada por creación/reciente por defecto (index 0)
+        focusWork = activeWorks[0];
+    } else if (godTierWorks.length > 0) {
+        // Si no hay activas, buscamos la God Tier más reciente
+        focusWork = godTierWorks[0];
+    } else {
+        // Fallback: La obra más reciente añadida de cualquier tipo
+        focusWork = library[0];
     }
 
-    // 2. Extraer Datos Profundos
+    if (!focusWork) return null;
+
+    // 3. Extraer Datos Profundos de la Obra Ganadora
     const title = focusWork.aiData.title;
     const genre = focusWork.aiData.genres[0] || 'esta historia';
     
@@ -52,7 +71,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
         ? emotions[Math.floor(Math.random() * emotions.length)].toLowerCase() 
         : 'emoción pura';
 
-    // 3. Plantillas de Mensajes (Variedad y Contexto)
+    // 4. Plantillas de Mensajes (Variedad y Contexto)
     const templates = [
         // Template 1: Enfocado en Personaje y Trama
         {
@@ -93,7 +112,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
 
     // Filtrar templates válidos y seleccionar uno aleatorio
     const validTemplates = templates.filter(t => t.condition());
-    const selectedTemplate = validTemplates[Math.floor(Math.random() * validTemplates.length)];
+    const selectedTemplate = validTemplates.length > 0 
+        ? validTemplates[Math.floor(Math.random() * validTemplates.length)]
+        : templates[2]; // Fallback seguro
 
     return {
         message: selectedTemplate,
