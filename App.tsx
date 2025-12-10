@@ -165,6 +165,7 @@ export default function App() {
           totalSeasons: 1, 
           watchedEpisodes: 0,
           totalEpisodesInSeason: aiData.mediaType === 'Pelicula' ? 1 : 12, 
+          accumulated_consumption: 0, // Initialize new field
           emotionalTags: [],
           favoriteCharacters: [],
           rating: '',
@@ -232,6 +233,10 @@ export default function App() {
             if (trackingData.totalSeasons > 0 && trackingData.currentSeason >= trackingData.totalSeasons) {
                 updatedTracking.status = 'Completado';
             } else {
+                // ARCHIVE PROGRESS WHEN AUTO-INCREMENTING SEASON
+                const currentAccumulated = updatedTracking.accumulated_consumption || 0;
+                updatedTracking.accumulated_consumption = currentAccumulated + updatedTracking.watchedEpisodes;
+                
                 updatedTracking.currentSeason += 1;
                 updatedTracking.watchedEpisodes = 0;
                 updatedTracking.status = 'Viendo/Leyendo';

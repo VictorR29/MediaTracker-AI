@@ -1,4 +1,5 @@
 
+
 import React, { useMemo, useState } from 'react';
 import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
 import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film, Award } from 'lucide-react';
@@ -151,41 +152,55 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
     library.forEach(item => {
         const type = item.aiData.mediaType;
-        const units = item.trackingData.watchedEpisodes; // "watchedEpisodes" stores progress
-        // For movies, if status is 'Completado', units might be 0 or 1 depending on logic, but we can trust progress.
-        // Or if logic changed to 1.
+        // Total Consumption = Historical (Archived) + Current Progress
+        const history = item.trackingData.accumulated_consumption || 0;
+        const current = item.trackingData.watchedEpisodes;
 
-        // Count logic
-        if (units > 0 || (type === 'Pelicula' && item.trackingData.status === 'Completado')) {
+        // Calculate Total Units Consumed
+        let totalEffectiveUnits = 0;
+        
+        if (type === 'Pelicula') {
+           // For movies, we generally treat them as single units.
+           // Logic: if marked Completed, count as 1. If tracking episodes manually > 0, count that.
+           // Movies rarely use the "Next Season" archival logic, so history is usually 0.
+           const isDone = item.trackingData.status === 'Completado';
+           if (isDone || current > 0) {
+              totalEffectiveUnits = Math.max(1, current + history);
+           }
+        } else {
+           // For episodic content, simple sum
+           totalEffectiveUnits = current + history;
+        }
+
+        // Apply Time Logic if any progress exists
+        if (totalEffectiveUnits > 0) {
             let itemTime = 0;
-            const effectiveUnits = (type === 'Pelicula' && item.trackingData.status === 'Completado') ? 1 : units;
             
             // Visual
             if (type === 'Anime') {
-                animeEpisodes += effectiveUnits;
-                itemTime = effectiveUnits * animeMin;
+                animeEpisodes += totalEffectiveUnits;
+                itemTime = totalEffectiveUnits * animeMin;
                 visualMinutes += itemTime;
             } else if (type === 'Serie') {
-                seriesEpisodes += effectiveUnits;
-                itemTime = effectiveUnits * seriesMin; 
+                seriesEpisodes += totalEffectiveUnits;
+                itemTime = totalEffectiveUnits * seriesMin; 
                 visualMinutes += itemTime;
             } else if (type === 'Pelicula') {
-                // effectiveUnits is usually 1 here
-                moviesWatched += effectiveUnits; 
-                itemTime = effectiveUnits * movieMin;
+                moviesWatched += totalEffectiveUnits; 
+                itemTime = totalEffectiveUnits * movieMin;
                 visualMinutes += itemTime;
             } 
             // Reading
             else if (['Manhwa', 'Manga', 'Comic'].includes(type)) {
-                readingChapters += effectiveUnits;
-                itemTime = effectiveUnits * mangaMin;
+                readingChapters += totalEffectiveUnits;
+                itemTime = totalEffectiveUnits * mangaMin;
                 readingMinutes += itemTime;
             } else if (type === 'Libro') {
-                bookChapters += effectiveUnits;
-                itemTime = effectiveUnits * bookMin;
+                bookChapters += totalEffectiveUnits;
+                itemTime = totalEffectiveUnits * bookMin;
                 readingMinutes += itemTime;
             } else {
-                itemTime = effectiveUnits * 10; // Unknown
+                itemTime = totalEffectiveUnits * 10; // Unknown
             }
 
             if (itemTime > maxTimeItem.time) {
@@ -196,7 +211,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
     // Helper to count "Consumed" items (at least started or completed)
     const countConsumed = (types: string[]) => 
-        library.filter(i => types.includes(i.aiData.mediaType) && (i.trackingData.watchedEpisodes > 0 || i.trackingData.status === 'Completado')).length;
+        library.filter(i => types.includes(i.aiData.mediaType) && (i.trackingData.watchedEpisodes > 0 || (i.trackingData.accumulated_consumption || 0) > 0 || i.trackingData.status === 'Completado')).length;
 
     const consumedAnimes = countConsumed(['Anime']);
     const consumedSeries = countConsumed(['Serie']);

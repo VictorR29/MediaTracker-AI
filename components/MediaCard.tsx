@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal } from 'lucide-react';
@@ -123,10 +124,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
        return;
     }
 
+    // ARCHIVE CONSUMPTION: Add current progress to accumulated_consumption history
+    const currentAccumulated = tracking.accumulated_consumption || 0;
+    const newAccumulated = currentAccumulated + tracking.watchedEpisodes;
+
     const updated = {
       ...tracking,
       currentSeason: nextSeason,
       watchedEpisodes: 0,
+      accumulated_consumption: newAccumulated, // Archiving the completed season/book progress
       status: 'Viendo/Leyendo' as const
     };
     setTracking(updated);

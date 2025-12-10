@@ -22,6 +22,7 @@ export interface UserTrackingData {
   totalSeasons: number; // User defined total seasons
   watchedEpisodes: number;
   totalEpisodesInSeason: number;
+  accumulated_consumption?: number; // New: Stores history (e.g., eps from prev seasons)
   emotionalTags: string[];
   favoriteCharacters: string[]; // Changed to array of strings for tags
   rating: string; // e.g., "God Tier", "Bueno", etc.
