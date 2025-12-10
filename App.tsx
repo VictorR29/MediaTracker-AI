@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -10,6 +9,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { LibraryFilters, FilterState } from './components/LibraryFilters';
 import { StatsView } from './components/StatsView';
 import { DiscoveryView } from './components/DiscoveryView'; // Import DiscoveryView
+import { ContextualGreeting } from './components/ContextualGreeting'; // Import ContextualGreeting
 import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
 import { MediaItem, UserProfile } from './types';
@@ -562,6 +562,11 @@ export default function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 pt-8 w-full flex-grow pb-8">
         
+        {/* Contextual AI Greeting Banner - Only shown on certain views */}
+        {userProfile && view !== 'details' && (
+           <ContextualGreeting userProfile={userProfile} library={library} />
+        )}
+
         {view === 'search' && (
           <div className="flex flex-col items-center">
             <div className="text-center mb-8 max-w-2xl">
