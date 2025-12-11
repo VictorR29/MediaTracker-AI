@@ -91,6 +91,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
             title: `La batalla no ha terminado.`,
             subtitle: `Recuerda todo lo que ha pasado en "${title}". ${character} te necesita.`,
             cta: `Reanudar Misión`
+        },
+         // Template 5: Fallback General
+        {
+            condition: () => true,
+            title: `Tu biblioteca te espera, ${user}.`,
+            subtitle: `Es momento de retomar "${title}".`,
+            cta: `Desbloquear`
         }
     ];
 
@@ -100,14 +107,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
         ? validTemplates[Math.floor(Math.random() * validTemplates.length)]
         : templates[2]; // Fallback seguro
 
+    // Validate Cover Image for Background
+    // If no cover is present, we pass undefined to trigger fallback background in render
+    let bgImage = focusWork.aiData.coverImage;
+    if (!bgImage || bgImage.trim() === '' || bgImage.includes('placehold.co')) {
+        bgImage = undefined;
+    }
+
     return {
         message: selectedTemplate,
-        bgImage: focusWork.aiData.coverImage
+        bgImage: bgImage
     };
 
   }, [library, username]);
 
-  // Fallback si no hay libreria
+  // Fallback data if no library/focus work
   const displayMessage = emotionalContext?.message || {
       title: `Bienvenido, ${username || 'Usuario'}.`,
       subtitle: "Tu colección privada está protegida y lista.",
@@ -126,16 +140,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center relative overflow-hidden">
       
-      {/* Dynamic Atmospheric Background */}
-      {emotionalContext?.bgImage && (
-          <div className="absolute inset-0 z-0">
-             <div className="absolute inset-0 bg-black/60 z-10"></div>
+      {/* Dynamic Background Cover with Blur and Overlay */}
+      {emotionalContext?.bgImage ? (
+          <div className="absolute inset-0 z-0 overflow-hidden">
+             {/* Dark Overlay - Semitransparent slate-950 to ensure readability */}
+             <div className="absolute inset-0 bg-slate-950/70 z-10"></div>
+             
+             {/* The Image - Full Cover, Blurred */}
              <img 
                 src={emotionalContext.bgImage} 
-                className="w-full h-full object-cover blur-3xl opacity-40 scale-110 animate-pulse-slow"
-                alt="Atmosphere"
+                className="w-full h-full object-cover blur-xl scale-110 transition-transform duration-1000"
+                alt="Background Cover"
              />
           </div>
+      ) : (
+          /* Standard Fallback Background (Gradient) */
+          <div className="absolute inset-0 z-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
       )}
 
       <div className={`w-full max-w-md z-10 p-6 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
@@ -159,14 +179,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
                 </div>
            </div>
            
-           <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg tracking-tight">
+           <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-2xl tracking-tight">
                {displayMessage.title}
            </h1>
            <p className="text-indigo-200 text-lg font-medium drop-shadow-md mb-2 leading-relaxed px-4">
                {displayMessage.subtitle}
            </p>
            
-           <div className="mt-4 flex items-center gap-2 text-sm text-slate-300 bg-slate-900/40 backdrop-blur-md px-5 py-2 rounded-full border border-white/10 shadow-lg">
+           <div className="mt-4 flex items-center gap-2 text-sm text-slate-300 bg-slate-900/60 backdrop-blur-md px-5 py-2 rounded-full border border-white/10 shadow-lg">
               <Sparkles className="w-4 h-4 text-yellow-400 animate-spin-slow" />
               <span className="font-semibold tracking-wide">{displayMessage.cta}</span>
            </div>
