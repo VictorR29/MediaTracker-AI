@@ -698,7 +698,7 @@ export default function App() {
       <main className="flex-grow pt-6 md:pt-8 min-h-[calc(100vh-64px)]">
         
         {/* Persistent Contextual Greeting */}
-        <ContextualGreeting userProfile={userProfile} library={library} />
+        <ContextualGreeting userProfile={userProfile} library={library} view={view} />
 
         {/* VIEW: SEARCH (Home) */}
         {view === 'search' && (

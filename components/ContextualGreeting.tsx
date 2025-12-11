@@ -6,6 +6,7 @@ import { Sparkles, Coffee, Sun, Moon, Film, Tv, BookOpen, PenTool, Zap, Heart, C
 interface ContextualGreetingProps {
   userProfile: UserProfile;
   library: MediaItem[];
+  view: string;
 }
 
 // Interfaces for Template System
@@ -25,7 +26,7 @@ const pickRandom = (arr: string[] | string | undefined): string | null => {
   return arr[Math.floor(Math.random() * arr.length)];
 };
 
-export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProfile, library }) => {
+export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProfile, library, view }) => {
   const [greeting, setGreeting] = useState<{ text: string; icon: React.ElementType, subtext?: string } | null>(null);
 
   // Analyze library to find Deep Context based on Last Interaction (Timestamp Unificado)
@@ -171,7 +172,7 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
   const Icon = greeting.icon;
 
   return (
-    <div className="w-full max-w-5xl mx-auto mb-6 animate-fade-in px-4 md:px-0">
+    <div key={view} className="w-full max-w-5xl mx-auto mb-6 animate-fade-in px-4 md:px-0">
         <div 
             className="relative overflow-hidden rounded-xl p-6 border border-white/10 shadow-lg group hover:shadow-2xl transition-all duration-500"
             style={{ 
@@ -179,8 +180,8 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
             }}
         >
              {/* Abstract Shapes */}
-             <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-white/10 rounded-full blur-3xl pointer-events-none group-hover:bg-white/20 transition-all duration-700"></div>
-             <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/30 rounded-full blur-3xl pointer-events-none"></div>
+             <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-white/10 rounded-full blur-3xl pointer-events-none group-hover:bg-white/20 transition-all duration-700 animate-pulse"></div>
+             <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/30 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
 
              <div className="relative z-10 flex items-start md:items-center gap-4">
                  <div className="p-3 bg-white/20 backdrop-blur-md rounded-full shadow-inner flex-shrink-0 animate-fade-in-up">
