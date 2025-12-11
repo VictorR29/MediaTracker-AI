@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -288,102 +290,207 @@ export default function App() {
   };
 
   // --- DATA MANAGEMENT ---
-  const handleExportData = () => {
+  const handleExportBackup = () => {
     if (!userProfile) return;
     const data = {
         profile: userProfile,
         library: library,
         version: 1,
-        exportedAt: new Date().toISOString()
+        exportedAt: new Date().toISOString(),
+        type: 'full_backup'
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `mediatracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `mediatracker_full_backup_${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const handleImportData = (file: File) => {
-    console.log("Starting import for file:", file.name);
+  const handleExportCatalog = () => {
+      // Exports only library data, STRIPPING personal data
+      const sanitizedLibrary = library.map(item => ({
+          ...item,
+          // KEEP AI Data (Public info)
+          aiData: item.aiData,
+          // RESET Tracking Data (Sensitive info)
+          trackingData: {
+            status: 'Sin empezar', // Reset
+            currentSeason: 1,
+            totalSeasons: item.trackingData.totalSeasons || 1, // Keep structural structure
+            watchedEpisodes: 0, // Reset
+            totalEpisodesInSeason: item.trackingData.totalEpisodesInSeason, // Keep structure
+            accumulated_consumption: 0,
+            emotionalTags: [], // Remove
+            favoriteCharacters: [], // Remove
+            rating: '', // Remove
+            comment: '', // Remove
+            recommendedBy: '', // Remove
+            isSaga: item.trackingData.isSaga || false, // Keep structural
+            finishedAt: undefined,
+            customLinks: [], // Remove user links
+            scheduledReturnDate: undefined,
+            nextReleaseDate: undefined
+          },
+          // Update Timestamps for the export
+          createdAt: Date.now(),
+          lastInteraction: Date.now()
+      }));
+
+      const data = {
+          library: sanitizedLibrary,
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          type: 'catalog_share' // Marker to identify this is just a list
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `mediatracker_catalog_share_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  };
+
+  const handleImportBackup = (file: File) => {
+    console.log("Starting backup import for file:", file.name);
     
-    // Validate file type (basic check)
     if (!file.name.endsWith('.json') && file.type !== 'application/json') {
         alert("El archivo debe ser un JSON (.json)");
         return;
     }
 
     const reader = new FileReader();
-
-    reader.onerror = () => {
-        console.error("Reader error", reader.error);
-        alert("Error de lectura del archivo.");
-    };
+    reader.onerror = () => alert("Error de lectura del archivo.");
 
     reader.onload = async (event) => {
-        console.log("File read complete. Processing...");
         try {
             const content = event.target?.result;
-            if (typeof content !== 'string') {
-                console.error("Content is not string", content);
-                alert("El contenido del archivo no es válido.");
-                return;
-            }
+            if (typeof content !== 'string') return;
 
             const data = JSON.parse(content);
-            console.log("JSON Parsed:", data);
 
             if (!data.profile || !Array.isArray(data.library)) {
-                console.error("Invalid structure", data);
-                alert("El archivo no tiene el formato de respaldo correcto (falta perfil o biblioteca).");
+                alert("El archivo no tiene el formato de respaldo completo (falta perfil o biblioteca).");
                 return;
             }
 
-            // Proceed directly with import without window.confirm blocking
             setIsLoading(true);
-            
             try {
-                console.log("Saving profile...");
                 await saveUserProfile(data.profile);
-                
-                console.log("Saving library items...");
-                // Batch save library
                 for (const item of data.library) {
                     await saveMediaItem(item);
                 }
                 
-                // State updates
                 setUserProfile(data.profile);
                 applyTheme(data.profile.accentColor);
-                
                 const updatedLibrary = await getLibrary();
                 setLibrary(updatedLibrary);
                 
-                // UI Clean up
                 setIsLoading(false);
                 setIsUserMenuOpen(false);
                 setIsSettingsOpen(false);
-                
-                console.log("Import success.");
-                alert("¡Datos importados correctamente! Bienvenido, " + data.profile.username);
+                alert("¡Copia de seguridad restaurada correctamente!");
 
             } catch (saveError) {
-                console.error("Save error during import", saveError);
-                alert("Ocurrió un error guardando los datos en la base de datos local.");
+                console.error("Save error", saveError);
+                alert("Error guardando los datos.");
                 setIsLoading(false);
             }
 
         } catch (error) {
-            console.error("Critical import error / JSON Parse", error);
-            alert("Error crítico: El archivo está corrupto o no es un JSON válido.");
+            console.error("JSON Parse error", error);
+            alert("El archivo está corrupto.");
             setIsLoading(false);
         }
     };
-    
-    // Trigger reading
     reader.readAsText(file);
+  };
+
+  const handleImportCatalog = (file: File) => {
+      console.log("Starting catalog import:", file.name);
+      if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+          alert("El archivo debe ser un JSON (.json)");
+          return;
+      }
+
+      const reader = new FileReader();
+      reader.onerror = () => alert("Error de lectura.");
+      
+      reader.onload = async (event) => {
+          try {
+              const content = event.target?.result;
+              if (typeof content !== 'string') return;
+
+              const data = JSON.parse(content);
+              
+              // Validation: Should NOT have profile data if it's a catalog share, 
+              // or simply we ignore it. The request says "Verify file contains only library data".
+              if (data.profile) {
+                  if (!confirm("Este archivo parece ser una copia de seguridad completa (contiene perfil). ¿Deseas importar solo las obras y fusionarlas con tu biblioteca actual?")) {
+                      return;
+                  }
+              }
+
+              if (!data.library || !Array.isArray(data.library)) {
+                  alert("No se encontró una lista de obras válida en el archivo.");
+                  return;
+              }
+
+              setIsLoading(true);
+              const incomingItems = data.library as MediaItem[];
+              let addedCount = 0;
+
+              // Merge Logic
+              for (const item of incomingItems) {
+                  // Check duplicate by TITLE to avoid double entries
+                  const exists = library.some(existing => 
+                      existing.aiData.title.toLowerCase() === item.aiData.title.toLowerCase() && 
+                      existing.aiData.mediaType === item.aiData.mediaType
+                  );
+
+                  if (!exists) {
+                      // Sanitization on Import (Enforce "Sin empezar")
+                      const newItem: MediaItem = {
+                          ...item,
+                          id: uuidv4(), // NEW ID for local DB
+                          trackingData: {
+                              ...item.trackingData,
+                              status: 'Sin empezar',
+                              watchedEpisodes: 0,
+                              accumulated_consumption: 0,
+                              rating: '',
+                              emotionalTags: [],
+                              favoriteCharacters: [],
+                              comment: '',
+                              customLinks: []
+                          },
+                          createdAt: Date.now(),
+                          lastInteraction: Date.now()
+                      };
+                      
+                      await saveMediaItem(newItem);
+                      addedCount++;
+                  }
+              }
+
+              const updatedLibrary = await getLibrary();
+              setLibrary(updatedLibrary);
+              setIsLoading(false);
+              setIsSettingsOpen(false);
+              alert(`Catálogo importado. Se agregaron ${addedCount} obras nuevas.`);
+
+          } catch (error) {
+              console.error("Import error", error);
+              alert("Error al procesar el archivo de catálogo.");
+              setIsLoading(false);
+          }
+      };
+      reader.readAsText(file);
   };
 
 
@@ -482,7 +589,7 @@ export default function App() {
       return (
         <Onboarding 
             onComplete={handleOnboardingComplete} 
-            onImport={handleImportData} // Pass import function to onboarding
+            onImport={handleImportBackup} // Pass import function to onboarding
         />
       );
   }
@@ -507,8 +614,10 @@ export default function App() {
          onClose={() => setIsSettingsOpen(false)} 
          userProfile={userProfile}
          onUpdateProfile={handleUpdateUserProfile}
-         onExportData={handleExportData}
-         onImportData={handleImportData}
+         onExportBackup={handleExportBackup}
+         onImportBackup={handleImportBackup}
+         onExportCatalog={handleExportCatalog}
+         onImportCatalog={handleImportCatalog}
       />
 
       {/* Header */}
@@ -630,7 +739,7 @@ export default function App() {
                                 </button>
                                 <div className="border-t border-slate-700/50 my-1"></div>
                                 <button 
-                                    onClick={handleExportData}
+                                    onClick={handleExportBackup}
                                     className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white flex items-center gap-2 transition-colors"
                                 >
                                     <Download className="w-4 h-4" />

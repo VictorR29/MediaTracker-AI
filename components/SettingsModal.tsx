@@ -1,19 +1,23 @@
 
+
+
 import React, { useState, useRef } from 'react';
 import { UserProfile } from '../types';
-import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon } from 'lucide-react';
+import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2 } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   userProfile: UserProfile;
   onUpdateProfile: (profile: UserProfile) => void;
-  onImportData: (file: File) => void;
-  onExportData: () => void;
+  onImportBackup: (file: File) => void;
+  onExportBackup: () => void;
+  onImportCatalog: (file: File) => void;
+  onExportCatalog: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ 
-    isOpen, onClose, userProfile, onUpdateProfile, onImportData, onExportData 
+    isOpen, onClose, userProfile, onUpdateProfile, onImportBackup, onExportBackup, onImportCatalog, onExportCatalog
 }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'data'>('profile');
   const [username, setUsername] = useState(userProfile.username);
@@ -24,6 +28,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const catalogInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -55,15 +60,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       }
   };
 
-  const triggerImport = () => {
-    // Trigger the file browser dialog
+  const triggerImportBackup = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const triggerImportCatalog = () => {
+    catalogInputRef.current?.click();
+  };
+
+  const handleBackupFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
-        onImportData(file);
+        onImportBackup(file);
+      }
+  };
+
+  const handleCatalogFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        onImportCatalog(file);
       }
   };
 
@@ -219,49 +234,84 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {activeTab === 'data' && (
                     <div className="space-y-8 animate-fade-in">
-                        <div>
-                            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                                <Download className="w-5 h-5 text-indigo-400" /> Exportar Datos
+                        {/* Section 1: Full Backup */}
+                        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                             <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <Shield className="w-4 h-4" /> Copia de Seguridad Completa
                             </h3>
-                            <p className="text-sm text-slate-400 mb-4">
-                                Descarga una copia completa de tu biblioteca y perfil en formato JSON.
-                            </p>
-                            <button 
-                                onClick={onExportData}
-                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center gap-2"
-                            >
-                                <Download className="w-4 h-4" />
-                                Descargar Respaldo JSON
-                            </button>
+                            <div className="space-y-3">
+                                <button 
+                                    onClick={onExportBackup}
+                                    className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-between group"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Download className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                        Copia de Seguridad (Privada)
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 bg-slate-900 px-2 py-1 rounded">Incluye todo</span>
+                                </button>
+
+                                <div className="flex gap-2 items-center">
+                                    <button 
+                                        type="button"
+                                        onClick={triggerImportBackup}
+                                        className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Upload className="w-4 h-4 text-blue-400" />
+                                        Restaurar Backup
+                                    </button>
+                                </div>
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    onChange={handleBackupFileChange} 
+                                    onClick={handleInputClick}
+                                    className="hidden" 
+                                    accept=".json,application/json" 
+                                />
+                                <p className="text-xs text-slate-500 italic px-1">
+                                    * Contiene tu API Key y progreso. No compartir.
+                                </p>
+                            </div>
                         </div>
                         
-                        <div className="border-t border-slate-700 pt-6">
-                            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                                <Upload className="w-5 h-5 text-emerald-400" /> Importar Datos
+                        {/* Section 2: Catalog Share */}
+                        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                            <h3 className="text-sm font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <Share2 className="w-4 h-4" /> Compartir Catálogo
                             </h3>
-                            <p className="text-sm text-slate-400 mb-4">
-                                Restaura tu biblioteca desde un archivo JSON. <br/>
-                                <span className="text-yellow-500 flex items-center gap-1 mt-1 text-xs">
-                                    <AlertTriangle className="w-3 h-3"/>
-                                    Esto fusionará los datos nuevos con los existentes.
-                                </span>
-                            </p>
-                            <button 
-                                type="button"
-                                onClick={triggerImport}
-                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center gap-2"
-                            >
-                                <Upload className="w-4 h-4" />
-                                Seleccionar Archivo
-                            </button>
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                onChange={handleFileChange} 
-                                onClick={handleInputClick}
-                                className="hidden" 
-                                accept=".json,application/json" 
-                            />
+                            <div className="space-y-3">
+                                <button 
+                                    onClick={onExportCatalog}
+                                    className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-between group"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <FileJson className="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" />
+                                        Exportar Catálogo (Público)
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 bg-slate-900 px-2 py-1 rounded">Sin datos personales</span>
+                                </button>
+
+                                <button 
+                                    type="button"
+                                    onClick={triggerImportCatalog}
+                                    className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Upload className="w-4 h-4 text-purple-400" />
+                                    Importar Catálogo (Fusionar)
+                                </button>
+                                <input 
+                                    type="file" 
+                                    ref={catalogInputRef} 
+                                    onChange={handleCatalogFileChange} 
+                                    onClick={handleInputClick}
+                                    className="hidden" 
+                                    accept=".json,application/json" 
+                                />
+                                <p className="text-xs text-slate-500 italic px-1">
+                                    * Solo exporta la lista de obras. Excluye progreso, notas y calificaciones. Ideal para compartir con amigos.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 )}
