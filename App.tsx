@@ -174,7 +174,8 @@ export default function App() {
           comment: '',
           recommendedBy: '',
           isSaga: false,
-          finishedAt: undefined
+          finishedAt: undefined,
+          nextReleaseDate: undefined
         }
       };
 
@@ -446,8 +447,9 @@ export default function App() {
          // 1. Items with FUTURE dates come first (sorted ascending, nearest first)
          // 2. Items with PAST dates or NO dates come after
          
-         const dateAStr = a.aiData.releaseDate;
-         const dateBStr = b.aiData.releaseDate;
+         // Use the specific user tracking date if available, otherwise AI date
+         const dateAStr = a.trackingData.nextReleaseDate || a.aiData.releaseDate;
+         const dateBStr = b.trackingData.nextReleaseDate || b.aiData.releaseDate;
          
          const dateA = dateAStr ? new Date(dateAStr) : null;
          const dateB = dateBStr ? new Date(dateBStr) : null;

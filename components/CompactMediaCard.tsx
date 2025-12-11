@@ -51,7 +51,9 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
     return `en ${diffDays} días`;
   };
 
-  const timeRemaining = getCountdown(aiData.releaseDate);
+  // Prioritize user-defined next release date, otherwise use AI release date
+  const targetDateDisplay = trackingData.nextReleaseDate || aiData.releaseDate;
+  const timeRemaining = getCountdown(targetDateDisplay);
 
   // Calculate progress
   let progressPercent = 0;
@@ -182,7 +184,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
                             <Hourglass className="w-5 h-5 md:w-6 md:h-6 text-yellow-400 animate-pulse" />
                         </div>
                         <span className="font-bold text-base md:text-lg leading-tight text-yellow-100">{timeRemaining}</span>
-                        <span className="text-[10px] md:text-xs text-yellow-500/80 mt-1 font-medium bg-black/40 px-2 py-1 rounded-full">{aiData.releaseDate}</span>
+                        <span className="text-[10px] md:text-xs text-yellow-500/80 mt-1 font-medium bg-black/40 px-2 py-1 rounded-full">{targetDateDisplay}</span>
                     </>
                   ) : (
                     // Scenario B: No Date / Waiting for Announcement
