@@ -1,5 +1,4 @@
 
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
 import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film, Award, Medal, Scroll, Clapperboard, Book, Layout } from 'lucide-react';
@@ -14,6 +13,7 @@ interface ObsessionItem {
     title: string;
     time: number;
     coverImage?: string;
+    primaryColor?: string;
 }
 
 interface StatsData {
@@ -166,10 +166,10 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     
     // Obsession Tracking
     const maxItemsByType: Record<string, ObsessionItem> = {
-        'Anime': { title: "N/A", time: 0, coverImage: '' },
-        'Series': { title: "N/A", time: 0, coverImage: '' },
-        'Webtoon/Manga': { title: "N/A", time: 0, coverImage: '' },
-        'Libros/Novelas': { title: "N/A", time: 0, coverImage: '' }
+        'Anime': { title: "N/A", time: 0, coverImage: '', primaryColor: '' },
+        'Series': { title: "N/A", time: 0, coverImage: '', primaryColor: '' },
+        'Webtoon/Manga': { title: "N/A", time: 0, coverImage: '', primaryColor: '' },
+        'Libros/Novelas': { title: "N/A", time: 0, coverImage: '', primaryColor: '' }
     };
 
     library.forEach(item => {
@@ -232,7 +232,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 maxItemsByType[categoryKey] = { 
                     title: item.aiData.title, 
                     time: itemTime,
-                    coverImage: item.aiData.coverImage 
+                    coverImage: item.aiData.coverImage,
+                    primaryColor: item.aiData.primaryColor
                 };
             }
         }
@@ -404,16 +405,19 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
   const currentObsession = stats.maxItemsByType[obsessionTab];
   const hasObsessionData = currentObsession && currentObsession.time > 0;
+  
+  // Color Logic for Obsession Card
+  const obsessionColor = currentObsession.primaryColor || '#6366f1';
 
   return (
     <div className="animate-fade-in space-y-6 pb-12 relative">
        
        <div className="flex items-center justify-between mb-6">
            <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-800 rounded-lg">
+                <div className="p-2 bg-slate-800 rounded-lg shadow shadow-primary/20">
                     <BarChart2 className="w-6 h-6 text-primary" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Mis Insights</h2>
+                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 tracking-tight">Mis Insights</h2>
            </div>
            <button 
              onClick={() => setIsSettingsOpen(true)}
@@ -547,9 +551,12 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
             </div>
 
             {/* Obsession Card with Background Image */}
-            <div className="relative rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all min-h-[120px]">
+            <div 
+                className="relative rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all min-h-[140px]"
+                style={{ borderColor: `${obsessionColor}50` }}
+            >
                 {/* Background Image Layer */}
-                <div className="absolute inset-0 z-0">
+                <div className="absolute inset-0 z-0 bg-slate-900">
                     {hasObsessionData && currentObsession.coverImage ? (
                         <>
                             <img 
@@ -557,9 +564,10 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                                 alt="" 
                                 className="w-full h-full object-cover" 
                             />
-                            {/* Dark Overlay for text readability */}
-                            <div className="absolute inset-0 bg-slate-900/85 backdrop-blur-[2px]"></div>
-                            <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent"></div>
+                            {/* Improved Gradients for better text visibility while showing the image */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent"></div>
+                            {/* Color tint based on primary color */}
+                            <div className="absolute inset-0 opacity-20" style={{ backgroundColor: obsessionColor }}></div>
                         </>
                     ) : (
                          <div className="w-full h-full bg-slate-900/50"></div>
@@ -567,32 +575,47 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 </div>
 
                 {/* Content Layer */}
-                <div className="relative z-10 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="relative z-10 p-5 flex flex-col md:flex-row items-center justify-between gap-6 h-full">
                      {hasObsessionData ? (
                          <>
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-slate-800/80 flex items-center justify-center border border-slate-600 shadow-inner shrink-0 backdrop-blur-sm">
+                            <div className="flex items-center gap-4 flex-1 w-full md:w-auto">
+                                <div 
+                                    className="w-14 h-14 rounded-full flex items-center justify-center border-2 shadow-xl shrink-0 backdrop-blur-md"
+                                    style={{ 
+                                        backgroundColor: `${obsessionColor}30`, 
+                                        borderColor: obsessionColor,
+                                        boxShadow: `0 0 20px ${obsessionColor}40`
+                                    }}
+                                >
                                     {obsessionTab.includes('Libro') || obsessionTab.includes('Webtoon') ? (
-                                        <BookOpen className="w-6 h-6 text-emerald-400" />
+                                        <BookOpen className="w-7 h-7 text-white" />
                                     ) : (
-                                        <Clapperboard className="w-6 h-6 text-indigo-400" />
+                                        <Clapperboard className="w-7 h-7 text-white" />
                                     )}
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-white leading-tight drop-shadow-md">{currentObsession.title}</h3>
-                                    <p className="text-xs text-slate-400 mt-1 font-medium">Categoría: {obsessionTab}</p>
+                                    <h3 className="text-2xl font-bold text-white leading-tight drop-shadow-lg line-clamp-1 md:line-clamp-2">
+                                        {currentObsession.title}
+                                    </h3>
+                                    <p className="text-xs font-medium uppercase tracking-widest mt-1 opacity-90" style={{ color: obsessionColor }}>
+                                        {obsessionTab}
+                                    </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-lg border border-white/10 shrink-0 backdrop-blur-md">
-                                 <Clock className="w-5 h-5 text-yellow-500" />
-                                 <span className="text-lg font-mono font-bold text-white">
-                                     {(currentObsession.time / 60).toFixed(1)}h
-                                 </span>
+                            
+                            <div className="flex items-center gap-3 bg-white/10 px-5 py-3 rounded-xl border border-white/10 shrink-0 backdrop-blur-md shadow-lg w-full md:w-auto justify-center md:justify-start">
+                                 <Clock className="w-6 h-6 text-yellow-400 drop-shadow-md" />
+                                 <div className="flex flex-col">
+                                     <span className="text-2xl font-mono font-bold text-white leading-none">
+                                         {(currentObsession.time / 60).toFixed(1)}h
+                                     </span>
+                                     <span className="text-[10px] text-slate-300 uppercase font-bold tracking-wider">Tiempo Total</span>
+                                 </div>
                             </div>
                          </>
                      ) : (
-                         <div className="w-full text-center py-4 opacity-50 flex flex-col items-center">
-                             <Layout className="w-8 h-8 text-slate-500 mb-2" />
+                         <div className="w-full text-center py-6 opacity-50 flex flex-col items-center">
+                             <Layout className="w-10 h-10 text-slate-500 mb-2" />
                              <p className="text-sm font-medium text-slate-400">Sin suficientes datos en {obsessionTab}.</p>
                              <p className="text-xs text-slate-600">Comienza a registrar tu progreso para ver estadísticas.</p>
                          </div>
