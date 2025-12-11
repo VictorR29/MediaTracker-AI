@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -43,6 +44,7 @@ export default function App() {
     type: 'All',
     status: 'All',
     rating: 'All',
+    genre: 'All', // Initialize genre filter
     sortBy: 'updated'
   });
 
@@ -380,16 +382,39 @@ export default function App() {
   };
 
 
+  // Calculate unique genres from library
+  const availableGenres = useMemo(() => {
+    const genreSet = new Set<string>();
+    library.forEach(item => {
+        if (item.aiData.genres && Array.isArray(item.aiData.genres)) {
+            item.aiData.genres.forEach(g => genreSet.add(g));
+        }
+    });
+    return Array.from(genreSet).sort();
+  }, [library]);
+
+
   // Filter Logic for Main Library
   const filteredLibrary = useMemo(() => {
     let result = [...library];
+    
+    // Text Search
     if (filters.query.trim()) {
       const q = filters.query.toLowerCase();
       result = result.filter(item => item.aiData.title.toLowerCase().includes(q));
     }
+    
+    // Dropdown Filters
     if (filters.type !== 'All') result = result.filter(item => item.aiData.mediaType === filters.type);
     if (filters.status !== 'All') result = result.filter(item => item.trackingData.status === filters.status);
     if (filters.rating !== 'All') result = result.filter(item => item.trackingData.rating === filters.rating);
+    
+    // Genre Filter
+    if (filters.genre !== 'All') {
+        result = result.filter(item => 
+            item.aiData.genres && item.aiData.genres.includes(filters.genre)
+        );
+    }
 
     result.sort((a, b) => {
       switch (filters.sortBy) {
@@ -664,7 +689,7 @@ export default function App() {
             </div>
             
             {library.length > 0 && (
-              <LibraryFilters filters={filters} onChange={setFilters} />
+              <LibraryFilters filters={filters} onChange={setFilters} availableGenres={availableGenres} />
             )}
 
             {library.length === 0 ? (
@@ -682,7 +707,7 @@ export default function App() {
               <div className="text-center py-20">
                 <p className="text-slate-500">No hay resultados para estos filtros.</p>
                 <button 
-                  onClick={() => setFilters({query: '', type: 'All', status: 'All', rating: 'All', sortBy: 'updated'})}
+                  onClick={() => setFilters({query: '', type: 'All', status: 'All', rating: 'All', genre: 'All', sortBy: 'updated'})}
                   className="mt-2 text-primary hover:underline"
                 >
                   Limpiar filtros

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, ArrowUpDown } from 'lucide-react';
+import { Search, ArrowUpDown, Tags } from 'lucide-react';
 import { RATING_OPTIONS } from '../types';
 
 export interface FilterState {
@@ -8,15 +8,17 @@ export interface FilterState {
   type: string;
   status: string;
   rating: string;
+  genre: string; // New field
   sortBy: 'updated' | 'title' | 'progress';
 }
 
 interface LibraryFiltersProps {
   filters: FilterState;
   onChange: (filters: FilterState) => void;
+  availableGenres: string[]; // New prop
 }
 
-export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChange }) => {
+export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChange, availableGenres }) => {
   const handleChange = (key: keyof FilterState, value: string) => {
     onChange({ ...filters, [key]: value });
   };
@@ -35,8 +37,8 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
         />
       </div>
 
-      {/* Bottom Row: Selects */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Bottom Row: Selects - Updated to grid-cols-5 for the new filter */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {/* Type */}
         <div className="space-y-1">
            <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider pl-1">Tipo</label>
@@ -69,6 +71,23 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
              <option value="En Pausa">En Pausa</option>
              <option value="Descartado">Descartado</option>
              <option value="Planeado / Pendiente">Planeado / Pendiente</option>
+           </select>
+        </div>
+
+        {/* Genre - New Filter */}
+        <div className="space-y-1">
+           <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider pl-1 flex items-center gap-1">
+              <Tags className="w-3 h-3"/> Género
+           </label>
+           <select
+             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-primary transition-colors cursor-pointer"
+             value={filters.genre}
+             onChange={(e) => handleChange('genre', e.target.value)}
+           >
+             <option value="All">Todos</option>
+             {availableGenres.map(genre => (
+               <option key={genre} value={genre}>{genre}</option>
+             ))}
            </select>
         </div>
 
