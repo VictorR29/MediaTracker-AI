@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -647,7 +648,7 @@ export default function App() {
       </header>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-slate-700 z-50 flex justify-around px-2 py-2 pb-6 safe-area-pb shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-slate-700 z-50 flex justify-around px-2 py-2 shadow-2xl">
          <button 
            onClick={() => {
                 setView('search');
@@ -792,8 +793,8 @@ export default function App() {
                 </button>
               </div>
             ) : (
-              // Mobile: Single Column (grid-cols-1), Tablet/Desktop: Grid
-              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 pb-10">
+              // Mobile: Two Columns (grid-cols-2), Tablet/Desktop: Grid
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 pb-10">
                 {filteredLibrary.map((item) => (
                   <CompactMediaCard 
                     key={item.id} 
@@ -832,8 +833,8 @@ export default function App() {
                     </button>
                 </div>
              ) : (
-                // Mobile: Single Column (grid-cols-1)
-                <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 pb-10">
+                // Mobile: Two Columns (grid-cols-2)
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 pb-10">
                     {upcomingLibrary.map((item) => (
                         <CompactMediaCard 
                             key={item.id} 
