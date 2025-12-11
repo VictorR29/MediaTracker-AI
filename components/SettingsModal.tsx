@@ -106,8 +106,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-        <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col md:flex-row h-[600px] md:h-auto">
+        <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col md:flex-row h-[600px] md:h-auto relative">
             
+            {/* Close Button - Positioned absolutely relative to container for better mobile layout */}
+            <button 
+                onClick={onClose} 
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 z-50"
+            >
+                <X className="w-5 h-5" />
+            </button>
+
             {/* Sidebar */}
             <div className="w-full md:w-64 bg-slate-900/50 border-b md:border-b-0 md:border-r border-slate-700 p-4 md:p-6 flex flex-col gap-2">
                 <h2 className="text-xl font-bold text-white mb-4 px-2">Configuración</h2>
@@ -144,11 +152,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-slate-800/20 relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
-                    <X className="w-5 h-5" />
-                </button>
-
+            <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-slate-800/20">
                 {activeTab === 'profile' && (
                     <div className="space-y-6 animate-fade-in">
                         <div>
