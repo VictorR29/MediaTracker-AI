@@ -168,12 +168,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
+                                    <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center justify-center gap-2">
                                         <ImageIcon className="w-4 h-4"/> Foto de Perfil
                                     </label>
-                                    <div className="flex gap-4 items-center">
+                                    <div className="flex justify-center">
                                         <div 
-                                            className={`relative w-16 h-16 rounded-full border-2 border-dashed flex-shrink-0 flex items-center justify-center cursor-pointer overflow-hidden transition-all group ${
+                                            className={`relative w-24 h-24 rounded-full border-2 border-dashed flex-shrink-0 flex items-center justify-center cursor-pointer overflow-hidden transition-all group ${
                                                 isDragging ? 'border-primary bg-primary/10' : 'border-slate-600 hover:border-slate-500 bg-slate-800'
                                             }`}
                                             onDragOver={handleDragOver}
@@ -185,27 +185,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 <>
                                                     <img src={avatarUrl} className="w-full h-full object-cover" alt="Preview" onError={(e) => e.currentTarget.style.display = 'none'} />
                                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                                        <Upload className="w-4 h-4 text-white" />
+                                                        <Upload className="w-6 h-6 text-white" />
                                                     </div>
                                                 </>
                                             ) : (
-                                                <Upload className="w-5 h-5 text-slate-400" />
+                                                <Upload className="w-8 h-8 text-slate-400" />
                                             )}
                                             <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={handleAvatarFileSelect} />
                                         </div>
-
-                                        <div className="flex-grow">
-                                            <input 
-                                                type="url"
-                                                value={avatarUrl}
-                                                onChange={(e) => setAvatarUrl(e.target.value)}
-                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-primary outline-none transition-all"
-                                                placeholder="https://ejemplo.com/avatar.jpg"
-                                            />
-                                        </div>
                                     </div>
-                                    <p className="text-xs text-slate-500 mt-2">
-                                        Pega un enlace o sube una imagen directamente.
+                                    <p className="text-xs text-slate-500 mt-2 text-center">
+                                        Arrastra una imagen o haz clic para seleccionarla.
                                     </p>
                                 </div>
                             </div>
