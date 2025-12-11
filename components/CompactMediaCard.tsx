@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { MediaItem } from '../types';
 import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle } from 'lucide-react';
@@ -129,7 +130,14 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       if (isBook) {
           return trackingData.isSaga ? <span>L. {trackingData.currentSeason}</span> : <span>Novela</span>;
       }
-      return isReadingContent ? <span>Leído</span> : <span>T. {trackingData.currentSeason}</span>;
+      return isReadingContent ? <span>Capítulos Acumulados</span> : <span>T. {trackingData.currentSeason}</span>;
+  };
+
+  const renderStatus = () => {
+    if (trackingData.status === 'Viendo/Leyendo') {
+        return isReadingContent ? 'Leyendo' : 'Viendo';
+    }
+    return trackingData.status;
   };
 
   return (
@@ -208,7 +216,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
 
         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-3 pt-12">
            <h3 className="text-white font-bold text-sm leading-tight line-clamp-2">{aiData.title}</h3>
-           <p className="text-slate-400 text-[10px] md:text-xs mt-0.5 truncate">{trackingData.status}</p>
+           <p className="text-slate-400 text-[10px] md:text-xs mt-0.5 truncate">{renderStatus()}</p>
         </div>
       </div>
       
