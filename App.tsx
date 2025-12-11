@@ -697,13 +697,13 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-grow pt-6 md:pt-8 min-h-[calc(100vh-64px)]">
         
+        {/* Persistent Contextual Greeting */}
+        <ContextualGreeting userProfile={userProfile} library={library} />
+
         {/* VIEW: SEARCH (Home) */}
         {view === 'search' && (
            <div className="w-full max-w-5xl mx-auto px-2 animate-fade-in">
               
-              {/* Contextual Greeting Component */}
-              <ContextualGreeting userProfile={userProfile} library={library} />
-
               <div className="text-center mb-8">
                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
                     ¿Qué historia descubriste hoy?
