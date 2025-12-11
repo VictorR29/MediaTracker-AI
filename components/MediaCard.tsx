@@ -1,5 +1,4 @@
 
-
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal } from 'lucide-react';
@@ -671,6 +670,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                     className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none transition-shadow focus:ring-1"
                     style={{ borderColor: `${dynamicColor}50` }}
                   >
+                    <option value="Sin empezar">Sin empezar</option>
                     <option value="Viendo/Leyendo">
                         {isReadingContent ? 'Leyendo' : 'Viendo'}
                     </option>

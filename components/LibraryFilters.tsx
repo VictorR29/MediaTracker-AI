@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, ArrowUpDown, Tags, Filter, X, Check } from 'lucide-react';
 import { RATING_OPTIONS } from '../types';
@@ -91,6 +92,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                     onChange={(e) => handleChange('status', e.target.value)}
                 >
                     <option value="All">Todos</option>
+                    <option value="Sin empezar">Sin empezar</option>
                     <option value="Viendo/Leyendo">Viendo/Leyendo</option>
                     <option value="Completado">Completado</option>
                     <option value="En Pausa">En Pausa</option>
@@ -190,6 +192,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                             onChange={(e) => handleChange('status', e.target.value)}
                         >
                             <option value="All">Todos</option>
+                            <option value="Sin empezar">Sin empezar</option>
                             <option value="Viendo/Leyendo">Viendo/Leyendo</option>
                             <option value="Completado">Completado</option>
                             <option value="En Pausa">En Pausa</option>

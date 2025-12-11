@@ -162,7 +162,7 @@ export default function App() {
         createdAt: Date.now(),
         lastInteraction: Date.now(), // Initialize timestamp
         trackingData: {
-          status: 'Viendo/Leyendo',
+          status: 'Sin empezar', // Updated default status
           currentSeason: 1,
           totalSeasons: 1, 
           watchedEpisodes: 0,
@@ -248,6 +248,10 @@ export default function App() {
         }
     } else {
         updatedTracking.watchedEpisodes += 1;
+        // If it was "Sin empezar", change to "Viendo/Leyendo" on first increment
+        if (updatedTracking.status === 'Sin empezar') {
+            updatedTracking.status = 'Viendo/Leyendo';
+        }
     }
 
     // Update timestamp strictly
@@ -690,233 +694,192 @@ export default function App() {
          </button>
       </nav>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 pt-4 md:pt-8 w-full flex-grow">
+      {/* Main Content Area */}
+      <main className="flex-grow pt-6 md:pt-8 min-h-[calc(100vh-64px)]">
         
-        {/* Contextual AI Greeting Banner - Only shown on certain views */}
-        {userProfile && view !== 'details' && (
-           <ContextualGreeting userProfile={userProfile} library={library} />
-        )}
-
+        {/* VIEW: SEARCH (Home) */}
         {view === 'search' && (
-          <div className="flex flex-col items-center">
-            <div className="text-center mb-8 max-w-2xl px-2">
-               <h2 className="text-2xl md:text-4xl font-bold text-white mb-3">¿Qué estás viendo hoy?</h2>
-               <p className="text-slate-400 text-sm md:text-base">
-                 Busca cualquier Anime, Serie, Película o Libro para añadir a tu biblioteca.
-               </p>
-            </div>
-
-            <SearchBar 
-                key={searchKey} 
-                onSearch={handleSearch} 
-                isLoading={isLoading} 
-            />
-            
-            {/* Search Error Message */}
-            {searchError && (
-               <div className="animate-fade-in w-full max-w-md mx-auto mb-8 p-4 bg-red-900/20 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-200">
-                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                  <p className="text-sm font-medium">{searchError}</p>
-               </div>
-            )}
-
-            {isLoading && (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-500 animate-pulse">
-                <Sparkles className="w-12 h-12 mb-4 text-primary opacity-50" />
-                <p>Consultando a la IA y analizando contenido...</p>
-              </div>
-            )}
-
-            {!isLoading && currentMedia && (
-              <div className="w-full animate-fade-in-up">
-                 <div className="flex justify-end mb-4 px-4 max-w-5xl mx-auto">
-                    {!library.find(i => i.id === currentMedia.id) ? (
-                       <button 
-                         onClick={addToLibrary}
-                         className="flex items-center gap-2 text-sm font-bold text-white transition-all bg-primary hover:bg-primary/90 px-6 py-2 rounded-full shadow-lg shadow-primary/25"
-                       >
-                         <PlusCircle className="w-4 h-4" />
-                         Guardar en Biblioteca
-                       </button>
-                    ) : (
-                      <span className="text-xs text-slate-500 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
-                        Guardado en Biblioteca
-                      </span>
-                    )}
-                 </div>
-                 <MediaCard 
-                   item={currentMedia} 
-                   onUpdate={handleUpdateMedia} 
-                   isNew={true}
-                   username={userProfile?.username}
-                 />
-              </div>
-            )}
-          </div>
-        )}
-
-        {view === 'library' && (
-          <div className="animate-fade-in">
-            <div className="flex items-center justify-between mb-4 border-l-4 border-primary pl-4">
-               <h2 className="text-xl md:text-2xl font-bold text-white">Mi Colección</h2>
-               {filteredLibrary.length > 0 && <span className="text-slate-400 text-xs md:text-sm bg-slate-800 px-2 py-1 rounded-md">{filteredLibrary.length} obras</span>}
-            </div>
-            
-            {library.length > 0 && (
-              <LibraryFilters filters={filters} onChange={setFilters} availableGenres={availableGenres} />
-            )}
-
-            {library.length === 0 ? (
-              <div className="text-center py-20 bg-surface rounded-2xl border border-dashed border-slate-700 mx-2">
-                <LayoutGrid className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400 text-lg mb-4">Tu biblioteca está vacía.</p>
-                <button 
-                  onClick={() => {
-                      setView('search');
-                      setCurrentMedia(null);
-                      setSearchKey(prev => prev + 1);
-                  }}
-                  className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-primary rounded-lg transition-colors"
-                >
-                  Buscar algo nuevo
-                </button>
-              </div>
-            ) : filteredLibrary.length === 0 ? (
-              <div className="text-center py-20">
-                <p className="text-slate-500">No hay resultados para estos filtros.</p>
-                <button 
-                  onClick={() => setFilters({query: '', type: 'All', status: 'All', rating: 'All', genre: 'All', sortBy: 'updated'})}
-                  className="mt-2 text-primary hover:underline"
-                >
-                  Limpiar filtros
-                </button>
-              </div>
-            ) : (
-              // Mobile: Two Columns (grid-cols-2), Tablet/Desktop: Grid
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 pb-10">
-                {filteredLibrary.map((item) => (
-                  <CompactMediaCard 
-                    key={item.id} 
-                    item={item} 
-                    onClick={() => openDetail(item)}
-                    onIncrement={handleQuickIncrement}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {view === 'upcoming' && (
-          <div className="animate-fade-in">
-             <div className="flex items-center gap-3 mb-4 border-l-4 border-yellow-500 pl-4">
-                 <h2 className="text-xl md:text-2xl font-bold text-white">Mi Wishlist</h2>
-                 <CalendarClock className="w-5 h-5 text-yellow-500" />
-                 {upcomingLibrary.length > 0 && <span className="text-slate-400 text-xs md:text-sm bg-slate-800 px-2 py-1 rounded-md">{upcomingLibrary.length} pendientes</span>}
-             </div>
-
-             {upcomingLibrary.length === 0 ? (
-                <div className="text-center py-20 bg-surface rounded-2xl border border-dashed border-slate-700 mx-2">
-                    <CalendarClock className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                    <p className="text-slate-400 text-lg mb-4">No tienes nada pendiente.</p>
-                    <p className="text-sm text-slate-500 mb-6 px-4">Añade obras y márcalas como 'Planeado / Pendiente' para llenar tu lista de deseos.</p>
-                    <button 
-                        onClick={() => {
-                            setView('search');
-                            setCurrentMedia(null);
-                            setSearchKey(prev => prev + 1);
-                        }}
-                        className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-primary rounded-lg transition-colors"
-                    >
-                        Buscar Obras
-                    </button>
-                </div>
-             ) : (
-                // Mobile: Two Columns (grid-cols-2)
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 pb-10">
-                    {upcomingLibrary.map((item) => (
-                        <CompactMediaCard 
-                            key={item.id} 
-                            item={item} 
-                            onClick={() => openDetail(item)}
-                            onIncrement={handleQuickIncrement}
-                        />
-                    ))}
-                </div>
-             )}
-          </div>
-        )}
-
-        {view === 'discovery' && userProfile && (
-           <DiscoveryView 
-              library={library} 
-              apiKey={userProfile.apiKey} 
-              onSelectRecommendation={handleSearch}
-           />
-        )}
-
-        {view === 'stats' && userProfile && (
-          <StatsView library={library} userProfile={userProfile} onUpdateProfile={handleUpdateUserProfile} />
-        )}
-
-        {view === 'details' && currentMedia && (
-           <div className="animate-fade-in">
-              <button 
-                onClick={() => setView('library')}
-                className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 group px-4 py-2 hover:bg-slate-800 rounded-lg transition-colors w-fit"
-              >
-                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                Volver
-              </button>
+           <div className="w-full max-w-5xl mx-auto px-2 animate-fade-in">
               
+              {/* Contextual Greeting Component */}
+              <ContextualGreeting userProfile={userProfile} library={library} />
+
+              <div className="text-center mb-8">
+                 <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
+                    ¿Qué historia descubriste hoy?
+                 </h2>
+                 <p className="text-slate-400">Agrega anime, series, películas o libros a tu colección.</p>
+              </div>
+
+              <SearchBar key={searchKey} onSearch={handleSearch} isLoading={isLoading} />
+              
+              {searchError && (
+                <div className="max-w-xl mx-auto mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-200 animate-fade-in">
+                   <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                   <p className="text-sm font-medium">{searchError}</p>
+                </div>
+              )}
+
+              {currentMedia && !library.find(i => i.id === currentMedia.id) && (
+                <div className="animate-fade-in-up pb-10">
+                   <div className="flex justify-between items-center mb-4 px-2">
+                      <h3 className="text-xl font-bold text-white">Resultado de Búsqueda</h3>
+                      <button 
+                        onClick={addToLibrary}
+                        className="bg-primary hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg shadow-indigo-500/20 transition-all transform hover:-translate-y-1 flex items-center gap-2"
+                      >
+                         <PlusCircle className="w-5 h-5" />
+                         Agregar a Biblioteca
+                      </button>
+                   </div>
+                   <MediaCard 
+                      item={currentMedia} 
+                      onUpdate={handleUpdateMedia} 
+                      isNew={true}
+                      username={userProfile.username}
+                   />
+                </div>
+              )}
+           </div>
+        )}
+
+        {/* VIEW: LIBRARY */}
+        {view === 'library' && (
+           <div className="w-full max-w-7xl mx-auto px-4 animate-fade-in pb-10">
+              <LibraryFilters 
+                 filters={filters} 
+                 onChange={setFilters} 
+                 availableGenres={availableGenres}
+              />
+              
+              {filteredLibrary.length === 0 ? (
+                 <div className="text-center py-20 text-slate-500">
+                    <LayoutGrid className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                    <p className="text-lg">No se encontraron obras con estos filtros.</p>
+                    <button onClick={() => setView('search')} className="text-primary hover:underline mt-2">Agregar nueva obra</button>
+                 </div>
+              ) : (
+                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                    {filteredLibrary.map(item => (
+                       <CompactMediaCard 
+                          key={item.id} 
+                          item={item} 
+                          onClick={() => openDetail(item)}
+                          onIncrement={handleQuickIncrement}
+                       />
+                    ))}
+                 </div>
+              )}
+           </div>
+        )}
+
+        {/* VIEW: DETAILS */}
+        {view === 'details' && currentMedia && (
+           <div className="w-full px-2 py-4 animate-fade-in">
+              <div className="max-w-5xl mx-auto mb-4 flex items-center gap-2">
+                 <button 
+                   onClick={() => setView('library')}
+                   className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-slate-800"
+                 >
+                    <ArrowLeft className="w-5 h-5" />
+                    Volver
+                 </button>
+              </div>
               <MediaCard 
-                   item={currentMedia} 
-                   onUpdate={handleUpdateMedia} 
-                   onDelete={library.find(i => i.id === currentMedia.id) ? () => handleDeleteRequest(currentMedia) : undefined}
-                   username={userProfile?.username}
+                 item={currentMedia} 
+                 onUpdate={handleUpdateMedia} 
+                 onDelete={() => handleDeleteRequest(currentMedia)}
+                 username={userProfile.username}
               />
            </div>
         )}
-      </main>
 
-      {/* Footer - Hidden on Mobile due to Bottom Nav */}
-      <footer className="w-full bg-surface border-t border-slate-800 py-6 text-center text-slate-600 text-sm mt-auto hidden md:block">
-        <p>Potenciado por Gemini 2.5 Flash & Google Search Grounding</p>
-      </footer>
+        {/* VIEW: STATS */}
+        {view === 'stats' && (
+            <div className="w-full max-w-7xl mx-auto px-4 py-6 animate-fade-in">
+                <StatsView 
+                    library={library} 
+                    userProfile={userProfile} 
+                    onUpdateProfile={handleUpdateUserProfile}
+                />
+            </div>
+        )}
+
+        {/* VIEW: DISCOVERY */}
+        {view === 'discovery' && (
+            <div className="w-full max-w-7xl mx-auto px-4 py-6 animate-fade-in">
+                <DiscoveryView 
+                    library={library}
+                    apiKey={userProfile.apiKey}
+                    onSelectRecommendation={(title) => {
+                        handleSearch(title);
+                    }}
+                />
+            </div>
+        )}
+
+        {/* VIEW: UPCOMING / WISHLIST */}
+        {view === 'upcoming' && (
+            <div className="w-full max-w-7xl mx-auto px-4 py-6 animate-fade-in pb-10">
+                <div className="flex items-center gap-3 mb-6">
+                     <Bookmark className="w-6 h-6 text-yellow-500" />
+                     <h2 className="text-2xl font-bold text-white">Lista de Deseos & Próximos Estrenos</h2>
+                </div>
+                
+                {upcomingLibrary.length === 0 ? (
+                    <div className="text-center py-20 bg-slate-800/30 rounded-2xl border border-slate-700 border-dashed">
+                        <CalendarClock className="w-16 h-16 mx-auto mb-4 text-slate-600" />
+                        <p className="text-slate-400 text-lg">No tienes items marcados como "Planeado / Pendiente".</p>
+                        <p className="text-slate-500 text-sm mt-2">Cambia el estado de una obra a 'Planeado' para verla aquí.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                        {upcomingLibrary.map(item => (
+                            <CompactMediaCard 
+                                key={item.id} 
+                                item={item} 
+                                onClick={() => openDetail(item)}
+                                onIncrement={handleQuickIncrement}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        )}
+
+      </main>
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
-              <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-fade-in-up">
-                  <div className="p-6 text-center">
-                      <div className="w-12 h-12 bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Trash2 className="w-6 h-6 text-red-500" />
-                      </div>
-                      <h3 className="text-xl font-bold text-white mb-2">¿Eliminar esta obra?</h3>
-                      <p className="text-slate-400 text-sm mb-6">
-                          Estás a punto de borrar "{deleteTarget.aiData.title}" de tu biblioteca. 
-                          <br/>Perderás todo tu progreso y notas.
-                      </p>
-                      <div className="flex gap-3">
-                          <button 
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in-up">
+                <div className="flex flex-col items-center text-center">
+                    <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+                        <Trash2 className="w-6 h-6 text-red-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">¿Eliminar Obra?</h3>
+                    <p className="text-slate-400 mb-6 text-sm">
+                        Estás a punto de eliminar <span className="text-white font-bold">"{deleteTarget.aiData.title}"</span>. 
+                        Esta acción no se puede deshacer y perderás todo el progreso registrado.
+                    </p>
+                    <div className="flex gap-3 w-full">
+                        <button 
                             onClick={cancelDelete}
-                            className="flex-1 py-2.5 rounded-lg border border-slate-600 text-slate-300 font-medium hover:bg-slate-700 transition-colors"
-                          >
-                              Cancelar
-                          </button>
-                          <button 
+                            className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors font-medium"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
                             onClick={confirmDelete}
-                            className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium shadow-lg shadow-red-900/20 transition-colors"
-                          >
-                              Eliminar
-                          </button>
-                      </div>
-                  </div>
-              </div>
-          </div>
+                            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-bold shadow-lg shadow-red-600/20"
+                        >
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
       )}
-
     </div>
   );
 }
