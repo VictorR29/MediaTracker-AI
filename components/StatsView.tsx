@@ -13,6 +13,7 @@ interface StatsViewProps {
 interface ObsessionItem {
     title: string;
     time: number;
+    coverImage?: string;
 }
 
 interface StatsData {
@@ -165,10 +166,10 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     
     // Obsession Tracking
     const maxItemsByType: Record<string, ObsessionItem> = {
-        'Anime': { title: "N/A", time: 0 },
-        'Series': { title: "N/A", time: 0 },
-        'Webtoon/Manga': { title: "N/A", time: 0 },
-        'Libros/Novelas': { title: "N/A", time: 0 }
+        'Anime': { title: "N/A", time: 0, coverImage: '' },
+        'Series': { title: "N/A", time: 0, coverImage: '' },
+        'Webtoon/Manga': { title: "N/A", time: 0, coverImage: '' },
+        'Libros/Novelas': { title: "N/A", time: 0, coverImage: '' }
     };
 
     library.forEach(item => {
@@ -228,7 +229,11 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
             // Update Max Item for Category
             if (categoryKey && itemTime > maxItemsByType[categoryKey].time) {
-                maxItemsByType[categoryKey] = { title: item.aiData.title, time: itemTime };
+                maxItemsByType[categoryKey] = { 
+                    title: item.aiData.title, 
+                    time: itemTime,
+                    coverImage: item.aiData.coverImage 
+                };
             }
         }
     });
@@ -518,8 +523,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                      <p className="text-sm text-slate-400 mt-1">Basado en tiempo total consumido</p>
                 </div>
                 
-                {/* Dynamic Selector Tabs */}
-                <div className="flex bg-slate-900 p-1 rounded-lg overflow-x-auto no-scrollbar">
+                {/* Dynamic Selector Tabs - Replaced overflow-x-auto with grid to prevent mobile scrolling */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-slate-900 p-1 rounded-lg">
                     {OBSESSION_TABS.map(tab => {
                         const Icon = tab.icon;
                         const isActive = obsessionTab === tab.id;
@@ -527,50 +532,72 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                             <button
                                 key={tab.id}
                                 onClick={() => setObsessionTab(tab.id)}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
+                                className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
                                     isActive 
                                     ? 'bg-primary text-white shadow' 
                                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
                                 }`}
                             >
-                                <Icon className="w-3 h-3" />
-                                {tab.label}
+                                <Icon className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{tab.label}</span>
                             </button>
                         );
                     })}
                 </div>
             </div>
 
-            <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
-                 {hasObsessionData ? (
-                     <>
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 shadow-inner shrink-0">
-                                {obsessionTab.includes('Libro') || obsessionTab.includes('Webtoon') ? (
-                                    <BookOpen className="w-6 h-6 text-emerald-400" />
-                                ) : (
-                                    <Clapperboard className="w-6 h-6 text-indigo-400" />
-                                )}
+            {/* Obsession Card with Background Image */}
+            <div className="relative rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all min-h-[120px]">
+                {/* Background Image Layer */}
+                <div className="absolute inset-0 z-0">
+                    {hasObsessionData && currentObsession.coverImage ? (
+                        <>
+                            <img 
+                                src={currentObsession.coverImage} 
+                                alt="" 
+                                className="w-full h-full object-cover" 
+                            />
+                            {/* Dark Overlay for text readability */}
+                            <div className="absolute inset-0 bg-slate-900/85 backdrop-blur-[2px]"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent"></div>
+                        </>
+                    ) : (
+                         <div className="w-full h-full bg-slate-900/50"></div>
+                    )}
+                </div>
+
+                {/* Content Layer */}
+                <div className="relative z-10 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                     {hasObsessionData ? (
+                         <>
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-slate-800/80 flex items-center justify-center border border-slate-600 shadow-inner shrink-0 backdrop-blur-sm">
+                                    {obsessionTab.includes('Libro') || obsessionTab.includes('Webtoon') ? (
+                                        <BookOpen className="w-6 h-6 text-emerald-400" />
+                                    ) : (
+                                        <Clapperboard className="w-6 h-6 text-indigo-400" />
+                                    )}
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white leading-tight drop-shadow-md">{currentObsession.title}</h3>
+                                    <p className="text-xs text-slate-400 mt-1 font-medium">Categoría: {obsessionTab}</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-white leading-tight">{currentObsession.title}</h3>
-                                <p className="text-xs text-slate-500 mt-1">Categoría: {obsessionTab}</p>
+                            <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-lg border border-white/10 shrink-0 backdrop-blur-md">
+                                 <Clock className="w-5 h-5 text-yellow-500" />
+                                 <span className="text-lg font-mono font-bold text-white">
+                                     {(currentObsession.time / 60).toFixed(1)}h
+                                 </span>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 shrink-0">
-                             <Clock className="w-5 h-5 text-yellow-500" />
-                             <span className="text-lg font-mono font-bold text-white">
-                                 {(currentObsession.time / 60).toFixed(1)}h
-                             </span>
-                        </div>
-                     </>
-                 ) : (
-                     <div className="w-full text-center py-4 opacity-50 flex flex-col items-center">
-                         <Layout className="w-8 h-8 text-slate-500 mb-2" />
-                         <p className="text-sm font-medium text-slate-400">Sin suficientes datos en {obsessionTab}.</p>
-                         <p className="text-xs text-slate-600">Comienza a registrar tu progreso para ver estadísticas.</p>
-                     </div>
-                 )}
+                         </>
+                     ) : (
+                         <div className="w-full text-center py-4 opacity-50 flex flex-col items-center">
+                             <Layout className="w-8 h-8 text-slate-500 mb-2" />
+                             <p className="text-sm font-medium text-slate-400">Sin suficientes datos en {obsessionTab}.</p>
+                             <p className="text-xs text-slate-600">Comienza a registrar tu progreso para ver estadísticas.</p>
+                         </div>
+                     )}
+                </div>
             </div>
        </div>
 
