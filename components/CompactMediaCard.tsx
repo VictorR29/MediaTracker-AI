@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { MediaItem } from '../types';
 import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle } from 'lucide-react';
@@ -46,9 +45,9 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
 
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays > 365) return `Estreno en ${Math.floor(diffDays/365)} años`;
-    if (diffDays > 30) return `Estreno en ${Math.floor(diffDays/30)} meses`;
-    return `Estreno en ${diffDays} días`;
+    if (diffDays > 365) return `en ${Math.floor(diffDays/365)} años`;
+    if (diffDays > 30) return `en ${Math.floor(diffDays/30)} meses`;
+    return `en ${diffDays} días`;
   };
 
   const timeRemaining = getCountdown(aiData.releaseDate);
@@ -91,7 +90,6 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
 
   const [imgSrc, setImgSrc] = useState(initialImage);
 
-  // Sync image source if the item prop changes (e.g. user updated cover in Details view)
   useEffect(() => {
     if (isValidSource(aiData.coverImage)) {
       setImgSrc(aiData.coverImage!);
@@ -101,7 +99,6 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
   }, [aiData.coverImage, aiData.title]);
 
   const handleImageError = () => {
-    // If current image fails, fallback to placeholder
     if (imgSrc !== getPlaceholder()) {
       setImgSrc(getPlaceholder());
     }
@@ -120,7 +117,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       const label = isBook ? 'Pág.' : 'Cap.';
       const progress = `${trackingData.watchedEpisodes}/${trackingData.totalEpisodesInSeason}`;
       return (
-         <span className="flex items-center gap-1">
+         <span className="flex items-center gap-1 font-mono">
             {isReadingContent ? <BookOpen className="w-3 h-3" /> : <PlayCircle className="w-3 h-3" />}
             {progress}
          </span>
@@ -130,9 +127,9 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
   const renderSeasonText = () => {
       if (isMovie) return null;
       if (isBook) {
-          return trackingData.isSaga ? <span>Libro {trackingData.currentSeason}</span> : <span>Novela</span>;
+          return trackingData.isSaga ? <span>L. {trackingData.currentSeason}</span> : <span>Novela</span>;
       }
-      return isReadingContent ? <span>Leído</span> : <span>Temp {trackingData.currentSeason}</span>;
+      return isReadingContent ? <span>Leído</span> : <span>T. {trackingData.currentSeason}</span>;
   };
 
   return (
@@ -146,7 +143,11 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
           </div>
       )}
 
-      <div className="relative aspect-[2/3] overflow-hidden bg-slate-900">
+      {/* Grid Layout within Card to Optimize Space in Single Column Mobile View if needed, 
+          but usually aspect-ratio image top + text bottom works well for lists. 
+          Keeping vertical stack but optimizing font sizes.
+      */}
+      <div className="relative aspect-[2/3] md:aspect-[3/4] overflow-hidden bg-slate-900">
         <img 
           src={imgSrc} 
           alt={aiData.title}
@@ -155,7 +156,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
         />
         <div className="absolute top-2 right-2">
             <span 
-                className="flex items-center gap-1 px-2 py-1 rounded-md text-white text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm"
+                className="flex items-center gap-1 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md text-white text-[9px] md:text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm"
                 style={{ backgroundColor: dynamicColor }}
             >
                 <TypeIcon />
@@ -169,30 +170,30 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
                   {timeRemaining ? (
                     // Scenario A: Future Date Found
                     <>
-                        <div className="bg-slate-900/80 p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
-                            <Hourglass className="w-6 h-6 text-yellow-400 animate-pulse" />
+                        <div className="bg-slate-900/80 p-2 md:p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
+                            <Hourglass className="w-5 h-5 md:w-6 md:h-6 text-yellow-400 animate-pulse" />
                         </div>
-                        <span className="font-bold text-lg leading-tight text-yellow-100">{timeRemaining}</span>
-                        <span className="text-xs text-yellow-500/80 mt-1 font-medium bg-black/40 px-2 py-1 rounded-full">{aiData.releaseDate}</span>
+                        <span className="font-bold text-base md:text-lg leading-tight text-yellow-100">{timeRemaining}</span>
+                        <span className="text-[10px] md:text-xs text-yellow-500/80 mt-1 font-medium bg-black/40 px-2 py-1 rounded-full">{aiData.releaseDate}</span>
                     </>
                   ) : (
                     // Scenario B: No Date / Waiting for Announcement
                     <>
-                         <div className="bg-slate-900/80 p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
-                            <CalendarDays className="w-6 h-6 text-slate-400" />
+                         <div className="bg-slate-900/80 p-2 md:p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
+                            <CalendarDays className="w-5 h-5 md:w-6 md:h-6 text-slate-400" />
                         </div>
-                        <span className="font-bold text-base leading-tight text-slate-200">Pendiente de Fecha</span>
-                        <span className="text-xs text-slate-500 mt-1">Esperando Anuncio</span>
+                        <span className="font-bold text-sm md:text-base leading-tight text-slate-200">Pendiente Fecha</span>
+                        <span className="text-[10px] md:text-xs text-slate-500 mt-1">Esperando Anuncio</span>
                     </>
                   )}
              </div>
         )}
 
-        {/* Quick Action Button - Floating on Image - Not for Movies and Not for Planned */}
+        {/* Quick Action Button - Floating on Image */}
         {!isMovie && !isPlanned && trackingData.status === 'Viendo/Leyendo' && (
              <button
                 onClick={handleQuickAction}
-                className={`absolute bottom-14 right-2 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all transform active:scale-90 z-20 md:opacity-0 md:group-hover:opacity-100 opacity-100 ${
+                className={`absolute bottom-16 md:bottom-14 right-2 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-lg transition-all transform active:scale-90 z-20 md:opacity-0 md:group-hover:opacity-100 opacity-100 ${
                     isCompleteSeason ? 'bg-green-500 hover:bg-green-600' : 'bg-white/90 hover:bg-white text-slate-900'
                 }`}
                 title={isCompleteSeason ? "Completar" : "+1"}
@@ -205,9 +206,9 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
              </button>
         )}
 
-        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent p-3 pt-12">
+        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-3 pt-12">
            <h3 className="text-white font-bold text-sm leading-tight line-clamp-2">{aiData.title}</h3>
-           <p className="text-slate-400 text-xs mt-1 truncate">{trackingData.status}</p>
+           <p className="text-slate-400 text-[10px] md:text-xs mt-0.5 truncate">{trackingData.status}</p>
         </div>
       </div>
       
@@ -224,12 +225,16 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       
       <div className="p-3">
           <div className="flex justify-between items-center text-xs text-slate-400">
-              {renderSeasonText()}
-              {isPlanned ? (
-                  timeRemaining ? <span className="text-yellow-500 font-medium">Estreno Próximo</span> : <span className="text-slate-500">En Wishlist</span>
-              ) : (
-                  renderProgressText()
-              )}
+              <div className="flex items-center gap-1 font-medium text-[11px] md:text-xs">
+                  {renderSeasonText()}
+              </div>
+              <div className="font-medium text-[11px] md:text-xs">
+                  {isPlanned ? (
+                      timeRemaining ? <span className="text-yellow-500">Próximo</span> : <span className="text-slate-500">Wishlist</span>
+                  ) : (
+                      renderProgressText()
+                  )}
+              </div>
           </div>
       </div>
     </div>

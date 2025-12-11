@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -13,7 +12,7 @@ import { ContextualGreeting } from './components/ContextualGreeting'; // Import 
 import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
 import { MediaItem, UserProfile } from './types';
-import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark } from 'lucide-react';
+import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark, Search } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
@@ -493,7 +492,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-slate-200 font-sans selection:bg-primary selection:text-white flex flex-col">
+    <div className="min-h-screen bg-background text-slate-200 font-sans selection:bg-primary selection:text-white flex flex-col pb-24 md:pb-0">
       
       {/* Settings Modal */}
       <SettingsModal 
@@ -508,21 +507,42 @@ export default function App() {
       {/* Header */}
       <header className="bg-surface/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-40 transition-colors duration-500">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setView('library')}>
-            <div className="w-8 h-8 bg-gradient-to-tr from-primary to-secondary rounded-lg flex items-center justify-center transform group-hover:rotate-12 transition-transform">
-              <Sparkles className="text-white w-5 h-5" />
-            </div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 hidden sm:block">
-              MediaTracker AI
-            </h1>
+          
+          {/* Logo / Left Section (Desktop: Logo, Mobile: Avatar/User) */}
+          <div className="flex items-center gap-2">
+             {/* Desktop Logo */}
+             <div className="hidden md:flex items-center gap-2 cursor-pointer group" onClick={() => setView('library')}>
+                <div className="w-8 h-8 bg-gradient-to-tr from-primary to-secondary rounded-lg flex items-center justify-center transform group-hover:rotate-12 transition-transform">
+                  <Sparkles className="text-white w-5 h-5" />
+                </div>
+                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                  MediaTracker AI
+                </h1>
+             </div>
+
+             {/* Mobile User Profile (Left aligned) */}
+             <div className="md:hidden flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center border border-slate-500 overflow-hidden">
+                     {userProfile.avatarUrl ? (
+                         <img src={userProfile.avatarUrl} alt={userProfile.username} className="w-full h-full object-cover" />
+                     ) : (
+                         <User className="w-4 h-4 text-slate-300" />
+                     )}
+                 </div>
+                 <span className="text-sm font-bold text-white truncate max-w-[150px]">
+                    {userProfile.username}
+                 </span>
+             </div>
           </div>
           
+          {/* Right Section */}
           <div className="flex items-center gap-4">
-            <nav className="flex items-center gap-2 mr-2">
+            
+            {/* Desktop Navigation Tabs */}
+            <nav className="hidden md:flex items-center gap-2 mr-2">
               <button 
                 onClick={() => {
                     setView('search');
-                    // Reset search state when clicking 'New' to avoid stale data
                     setCurrentMedia(null);
                     setSearchKey(prev => prev + 1);
                 }}
@@ -530,7 +550,7 @@ export default function App() {
                 title="Nuevo"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Nuevo</span>
+                <span>Nuevo</span>
               </button>
               <button 
                 onClick={() => setView('library')}
@@ -538,7 +558,7 @@ export default function App() {
                 title="Biblioteca"
               >
                 <LayoutGrid className="w-4 h-4" />
-                <span className="hidden sm:inline">Biblioteca</span>
+                <span>Biblioteca</span>
               </button>
               <button 
                 onClick={() => setView('upcoming')}
@@ -546,7 +566,7 @@ export default function App() {
                 title="Wishlist / Pendientes"
               >
                 <Bookmark className="w-4 h-4" />
-                <span className="hidden sm:inline">Wishlist</span>
+                <span>Wishlist</span>
               </button>
               <button 
                 onClick={() => setView('discovery')}
@@ -554,7 +574,7 @@ export default function App() {
                 title="Descubrir"
               >
                 <Compass className="w-4 h-4" />
-                <span className="hidden sm:inline">Descubrir</span>
+                <span>Descubrir</span>
               </button>
               <button 
                 onClick={() => setView('stats')}
@@ -562,61 +582,115 @@ export default function App() {
                 title="Estadísticas"
               >
                 <BarChart2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Stats</span>
+                <span>Stats</span>
               </button>
             </nav>
 
-            <div className="relative pl-4 border-l border-slate-700 ml-2">
-                 <button 
-                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                   className="flex items-center gap-2 hover:bg-slate-800 p-1.5 pr-3 rounded-full transition-colors group"
-                 >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center border border-slate-500 group-hover:border-primary transition-colors shadow-sm overflow-hidden">
-                        {userProfile.avatarUrl ? (
-                            <img src={userProfile.avatarUrl} alt={userProfile.username} className="w-full h-full object-cover" />
-                        ) : (
-                            <User className="w-4 h-4 text-slate-300" />
-                        )}
-                    </div>
-                    <span className="text-sm font-medium text-slate-300 hidden sm:block group-hover:text-white transition-colors">
-                      {userProfile.username}
-                    </span>
-                    <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
-                 </button>
-
-                 {/* Dropdown Menu */}
-                 {isUserMenuOpen && (
-                    <>
-                        <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)}></div>
-                        <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in py-1">
-                            <div className="px-4 py-3 border-b border-slate-700/50">
-                                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Mi Cuenta</p>
-                            </div>
-                            <button 
-                                onClick={() => { setIsSettingsOpen(true); setIsUserMenuOpen(false); }}
-                                className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white flex items-center gap-2 transition-colors"
-                            >
-                                <Settings className="w-4 h-4" />
-                                Configuración
-                            </button>
-                            <div className="border-t border-slate-700/50 my-1"></div>
-                            <button 
-                                onClick={handleExportData}
-                                className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white flex items-center gap-2 transition-colors"
-                            >
-                                <Download className="w-4 h-4" />
-                                Exportar Datos
-                            </button>
+            {/* Desktop User Menu / Mobile Settings Button */}
+            <div className="relative border-l border-slate-700 pl-4 ml-2 flex items-center">
+                 {/* Desktop Dropdown */}
+                 <div className="hidden md:block">
+                     <button 
+                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                       className="flex items-center gap-2 hover:bg-slate-800 p-1.5 pr-3 rounded-full transition-colors group"
+                     >
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center border border-slate-500 group-hover:border-primary transition-colors shadow-sm overflow-hidden">
+                            {userProfile.avatarUrl ? (
+                                <img src={userProfile.avatarUrl} alt={userProfile.username} className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-4 h-4 text-slate-300" />
+                            )}
                         </div>
-                    </>
-                 )}
+                        <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
+                          {userProfile.username}
+                        </span>
+                        <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                     </button>
+
+                     {isUserMenuOpen && (
+                        <>
+                            <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)}></div>
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in py-1">
+                                <div className="px-4 py-3 border-b border-slate-700/50">
+                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Mi Cuenta</p>
+                                </div>
+                                <button 
+                                    onClick={() => { setIsSettingsOpen(true); setIsUserMenuOpen(false); }}
+                                    className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white flex items-center gap-2 transition-colors"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                    Configuración
+                                </button>
+                                <div className="border-t border-slate-700/50 my-1"></div>
+                                <button 
+                                    onClick={handleExportData}
+                                    className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white flex items-center gap-2 transition-colors"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    Exportar Datos
+                                </button>
+                            </div>
+                        </>
+                     )}
+                 </div>
+                 
+                 {/* Mobile Settings Icon (Right aligned) */}
+                 <button 
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="md:hidden p-2 text-slate-400 hover:text-white transition-colors"
+                 >
+                     <Settings className="w-6 h-6" />
+                 </button>
             </div>
           </div>
         </div>
       </header>
 
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-slate-700 z-50 flex justify-around px-2 py-2 pb-6 safe-area-pb shadow-2xl">
+         <button 
+           onClick={() => {
+                setView('search');
+                setCurrentMedia(null);
+                setSearchKey(prev => prev + 1);
+            }}
+           className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${view === 'search' ? 'text-primary' : 'text-slate-500'}`}
+         >
+            <Search className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Buscar</span>
+         </button>
+         <button 
+           onClick={() => setView('library')}
+           className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${view === 'library' || view === 'details' ? 'text-primary' : 'text-slate-500'}`}
+         >
+            <LayoutGrid className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Colección</span>
+         </button>
+         <button 
+           onClick={() => setView('upcoming')}
+           className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${view === 'upcoming' ? 'text-primary' : 'text-slate-500'}`}
+         >
+            <Bookmark className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Wishlist</span>
+         </button>
+         <button 
+           onClick={() => setView('discovery')}
+           className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${view === 'discovery' ? 'text-primary' : 'text-slate-500'}`}
+         >
+            <Compass className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Descubrir</span>
+         </button>
+         <button 
+           onClick={() => setView('stats')}
+           className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${view === 'stats' ? 'text-primary' : 'text-slate-500'}`}
+         >
+            <BarChart2 className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Stats</span>
+         </button>
+      </nav>
+
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 pt-8 w-full flex-grow pb-8">
+      <main className="max-w-7xl mx-auto px-4 pt-4 md:pt-8 w-full flex-grow">
         
         {/* Contextual AI Greeting Banner - Only shown on certain views */}
         {userProfile && view !== 'details' && (
@@ -625,9 +699,9 @@ export default function App() {
 
         {view === 'search' && (
           <div className="flex flex-col items-center">
-            <div className="text-center mb-8 max-w-2xl">
-               <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">¿Qué estás viendo hoy?</h2>
-               <p className="text-slate-400">
+            <div className="text-center mb-8 max-w-2xl px-2">
+               <h2 className="text-2xl md:text-4xl font-bold text-white mb-3">¿Qué estás viendo hoy?</h2>
+               <p className="text-slate-400 text-sm md:text-base">
                  Busca cualquier Anime, Serie, Película o Libro para añadir a tu biblioteca.
                </p>
             </div>
@@ -683,9 +757,9 @@ export default function App() {
 
         {view === 'library' && (
           <div className="animate-fade-in">
-            <div className="flex items-center justify-between mb-6 border-l-4 border-primary pl-4">
-               <h2 className="text-2xl font-bold text-white">Mi Colección</h2>
-               {filteredLibrary.length > 0 && <span className="text-slate-400 text-sm bg-slate-800 px-2 py-1 rounded-md">{filteredLibrary.length} obras</span>}
+            <div className="flex items-center justify-between mb-4 border-l-4 border-primary pl-4">
+               <h2 className="text-xl md:text-2xl font-bold text-white">Mi Colección</h2>
+               {filteredLibrary.length > 0 && <span className="text-slate-400 text-xs md:text-sm bg-slate-800 px-2 py-1 rounded-md">{filteredLibrary.length} obras</span>}
             </div>
             
             {library.length > 0 && (
@@ -693,11 +767,15 @@ export default function App() {
             )}
 
             {library.length === 0 ? (
-              <div className="text-center py-20 bg-surface rounded-2xl border border-dashed border-slate-700">
+              <div className="text-center py-20 bg-surface rounded-2xl border border-dashed border-slate-700 mx-2">
                 <LayoutGrid className="w-16 h-16 text-slate-600 mx-auto mb-4" />
                 <p className="text-slate-400 text-lg mb-4">Tu biblioteca está vacía.</p>
                 <button 
-                  onClick={() => setView('search')}
+                  onClick={() => {
+                      setView('search');
+                      setCurrentMedia(null);
+                      setSearchKey(prev => prev + 1);
+                  }}
                   className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-primary rounded-lg transition-colors"
                 >
                   Buscar algo nuevo
@@ -714,7 +792,8 @@ export default function App() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 pb-10">
+              // Mobile: Single Column (grid-cols-1), Tablet/Desktop: Grid
+              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 pb-10">
                 {filteredLibrary.map((item) => (
                   <CompactMediaCard 
                     key={item.id} 
@@ -730,26 +809,31 @@ export default function App() {
 
         {view === 'upcoming' && (
           <div className="animate-fade-in">
-             <div className="flex items-center gap-3 mb-6 border-l-4 border-yellow-500 pl-4">
-                 <h2 className="text-2xl font-bold text-white">Mi Wishlist / Pendientes</h2>
+             <div className="flex items-center gap-3 mb-4 border-l-4 border-yellow-500 pl-4">
+                 <h2 className="text-xl md:text-2xl font-bold text-white">Mi Wishlist</h2>
                  <CalendarClock className="w-5 h-5 text-yellow-500" />
-                 {upcomingLibrary.length > 0 && <span className="text-slate-400 text-sm bg-slate-800 px-2 py-1 rounded-md">{upcomingLibrary.length} pendientes</span>}
+                 {upcomingLibrary.length > 0 && <span className="text-slate-400 text-xs md:text-sm bg-slate-800 px-2 py-1 rounded-md">{upcomingLibrary.length} pendientes</span>}
              </div>
 
              {upcomingLibrary.length === 0 ? (
-                <div className="text-center py-20 bg-surface rounded-2xl border border-dashed border-slate-700">
+                <div className="text-center py-20 bg-surface rounded-2xl border border-dashed border-slate-700 mx-2">
                     <CalendarClock className="w-16 h-16 text-slate-600 mx-auto mb-4" />
                     <p className="text-slate-400 text-lg mb-4">No tienes nada pendiente.</p>
-                    <p className="text-sm text-slate-500 mb-6">Añade obras y márcalas como 'Planeado / Pendiente' para llenar tu lista de deseos.</p>
+                    <p className="text-sm text-slate-500 mb-6 px-4">Añade obras y márcalas como 'Planeado / Pendiente' para llenar tu lista de deseos.</p>
                     <button 
-                        onClick={() => setView('search')}
+                        onClick={() => {
+                            setView('search');
+                            setCurrentMedia(null);
+                            setSearchKey(prev => prev + 1);
+                        }}
                         className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-primary rounded-lg transition-colors"
                     >
                         Buscar Obras
                     </button>
                 </div>
              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 pb-10">
+                // Mobile: Single Column (grid-cols-1)
+                <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 pb-10">
                     {upcomingLibrary.map((item) => (
                         <CompactMediaCard 
                             key={item.id} 
@@ -782,7 +866,7 @@ export default function App() {
                 className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 group px-4 py-2 hover:bg-slate-800 rounded-lg transition-colors w-fit"
               >
                 <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                Volver a la Biblioteca
+                Volver
               </button>
               
               <MediaCard 
@@ -795,14 +879,14 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="w-full bg-surface border-t border-slate-800 py-6 text-center text-slate-600 text-sm mt-auto">
+      {/* Footer - Hidden on Mobile due to Bottom Nav */}
+      <footer className="w-full bg-surface border-t border-slate-800 py-6 text-center text-slate-600 text-sm mt-auto hidden md:block">
         <p>Potenciado por Gemini 2.5 Flash & Google Search Grounding</p>
       </footer>
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
               <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-fade-in-up">
                   <div className="p-6 text-center">
                       <div className="w-12 h-12 bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
