@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -170,24 +170,66 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     return [];
   };
 
+  const addCharacter = () => {
+    const val = characterInput.trim();
+    if (val) {
+        const current = getSafeCharacters(tracking.favoriteCharacters);
+        // Prevent duplicates
+        if (!current.includes(val)) {
+            const newChars = [...current, val];
+            handleInputChange('favoriteCharacters', newChars);
+        }
+        setCharacterInput('');
+    }
+  };
+
+  const handleCharacterInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    // Check for delimiters (comma or semicolon) to auto-create tag
+    if (val.includes(',') || val.includes(';')) {
+         const parts = val.split(/[,;]+/);
+         const current = getSafeCharacters(tracking.favoriteCharacters);
+         let newChars = [...current];
+         
+         parts.forEach(part => {
+             const clean = part.trim();
+             if (clean && !newChars.includes(clean)) {
+                 newChars.push(clean);
+             }
+         });
+
+         if (newChars.length !== current.length) {
+            handleInputChange('favoriteCharacters', newChars);
+         }
+         setCharacterInput('');
+         return;
+    }
+    setCharacterInput(val);
+  };
+
   const handleCharacterKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        const val = characterInput.trim();
-        if (val) {
-            const current = getSafeCharacters(tracking.favoriteCharacters);
-            if (!current.includes(val)) {
-                const newChars = [...current, val];
-                handleInputChange('favoriteCharacters', newChars);
-            }
-            setCharacterInput('');
-        }
+        addCharacter();
     }
   };
 
   const removeCharacter = (charToRemove: string) => {
     const current = getSafeCharacters(tracking.favoriteCharacters);
     handleInputChange('favoriteCharacters', current.filter(c => c !== charToRemove));
+  };
+
+  const moveCharacter = (index: number, direction: 'left' | 'right') => {
+      const current = getSafeCharacters(tracking.favoriteCharacters);
+      const newIndex = direction === 'left' ? index - 1 : index + 1;
+      
+      if (newIndex < 0 || newIndex >= current.length) return;
+      
+      const newChars = [...current];
+      // Swap
+      [newChars[index], newChars[newIndex]] = [newChars[newIndex], newChars[index]];
+      
+      handleInputChange('favoriteCharacters', newChars);
   };
 
   // Custom Links Logic
@@ -908,39 +950,85 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-700/50">
              <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Personajes memorables</label>
-                <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2 mb-2 min-h-[32px]">
+                <div className="space-y-3">
+                    {/* Input Area */}
+                    <div className="flex gap-2">
+                        <div className="relative flex-grow">
+                            <input 
+                                type="text"
+                                value={characterInput}
+                                onChange={handleCharacterInputChange}
+                                onKeyDown={handleCharacterKeyDown}
+                                placeholder="Nombre (o separa con comas)..."
+                                className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-3 pr-10 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 transition-all"
+                                style={{ borderColor: `${dynamicColor}30`, focusRing: dynamicColor }}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-600 font-mono hidden md:block">↵</span>
+                        </div>
+                        <button 
+                            onClick={addCharacter}
+                            disabled={!characterInput.trim()}
+                            className="bg-slate-700 hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 rounded-lg transition-colors flex items-center justify-center"
+                            style={{ backgroundColor: characterInput.trim() ? dynamicColor : undefined }}
+                        >
+                            <Plus className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Tags Area */}
+                    <div className="flex flex-wrap gap-2 min-h-[32px]">
                         {getSafeCharacters(tracking.favoriteCharacters).map((char, idx) => {
-                            // Top 5 Visual Hierarchy
                             const isTop5 = idx < 5;
+                            const total = getSafeCharacters(tracking.favoriteCharacters).length;
                             return (
                                 <span 
                                   key={idx} 
-                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs text-white animate-fade-in shadow-sm transition-all ${
-                                      isTop5 ? 'font-bold pl-1.5 pr-2' : 'bg-slate-800 border-slate-700'
+                                  className={`inline-flex items-center gap-1 pl-2 pr-1 py-1 rounded-md border text-xs text-white animate-fade-in shadow-sm transition-all group/tag ${
+                                      isTop5 ? 'font-bold' : 'bg-slate-800 border-slate-700'
                                   }`}
                                   style={isTop5 ? { 
                                       backgroundColor: `${dynamicColor}20`, 
-                                      borderColor: dynamicColor,
+                                      borderColor: dynamicColor, 
                                       boxShadow: `0 0 5px ${dynamicColor}20` 
                                   } : { borderColor: `${dynamicColor}40` }}
                                 >
-                                    {isTop5 && <span className="text-[10px] mr-1 opacity-70">#{idx+1}</span>}
-                                    {char}
-                                    <button onClick={() => removeCharacter(char)} className="hover:text-red-400 text-slate-400 transition-colors ml-1"><X className="w-3 h-3" /></button>
+                                    <span className={`text-[10px] mr-1 ${isTop5 ? 'opacity-90' : 'opacity-50'}`}>#{idx+1}</span>
+                                    <span className="mr-1">{char}</span>
+                                    
+                                    {/* Controls Container */}
+                                    <div className="flex items-center gap-0.5 border-l border-white/10 pl-1 ml-1 bg-black/10 rounded-r">
+                                         <button 
+                                            onClick={() => moveCharacter(idx, 'left')} 
+                                            disabled={idx === 0}
+                                            className="p-0.5 hover:text-white text-slate-400 disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
+                                            title="Subir Prioridad"
+                                         >
+                                             <ChevronLeft className="w-3 h-3" />
+                                         </button>
+                                         <button 
+                                            onClick={() => moveCharacter(idx, 'right')} 
+                                            disabled={idx === total - 1}
+                                            className="p-0.5 hover:text-white text-slate-400 disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
+                                            title="Bajar Prioridad"
+                                         >
+                                             <ChevronRight className="w-3 h-3" />
+                                         </button>
+                                         <div className="w-px h-3 bg-white/10 mx-0.5"></div>
+                                         <button 
+                                            onClick={() => removeCharacter(char)} 
+                                            className="p-0.5 hover:text-red-400 text-slate-400 transition-colors"
+                                            title="Eliminar"
+                                         >
+                                             <X className="w-3 h-3" />
+                                         </button>
+                                    </div>
                                 </span>
                             );
                         })}
+                         {getSafeCharacters(tracking.favoriteCharacters).length === 0 && (
+                            <p className="text-xs text-slate-600 italic py-1">Sin personajes registrados.</p>
+                         )}
                     </div>
-                    <input 
-                        type="text"
-                        value={characterInput}
-                        onChange={(e) => setCharacterInput(e.target.value)}
-                        onKeyDown={handleCharacterKeyDown}
-                        placeholder="Escribe un nombre y presiona Enter..."
-                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 transition-all"
-                        style={{ borderColor: `${dynamicColor}30`, focusRing: dynamicColor }}
-                    />
                 </div>
              </div>
              <div>
