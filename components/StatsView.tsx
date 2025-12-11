@@ -1,13 +1,18 @@
 
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
-import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film, Award, Medal, Scroll } from 'lucide-react';
+import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film, Award, Medal, Scroll, Clapperboard, Book, Layout } from 'lucide-react';
 
 interface StatsViewProps {
   library: MediaItem[];
   userProfile: UserProfile;
   onUpdateProfile: (profile: UserProfile) => void;
+}
+
+interface ObsessionItem {
+    title: string;
+    time: number;
 }
 
 interface StatsData {
@@ -21,7 +26,11 @@ interface StatsData {
   ratingCount: Record<string, number>;
   averageScore: string;
   highestRatedGenre: string;
-  maxTimeItem: { title: string; time: number };
+  
+  // New Obsession Data Structure
+  maxItemsByType: Record<string, ObsessionItem>; 
+  globalMaxCategory: string;
+
   animeEpisodes: number;
   seriesEpisodes: number;
   moviesWatched: number;
@@ -44,6 +53,10 @@ interface StatsData {
 
 export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUpdateProfile }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Obsession Widget State
+  const [obsessionTab, setObsessionTab] = useState<string>('Anime');
+
   const [animeDuration, setAnimeDuration] = useState(userProfile.preferences?.animeEpisodeDuration || 24);
   const [seriesDuration, setSeriesDuration] = useState(userProfile.preferences?.seriesEpisodeDuration || 45);
   const [movieDuration, setMovieDuration] = useState(userProfile.preferences?.movieDuration || 90);
@@ -142,15 +155,21 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     // Counters
     let animeEpisodes = 0;
     let seriesEpisodes = 0;
-    let moviesWatched = 0; // Total movie minutes / duration (or direct count)
-    let readingChapters = 0; // Manhwa, Manga, Comic
+    let moviesWatched = 0; 
+    let readingChapters = 0; 
     let bookChapters = 0;
 
     // Time
     let visualMinutes = 0;
     let readingMinutes = 0;
     
-    let maxTimeItem = { title: "N/A", time: 0 };
+    // Obsession Tracking
+    const maxItemsByType: Record<string, ObsessionItem> = {
+        'Anime': { title: "N/A", time: 0 },
+        'Series': { title: "N/A", time: 0 },
+        'Webtoon/Manga': { title: "N/A", time: 0 },
+        'Libros/Novelas': { title: "N/A", time: 0 }
+    };
 
     library.forEach(item => {
         const type = item.aiData.mediaType;
@@ -175,41 +194,57 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         // Apply Time Logic if any progress exists
         if (totalEffectiveUnits > 0) {
             let itemTime = 0;
-            
+            let categoryKey = '';
+
             // Visual
             if (type === 'Anime') {
                 animeEpisodes += totalEffectiveUnits;
                 itemTime = totalEffectiveUnits * animeMin;
                 visualMinutes += itemTime;
+                categoryKey = 'Anime';
             } else if (type === 'Serie') {
                 seriesEpisodes += totalEffectiveUnits;
                 itemTime = totalEffectiveUnits * seriesMin; 
                 visualMinutes += itemTime;
+                categoryKey = 'Series';
             } else if (type === 'Pelicula') {
                 moviesWatched += totalEffectiveUnits; 
                 itemTime = totalEffectiveUnits * movieMin;
                 visualMinutes += itemTime;
+                // Movies excluded from Obsession Tracker by request
             } 
             // Reading
             else if (['Manhwa', 'Manga', 'Comic'].includes(type)) {
                 readingChapters += totalEffectiveUnits;
                 itemTime = totalEffectiveUnits * mangaMin;
                 readingMinutes += itemTime;
+                categoryKey = 'Webtoon/Manga';
             } else if (type === 'Libro') {
                 bookChapters += totalEffectiveUnits;
                 itemTime = totalEffectiveUnits * bookMin;
                 readingMinutes += itemTime;
-            } else {
-                itemTime = totalEffectiveUnits * 10; // Unknown
+                categoryKey = 'Libros/Novelas';
             }
 
-            if (itemTime > maxTimeItem.time) {
-                maxTimeItem = { title: item.aiData.title, time: itemTime };
+            // Update Max Item for Category
+            if (categoryKey && itemTime > maxItemsByType[categoryKey].time) {
+                maxItemsByType[categoryKey] = { title: item.aiData.title, time: itemTime };
             }
         }
     });
 
-    // Helper to count "Consumed" items (at least started or completed)
+    // Calculate Global Max Category
+    let globalMaxCategory = 'Anime'; // Default
+    let globalMaxTime = 0;
+    Object.entries(maxItemsByType).forEach(([cat, data]) => {
+        if (data.time > globalMaxTime) {
+            globalMaxTime = data.time;
+            globalMaxCategory = cat;
+        }
+    });
+
+
+    // Helper to count "Consumed" items
     const countConsumed = (types: string[]) => 
         library.filter(i => types.includes(i.aiData.mediaType) && (i.trackingData.watchedEpisodes > 0 || (i.trackingData.accumulated_consumption || 0) > 0 || i.trackingData.status === 'Completado')).length;
 
@@ -236,7 +271,10 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         total, completed, onHold, watching, typeCount, 
         topGenre, maxGenreCount, ratingCount,
         averageScore, highestRatedGenre,
-        maxTimeItem,
+        
+        maxItemsByType,
+        globalMaxCategory,
+
         // Granular
         animeEpisodes, seriesEpisodes, moviesWatched, readingChapters, bookChapters,
         visualTimeDisplay: formatTime(visualMinutes),
@@ -246,6 +284,13 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         totalConsumptionUnits
     };
   }, [library, userProfile.preferences]);
+
+  // Set default obsession tab to the one with max content
+  useEffect(() => {
+     if (stats.globalMaxCategory && stats.maxItemsByType[stats.globalMaxCategory].time > 0) {
+        setObsessionTab(stats.globalMaxCategory);
+     }
+  }, [stats.globalMaxCategory]); // Only run when global max changes
 
   // --- Dynamic Rank & Achievement Logic ---
   const rankingSystem = useMemo(() => {
@@ -343,6 +388,17 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        </div>
     </div>
   );
+
+  // Tabs Configuration
+  const OBSESSION_TABS = [
+      { id: 'Anime', label: 'Anime', icon: Tv },
+      { id: 'Series', label: 'Series', icon: Clapperboard },
+      { id: 'Webtoon/Manga', label: 'Webtoon', icon: BookOpen },
+      { id: 'Libros/Novelas', label: 'Libros', icon: Book },
+  ];
+
+  const currentObsession = stats.maxItemsByType[obsessionTab];
+  const hasObsessionData = currentObsession && currentObsession.time > 0;
 
   return (
     <div className="animate-fade-in space-y-6 pb-12 relative">
@@ -452,17 +508,71 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
        </div>
 
-        {/* Most Time Dedicated Banner */}
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex items-center justify-between shadow-sm">
-             <div className="flex flex-col">
-                 <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">Tu mayor obsesión</span>
-                 <span className="text-white font-bold text-lg truncate max-w-[200px] md:max-w-md">{stats.maxTimeItem.title}</span>
-             </div>
-             <div className="flex items-center gap-2 text-yellow-500">
-                 <Clock className="w-5 h-5" />
-                 <span className="font-mono font-bold">{(stats.maxTimeItem.time / 60).toFixed(1)}h</span>
-             </div>
-        </div>
+       {/* Dynamic Obsession Tracker Widget */}
+       <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-md transition-all">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                     <span className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
+                         <Zap className="w-4 h-4 text-yellow-500" /> Tu Mayor Obsesión
+                     </span>
+                     <p className="text-sm text-slate-400 mt-1">Basado en tiempo total consumido</p>
+                </div>
+                
+                {/* Dynamic Selector Tabs */}
+                <div className="flex bg-slate-900 p-1 rounded-lg overflow-x-auto no-scrollbar">
+                    {OBSESSION_TABS.map(tab => {
+                        const Icon = tab.icon;
+                        const isActive = obsessionTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setObsessionTab(tab.id)}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
+                                    isActive 
+                                    ? 'bg-primary text-white shadow' 
+                                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                                }`}
+                            >
+                                <Icon className="w-3 h-3" />
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
+                 {hasObsessionData ? (
+                     <>
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 shadow-inner shrink-0">
+                                {obsessionTab.includes('Libro') || obsessionTab.includes('Webtoon') ? (
+                                    <BookOpen className="w-6 h-6 text-emerald-400" />
+                                ) : (
+                                    <Clapperboard className="w-6 h-6 text-indigo-400" />
+                                )}
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-white leading-tight">{currentObsession.title}</h3>
+                                <p className="text-xs text-slate-500 mt-1">Categoría: {obsessionTab}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 shrink-0">
+                             <Clock className="w-5 h-5 text-yellow-500" />
+                             <span className="text-lg font-mono font-bold text-white">
+                                 {(currentObsession.time / 60).toFixed(1)}h
+                             </span>
+                        </div>
+                     </>
+                 ) : (
+                     <div className="w-full text-center py-4 opacity-50 flex flex-col items-center">
+                         <Layout className="w-8 h-8 text-slate-500 mb-2" />
+                         <p className="text-sm font-medium text-slate-400">Sin suficientes datos en {obsessionTab}.</p>
+                         <p className="text-xs text-slate-600">Comienza a registrar tu progreso para ver estadísticas.</p>
+                     </div>
+                 )}
+            </div>
+       </div>
 
        {/* KPIs Row */}
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
