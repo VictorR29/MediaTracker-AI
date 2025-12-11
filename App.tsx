@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -191,16 +189,16 @@ export default function App() {
   };
 
   const handleUpdateMedia = async (updatedItem: MediaItem) => {
-    // Update timestamp on any edit/save progress
-    // This covers: "Clic en Completar Temporada", "Marcar Pelicula Vista", "Guardar Progreso"
-    const itemWithTimestamp = { ...updatedItem, lastInteraction: Date.now() };
+    // Only update the state and DB. 
+    // The timestamp logic for lastInteraction is now handled by the caller (MediaCard) 
+    // to strictly track consumption events only.
     
-    setCurrentMedia(itemWithTimestamp);
+    setCurrentMedia(updatedItem);
     
-    const itemExists = library.some(i => i.id === itemWithTimestamp.id);
+    const itemExists = library.some(i => i.id === updatedItem.id);
     if (itemExists) {
-        setLibrary(prev => prev.map(item => item.id === itemWithTimestamp.id ? itemWithTimestamp : item));
-        await saveMediaItem(itemWithTimestamp);
+        setLibrary(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+        await saveMediaItem(updatedItem);
     }
   };
 
@@ -257,7 +255,7 @@ export default function App() {
         }
     }
 
-    // Update timestamp strictly
+    // Update timestamp strictly - Quick Increment is always a consumption event
     const updatedItem = { 
         ...item, 
         trackingData: updatedTracking,
@@ -271,7 +269,7 @@ export default function App() {
 
   const addToLibrary = async () => {
     if (currentMedia && !library.find(i => i.id === currentMedia.id)) {
-      // Ensure timestamp is set when adding
+      // Ensure timestamp is set when adding initially
       const mediaToAdd = { ...currentMedia, lastInteraction: Date.now() };
       
       const newLib = [mediaToAdd, ...library];

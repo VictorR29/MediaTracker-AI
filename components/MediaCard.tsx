@@ -100,7 +100,19 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const handleInputChange = (field: keyof UserTrackingData, value: any) => {
     const updated = { ...tracking, [field]: value };
     setTracking(updated);
-    onUpdate({ ...item, trackingData: updated });
+    
+    // STRICT CONSUMPTION LOGIC FOR TIMESTAMP UPDATE
+    let newTimestamp = item.lastInteraction;
+    const isConsumption = 
+        field === 'watchedEpisodes' || 
+        field === 'currentSeason' || 
+        (isMovie && field === 'status' && value === 'Completado');
+
+    if (isConsumption) {
+        newTimestamp = Date.now();
+    }
+    
+    onUpdate({ ...item, trackingData: updated, lastInteraction: newTimestamp });
   };
 
   const handleCompleteSeason = () => {
@@ -119,7 +131,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     }
 
     if (isFinished) {
-       handleInputChange('status', 'Completado');
+       const updated = { ...tracking, status: 'Completado' as const };
+       setTracking(updated);
+       onUpdate({ ...item, trackingData: updated, lastInteraction: Date.now() }); // Consumption
        return;
     }
 
@@ -135,7 +149,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
       status: 'Viendo/Leyendo' as const
     };
     setTracking(updated);
-    onUpdate({ ...item, trackingData: updated });
+    onUpdate({ ...item, trackingData: updated, lastInteraction: Date.now() }); // Consumption
   };
 
   const handleMovieToggle = () => {
@@ -151,7 +165,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
           updated.finishedAt = new Date().toISOString().split('T')[0];
       }
       setTracking(updated);
-      onUpdate({ ...item, trackingData: updated });
+
+      // Only update timestamp if we are marking as completed (Consumption)
+      // If unchecking, it's an undo, usually not a new "interaction" of consumption, but preserving old timestamp is safer.
+      const newTimestamp = updated.status === 'Completado' ? Date.now() : item.lastInteraction;
+
+      onUpdate({ ...item, trackingData: updated, lastInteraction: newTimestamp });
   };
 
   const toggleTag = (tag: string) => {
@@ -358,7 +377,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                     ...item.aiData, 
                     coverImage: result,
                     primaryColor: newColor || item.aiData.primaryColor 
-                } 
+                },
+                lastInteraction: item.lastInteraction // Preserve existing timestamp
             });
 
         } catch (error) {
@@ -368,7 +388,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                 aiData: { 
                     ...item.aiData, 
                     coverImage: result
-                } 
+                },
+                lastInteraction: item.lastInteraction // Preserve existing timestamp
             });
         }
       }
