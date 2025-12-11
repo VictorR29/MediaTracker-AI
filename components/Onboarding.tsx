@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { UserProfile, THEME_COLORS } from '../types';
-import { Sparkles, Key, Lock, Eye, EyeOff, Upload, UserCircle, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Key, Lock, Eye, EyeOff, Upload, UserCircle } from 'lucide-react';
 
 interface OnboardingProps {
   onComplete: (profile: UserProfile) => void;
@@ -138,10 +138,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
              </div>
 
              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Foto de Perfil (Opcional)</label>
-                <div className="flex items-center gap-4">
+                <label className="block text-sm font-medium text-slate-300 mb-2 text-center">Foto de Perfil (Opcional)</label>
+                <div className="flex justify-center">
                     <div 
-                        className={`relative w-20 h-20 rounded-full border-2 border-dashed flex-shrink-0 flex items-center justify-center cursor-pointer overflow-hidden transition-all group ${
+                        className={`relative w-24 h-24 rounded-full border-2 border-dashed flex-shrink-0 flex items-center justify-center cursor-pointer overflow-hidden transition-all group ${
                             isDragging ? 'border-primary bg-primary/10' : 'border-slate-600 hover:border-slate-500 bg-slate-800'
                         }`}
                         onDragOver={handleDragOver}
@@ -153,30 +153,19 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
                             <>
                                 <img src={avatarUrl} alt="Preview" className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                    <Upload className="w-5 h-5 text-white" />
+                                    <Upload className="w-6 h-6 text-white" />
                                 </div>
                             </>
                         ) : (
-                            <div className="text-center p-1">
-                                <Upload className="w-5 h-5 text-slate-500 mx-auto" />
-                                <span className="text-[8px] text-slate-500 uppercase font-bold block mt-1">Subir</span>
+                            <div className="text-center p-2">
+                                <Upload className="w-6 h-6 text-slate-500 mx-auto" />
+                                <span className="text-[10px] text-slate-500 uppercase font-bold block mt-1">Subir</span>
                             </div>
                         )}
                         <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={handleAvatarFileSelect} />
                     </div>
-
-                    <div className="relative flex-grow">
-                      <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                      <input
-                        type="url"
-                        className="w-full bg-slate-800 border border-slate-600 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                        placeholder="O pega una URL de imagen..."
-                        value={avatarUrl}
-                        onChange={(e) => setAvatarUrl(e.target.value)}
-                      />
-                    </div>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">Arrastra una imagen o pega un enlace (jpg, png).</p>
+                <p className="text-xs text-slate-500 mt-2 text-center">Arrastra una imagen o haz clic para seleccionarla.</p>
              </div>
           </div>
 
