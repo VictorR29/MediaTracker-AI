@@ -1,8 +1,8 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
 import { getRecommendations, RecommendationResult } from '../services/geminiService';
-import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp, Filter, Check, X } from 'lucide-react';
 
 interface DiscoveryViewProps {
   library: MediaItem[];
@@ -64,59 +64,87 @@ const RecommendationCard: React.FC<{
 
 export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, onSelectRecommendation }) => {
   const [selectedType, setSelectedType] = useState<string>('Anime');
+  const [selectedSeeds, setSelectedSeeds] = useState<string[]>([]); // Array of MediaItem IDs
   const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Analyze Library for Preferences based on Selected Type
-  const { topGenres, likedTitles, excludedTitles, relevantCount } = useMemo(() => {
-    const genreCounts: Record<string, number> = {};
-    const liked: string[] = [];
-    const excluded: string[] = [];
-    let count = 0;
+  // Clear seeds when type changes
+  useEffect(() => {
+    setSelectedSeeds([]);
+  }, [selectedType]);
 
-    // Mapping for grouping similar types
-    // If user selects Manhwa, we look for Manhwa, Manga, and Comics for context
+  // Determine items available for selection as seeds based on current type
+  const availableSeedItems = useMemo(() => {
     const targetTypes = selectedType === 'Manhwa' 
         ? ['Manhwa', 'Manga', 'Comic'] 
         : [selectedType];
+    
+    return library.filter(item => targetTypes.includes(item.aiData.mediaType));
+  }, [library, selectedType]);
 
-    library.forEach(item => {
-      // Exclude everything in library from results to avoid duplicates
-      excluded.push(item.aiData.title);
-      
-      // Only use items matching the selected type for the "Taste Profile"
-      if (targetTypes.includes(item.aiData.mediaType)) {
-          count++;
-          const rating = item.trackingData.rating;
-          const score = RATING_TO_SCORE[rating] || 0;
-          
-          // Filter out items explicitly rated as bad (Score 1-5)
-          const isBad = score > 0 && score < 6; 
-          
-          // Consider "liked" if high score (>=7) OR completed (and not rated bad)
-          // If unrated but completed, we assume it was at least engaging enough to finish
-          if (!isBad && (score >= 7 || (score === 0 && item.trackingData.status === 'Completado'))) {
+  // Logic to Prepare Data for AI
+  const { topGenres, likedTitles, excludedTitles } = useMemo(() => {
+    const genreCounts: Record<string, number> = {};
+    const liked: string[] = [];
+    const excluded: string[] = [];
+
+    // Always exclude everything in the library to prevent duplicates
+    library.forEach(item => excluded.push(item.aiData.title));
+
+    if (selectedSeeds.length > 0) {
+        // --- REFINED MODE: Use ONLY selected items as base ---
+        const seedItems = library.filter(item => selectedSeeds.includes(item.id));
+        
+        seedItems.forEach(item => {
             liked.push(item.aiData.title);
             item.aiData.genres.forEach(g => {
-              genreCounts[g] = (genreCounts[g] || 0) + 1;
+                genreCounts[g] = (genreCounts[g] || 0) + 1;
             });
-          }
-      }
-    });
+        });
+
+    } else {
+        // --- DEFAULT MODE: Use "Taste Profile" of entire category ---
+        const targetTypes = selectedType === 'Manhwa' 
+            ? ['Manhwa', 'Manga', 'Comic'] 
+            : [selectedType];
+
+        library.forEach(item => {
+            if (targetTypes.includes(item.aiData.mediaType)) {
+                const rating = item.trackingData.rating;
+                const score = RATING_TO_SCORE[rating] || 0;
+                
+                // Consider "liked" if high score (>=7) OR completed (and not rated bad)
+                const isBad = score > 0 && score < 6; 
+                if (!isBad && (score >= 7 || (score === 0 && item.trackingData.status === 'Completado'))) {
+                    liked.push(item.aiData.title);
+                    item.aiData.genres.forEach(g => {
+                        genreCounts[g] = (genreCounts[g] || 0) + 1;
+                    });
+                }
+            }
+        });
+    }
 
     const sortedGenres = Object.entries(genreCounts)
       .sort(([, a], [, b]) => b - a)
       .map(([g]) => g)
-      .slice(0, 3);
+      .slice(0, 5); // Take top 5 genres
 
     return { 
         topGenres: sortedGenres, 
         likedTitles: liked, 
-        excludedTitles: excluded,
-        relevantCount: count 
+        excludedTitles: excluded
     };
-  }, [library, selectedType]);
+  }, [library, selectedType, selectedSeeds]);
+
+  const handleToggleSeed = (id: string) => {
+      setSelectedSeeds(prev => 
+          prev.includes(id) 
+            ? prev.filter(seedId => seedId !== id) 
+            : [...prev, id]
+      );
+  };
 
   const handleDiscovery = async () => {
     if (!apiKey) {
@@ -138,7 +166,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       );
       
       if (results.length === 0) {
-          setError("La IA no devolvió resultados válidos. Intenta de nuevo.");
+          setError("La IA no devolvió resultados válidos. Intenta de nuevo con diferentes filtros.");
       } else {
           setRecommendations(results);
       }
@@ -169,19 +197,28 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
          {/* Background Decoration */}
          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
-         <div className="relative z-10 max-w-3xl">
+         <div className="relative z-10 max-w-4xl">
              <h3 className="text-xl font-bold text-white mb-2">¿Qué quieres descubrir hoy?</h3>
              <p className="text-slate-400 mb-6 text-sm leading-relaxed">
-                Analizando tus <strong>{relevantCount} obras de {selectedType === 'Manhwa' ? 'Manga/Manhwa' : selectedType}</strong> guardadas 
-                {likedTitles.length > 0 ? (
-                    <span>, basándonos en tus favoritos como <em>{likedTitles.slice(0,2).join(", ")}</em></span>
+                {selectedSeeds.length > 0 ? (
+                    <>
+                        Buscando obras similares a: <strong className="text-white">{selectedSeeds.length} obras seleccionadas</strong>.
+                        <br/>
+                        <span className="text-indigo-300 text-xs">La IA analizará el ADN de estas obras específicas para encontrar tu próxima obsesión.</span>
+                    </>
                 ) : (
-                   <span> (aún no tienes favoritos en esta categoría)</span>
+                    <>
+                        Analizando tu perfil general de <strong>{selectedType === 'Manhwa' ? 'Manga/Manhwa' : selectedType}</strong>.
+                        {likedTitles.length > 0 
+                            ? <span> Basado en {likedTitles.length} favoritos como <em>{likedTitles.slice(0,2).join(", ")}</em>.</span>
+                            : <span> (Selecciona obras abajo para refinar).</span>
+                        }
+                    </>
                 )}
-                {topGenres.length > 0 && <span> y tu afinidad por <strong>{topGenres[0]}</strong></span>}.
              </p>
 
-             <div className="flex flex-wrap gap-3 mb-8">
+             {/* Type Selector */}
+             <div className="flex flex-wrap gap-3 mb-6">
                 {MEDIA_TYPES.map(type => {
                     const Icon = type.icon;
                     const isSelected = selectedType === type.value;
@@ -202,13 +239,55 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                 })}
              </div>
 
+             {/* SEED REFINER SECTION */}
+             <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-700/50 mb-8">
+                <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-slate-500" /> 
+                        Refinar por Obra (Opcional)
+                    </h4>
+                    {selectedSeeds.length > 0 && (
+                        <button 
+                            onClick={() => setSelectedSeeds([])}
+                            className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
+                        >
+                            <X className="w-3 h-3" /> Limpiar ({selectedSeeds.length})
+                        </button>
+                    )}
+                </div>
+                
+                {availableSeedItems.length === 0 ? (
+                    <p className="text-xs text-slate-500 italic py-2">No tienes obras de este tipo en tu biblioteca para usar como referencia.</p>
+                ) : (
+                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                        {availableSeedItems.map(item => {
+                            const isSelected = selectedSeeds.includes(item.id);
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => handleToggleSeed(item.id)}
+                                    className={`text-xs px-3 py-1.5 rounded-full border transition-all flex items-center gap-1.5 ${
+                                        isSelected 
+                                        ? 'bg-primary text-white border-primary shadow-md' 
+                                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-500'
+                                    }`}
+                                >
+                                    {isSelected && <Check className="w-3 h-3" />}
+                                    <span className="truncate max-w-[150px]">{item.aiData.title}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+             </div>
+
              <button
                onClick={handleDiscovery}
                disabled={isLoading}
-               className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+               className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
              >
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Compass className="w-5 h-5" />}
-                {isLoading ? 'Analizando tus gustos...' : 'Generar Recomendaciones'}
+                {isLoading ? 'Analizando...' : (selectedSeeds.length > 0 ? 'Buscar Similares' : 'Generar Recomendaciones')}
              </button>
              
              {error && (

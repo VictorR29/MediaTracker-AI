@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI } from "@google/genai";
 import { AIWorkData } from "../types";
 
@@ -107,16 +106,20 @@ export const getRecommendations = async (
   const prompt = `
     Act as a sophisticated media recommendation engine.
     
-    USER PROFILE:
-    - Highly Rated Titles: ${likedTitles.slice(0, 20).join(", ") || "None yet"}
-    - Favorite Genres: ${topGenres.join(", ") || "General High Quality"}
+    CONTEXT:
+    The user is looking for recommendations for media type: "${mediaType}".
+    
+    INPUT DATA (SEEDS):
+    - Reference Titles (User loves these): ${likedTitles.slice(0, 20).join(", ") || "None specific provided, use genres"}
+    - Key Genres/Vibe: ${topGenres.join(", ") || "General High Quality"}
     
     TASK:
-    Recommend 4 NEW ${mediaType} titles that perfectly match this user's taste.
+    Recommend 4 NEW ${mediaType} titles that perfectly match the mood, themes, storytelling style, and atmosphere of the "Reference Titles" provided above.
+    If no specific titles are provided, rely on the genres.
     
     CONSTRAINTS:
     1. EXCLUDE these titles (already in library): ${excludedTitles.join(", ")}.
-    2. Focus on hidden gems or highly acclaimed masterpieces that match the mood of the liked titles.
+    2. Focus on finding matches that share the same "DNA" as the reference titles (e.g. if reference is "Dark Souls", recommend dark fantasy).
     3. Ensure the recommendations are actually of type "${mediaType}".
     4. LANGUAGE: The response (synopsis and reason) MUST BE IN SPANISH.
     
@@ -127,7 +130,7 @@ export const getRecommendations = async (
       {
         "title": "Title Name",
         "synopsis": "One sentence summary in SPANISH.",
-        "reason": "Why this specific user would like it based on their history (in SPANISH).",
+        "reason": "Explain specifically WHY this matches the reference titles (in SPANISH).",
         "mediaType": "${mediaType}"
       }
     ]
