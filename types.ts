@@ -60,17 +60,42 @@ export interface UserProfile {
   preferences?: UserPreferences;
 }
 
-export const EMOTIONAL_TAGS_OPTIONS = [
-  { label: "Me rompió el corazón", emoji: "💔" },
-  { label: "Siento que es perfecto", emoji: "✨" },
-  { label: "Me decepcionó el final", emoji: "📉" },
-  { label: "Personajes entrañables", emoji: "🫂" },
-  { label: "Trama confusa", emoji: "🌀" },
-  { label: "Adictivo", emoji: "💉" },
-  { label: "Arte/Visuales increíbles", emoji: "🎨" },
-  { label: "Soundtrack memorable", emoji: "🎵" },
-  { label: "Me hizo reír mucho", emoji: "🤣" },
-  { label: "Me dio miedo/ansiedad", emoji: "😨" }
+export interface EmotionalTagOption {
+  label: string;
+  emoji: string;
+  sentiment: 'positive' | 'neutral' | 'negative';
+}
+
+export const EMOTIONAL_TAGS_OPTIONS: EmotionalTagOption[] = [
+  // Existing / Positive / Neutral
+  { label: "Me rompió el corazón", emoji: "💔", sentiment: 'positive' },
+  { label: "Siento que es perfecto", emoji: "✨", sentiment: 'positive' },
+  { label: "Personajes entrañables", emoji: "🫂", sentiment: 'positive' },
+  { label: "Adictivo", emoji: "💉", sentiment: 'positive' },
+  { label: "Arte/Visuales increíbles", emoji: "🎨", sentiment: 'positive' },
+  { label: "Soundtrack memorable", emoji: "🎵", sentiment: 'positive' },
+  { label: "Me hizo reír mucho", emoji: "🤣", sentiment: 'positive' },
+  { label: "Me dio miedo/ansiedad", emoji: "😨", sentiment: 'neutral' },
+  
+  // New Positive / Neutral (Quality Focus)
+  { label: "Giro de trama impactante", emoji: "🤯", sentiment: 'positive' },
+  { label: "Ritmo impecable", emoji: "⚡", sentiment: 'positive' },
+  { label: "Construcción de mundo épica", emoji: "🌍", sentiment: 'positive' },
+  { label: "Me hizo reflexionar", emoji: "🤔", sentiment: 'positive' },
+  { label: "Desafiante / Complejo", emoji: "🧩", sentiment: 'neutral' },
+  { label: "Pura adrenalina", emoji: "🔥", sentiment: 'positive' },
+  { label: "Ideal para maratón", emoji: "🍿", sentiment: 'positive' },
+  { label: "Cero clichés", emoji: "🦄", sentiment: 'positive' },
+
+  // New Negative / Critical (Deficiency Focus)
+  { label: "Trama confusa", emoji: "🌀", sentiment: 'negative' },
+  { label: "Me decepcionó el final", emoji: "📉", sentiment: 'negative' },
+  { label: "Trama sin rumbo / Lenta", emoji: "🐌", sentiment: 'negative' },
+  { label: "Final decepcionante", emoji: "👎", sentiment: 'negative' },
+  { label: "Personajes planos/irritantes", emoji: "🙄", sentiment: 'negative' },
+  { label: "Contenido de relleno excesivo", emoji: "🧀", sentiment: 'negative' },
+  { label: "Inconsistencias en la historia", emoji: "🤨", sentiment: 'negative' },
+  { label: "Me costó terminarlo", emoji: "😮‍💨", sentiment: 'negative' }
 ];
 
 export const RATING_OPTIONS = [
@@ -103,3 +128,52 @@ export const THEME_COLORS = [
   { name: 'Orange', value: '249 115 22', hex: '#f97316' },
   { name: 'Sky', value: '14 165 233', hex: '#0ea5e9' },
 ];
+
+// --- GENRE NORMALIZATION LOGIC ---
+
+export const GENRE_MAPPING: Record<string, string> = {
+  "action": "acción",
+  "adventure": "aventura",
+  "sci-fi": "ciencia ficción",
+  "sci fi": "ciencia ficción",
+  "science fiction": "ciencia ficción",
+  "science-fiction": "ciencia ficción",
+  "fantasy": "fantasía",
+  "comedy": "comedia",
+  "drama": "drama",
+  "suspense": "suspense",
+  "thriller": "suspense",
+  "horror": "terror",
+  "mystery": "misterio",
+  "romance": "romance",
+  "psychological": "psicológico",
+  "supernatural": "sobrenatural",
+  "slice of life": "recuentos de la vida",
+  "sports": "deportes",
+  "martial arts": "artes marciales",
+  "historical": "histórico",
+  "musical": "musical",
+  "school": "escolar",
+  "vampire": "vampiros",
+  "magic": "magia",
+  "space": "espacio",
+  "shounen": "shonen",
+  "shoujo": "shojo",
+  "seinen": "seinen",
+  "josei": "josei",
+  "isekai": "isekai",
+  "mecha": "mecha",
+  "music": "música",
+  "police": "policial",
+  "post-apocalyptic": "post-apocalíptico",
+  "gore": "gore",
+  "cyberpunk": "cyberpunk",
+  "steampunk": "steampunk"
+};
+
+export const normalizeGenre = (genre: string): string => {
+  if (!genre) return "otros";
+  const lower = genre.toLowerCase().trim();
+  // Return mapped value or the lowercase original if no mapping exists
+  return GENRE_MAPPING[lower] || lower;
+};

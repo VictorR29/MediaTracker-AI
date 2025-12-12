@@ -1,6 +1,7 @@
 
+
 import { GoogleGenAI } from "@google/genai";
-import { AIWorkData } from "../types";
+import { AIWorkData, normalizeGenre } from "../types";
 
 export const searchMediaInfo = async (query: string, apiKey: string): Promise<AIWorkData> => {
   // Initialize AI client with the user-provided key
@@ -60,8 +61,16 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
+      
+      // Normalize Genres immediately upon retrieval
+      const normalizedGenres = Array.isArray(parsed.genres)
+         ? parsed.genres.map((g: string) => normalizeGenre(g))
+         : [];
+      const uniqueGenres = [...new Set(normalizedGenres)]; // Dedupe after normalization
+
       return {
         ...parsed,
+        genres: uniqueGenres,
         sourceUrls: sources
       };
     } else {

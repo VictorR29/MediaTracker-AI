@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -12,7 +13,7 @@ import { DiscoveryView } from './components/DiscoveryView'; // Import DiscoveryV
 import { ContextualGreeting } from './components/ContextualGreeting'; // Import ContextualGreeting
 import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
-import { MediaItem, UserProfile } from './types';
+import { MediaItem, UserProfile, normalizeGenre } from './types';
 import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark, Search } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -492,12 +493,13 @@ export default function App() {
   };
 
 
-  // Calculate unique genres from library
+  // Calculate unique genres from library, normalized
   const availableGenres = useMemo(() => {
     const genreSet = new Set<string>();
     library.forEach(item => {
         if (item.aiData.genres && Array.isArray(item.aiData.genres)) {
-            item.aiData.genres.forEach(g => genreSet.add(g));
+            // Normalize every genre found in the library to ensure unique list
+            item.aiData.genres.forEach(g => genreSet.add(normalizeGenre(g)));
         }
     });
     return Array.from(genreSet).sort();
@@ -519,10 +521,11 @@ export default function App() {
     if (filters.status !== 'All') result = result.filter(item => item.trackingData.status === filters.status);
     if (filters.rating !== 'All') result = result.filter(item => item.trackingData.rating === filters.rating);
     
-    // Genre Filter
+    // Genre Filter - Normalized Comparison
     if (filters.genre !== 'All') {
         result = result.filter(item => 
-            item.aiData.genres && item.aiData.genres.includes(filters.genre)
+            // Normalize items genres before checking includes
+            item.aiData.genres && item.aiData.genres.some(g => normalizeGenre(g) === filters.genre)
         );
     }
 

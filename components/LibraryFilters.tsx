@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Search, ArrowUpDown, Tags, Filter, X, Check } from 'lucide-react';
 import { RATING_OPTIONS } from '../types';
@@ -24,6 +25,8 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
   const handleChange = (key: keyof FilterState, value: string) => {
     onChange({ ...filters, [key]: value });
   };
+
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
   // Count active filters for notification badge
   const activeFiltersCount = [
@@ -113,7 +116,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                 >
                     <option value="All">Todos</option>
                     {availableGenres.map(genre => (
-                    <option key={genre} value={genre}>{genre}</option>
+                    <option key={genre} value={genre}>{capitalize(genre)}</option>
                     ))}
                 </select>
                 </div>
@@ -210,7 +213,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                         >
                             <option value="All">Todos</option>
                             {availableGenres.map(genre => (
-                            <option key={genre} value={genre}>{genre}</option>
+                            <option key={genre} value={genre}>{capitalize(genre)}</option>
                             ))}
                         </select>
                      </div>

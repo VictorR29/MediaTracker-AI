@@ -1,7 +1,8 @@
 
+
 import React, { useMemo, useState, useEffect } from 'react';
-import { MediaItem, UserProfile } from '../types';
-import { Sparkles, Coffee, Sun, Moon, Film, Tv, BookOpen, PenTool, Zap, Heart, Clock, Star, Hourglass, Bookmark, Feather, Image as ImageIcon, Clapperboard } from 'lucide-react';
+import { MediaItem, UserProfile, EMOTIONAL_TAGS_OPTIONS } from '../types';
+import { Sparkles, Coffee, Sun, Moon, Film, Tv, BookOpen, PenTool, Zap, Heart, Clock, Star, Hourglass, Bookmark, Feather, Image as ImageIcon, Clapperboard, AlertCircle, Frown, CloudRain } from 'lucide-react';
 
 interface ContextualGreetingProps {
   userProfile: UserProfile;
@@ -60,6 +61,15 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
     const emotionList = Array.isArray(rawEmotions) ? rawEmotions : [];
     const emotion = pickRandom(emotionList) || 'una emoción intensa';
 
+    // [Negative Check] - Determine if ANY tag is negative
+    const negativeTags = EMOTIONAL_TAGS_OPTIONS
+        .filter(opt => opt.sentiment === 'negative')
+        .map(opt => opt.label);
+    
+    const hasNegativeTag = emotionList.some(tag => negativeTags.includes(tag));
+    const negativeEmotion = emotionList.find(tag => negativeTags.includes(tag)) || 'ese problema';
+
+
     // [Clave de Trama / Género]
     const genres = focusWork.aiData.genres || [];
     const plotKey = pickRandom(genres) || 'esta historia';
@@ -75,6 +85,8 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
         mediaType,
         character: character.trim(),
         emotion: emotion.toLowerCase(),
+        negativeEmotion: negativeEmotion.toLowerCase(),
+        hasNegativeTag,
         plotKey,
         rating
     };
@@ -82,6 +94,14 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
 
   // TEMPLATE BANKS BY CONTENT TYPE (4 Banks, 5+ Templates each)
   const TEMPLATES: TemplateBank = useMemo(() => ({
+    // Banco 0: Crítico/Negativo (Priority)
+    'Critical': [
+        { text: `¿Vale la pena continuar "{title}"?`, subtext: `Notaste "{negativeEmotion}". Quizás es hora de reevaluar.`, icon: AlertCircle },
+        { text: `{user}, fuiste duro con "{title}".`, subtext: `Esa sensación de {negativeEmotion} no se ignora fácilmente.`, icon: Frown },
+        { text: `¿Seguimos con "{title}" a pesar de todo?`, subtext: `Aunque {character} esté ahí, {negativeEmotion} pesa mucho.`, icon: Hourglass },
+        { text: `Reflexionemos sobre "{title}".`, subtext: `¿{negativeEmotion} arruinó la experiencia o hay esperanza?`, icon: CloudRain },
+        { text: `A veces hay que soltar...`, subtext: `Si "{title}" te provoca {negativeEmotion}, no te fuerces.`, icon: Feather }
+    ],
     // Banco 1: Peliculas (Finales y Duración)
     'Pelicula': [
         { text: `¿Aún pensando en el final de "{title}"?`, subtext: `Fue un cierre digno de una {rating}. {character} dejó huella.`, icon: Film },
@@ -138,12 +158,18 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
       }
 
       // 2. DETERMINE CATEGORY & SELECT TEMPLATE
-      const type = contextData.mediaType;
       let category = 'Serie'; // Default fallback
-      if (type === 'Pelicula') category = 'Pelicula';
-      else if (type === 'Libro') category = 'Libro';
-      else if (['Manhwa', 'Manga', 'Comic'].includes(type)) category = 'LecturaVisual';
-      else if (['Anime', 'Serie'].includes(type)) category = 'Serie';
+      const type = contextData.mediaType;
+      
+      // CRITICAL CHECK OVERRIDE
+      if (contextData.hasNegativeTag) {
+          category = 'Critical';
+      } else {
+          if (type === 'Pelicula') category = 'Pelicula';
+          else if (type === 'Libro') category = 'Libro';
+          else if (['Manhwa', 'Manga', 'Comic'].includes(type)) category = 'LecturaVisual';
+          else if (['Anime', 'Serie'].includes(type)) category = 'Serie';
+      }
 
       const bank = TEMPLATES[category] || TEMPLATES['Serie'];
       const rawTemplate = bank[Math.floor(Math.random() * bank.length)];
@@ -155,6 +181,7 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
         .replace('{title}', contextData.title || 'tu obra')
         .replace('{character}', contextData.character)
         .replace('{emotion}', contextData.emotion)
+        .replace('{negativeEmotion}', contextData.negativeEmotion || 'ese detalle')
         .replace('{plotKey}', contextData.plotKey)
         .replace('{rating}', contextData.rating.toLowerCase());
 

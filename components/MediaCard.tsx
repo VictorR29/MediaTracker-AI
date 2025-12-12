@@ -912,6 +912,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                       {EMOTIONAL_TAGS_OPTIONS.map(opt => {
                         const isActive = tracking.emotionalTags.includes(opt.label);
+                        const isNegative = opt.sentiment === 'negative';
                         return (
                           <button
                             key={opt.label}
@@ -919,13 +920,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                             className={`text-[10px] px-2 py-2 rounded-md text-left transition-all border flex items-center gap-2 h-auto min-h-[36px] ${
                               isActive 
                               ? 'text-white shadow-[0_0_10px_rgba(0,0,0,0.3)]' 
-                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                              : isNegative 
+                                ? 'bg-red-950/20 text-red-200/70 border-red-900/30 hover:bg-red-900/40 hover:text-red-100' // Distinct negative style
+                                : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
                             }`}
                             style={isActive ? {
-                                backgroundColor: `${dynamicColor}20`,
-                                borderColor: dynamicColor,
-                                color: 'white',
-                                boxShadow: `0 0 8px ${dynamicColor}40`
+                                backgroundColor: isNegative ? 'rgba(239, 68, 68, 0.2)' : `${dynamicColor}20`,
+                                borderColor: isNegative ? '#ef4444' : dynamicColor,
+                                color: isNegative ? '#fca5a5' : 'white',
+                                boxShadow: `0 0 8px ${isNegative ? '#ef4444' : dynamicColor}40`
                             } : {}}
                           >
                             <span className={`text-sm ${isActive ? 'opacity-100 scale-110' : 'opacity-50 grayscale'} transition-all flex-shrink-0`}>

@@ -1,7 +1,8 @@
 
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Lock, ArrowRight, User, Sparkles, Unlock } from 'lucide-react';
-import { MediaItem } from '../types';
+import { MediaItem, EMOTIONAL_TAGS_OPTIONS } from '../types';
 
 interface LoginScreenProps {
   onUnlock: (password: string) => boolean;
@@ -62,8 +63,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
     const emotionList = Array.isArray(emotionsRaw) ? emotionsRaw : [];
     const emotion = pickRandom(emotionList) || 'una emoción intensa';
 
+    // Negative Tag Detection
+    const negativeTags = EMOTIONAL_TAGS_OPTIONS
+        .filter(opt => opt.sentiment === 'negative')
+        .map(opt => opt.label);
+    const hasNegativeTag = emotionList.some(tag => negativeTags.includes(tag));
+    const negativeEmotion = emotionList.find(tag => negativeTags.includes(tag)) || 'ese problema';
+
     // 3. Plantillas de Mensajes
     const templates = [
+         // Template 0: Reflexión Crítica (Prioridad si hay tag negativo)
+        {
+            condition: () => hasNegativeTag,
+            title: `Una decisión pendiente, ${user}.`,
+            subtitle: `Notaste "${negativeEmotion}" en "${title}". ¿Es momento de reconsiderar?`,
+            cta: `Analizar Biblioteca`
+        },
         // Template 1: Enfocado en Personaje y Trama
         {
             condition: () => cleanChars.length > 0,
@@ -102,10 +117,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
     ];
 
     // Filtrar templates válidos y seleccionar uno aleatorio
-    const validTemplates = templates.filter(t => t.condition());
-    const selectedTemplate = validTemplates.length > 0 
-        ? validTemplates[Math.floor(Math.random() * validTemplates.length)]
-        : templates[2]; // Fallback seguro
+    // Important: If hasNegativeTag is true, we want to strongly bias towards the Critical template, 
+    // but allowing normal ones keeps it fresh. However, prompt requested "Recognition of Tone".
+    // Let's force Critical if present for the "Honest Reflection" aspect.
+    let selectedTemplate;
+    if (hasNegativeTag) {
+        selectedTemplate = templates[0];
+    } else {
+        const validTemplates = templates.slice(1).filter(t => t.condition()); // Skip index 0 in normal flow if logic handled here
+        selectedTemplate = validTemplates.length > 0 
+            ? validTemplates[Math.floor(Math.random() * validTemplates.length)]
+            : templates[templates.length - 1]; // Fallback
+    }
 
     // Validate Cover Image for Background
     // If no cover is present, we pass undefined to trigger fallback background in render
