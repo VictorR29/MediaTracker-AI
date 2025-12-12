@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Lock, ArrowRight, User, Sparkles, Unlock } from 'lucide-react';
 import { MediaItem, EMOTIONAL_TAGS_OPTIONS } from '../types';
@@ -45,8 +43,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
     const focusWork = sortedByInteraction[0];
     if (!focusWork) return null;
 
-    // 2. Extraer Datos Profundos de la Obra Ganadora (Selección Aleatoria)
+    // 2. Extraer Datos Profundos de la Obra Ganadora
     const title = focusWork.aiData.title;
+    const status = focusWork.trackingData.status;
     
     // Random Genre
     const genres = focusWork.aiData.genres || [];
@@ -68,70 +67,62 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
         .filter(opt => opt.sentiment === 'negative')
         .map(opt => opt.label);
     const hasNegativeTag = emotionList.some(tag => negativeTags.includes(tag));
-    const negativeEmotion = emotionList.find(tag => negativeTags.includes(tag)) || 'ese problema';
+    const negativeEmotion = emotionList.find(tag => negativeTags.includes(tag)) || 'ese detalle';
 
-    // 3. Plantillas de Mensajes
+    // 3. Plantillas de Mensajes BASADAS EN ESTADO (STATUS)
     const templates = [
-         // Template 0: Reflexión Crítica (Prioridad si hay tag negativo)
+         // Template 0: CRÍTICO / PAUSADO (Si hay tags negativos o está en pausa)
         {
-            condition: () => hasNegativeTag,
+            condition: () => (status === 'En Pausa' || status === 'Descartado') || hasNegativeTag,
             title: `Una decisión pendiente, ${user}.`,
-            subtitle: `Notaste "${negativeEmotion}" en "${title}". ¿Es momento de reconsiderar?`,
+            subtitle: hasNegativeTag 
+                ? `Notaste "${negativeEmotion}" en "${title}". ¿Es momento de reconsiderar?`
+                : `"${title}" espera en el limbo. ¿Le damos una segunda oportunidad?`,
             cta: `Analizar Biblioteca`
         },
-        // Template 1: Enfocado en Personaje y Trama
+        // Template 1: VIENDO / LEYENDO (Progreso Activo)
         {
-            condition: () => cleanChars.length > 0,
-            title: `Bienvenido, ${user}.`,
-            subtitle: `El mundo de "${title}" sigue girando. ¿Estás listo para volver a ver a ${character}?`,
+            condition: () => status === 'Viendo/Leyendo',
+            title: `El viaje continúa, ${user}.`,
+            subtitle: cleanChars.length > 0 
+                 ? `El mundo de "${title}" sigue girando. ${character} te necesita.`
+                 : `Estás inmerso en "${title}". El siguiente capítulo promete ${emotion}.`,
             cta: `Continuar con ${title}`
         },
-        // Template 2: Enfocado en Emoción
+        // Template 2: SIN EMPEZAR (Provocación)
         {
-            condition: () => emotionList.length > 0,
-            title: `Hola de nuevo, ${user}.`,
-            subtitle: `Esa sensación de ${emotion.toLowerCase()} en "${title}" aún perdura.`,
-            cta: `Revivir ${title}`
+            condition: () => status === 'Sin empezar',
+            title: `Una nueva historia te llama.`,
+            subtitle: `"${title}" está lista. ¿Hoy es el día de comenzar esta aventura de ${genre}?`,
+            cta: `Empezar ${title}`
         },
-        // Template 3: Enfocado en el Género (Obsesión)
+        // Template 3: COMPLETADO (Celebración)
         {
-            condition: () => true,
-            title: `${user}, tu viaje continúa.`,
-            subtitle: `Tu afinidad por el género ${genre} es notable. "${title}" requiere tu atención.`,
-            cta: `Ingresar a la Colección`
+            condition: () => status === 'Completado',
+            title: `Misión cumplida, ${user}.`,
+            subtitle: `Has completado "${title}". Ese sentimiento de ${emotion} perdurará.`,
+            cta: `Ver Colección`
         },
-        // Template 4: Desafío / Venganza (Si aplica)
+        // Template 4: PLANEADO (Expectativa)
         {
-            condition: () => genre.toLowerCase().includes('acción') || genre.toLowerCase().includes('drama'),
-            title: `La batalla no ha terminado.`,
-            subtitle: `Recuerda todo lo que ha pasado en "${title}". ${character} te necesita.`,
-            cta: `Reanudar Misión`
+            condition: () => status === 'Planeado / Pendiente',
+            title: `Futuros estrenos.`,
+            subtitle: `"${title}" está en tu horizonte. La espera valdrá la pena.`,
+            cta: `Revisar Wishlist`
         },
          // Template 5: Fallback General
         {
             condition: () => true,
             title: `Tu biblioteca te espera, ${user}.`,
-            subtitle: `Es momento de retomar "${title}".`,
+            subtitle: `Es momento de retomar tu colección de ${genre}.`,
             cta: `Desbloquear`
         }
     ];
 
-    // Filtrar templates válidos y seleccionar uno aleatorio
-    // Important: If hasNegativeTag is true, we want to strongly bias towards the Critical template, 
-    // but allowing normal ones keeps it fresh. However, prompt requested "Recognition of Tone".
-    // Let's force Critical if present for the "Honest Reflection" aspect.
-    let selectedTemplate;
-    if (hasNegativeTag) {
-        selectedTemplate = templates[0];
-    } else {
-        const validTemplates = templates.slice(1).filter(t => t.condition()); // Skip index 0 in normal flow if logic handled here
-        selectedTemplate = validTemplates.length > 0 
-            ? validTemplates[Math.floor(Math.random() * validTemplates.length)]
-            : templates[templates.length - 1]; // Fallback
-    }
+    // Selección lógica basada en condición
+    const selectedTemplate = templates.find(t => t.condition()) || templates[templates.length - 1];
 
     // Validate Cover Image for Background
-    // If no cover is present, we pass undefined to trigger fallback background in render
     let bgImage = focusWork.aiData.coverImage;
     if (!bgImage || bgImage.trim() === '' || bgImage.includes('placehold.co')) {
         bgImage = undefined;
