@@ -149,7 +149,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
              {/* The Image - Full Cover, Blurred */}
              <img 
                 src={emotionalContext.bgImage} 
-                className="w-full h-full object-cover blur-xl scale-110 transition-transform duration-1000"
+                className="w-full h-full object-cover blur-[5px] scale-110 transition-transform duration-1000"
                 alt="Background Cover"
              />
           </div>

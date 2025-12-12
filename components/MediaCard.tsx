@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays } from 'lucide-react';
@@ -154,9 +153,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
   const handleMovieToggle = () => {
       const isCompleted = tracking.status === 'Completado';
-      const updated = {
+      const nextStatus: UserTrackingData['status'] = isCompleted ? 'Viendo/Leyendo' : 'Completado';
+      const updated: UserTrackingData = {
           ...tracking,
-          status: isCompleted ? 'Viendo/Leyendo' : 'Completado' as const,
+          status: nextStatus,
           watchedEpisodes: isCompleted ? 0 : 1,
           totalEpisodesInSeason: 1
       };
@@ -782,7 +782,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                                 value={tracking.currentSeason}
                                 onChange={(e) => handleInputChange('currentSeason', parseInt(e.target.value) || 1)}
                                 className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center focus:border-opacity-100 outline-none focus:ring-1"
-                                style={{ focusRing: dynamicColor, borderColor: `${dynamicColor}30` }}
+                                style={{ borderColor: `${dynamicColor}30`, '--tw-ring-color': dynamicColor } as React.CSSProperties}
                                 />
                             </div>
                             <div className="flex-1">
@@ -903,7 +903,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                      onChange={(e) => handleInputChange('recommendedBy', e.target.value)}
                      className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1"
                      placeholder="Ej: Laura, r/anime..."
-                     style={{ borderColor: `${dynamicColor}30`, focusRing: dynamicColor }}
+                     style={{ borderColor: `${dynamicColor}30`, '--tw-ring-color': dynamicColor } as React.CSSProperties}
                    />
                 </div>
 
@@ -997,7 +997,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                                 onKeyDown={handleCharacterKeyDown}
                                 placeholder="Nombre (o separa con comas)..."
                                 className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-3 pr-10 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 transition-all"
-                                style={{ borderColor: `${dynamicColor}30`, focusRing: dynamicColor }}
+                                style={{ borderColor: `${dynamicColor}30`, '--tw-ring-color': dynamicColor } as React.CSSProperties}
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-600 font-mono hidden md:block">↵</span>
                         </div>
@@ -1071,7 +1071,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                 <label className="block text-sm font-medium text-slate-300 mb-2">Comentario Final / Deseos</label>
                 <textarea 
                   className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none transition-all resize-none h-24 focus:ring-1"
-                  style={{ borderColor: `${dynamicColor}30`, focusRing: dynamicColor }}
+                  style={{ borderColor: `${dynamicColor}30`, '--tw-ring-color': dynamicColor } as React.CSSProperties}
                   placeholder="Pensamientos finales..."
                   value={tracking.comment}
                   onChange={(e) => handleInputChange('comment', e.target.value)}
