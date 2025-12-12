@@ -33,6 +33,7 @@ export interface UserTrackingData {
   customLinks?: { id: string; url: string; title?: string }[]; // New: User added links
   scheduledReturnDate?: string; // New: Scheduled return date for "En Pausa" items
   nextReleaseDate?: string; // New: User specific release date for "Planeado" items
+  is_favorite?: boolean; // New: Favorite toggle
 }
 
 export interface MediaItem {

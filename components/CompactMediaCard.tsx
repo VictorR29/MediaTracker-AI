@@ -1,16 +1,19 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { MediaItem } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle } from 'lucide-react';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle, Star } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
   onClick: () => void;
   onIncrement: (item: MediaItem) => void;
+  onToggleFavorite?: (item: MediaItem) => void;
 }
 
-export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClick, onIncrement }) => {
+export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClick, onIncrement, onToggleFavorite }) => {
   const { aiData, trackingData } = item;
+  const isFavorite = trackingData.is_favorite || false;
 
   // Use dynamic color if available, else fallback to primary variable (approx)
   const dynamicColor = aiData.primaryColor || '#6366f1';
@@ -112,6 +115,13 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       onIncrement(item);
   };
 
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (onToggleFavorite) {
+          onToggleFavorite(item);
+      }
+  };
+
   const renderProgressText = () => {
       if (isMovie) {
           return trackingData.status === 'Completado' ? <span className="text-green-400 font-bold">Visto</span> : 'Pendiente';
@@ -164,6 +174,20 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
           onError={handleImageError}
           className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-500"
         />
+        
+        {/* Favorite Toggle (Top Left) */}
+        {onToggleFavorite && (
+             <button
+                onClick={handleFavoriteClick}
+                className="absolute top-2 left-2 z-20 p-1.5 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all"
+                title={isFavorite ? "Quitar de Favoritos" : "Marcar como Favorito"}
+             >
+                 <Star 
+                    className={`w-4 h-4 md:w-5 md:h-5 transition-all ${isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300 hover:text-white'}`} 
+                 />
+             </button>
+        )}
+
         <div className="absolute top-2 right-2">
             <span 
                 className="flex items-center gap-1 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md text-white text-[9px] md:text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm"

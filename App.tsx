@@ -46,7 +46,8 @@ export default function App() {
     status: 'All',
     rating: 'All',
     genre: 'All', // Initialize genre filter
-    sortBy: 'updated'
+    sortBy: 'updated',
+    onlyFavorites: false
   });
 
   // Initialize DB and load data
@@ -176,7 +177,8 @@ export default function App() {
           recommendedBy: '',
           isSaga: false,
           finishedAt: undefined,
-          nextReleaseDate: undefined
+          nextReleaseDate: undefined,
+          is_favorite: false
         }
       };
 
@@ -201,6 +203,28 @@ export default function App() {
         setLibrary(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
         await saveMediaItem(updatedItem);
     }
+  };
+
+  const handleToggleFavorite = async (item: MediaItem) => {
+      const updatedTracking = {
+          ...item.trackingData,
+          is_favorite: !item.trackingData.is_favorite
+      };
+      const updatedItem = {
+          ...item,
+          trackingData: updatedTracking,
+          lastInteraction: Date.now() // Optional: marking as favorite updates interaction time? Maybe.
+      };
+      
+      // Update Library state immediately
+      setLibrary(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+      
+      // If currently viewing details, update currentMedia
+      if (currentMedia && currentMedia.id === updatedItem.id) {
+          setCurrentMedia(updatedItem);
+      }
+
+      await saveMediaItem(updatedItem);
   };
 
   const handleDeleteRequest = (item: MediaItem) => setDeleteTarget(item);
@@ -331,7 +355,8 @@ export default function App() {
             finishedAt: undefined,
             customLinks: [], // Remove user links
             scheduledReturnDate: undefined,
-            nextReleaseDate: undefined
+            nextReleaseDate: undefined,
+            is_favorite: false // Reset favorite
           },
           // Update Timestamps for the export
           createdAt: Date.now(),
@@ -466,7 +491,8 @@ export default function App() {
                               emotionalTags: [],
                               favoriteCharacters: [],
                               comment: '',
-                              customLinks: []
+                              customLinks: [],
+                              is_favorite: false // Default to false on import
                           },
                           createdAt: Date.now(),
                           lastInteraction: Date.now()
@@ -521,6 +547,11 @@ export default function App() {
     if (filters.status !== 'All') result = result.filter(item => item.trackingData.status === filters.status);
     if (filters.rating !== 'All') result = result.filter(item => item.trackingData.rating === filters.rating);
     
+    // Favorite Filter
+    if (filters.onlyFavorites) {
+        result = result.filter(item => item.trackingData.is_favorite);
+    }
+
     // Genre Filter - Normalized Comparison
     if (filters.genre !== 'All') {
         result = result.filter(item => 
@@ -868,6 +899,7 @@ export default function App() {
                  <div className="text-center py-20 text-slate-500">
                     <LayoutGrid className="w-16 h-16 mx-auto mb-4 opacity-20" />
                     <p className="text-lg">No se encontraron obras con estos filtros.</p>
+                    {filters.onlyFavorites && <p className="text-sm mt-1 text-yellow-500/70">Estás viendo solo favoritos.</p>}
                     <button onClick={() => setView('search')} className="text-primary hover:underline mt-2">Agregar nueva obra</button>
                  </div>
               ) : (
@@ -878,6 +910,7 @@ export default function App() {
                           item={item} 
                           onClick={() => openDetail(item)}
                           onIncrement={handleQuickIncrement}
+                          onToggleFavorite={handleToggleFavorite}
                        />
                     ))}
                  </div>
@@ -952,6 +985,7 @@ export default function App() {
                                 item={item} 
                                 onClick={() => openDetail(item)}
                                 onIncrement={handleQuickIncrement}
+                                onToggleFavorite={handleToggleFavorite}
                             />
                         ))}
                     </div>

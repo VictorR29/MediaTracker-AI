@@ -1,7 +1,7 @@
 
 
 import React, { useState } from 'react';
-import { Search, ArrowUpDown, Tags, Filter, X, Check } from 'lucide-react';
+import { Search, ArrowUpDown, Tags, Filter, X, Check, Star } from 'lucide-react';
 import { RATING_OPTIONS } from '../types';
 
 export interface FilterState {
@@ -11,6 +11,7 @@ export interface FilterState {
   rating: string;
   genre: string;
   sortBy: 'updated' | 'title' | 'progress';
+  onlyFavorites: boolean;
 }
 
 interface LibraryFiltersProps {
@@ -22,7 +23,7 @@ interface LibraryFiltersProps {
 export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChange, availableGenres }) => {
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
 
-  const handleChange = (key: keyof FilterState, value: string) => {
+  const handleChange = (key: keyof FilterState, value: any) => {
     onChange({ ...filters, [key]: value });
   };
 
@@ -33,7 +34,8 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
       filters.type !== 'All',
       filters.status !== 'All',
       filters.rating !== 'All',
-      filters.genre !== 'All'
+      filters.genre !== 'All',
+      filters.onlyFavorites
   ].filter(Boolean).length;
 
   return (
@@ -52,6 +54,20 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                     />
                 </div>
                 
+                {/* Favorites Toggle Button (Desktop & Mobile) */}
+                <button
+                    onClick={() => handleChange('onlyFavorites', !filters.onlyFavorites)}
+                    className={`flex items-center justify-center w-10 h-10 md:w-auto md:px-4 border rounded-lg transition-all ${
+                        filters.onlyFavorites 
+                        ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500' 
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                    title="Ver solo Favoritos"
+                >
+                    <Star className={`w-5 h-5 ${filters.onlyFavorites ? 'fill-current' : ''}`} />
+                    <span className="hidden md:inline-block ml-2 text-sm font-medium">Favoritos</span>
+                </button>
+
                 {/* Mobile Filter Trigger Button */}
                 <button 
                     onClick={() => setIsMobileModalOpen(true)}

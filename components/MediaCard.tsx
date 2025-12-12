@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays } from 'lucide-react';
@@ -21,6 +23,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
   // Use the AI provided color or fall back to a default Indigo-ish color if missing
   const dynamicColor = item.aiData.primaryColor || '#6366f1';
+  const isFavorite = tracking.is_favorite || false;
 
   const getPlaceholder = () => 
     `https://placehold.co/400x600/1e293b/94a3b8?text=${encodeURIComponent(item.aiData.title || 'Sin Imagen')}&font=roboto`;
@@ -500,15 +503,24 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
             >
                 {item.aiData.title}
             </h2>
-            {onDelete && (
+            <div className="flex items-center gap-1">
                 <button 
-                  onClick={onDelete} 
-                  className="text-slate-500 hover:text-red-500 transition-colors p-1"
-                  title="Eliminar de biblioteca"
+                  onClick={() => handleInputChange('is_favorite', !isFavorite)} 
+                  className="p-1.5 hover:bg-slate-800 rounded-full transition-colors"
+                  title={isFavorite ? "Quitar de Favoritos" : "Marcar como Favorito"}
                 >
-                    <Trash2 className="w-5 h-5" />
+                    <Star className={`w-5 h-5 transition-all ${isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-500 hover:text-white'}`} />
                 </button>
-            )}
+                {onDelete && (
+                    <button 
+                    onClick={onDelete} 
+                    className="text-slate-500 hover:text-red-500 transition-colors p-1"
+                    title="Eliminar de biblioteca"
+                    >
+                        <Trash2 className="w-5 h-5" />
+                    </button>
+                )}
+            </div>
           </div>
 
           {item.aiData.originalTitle && (
