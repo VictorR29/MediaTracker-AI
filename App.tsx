@@ -213,7 +213,7 @@ export default function App() {
       const updatedItem = {
           ...item,
           trackingData: updatedTracking,
-          lastInteraction: Date.now() // Optional: marking as favorite updates interaction time? Maybe.
+          lastInteraction: item.lastInteraction // Preserve timestamp, toggling favorite is not a consumption event
       };
       
       // Update Library state immediately
