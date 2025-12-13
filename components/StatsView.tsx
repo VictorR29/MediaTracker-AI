@@ -10,10 +10,12 @@ interface StatsViewProps {
 }
 
 interface ObsessionItem {
+    id: string;
     title: string;
-    time: number;
+    time: number; // In minutes
     coverImage?: string;
     primaryColor?: string;
+    unitCount: number; // Episodes or Chapters
 }
 
 interface StatsData {
@@ -28,8 +30,8 @@ interface StatsData {
   averageScore: string;
   highestRatedGenre: string;
   
-  // New Obsession Data Structure
-  maxItemsByType: Record<string, ObsessionItem>; 
+  // New Obsession Data Structure: Top 3 per category
+  topItemsByType: Record<string, ObsessionItem[]>; 
   globalMaxCategory: string;
 
   animeEpisodes: number;
@@ -164,12 +166,12 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     let visualMinutes = 0;
     let readingMinutes = 0;
     
-    // Obsession Tracking
-    const maxItemsByType: Record<string, ObsessionItem> = {
-        'Anime': { title: "N/A", time: 0, coverImage: '', primaryColor: '' },
-        'Series': { title: "N/A", time: 0, coverImage: '', primaryColor: '' },
-        'Webtoon/Manga': { title: "N/A", time: 0, coverImage: '', primaryColor: '' },
-        'Libros/Novelas': { title: "N/A", time: 0, coverImage: '', primaryColor: '' }
+    // Raw Collection for Sorting Top 3
+    const rawItemsByType: Record<string, ObsessionItem[]> = {
+        'Anime': [],
+        'Series': [],
+        'Webtoon/Manga': [],
+        'Libros/Novelas': []
     };
 
     library.forEach(item => {
@@ -212,7 +214,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 moviesWatched += totalEffectiveUnits; 
                 itemTime = totalEffectiveUnits * movieMin;
                 visualMinutes += itemTime;
-                // Movies excluded from Obsession Tracker by request
+                // Movies excluded from Obsession Tracker by request/logic usually
             } 
             // Reading
             else if (['Manhwa', 'Manga', 'Comic'].includes(type)) {
@@ -227,25 +229,36 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 categoryKey = 'Libros/Novelas';
             }
 
-            // Update Max Item for Category
-            if (categoryKey && itemTime > maxItemsByType[categoryKey].time) {
-                maxItemsByType[categoryKey] = { 
-                    title: item.aiData.title, 
+            // Push to raw collection for sorting
+            if (categoryKey) {
+                rawItemsByType[categoryKey].push({
+                    id: item.id,
+                    title: item.aiData.title,
                     time: itemTime,
                     coverImage: item.aiData.coverImage,
-                    primaryColor: item.aiData.primaryColor
-                };
+                    primaryColor: item.aiData.primaryColor,
+                    unitCount: totalEffectiveUnits
+                });
             }
         }
     });
 
-    // Calculate Global Max Category
-    let globalMaxCategory = 'Anime'; // Default
-    let globalMaxTime = 0;
-    Object.entries(maxItemsByType).forEach(([cat, data]) => {
-        if (data.time > globalMaxTime) {
-            globalMaxTime = data.time;
-            globalMaxCategory = cat;
+    // Sort and Extract Top 3 per category
+    const topItemsByType: Record<string, ObsessionItem[]> = {};
+    let globalMaxCategory = 'Anime';
+    let highestSingleItemTime = 0;
+
+    Object.keys(rawItemsByType).forEach(key => {
+        // Sort descending by time
+        const sorted = rawItemsByType[key].sort((a, b) => b.time - a.time);
+        
+        // Take Top 3
+        topItemsByType[key] = sorted.slice(0, 3);
+
+        // Check for global max category (based on the single biggest obsession)
+        if (sorted.length > 0 && sorted[0].time > highestSingleItemTime) {
+            highestSingleItemTime = sorted[0].time;
+            globalMaxCategory = key;
         }
     });
 
@@ -278,7 +291,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         topGenre, maxGenreCount, ratingCount,
         averageScore, highestRatedGenre,
         
-        maxItemsByType,
+        topItemsByType,
         globalMaxCategory,
 
         // Granular
@@ -291,12 +304,12 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     };
   }, [library, userProfile.preferences]);
 
-  // Set default obsession tab to the one with max content
+  // Set default obsession tab
   useEffect(() => {
-     if (stats.globalMaxCategory && stats.maxItemsByType[stats.globalMaxCategory].time > 0) {
+     if (stats.globalMaxCategory && stats.topItemsByType[stats.globalMaxCategory]?.length > 0) {
         setObsessionTab(stats.globalMaxCategory);
      }
-  }, [stats.globalMaxCategory]); // Only run when global max changes
+  }, [stats.globalMaxCategory]);
 
   // --- Dynamic Rank & Achievement Logic ---
   const rankingSystem = useMemo(() => {
@@ -403,11 +416,41 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
       { id: 'Libros/Novelas', label: 'Libros', icon: Book },
   ];
 
-  const currentObsession = stats.maxItemsByType[obsessionTab];
-  const hasObsessionData = currentObsession && currentObsession.time > 0;
+  const currentTopList = stats.topItemsByType[obsessionTab] || [];
   
-  // Color Logic for Obsession Card
-  const obsessionColor = currentObsession.primaryColor || '#6366f1';
+  // Color helper for rankings
+  const getRankStyle = (index: number) => {
+    switch (index) {
+        case 0: return { 
+            border: 'border-yellow-500', 
+            bg: 'bg-yellow-500/10', 
+            text: 'text-yellow-400', 
+            icon: Trophy, 
+            label: '🥇'
+        };
+        case 1: return { 
+            border: 'border-slate-400', 
+            bg: 'bg-slate-400/10', 
+            text: 'text-slate-300', 
+            icon: Medal, 
+            label: '🥈'
+        };
+        case 2: return { 
+            border: 'border-amber-700', 
+            bg: 'bg-amber-700/10', 
+            text: 'text-amber-600', 
+            icon: Medal, 
+            label: '🥉'
+        };
+        default: return { 
+            border: 'border-slate-700', 
+            bg: 'bg-slate-800', 
+            text: 'text-slate-500', 
+            icon: Star, 
+            label: `${index + 1}.`
+        };
+    }
+  };
 
   return (
     <div className="animate-fade-in space-y-6 pb-12 relative">
@@ -517,17 +560,17 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
        </div>
 
-       {/* Dynamic Obsession Tracker Widget */}
+       {/* Dynamic Obsession Tracker Widget (TOP 3) */}
        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-md transition-all">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
                      <span className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
-                         <Zap className="w-4 h-4 text-yellow-500" /> Tu Mayor Obsesión
+                         <Zap className="w-4 h-4 text-yellow-500" /> Top 3 Mayores Obsesiones
                      </span>
-                     <p className="text-sm text-slate-400 mt-1">Basado en tiempo total consumido</p>
+                     <p className="text-sm text-slate-400 mt-1">Las obras que más tiempo han consumido de tu vida</p>
                 </div>
                 
-                {/* Dynamic Selector Tabs - Replaced overflow-x-auto with grid to prevent mobile scrolling */}
+                {/* Dynamic Selector Tabs */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-slate-900 p-1 rounded-lg">
                     {OBSESSION_TABS.map(tab => {
                         const Icon = tab.icon;
@@ -550,78 +593,65 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 </div>
             </div>
 
-            {/* Obsession Card with Background Image */}
-            <div 
-                className="relative rounded-xl border border-slate-700/50 overflow-hidden shadow-lg transition-all min-h-[140px]"
-                style={{ borderColor: `${obsessionColor}50` }}
-            >
-                {/* Background Image Layer */}
-                <div className="absolute inset-0 z-0 bg-slate-900">
-                    {hasObsessionData && currentObsession.coverImage ? (
-                        <>
-                            <img 
-                                src={currentObsession.coverImage} 
-                                alt="" 
-                                className="w-full h-full object-cover" 
-                            />
-                            {/* Improved Gradients for better text visibility while showing the image */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent"></div>
-                            {/* Color tint based on primary color */}
-                            <div className="absolute inset-0 opacity-20" style={{ backgroundColor: obsessionColor }}></div>
-                        </>
-                    ) : (
-                         <div className="w-full h-full bg-slate-900/50"></div>
-                    )}
-                </div>
+            {/* TOP 3 LIST */}
+            {currentTopList.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4">
+                    {currentTopList.map((item, index) => {
+                        const style = getRankStyle(index);
+                        const RankIcon = style.icon;
+                        const isTop1 = index === 0;
 
-                {/* Content Layer */}
-                <div className="relative z-10 p-5 flex flex-col md:flex-row items-center justify-between gap-6 h-full">
-                     {hasObsessionData ? (
-                         <>
-                            <div className="flex items-center gap-4 flex-1 w-full md:w-auto">
-                                <div 
-                                    className="w-14 h-14 rounded-full flex items-center justify-center border-2 shadow-xl shrink-0 backdrop-blur-md"
-                                    style={{ 
-                                        backgroundColor: `${obsessionColor}30`, 
-                                        borderColor: obsessionColor,
-                                        boxShadow: `0 0 20px ${obsessionColor}40`
-                                    }}
-                                >
-                                    {obsessionTab.includes('Libro') || obsessionTab.includes('Webtoon') ? (
-                                        <BookOpen className="w-7 h-7 text-white" />
-                                    ) : (
-                                        <Clapperboard className="w-7 h-7 text-white" />
-                                    )}
-                                </div>
-                                <div>
-                                    <h3 className="text-2xl font-bold text-white leading-tight drop-shadow-lg line-clamp-1 md:line-clamp-2">
-                                        {currentObsession.title}
-                                    </h3>
-                                    <p className="text-xs font-medium uppercase tracking-widest mt-1 opacity-90" style={{ color: obsessionColor }}>
-                                        {obsessionTab}
-                                    </p>
+                        return (
+                            <div 
+                                key={item.id}
+                                className={`relative rounded-xl border ${isTop1 ? 'border-2' : 'border'} overflow-hidden shadow-lg transition-all flex flex-col md:flex-row items-center ${style.border} ${isTop1 ? 'md:h-32' : 'md:h-20'}`}
+                            >
+                                {/* Background Image for Top 1 */}
+                                {isTop1 && item.coverImage && (
+                                    <div className="absolute inset-0 z-0 opacity-20">
+                                         <img src={item.coverImage} className="w-full h-full object-cover" alt="" />
+                                         <div className="absolute inset-0 bg-gradient-to-r from-slate-900 to-transparent"></div>
+                                    </div>
+                                )}
+                                {isTop1 && !item.coverImage && (
+                                     <div className="absolute inset-0 z-0 bg-gradient-to-r from-yellow-900/20 to-transparent"></div>
+                                )}
+
+                                {/* Content */}
+                                <div className="relative z-10 w-full p-4 flex items-center justify-between gap-4">
+                                     
+                                     {/* Left: Rank & Title */}
+                                     <div className="flex items-center gap-4 flex-1 min-w-0">
+                                          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center flex-shrink-0 border-2 font-bold text-xl ${style.bg} ${style.border} ${style.text} shadow-lg backdrop-blur-sm`}>
+                                              {style.label}
+                                          </div>
+                                          <div className="min-w-0">
+                                               <h4 className={`font-bold text-white truncate ${isTop1 ? 'text-xl' : 'text-base'}`}>{item.title}</h4>
+                                               <p className="text-xs text-slate-400 truncate">
+                                                    {item.unitCount} {obsessionTab.includes('Libro') || obsessionTab.includes('Webtoon') ? 'capítulos/pag' : 'episodios'}
+                                               </p>
+                                          </div>
+                                     </div>
+
+                                     {/* Right: Time */}
+                                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-slate-900/50 backdrop-blur-sm ${style.border}`}>
+                                         <Clock className={`w-4 h-4 ${style.text}`} />
+                                         <span className={`font-mono font-bold ${style.text} ${isTop1 ? 'text-lg' : 'text-sm'}`}>
+                                             {(item.time / 60).toFixed(1)}h
+                                         </span>
+                                     </div>
                                 </div>
                             </div>
-                            
-                            <div className="flex items-center gap-3 bg-white/10 px-5 py-3 rounded-xl border border-white/10 shrink-0 backdrop-blur-md shadow-lg w-full md:w-auto justify-center md:justify-start">
-                                 <Clock className="w-6 h-6 text-yellow-400 drop-shadow-md" />
-                                 <div className="flex flex-col">
-                                     <span className="text-2xl font-mono font-bold text-white leading-none">
-                                         {(currentObsession.time / 60).toFixed(1)}h
-                                     </span>
-                                     <span className="text-[10px] text-slate-300 uppercase font-bold tracking-wider">Tiempo Total</span>
-                                 </div>
-                            </div>
-                         </>
-                     ) : (
-                         <div className="w-full text-center py-6 opacity-50 flex flex-col items-center">
-                             <Layout className="w-10 h-10 text-slate-500 mb-2" />
-                             <p className="text-sm font-medium text-slate-400">Sin suficientes datos en {obsessionTab}.</p>
-                             <p className="text-xs text-slate-600">Comienza a registrar tu progreso para ver estadísticas.</p>
-                         </div>
-                     )}
+                        );
+                    })}
                 </div>
-            </div>
+            ) : (
+                <div className="w-full text-center py-10 opacity-50 flex flex-col items-center bg-slate-900 rounded-xl border border-slate-700 border-dashed">
+                     <Layout className="w-10 h-10 text-slate-500 mb-2" />
+                     <p className="text-sm font-medium text-slate-400">Sin datos en {obsessionTab}.</p>
+                     <p className="text-xs text-slate-600">Registra progreso para ver tu ranking.</p>
+                </div>
+            )}
        </div>
 
        {/* KPIs Row */}
