@@ -270,11 +270,11 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
              </div>
         )}
 
-        {/* Quick Action Button - Floating on Image */}
+        {/* Quick Action Button - Floating on Image - Z-INDEX INCREASED TO 40 TO FIX OVERLAP */}
         {!isMovie && !isPlanned && trackingData.status === 'Viendo/Leyendo' && (
              <button
                 onClick={handleQuickAction}
-                className={`absolute bottom-16 md:bottom-14 right-2 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-lg transition-all transform active:scale-90 z-20 md:opacity-0 md:group-hover:opacity-100 opacity-100 ${
+                className={`absolute bottom-16 md:bottom-14 right-2 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-lg transition-all transform active:scale-90 z-40 md:opacity-0 md:group-hover:opacity-100 opacity-100 ${
                     isCompleteSeason ? 'bg-green-500 hover:bg-green-600' : 'bg-white/90 hover:bg-white text-slate-900'
                 }`}
                 title={isCompleteSeason ? "Completar" : "+1"}
