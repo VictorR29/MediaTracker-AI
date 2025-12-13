@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -522,6 +522,20 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                 )}
             </div>
           </div>
+          
+          {/* FRANCHISE LINK DISPLAY */}
+          {item.aiData.franchise_link && (
+             <div className="z-10 mb-2 animate-fade-in-up">
+                <div 
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800/50 border border-slate-700/50 text-xs font-medium text-slate-300"
+                    title="Esta película pertenece a esta franquicia"
+                >
+                    <GitMerge className="w-3 h-3 text-indigo-400" />
+                    <span className="opacity-70">Parte de:</span>
+                    <span className="text-white font-semibold truncate max-w-[180px]">{item.aiData.franchise_link}</span>
+                </div>
+             </div>
+          )}
 
           {item.aiData.originalTitle && (
             <p className="text-slate-400 text-sm mb-4 italic z-10">{item.aiData.originalTitle}</p>

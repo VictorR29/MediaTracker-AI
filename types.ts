@@ -14,6 +14,7 @@ export interface AIWorkData {
   primaryColor?: string; // Hex code for dynamic theming
   releaseDate?: string; // New: Release year or date
   endDate?: string; // New: End year or date
+  franchise_link?: string; // New: Internal Linked Franchise Identifier (e.g. "Demon Slayer" for the movie)
 }
 
 export interface UserTrackingData {

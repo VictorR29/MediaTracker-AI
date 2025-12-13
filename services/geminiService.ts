@@ -14,13 +14,19 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
     You MUST return a JSON object containing the following details. 
     If exact numbers aren't found, estimate based on the latest available info.
     
-    CRITICAL - MEDIA TYPE CLASSIFICATION:
-    - "Pelicula": Standalone movies, theatrical releases (e.g., Inception, Spirited Away, Dune).
-    - "Serie": TV Series, Web Series, Miniseries (e.g., Breaking Bad, Stranger Things).
-    - "Anime": Japanese animation series (e.g., Naruto, One Piece).
-    - "Libro": Novels, Non-fiction books, Light Novels, Literature (e.g., Harry Potter, 1984, Brandon Sanderson books).
-    - "Manhwa" / "Manga" / "Comic": Graphical novels, webtoons, comics.
+    CRITICAL - MEDIA TYPE CLASSIFICATION RULES:
+    1. "Pelicula": Use this for ANY standalone movie or theatrical release. 
+       - IMPORTANT: If it is an Anime Movie (e.g. 'Demon Slayer: Mugen Train', 'The End of Evangelion'), it MUST be classified as "Pelicula", NOT "Anime".
+    2. "Serie": Live-action TV Series.
+    3. "Anime": Japanese animation SERIES (TV format, ONAs, OVAs that are series-like).
+    4. "Libro": Novels, Light Novels.
+    5. "Manhwa" / "Manga" / "Comic".
     
+    FRANCHISE LINKING:
+    If the item is a "Pelicula" that belongs to a larger Series/Anime franchise (e.g., the query is "Demon Slayer Mugen Train"), 
+    you MUST populate the "franchise_link" field with the name of the PARENT franchise (e.g., "Demon Slayer: Kimetsu no Yaiba").
+    If it is a standalone movie (e.g. "Inception"), leave "franchise_link" empty.
+
     The JSON structure must be:
     {
       "title": "Main title in Spanish or English",
@@ -29,12 +35,13 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
       "synopsis": "A concise synopsis in Spanish (max 300 chars)",
       "genres": ["Genre1", "Genre2"],
       "status": "Publication/Broadcast status (e.g., En emisión, Finalizado, En pausa)",
-      "totalContent": "String describing total content (e.g., '3 Temporadas, 64 Caps' or '120 Capítulos' or '300 Páginas' or 'Duración 2h 30m')",
+      "totalContent": "String describing total content (e.g., '3 Temporadas, 64 Caps' or '120 Capítulos' or 'Duración 1h 57m')",
       "coverDescription": "A short English visual description of the official poster (e.g. 'poster of Naruto anime')",
       "coverImage": "Find a DIRECT public URL (https) for the official poster. PREFER URLs from 'upload.wikimedia.org', 'm.media-amazon.com', 'cdn.myanimelist.net' or 'static.wikia.nocookie.net'. The URL MUST end in .jpg, .png or .webp. If uncertain, leave empty.",
-      "primaryColor": "Identify the DOMINANT HEX COLOR associated with the work's cover art or branding (e.g. '#FF5733' for Naruto orange, '#4B0082' for Gachiakuta purple). It MUST be a 6-digit HEX code.",
-      "releaseDate": "The release date or year. PREFER ISO FORMAT 'YYYY-MM-DD' if a specific future or past date is known. If only year is known, use 'YYYY'.",
-      "endDate": "The end date or year. Use 'Presente' or 'En curso' if ongoing. Leave empty if it's a Movie."
+      "primaryColor": "Identify the DOMINANT HEX COLOR associated with the work's cover art or branding (e.g. '#FF5733'). It MUST be a 6-digit HEX code.",
+      "releaseDate": "The release date or year (ISO 'YYYY-MM-DD').",
+      "endDate": "The end date or year. Leave empty if it's a Movie.",
+      "franchise_link": "Name of the parent franchise if applicable, or empty string."
     }
 
     Do NOT use Markdown formatting for the JSON. Just return the raw JSON string.
