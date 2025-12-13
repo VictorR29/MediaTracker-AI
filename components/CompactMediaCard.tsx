@@ -1,8 +1,7 @@
 
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle, Star } from 'lucide-react';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle, Star, Image as ImageIcon } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
@@ -14,6 +13,10 @@ interface CompactMediaCardProps {
 export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClick, onIncrement, onToggleFavorite }) => {
   const { aiData, trackingData } = item;
   const isFavorite = trackingData.is_favorite || false;
+  
+  // Lazy Load State
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   // Use dynamic color if available, else fallback to primary variable (approx)
   const dynamicColor = aiData.primaryColor || '#6366f1';
@@ -89,20 +92,40 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
   const isValidSource = (src?: string) => 
     src && (src.startsWith('http') || src.startsWith('data:'));
 
-  // Determine initial image
-  const initialImage = isValidSource(aiData.coverImage)
+  // Determine initial image (but don't load yet)
+  const actualImageSource = isValidSource(aiData.coverImage)
     ? aiData.coverImage!
     : getPlaceholder();
 
-  const [imgSrc, setImgSrc] = useState(initialImage);
+  const [imgSrc, setImgSrc] = useState<string | undefined>(undefined);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
+  // Intersection Observer for Lazy Loading
   useEffect(() => {
-    if (isValidSource(aiData.coverImage)) {
-      setImgSrc(aiData.coverImage!);
-    } else {
-      setImgSrc(getPlaceholder());
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            setImgSrc(actualImageSource); // Trigger image load
+            observer.disconnect(); // Stop observing once visible
+          }
+        });
+      },
+      {
+        rootMargin: '200px', // Start loading 200px before it enters viewport
+        threshold: 0.01,
+      }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
     }
-  }, [aiData.coverImage, aiData.title]);
+
+    return () => {
+      if (observer) observer.disconnect();
+    };
+  }, [actualImageSource]);
 
   const handleImageError = () => {
     if (imgSrc !== getPlaceholder()) {
@@ -154,8 +177,15 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
 
   return (
     <div 
+      ref={cardRef}
       onClick={onClick}
-      className={`group bg-surface rounded-xl overflow-hidden shadow-lg border border-slate-800 hover:border-opacity-50 cursor-pointer transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-2xl relative ${isReturnDue ? 'ring-2 ring-red-500 shadow-red-900/40' : ''}`}
+      className={`group bg-surface rounded-xl overflow-hidden shadow-lg border border-slate-800 hover:border-opacity-50 cursor-pointer transition-all duration-700 ease-out hover:shadow-2xl relative ${isReturnDue ? 'ring-2 ring-red-500 shadow-red-900/40' : ''} ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+      }`}
+      style={{
+        // Add a slight random delay for the staggered effect if loading multiple at once
+        transitionDelay: `${Math.random() * 100}ms` 
+      }}
     >
       {isReturnDue && (
           <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-[10px] font-bold px-2 py-1 text-center z-30 flex items-center justify-center gap-1 shadow-md animate-pulse">
@@ -163,23 +193,28 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
           </div>
       )}
 
-      {/* Grid Layout within Card to Optimize Space in Single Column Mobile View if needed, 
-          but usually aspect-ratio image top + text bottom works well for lists. 
-          Keeping vertical stack but optimizing font sizes.
-      */}
       <div className="relative aspect-[2/3] md:aspect-[3/4] overflow-hidden bg-slate-900">
-        <img 
-          src={imgSrc} 
-          alt={aiData.title}
-          onError={handleImageError}
-          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-500"
-        />
+        {/* Placeholder / Skeleton while loading */}
+        <div className={`absolute inset-0 bg-slate-800 animate-pulse transition-opacity duration-500 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`} />
+
+        {/* The Actual Image */}
+        {imgSrc && (
+            <img 
+            src={imgSrc} 
+            alt={aiData.title}
+            onError={handleImageError}
+            onLoad={() => setImageLoaded(true)}
+            className={`w-full h-full object-cover transition-all duration-700 ${
+                imageLoaded ? 'opacity-90 group-hover:opacity-100 scale-100' : 'opacity-0 scale-105'
+            }`}
+            />
+        )}
         
         {/* Favorite Toggle (Top Left) */}
         {onToggleFavorite && (
              <button
                 onClick={handleFavoriteClick}
-                className="absolute top-2 left-2 z-20 p-1.5 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all"
+                className="absolute top-2 left-2 z-20 p-1.5 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                 title={isFavorite ? "Quitar de Favoritos" : "Marcar como Favorito"}
              >
                  <Star 
@@ -187,6 +222,18 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
                  />
              </button>
         )}
+        {/* Always show star if favorite, even if not hovering */}
+        {isFavorite && !onToggleFavorite && (
+            <div className="absolute top-2 left-2 z-20 p-1.5 rounded-full bg-black/20 backdrop-blur-sm">
+                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+            </div>
+        )}
+        {isFavorite && onToggleFavorite && (
+             <div className="absolute top-2 left-2 z-10 p-1.5 rounded-full bg-black/20 backdrop-blur-sm group-hover:opacity-0 transition-opacity">
+                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+            </div>
+        )}
+
 
         <div className="absolute top-2 right-2">
             <span 
