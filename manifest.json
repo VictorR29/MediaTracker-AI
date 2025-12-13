@@ -2,11 +2,13 @@
 {
   "name": "MediaTracker AI",
   "short_name": "MediaTracker",
-  "start_url": ".",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "description": "Tu biblioteca inteligente de entretenimiento.",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "https://placehold.co/192x192/6366f1/ffffff.png?text=MT&font=roboto",
