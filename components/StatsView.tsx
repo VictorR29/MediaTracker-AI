@@ -595,50 +595,54 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
             {/* TOP 3 LIST */}
             {currentTopList.length > 0 ? (
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {currentTopList.map((item, index) => {
                         const style = getRankStyle(index);
-                        const RankIcon = style.icon;
                         const isTop1 = index === 0;
 
                         return (
                             <div 
                                 key={item.id}
-                                className={`relative rounded-xl border ${isTop1 ? 'border-2' : 'border'} overflow-hidden shadow-lg transition-all flex flex-col md:flex-row items-center ${style.border} ${isTop1 ? 'md:h-32' : 'md:h-20'}`}
+                                className={`relative rounded-xl border ${isTop1 ? 'border-2 shadow-[0_0_15px_rgba(234,179,8,0.15)]' : 'border'} overflow-hidden shadow-lg transition-all flex flex-col justify-end h-48 md:h-60 group ${style.border}`}
                             >
-                                {/* Background Image for Top 1 */}
-                                {isTop1 && item.coverImage && (
-                                    <div className="absolute inset-0 z-0 opacity-20">
-                                         <img src={item.coverImage} className="w-full h-full object-cover" alt="" />
-                                         <div className="absolute inset-0 bg-gradient-to-r from-slate-900 to-transparent"></div>
+                                {/* Background Image for ALL ITEMS (1, 2, 3) */}
+                                {item.coverImage ? (
+                                    <div className="absolute inset-0 z-0">
+                                         <img src={item.coverImage} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-60 group-hover:opacity-40" alt="" />
+                                         {/* Gradient for text readability */}
+                                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/50 to-transparent"></div>
                                     </div>
-                                )}
-                                {isTop1 && !item.coverImage && (
-                                     <div className="absolute inset-0 z-0 bg-gradient-to-r from-yellow-900/20 to-transparent"></div>
+                                ) : (
+                                     <div className={`absolute inset-0 z-0 bg-gradient-to-br from-slate-800 to-slate-900 opacity-50`}></div>
                                 )}
 
                                 {/* Content */}
-                                <div className="relative z-10 w-full p-4 flex items-center justify-between gap-4">
+                                <div className="relative z-10 w-full p-4">
                                      
-                                     {/* Left: Rank & Title */}
-                                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                                          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center flex-shrink-0 border-2 font-bold text-xl ${style.bg} ${style.border} ${style.text} shadow-lg backdrop-blur-sm`}>
+                                     {/* Rank Badge - Floating Top Right */}
+                                     <div className="absolute top-0 right-0 p-3">
+                                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border font-bold text-xl backdrop-blur-md shadow-lg ${style.bg} ${style.border} ${style.text}`}>
                                               {style.label}
-                                          </div>
-                                          <div className="min-w-0">
-                                               <h4 className={`font-bold text-white truncate ${isTop1 ? 'text-xl' : 'text-base'}`}>{item.title}</h4>
-                                               <p className="text-xs text-slate-400 truncate">
-                                                    {item.unitCount} {obsessionTab.includes('Libro') || obsessionTab.includes('Webtoon') ? 'capítulos/pag' : 'episodios'}
-                                               </p>
                                           </div>
                                      </div>
 
-                                     {/* Right: Time */}
-                                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-slate-900/50 backdrop-blur-sm ${style.border}`}>
-                                         <Clock className={`w-4 h-4 ${style.text}`} />
-                                         <span className={`font-mono font-bold ${style.text} ${isTop1 ? 'text-lg' : 'text-sm'}`}>
-                                             {(item.time / 60).toFixed(1)}h
-                                         </span>
+                                     {/* Title & Info */}
+                                     <div className="flex flex-col gap-1">
+                                           <h4 className={`font-bold text-white leading-tight line-clamp-2 ${isTop1 ? 'text-lg' : 'text-base'}`} title={item.title}>
+                                               {item.title}
+                                           </h4>
+                                           
+                                           <div className="flex items-center justify-between text-xs text-slate-300 mt-2">
+                                                <span>
+                                                    {item.unitCount} {obsessionTab.includes('Libro') || obsessionTab.includes('Webtoon') ? 'caps' : 'eps'}
+                                                </span>
+                                                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/40 border border-white/10 backdrop-blur-sm`}>
+                                                     <Clock className={`w-3 h-3 ${style.text}`} />
+                                                     <span className="font-mono font-bold text-white">
+                                                         {(item.time / 60).toFixed(1)}h
+                                                     </span>
+                                                </div>
+                                           </div>
                                      </div>
                                 </div>
                             </div>
