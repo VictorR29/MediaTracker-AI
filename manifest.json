@@ -1,9 +1,8 @@
-
 {
   "name": "MediaTracker AI",
   "short_name": "MediaTracker",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",

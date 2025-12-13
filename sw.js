@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'mediatracker-v4';
+const CACHE_NAME = 'mediatracker-v5';
 
 // El Shell esencial que necesitamos para arrancar la app offline
 const APP_SHELL = [
