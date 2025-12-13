@@ -1,9 +1,8 @@
 
-const CACHE_NAME = 'mediatracker-v3';
+const CACHE_NAME = 'mediatracker-v4';
 
-// Solo cacheamos lo esencial del "Shell" de la app al instalar.
-// El resto (código, imágenes, librerías externas) se cacheará dinámicamente al usarse.
-const ESSENTIAL_ASSETS = [
+// El Shell esencial que necesitamos para arrancar la app offline
+const APP_SHELL = [
   './',
   './index.html',
   './manifest.json'
@@ -13,7 +12,7 @@ const ESSENTIAL_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ESSENTIAL_ASSETS);
+      return cache.addAll(APP_SHELL);
     })
   );
   self.skipWaiting(); // Force activation immediately
@@ -36,20 +35,33 @@ self.addEventListener('activate', (event) => {
   self.clients.claim(); // Take control of all clients immediately
 });
 
-// Fetch: Robust Network-First Strategy for HTML/App code, Stale-While-Revalidate for Assets
+// Fetch Strategy
 self.addEventListener('fetch', (event) => {
-  // Ignorar peticiones que no sean GET (como POST a APIs)
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
 
-  // ESTRATEGIA 1: Network First (Red primero, luego Caché)
-  // Ideal para el HTML y tus propios archivos de código (App.tsx, etc) para que siempre veas cambios al desarrollar.
+  // --- ESTRATEGIA 0: NAVIGATION FALLBACK (SPA Routing) ---
+  // Si es una petición de navegación (abrir la app, recargar, cambiar URL en barra),
+  // intentamos red, y si falla (offline o 404), devolvemos SIEMPRE index.html.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          // Si falla la red, devolvemos el shell (index.html) desde caché
+          // Esto permite que la app cargue offline en cualquier ruta
+          return caches.match('./index.html');
+        })
+    );
+    return;
+  }
+
+  // --- ESTRATEGIA 1: Archivos Propios (Network First) ---
+  // Para .js, .css, .json del propio dominio.
   if (url.origin === self.location.origin) {
     event.respondWith(
       fetch(event.request)
         .then((networkResponse) => {
-          // Si la red responde bien, actualizamos la caché y devolvemos el contenido
           if (networkResponse && networkResponse.status === 200) {
             const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
@@ -59,16 +71,14 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // Si falla la red (Offline), buscamos en caché
           return caches.match(event.request);
         })
     );
     return;
   }
 
-  // ESTRATEGIA 2: Stale-While-Revalidate (Caché primero, luego actualiza en fondo)
-  // Ideal para librerías externas (CDN) e imágenes, que no cambian seguido.
-  // Esto arregla el problema de que React/Tailwind no cargaban offline.
+  // --- ESTRATEGIA 2: Recursos Externos / CDNs (Stale-While-Revalidate) ---
+  // Para librerías (React, Tailwind) e imágenes externas.
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
@@ -80,11 +90,9 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(err => {
-         // Si falla la red y no hay caché, no podemos hacer mucho para recursos externos
-         console.log('Fetch failed for external resource:', event.request.url);
+         // Fallo silencioso para externos si no hay red
       });
 
-      // Devolver lo que tengamos en caché ya mismo, o esperar a la red si no hay nada
       return cachedResponse || fetchPromise;
     })
   );
