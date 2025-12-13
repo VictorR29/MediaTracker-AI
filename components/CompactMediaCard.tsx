@@ -200,24 +200,24 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
         
         {/* Wishlist / Upcoming Context Overlays */}
         {isPlanned && (
-             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white backdrop-blur-sm p-4 text-center z-20">
+             <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white backdrop-blur-[2px] p-4 text-center z-20">
                   {timeRemaining ? (
                     // Scenario A: Future Date Found
                     <>
                         <div className="bg-slate-900/80 p-2 md:p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
                             <Hourglass className="w-5 h-5 md:w-6 md:h-6 text-yellow-400 animate-pulse" />
                         </div>
-                        <span className="font-bold text-base md:text-lg leading-tight text-yellow-100">{timeRemaining}</span>
-                        <span className="text-[10px] md:text-xs text-yellow-500/80 mt-1 font-medium bg-black/40 px-2 py-1 rounded-full">{targetDateDisplay}</span>
+                        <span className="font-bold text-base md:text-lg leading-tight text-white drop-shadow-md">{timeRemaining}</span>
+                        <span className="text-[10px] md:text-xs text-yellow-400 mt-1 font-bold bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-md border border-white/10">{targetDateDisplay}</span>
                     </>
                   ) : (
                     // Scenario B: No Date / Waiting for Announcement
                     <>
                          <div className="bg-slate-900/80 p-2 md:p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
-                            <CalendarDays className="w-5 h-5 md:w-6 md:h-6 text-slate-400" />
+                            <CalendarDays className="w-5 h-5 md:w-6 md:h-6 text-slate-300" />
                         </div>
-                        <span className="font-bold text-sm md:text-base leading-tight text-slate-200">Pendiente Fecha</span>
-                        <span className="text-[10px] md:text-xs text-slate-500 mt-1">Esperando Anuncio</span>
+                        <span className="font-bold text-sm md:text-base leading-tight text-white drop-shadow-md">Pendiente Fecha</span>
+                        <span className="text-[10px] md:text-xs text-slate-300 mt-1 font-medium bg-black/40 px-2 py-0.5 rounded-full">Esperando Anuncio</span>
                     </>
                   )}
              </div>
@@ -240,8 +240,9 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
              </button>
         )}
 
-        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-3 pt-12">
-           <h3 className="text-white font-bold text-sm leading-tight line-clamp-2">{aiData.title}</h3>
+        {/* Title Container - Z-30 to sit above overlays */}
+        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-3 pt-12 z-30">
+           <h3 className="text-white font-bold text-sm leading-tight line-clamp-2 drop-shadow-md">{aiData.title}</h3>
            <p className="text-slate-400 text-[10px] md:text-xs mt-0.5 truncate">{renderStatus()}</p>
         </div>
       </div>
