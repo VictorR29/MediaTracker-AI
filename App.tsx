@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
@@ -14,14 +13,17 @@ import { ContextualGreeting } from './components/ContextualGreeting'; // Import 
 import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
 import { MediaItem, UserProfile, normalizeGenre } from './types';
-import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark, Search } from 'lucide-react';
+import { useToast } from './context/ToastContext';
+import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark, Search, GitMerge, Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
+  const { showToast } = useToast();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [currentMedia, setCurrentMedia] = useState<MediaItem | null>(null);
   const [library, setLibrary] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState<string>(''); // New: detailed loading state
   const [view, setView] = useState<'search' | 'library' | 'details' | 'stats' | 'discovery' | 'upcoming'>('search');
   const [dbReady, setDbReady] = useState(false);
   
@@ -38,6 +40,9 @@ export default function App() {
 
   // Delete Confirmation State
   const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null);
+
+  // Import Merge Confirmation State
+  const [pendingImport, setPendingImport] = useState<{ library: MediaItem[] } | null>(null);
 
   // Filters State
   const [filters, setFilters] = useState<FilterState>({
@@ -97,6 +102,7 @@ export default function App() {
         }
       } catch (err) {
         console.error("Initialization failed", err);
+        showToast("Error iniciando base de datos", "error");
       }
     };
     init();
@@ -140,10 +146,12 @@ export default function App() {
   const handleSearch = async (query: string) => {
     if (!userProfile?.apiKey) {
         setSearchError("No tienes una API Key configurada. Ve a Configuración.");
+        showToast("Falta API Key", "warning");
         return;
     }
 
     setIsLoading(true);
+    setLoadingMessage('Consultando a Gemini AI...');
     setCurrentMedia(null);
     setSearchError(null);
     setView('search');
@@ -155,6 +163,7 @@ export default function App() {
       if (aiData.synopsis.includes("No se pudo obtener información automática")) {
          setSearchError(aiData.synopsis); // Use the message returned by service
          setIsLoading(false);
+         setLoadingMessage('');
          return;
       }
 
@@ -186,8 +195,10 @@ export default function App() {
     } catch (error) {
       console.error("Error searching media", error);
       setSearchError("Hubo un error de conexión buscando la información. Intenta de nuevo.");
+      showToast("Error de conexión con IA", "error");
     } finally {
       setIsLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -225,6 +236,10 @@ export default function App() {
       }
 
       await saveMediaItem(updatedItem);
+      
+      if (updatedTracking.is_favorite) {
+          showToast("Añadido a Favoritos ⭐", "success");
+      }
   };
 
   const handleDeleteRequest = (item: MediaItem) => setDeleteTarget(item);
@@ -238,6 +253,7 @@ export default function App() {
               setCurrentMedia(null);
           }
           setDeleteTarget(null);
+          showToast("Obra eliminada", "info");
       }
   };
 
@@ -290,6 +306,8 @@ export default function App() {
     setLibrary(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
     await saveMediaItem(updatedItem);
     if (currentMedia && currentMedia.id === updatedItem.id) setCurrentMedia(updatedItem);
+    
+    showToast(`+1 Agregado a ${aiData.title}`, "success");
   };
 
   const addToLibrary = async () => {
@@ -304,6 +322,7 @@ export default function App() {
       // Clear the search view and reset the search bar
       setCurrentMedia(null);
       setSearchKey(prev => prev + 1);
+      showToast("Agregado a la biblioteca", "success");
     }
   };
 
@@ -312,17 +331,49 @@ export default function App() {
     setView('details');
   };
 
-  // --- DATA MANAGEMENT ---
+  // --- DATA MANAGEMENT & OPTIMIZATION ---
+
+  // OPTIMIZATION HELPER: Removes nulls, undefined, and empty strings recursively
+  // Also filters out placeholder images to save space
+  const optimizeForExport = (obj: any): any => {
+      if (Array.isArray(obj)) {
+          return obj.map(v => optimizeForExport(v)).filter(v => v !== null && v !== undefined);
+      } else if (obj !== null && typeof obj === 'object') {
+          return Object.entries(obj).reduce((acc, [key, value]) => {
+              // Skip null/undefined
+              if (value === null || value === undefined) return acc;
+              // Skip empty strings
+              if (typeof value === 'string' && value.trim() === '') return acc;
+              // Skip empty arrays
+              if (Array.isArray(value) && value.length === 0) return acc;
+
+              // IMAGE OPTIMIZATION: Do not export placeholder images
+              if (key === 'coverImage' && typeof value === 'string' && value.includes('placehold.co')) {
+                  return acc;
+              }
+
+              acc[key] = optimizeForExport(value);
+              return acc;
+          }, {} as any);
+      }
+      return obj;
+  };
+
   const handleExportBackup = () => {
     if (!userProfile) return;
-    const data = {
+    
+    const rawData = {
         profile: userProfile,
         library: library,
         version: 1,
         exportedAt: new Date().toISOString(),
         type: 'full_backup'
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+
+    // Apply optimization
+    const optimizedData = optimizeForExport(rawData);
+
+    const blob = new Blob([JSON.stringify(optimizedData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -363,14 +414,17 @@ export default function App() {
           lastInteraction: Date.now()
       }));
 
-      const data = {
+      const rawData = {
           library: sanitizedLibrary,
           version: 1,
           exportedAt: new Date().toISOString(),
           type: 'catalog_share' // Marker to identify this is just a list
       };
 
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      // Apply Optimization
+      const optimizedData = optimizeForExport(rawData);
+
+      const blob = new Blob([JSON.stringify(optimizedData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -380,16 +434,35 @@ export default function App() {
       document.body.removeChild(link);
   };
 
+  // BATCH IMPORT HELPER to prevent UI Freeze
+  const importItemsInBatch = async (items: MediaItem[], onProgress: (count: number, total: number) => void) => {
+      const CHUNK_SIZE = 20; // Process 20 items at a time
+      let processed = 0;
+      
+      for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+          const chunk = items.slice(i, i + CHUNK_SIZE);
+          
+          // Save chunk in parallel
+          await Promise.all(chunk.map(item => saveMediaItem(item)));
+          
+          processed += chunk.length;
+          onProgress(Math.min(processed, items.length), items.length);
+          
+          // YIELD TO MAIN THREAD: Allow UI to update
+          await new Promise(resolve => setTimeout(resolve, 10));
+      }
+  };
+
   const handleImportBackup = (file: File) => {
     console.log("Starting backup import for file:", file.name);
     
     if (!file.name.endsWith('.json') && file.type !== 'application/json') {
-        alert("El archivo debe ser un JSON (.json)");
+        showToast("El archivo debe ser JSON", "error");
         return;
     }
 
     const reader = new FileReader();
-    reader.onerror = () => alert("Error de lectura del archivo.");
+    reader.onerror = () => showToast("Error leyendo archivo", "error");
 
     reader.onload = async (event) => {
         try {
@@ -399,16 +472,20 @@ export default function App() {
             const data = JSON.parse(content);
 
             if (!data.profile || !Array.isArray(data.library)) {
-                alert("El archivo no tiene el formato de respaldo completo (falta perfil o biblioteca).");
+                showToast("Formato de backup inválido", "error");
                 return;
             }
 
             setIsLoading(true);
+            setLoadingMessage('Restaurando biblioteca...');
+            
             try {
                 await saveUserProfile(data.profile);
-                for (const item of data.library) {
-                    await saveMediaItem(item);
-                }
+                
+                // Use Batch Import
+                await importItemsInBatch(data.library, (current, total) => {
+                    setLoadingMessage(`Restaurando obras: ${current}/${total}`);
+                });
                 
                 setUserProfile(data.profile);
                 applyTheme(data.profile.accentColor);
@@ -416,20 +493,23 @@ export default function App() {
                 setLibrary(updatedLibrary);
                 
                 setIsLoading(false);
+                setLoadingMessage('');
                 setIsUserMenuOpen(false);
                 setIsSettingsOpen(false);
-                alert("¡Copia de seguridad restaurada correctamente!");
+                showToast("Copia de seguridad restaurada", "success");
 
             } catch (saveError) {
                 console.error("Save error", saveError);
-                alert("Error guardando los datos.");
+                showToast("Error guardando datos", "error");
                 setIsLoading(false);
+                setLoadingMessage('');
             }
 
         } catch (error) {
             console.error("JSON Parse error", error);
-            alert("El archivo está corrupto.");
+            showToast("Archivo corrupto", "error");
             setIsLoading(false);
+            setLoadingMessage('');
         }
     };
     reader.readAsText(file);
@@ -438,12 +518,12 @@ export default function App() {
   const handleImportCatalog = (file: File) => {
       console.log("Starting catalog import:", file.name);
       if (!file.name.endsWith('.json') && file.type !== 'application/json') {
-          alert("El archivo debe ser un JSON (.json)");
+          showToast("El archivo debe ser JSON", "error");
           return;
       }
 
       const reader = new FileReader();
-      reader.onerror = () => alert("Error de lectura.");
+      reader.onerror = () => showToast("Error de lectura", "error");
       
       reader.onload = async (event) => {
           try {
@@ -452,70 +532,84 @@ export default function App() {
 
               const data = JSON.parse(content);
               
-              // Validation: Should NOT have profile data if it's a catalog share, 
-              // or simply we ignore it. The request says "Verify file contains only library data".
-              if (data.profile) {
-                  if (!confirm("Este archivo parece ser una copia de seguridad completa (contiene perfil). ¿Deseas importar solo las obras y fusionarlas con tu biblioteca actual?")) {
-                      return;
-                  }
-              }
-
               if (!data.library || !Array.isArray(data.library)) {
-                  alert("No se encontró una lista de obras válida en el archivo.");
+                  showToast("Lista de obras no encontrada", "error");
                   return;
               }
 
-              setIsLoading(true);
-              const incomingItems = data.library as MediaItem[];
-              let addedCount = 0;
-
-              // Merge Logic
-              for (const item of incomingItems) {
-                  // Check duplicate by TITLE to avoid double entries
-                  const exists = library.some(existing => 
-                      existing.aiData.title.toLowerCase() === item.aiData.title.toLowerCase() && 
-                      existing.aiData.mediaType === item.aiData.mediaType
-                  );
-
-                  if (!exists) {
-                      // Sanitization on Import (Enforce "Sin empezar")
-                      const newItem: MediaItem = {
-                          ...item,
-                          id: uuidv4(), // NEW ID for local DB
-                          trackingData: {
-                              ...item.trackingData,
-                              status: 'Sin empezar',
-                              watchedEpisodes: 0,
-                              accumulated_consumption: 0,
-                              rating: '',
-                              emotionalTags: [],
-                              favoriteCharacters: [],
-                              comment: '',
-                              customLinks: [],
-                              is_favorite: false // Default to false on import
-                          },
-                          createdAt: Date.now(),
-                          lastInteraction: Date.now()
-                      };
-                      
-                      await saveMediaItem(newItem);
-                      addedCount++;
-                  }
+              // Check if it's a full backup trying to be imported as catalog
+              if (data.profile) {
+                   setPendingImport({ library: data.library });
+                   // The modal will handle the confirmation now
+              } else {
+                   // Direct import if it's just a catalog
+                   processCatalogImport(data.library);
               }
-
-              const updatedLibrary = await getLibrary();
-              setLibrary(updatedLibrary);
-              setIsLoading(false);
-              setIsSettingsOpen(false);
-              alert(`Catálogo importado. Se agregaron ${addedCount} obras nuevas.`);
 
           } catch (error) {
               console.error("Import error", error);
-              alert("Error al procesar el archivo de catálogo.");
+              showToast("Error al procesar archivo", "error");
               setIsLoading(false);
           }
       };
       reader.readAsText(file);
+  };
+
+  const processCatalogImport = async (incomingItems: MediaItem[]) => {
+       setIsLoading(true);
+       setLoadingMessage('Analizando obras...');
+       
+       const itemsToImport: MediaItem[] = [];
+
+       // Pre-filter duplicates to save time during batch write
+       for (const item of incomingItems) {
+           const exists = library.some(existing => 
+               existing.aiData.title.toLowerCase() === item.aiData.title.toLowerCase() && 
+               existing.aiData.mediaType === item.aiData.mediaType
+           );
+
+           if (!exists) {
+               const newItem: MediaItem = {
+                   ...item,
+                   id: uuidv4(), 
+                   trackingData: {
+                       ...item.trackingData,
+                       status: 'Sin empezar',
+                       watchedEpisodes: 0,
+                       accumulated_consumption: 0,
+                       rating: '',
+                       emotionalTags: [],
+                       favoriteCharacters: [],
+                       comment: '',
+                       customLinks: [],
+                       is_favorite: false
+                   },
+                   createdAt: Date.now(),
+                   lastInteraction: Date.now()
+               };
+               itemsToImport.push(newItem);
+           }
+       }
+       
+       if (itemsToImport.length > 0) {
+            setLoadingMessage('Importando catálogo...');
+            await importItemsInBatch(itemsToImport, (current, total) => {
+                 setLoadingMessage(`Importando: ${current}/${total}`);
+            });
+       }
+
+       const updatedLibrary = await getLibrary();
+       setLibrary(updatedLibrary);
+       setIsLoading(false);
+       setLoadingMessage('');
+       setPendingImport(null); // Clear modal state
+       setIsSettingsOpen(false);
+       
+       if (itemsToImport.length > 0) {
+           showToast(`Se importaron ${itemsToImport.length} obras nuevas`, "success");
+       } else {
+           showToast("No se encontraron obras nuevas para importar", "info");
+       }
   };
 
 
@@ -638,8 +732,16 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-slate-200 font-sans selection:bg-primary selection:text-white flex flex-col pb-24 md:pb-0">
+    <div className="min-h-screen bg-background text-slate-200 font-sans selection:bg-primary selection:text-white flex flex-col pb-24 md:pb-0 relative">
       
+      {/* GLOBAL LOADING OVERLAY */}
+      {isLoading && (
+          <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center animate-fade-in">
+              <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+              <p className="text-white font-bold text-lg animate-pulse">{loadingMessage || 'Cargando...'}</p>
+          </div>
+      )}
+
       {/* Settings Modal */}
       <SettingsModal 
          isOpen={isSettingsOpen} 
@@ -1025,6 +1127,40 @@ export default function App() {
                 </div>
             </div>
         </div>
+      )}
+
+      {/* Import Merge Confirmation Modal */}
+      {pendingImport && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+             <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-md w-full animate-fade-in-up">
+                 <div className="flex flex-col items-center text-center">
+                    <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4">
+                        <GitMerge className="w-6 h-6 text-yellow-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Fusión de Copia de Seguridad</h3>
+                    <p className="text-slate-400 mb-6 text-sm">
+                        Este archivo es un backup completo (incluye perfil). 
+                        ¿Deseas <strong>ignorar el perfil</strong> e importar solo las 
+                        <strong className="text-white"> {pendingImport.library.length} obras </strong> 
+                        para fusionarlas con tu biblioteca actual?
+                    </p>
+                    <div className="flex gap-3 w-full">
+                        <button 
+                            onClick={() => setPendingImport(null)}
+                            className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors font-medium"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            onClick={() => processCatalogImport(pendingImport.library)}
+                            className="flex-1 px-4 py-2 bg-primary hover:bg-indigo-600 text-white rounded-lg transition-colors font-bold shadow-lg"
+                        >
+                            Sí, fusionar
+                        </button>
+                    </div>
+                 </div>
+             </div>
+          </div>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { UserProfile, THEME_COLORS } from '../types';
+import { useToast } from '../context/ToastContext';
 import { Sparkles, Key, Lock, Eye, EyeOff, Upload, UserCircle, ArrowRight } from 'lucide-react';
 
 interface OnboardingProps {
@@ -9,6 +10,7 @@ interface OnboardingProps {
 }
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) => {
+  const { showToast } = useToast();
   const [username, setUsername] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -24,7 +26,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password && password !== confirmPassword) {
-        alert("Las contraseñas no coinciden");
+        showToast("Las contraseñas no coinciden", "error");
         return;
     }
     if (username.trim() && apiKey.trim()) {
@@ -35,6 +37,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
         apiKey: apiKey.trim(),
         password: password.trim() || undefined
       });
+      showToast(`¡Bienvenido, ${username}!`, "success");
     }
   };
 
@@ -74,7 +77,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
   };
 
   const processAvatarFile = (file: File) => {
-      if (!file.type.startsWith('image/')) return;
+      if (!file.type.startsWith('image/')) {
+        showToast("El archivo debe ser una imagen válida", "error");
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
           if (e.target?.result) setAvatarUrl(e.target.result as string);

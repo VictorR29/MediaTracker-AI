@@ -1,7 +1,7 @@
 
-
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
+import { useToast } from '../context/ToastContext';
 import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge } from 'lucide-react';
 
 interface MediaCardProps {
@@ -13,6 +13,7 @@ interface MediaCardProps {
 }
 
 export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false, onDelete, username }) => {
+  const { showToast } = useToast();
   const [tracking, setTracking] = useState<UserTrackingData>(item.trackingData);
   const [progressPercent, setProgressPercent] = useState(0);
   const [characterInput, setCharacterInput] = useState('');
@@ -136,6 +137,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
        const updated = { ...tracking, status: 'Completado' as const };
        setTracking(updated);
        onUpdate({ ...item, trackingData: updated, lastInteraction: Date.now() }); // Consumption
+       showToast("¡Obra completada! Felicitaciones 🎉", "success");
        return;
     }
 
@@ -152,6 +154,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     };
     setTracking(updated);
     onUpdate({ ...item, trackingData: updated, lastInteraction: Date.now() }); // Consumption
+    showToast(`Temporada ${tracking.currentSeason} terminada. ¡A por la siguiente!`, "success");
   };
 
   const handleMovieToggle = () => {
@@ -174,6 +177,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
       const newTimestamp = updated.status === 'Completado' ? Date.now() : item.lastInteraction;
 
       onUpdate({ ...item, trackingData: updated, lastInteraction: newTimestamp });
+      
+      if (!isCompleted) showToast("Película marcada como vista", "success");
   };
 
   const toggleTag = (tag: string) => {
@@ -270,6 +275,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
       const updatedLinks = [...(tracking.customLinks || []), newLink];
       handleInputChange('customLinks', updatedLinks);
       setCustomLinkUrl('');
+      showToast("Enlace añadido", "success");
   };
 
   const removeCustomLink = (id: string) => {
@@ -358,7 +364,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
   const processFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert("Por favor selecciona un archivo de imagen válido.");
+      showToast("Por favor selecciona un archivo de imagen válido.", "error");
       return;
     }
 
@@ -383,6 +389,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                 },
                 lastInteraction: item.lastInteraction // Preserve existing timestamp
             });
+            showToast("Imagen actualizada con éxito", "success");
 
         } catch (error) {
             console.error("Error processing image color", error);
@@ -406,7 +413,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     const shareText = `📺 *${title}*\n⭐ Calificación: ${rating || 'Sin calificar'}\n🎭 Mood: ${emotionalTags.join(', ') || 'N/A'}\n📝 "${comment || 'Sin comentarios'}"\n\nTracked with MediaTracker AI`;
     
     navigator.clipboard.writeText(shareText);
-    alert("¡Recomendación copiada al portapapeles! Lista para compartir.");
+    showToast("¡Recomendación copiada al portapapeles!", "success");
   };
 
   const triggerFileInput = () => fileInputRef.current?.click();

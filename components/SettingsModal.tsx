@@ -1,8 +1,7 @@
 
-
-
 import React, { useState, useRef } from 'react';
 import { UserProfile } from '../types';
+import { useToast } from '../context/ToastContext';
 import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -19,6 +18,7 @@ interface SettingsModalProps {
 export const SettingsModal: React.FC<SettingsModalProps> = ({ 
     isOpen, onClose, userProfile, onUpdateProfile, onImportBackup, onExportBackup, onImportCatalog, onExportCatalog
 }) => {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'data'>('profile');
   const [username, setUsername] = useState(userProfile.username);
   const [avatarUrl, setAvatarUrl] = useState(userProfile.avatarUrl || '');
@@ -27,6 +27,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
+  // Custom Confirm State
+  const [showDeletePasswordConfirm, setShowDeletePasswordConfirm] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const catalogInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +40,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleSaveProfile = () => {
       const updatedProfile = { ...userProfile, username, avatarUrl };
       onUpdateProfile(updatedProfile);
-      alert("Perfil actualizado correctamente.");
+      showToast("Perfil actualizado correctamente", "success");
   };
 
   const handleSaveSecurity = () => {
@@ -48,16 +51,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
      }
      
      onUpdateProfile(updatedProfile);
-     alert("Configuración de seguridad actualizada.");
+     showToast("Configuración de seguridad actualizada", "success");
   };
 
-  const handleRemovePassword = () => {
-      if (confirm("¿Estás seguro de querer eliminar la contraseña? Tu colección será accesible para cualquiera en este dispositivo.")) {
-          const updatedProfile = { ...userProfile, password: undefined };
-          setPassword('');
-          setNewPassword('');
-          onUpdateProfile(updatedProfile);
-      }
+  const requestRemovePassword = () => {
+      setShowDeletePasswordConfirm(true);
+  };
+
+  const confirmRemovePassword = () => {
+      const updatedProfile = { ...userProfile, password: undefined };
+      setPassword('');
+      setNewPassword('');
+      onUpdateProfile(updatedProfile);
+      setShowDeletePasswordConfirm(false);
+      showToast("Contraseña eliminada. Acceso libre.", "warning");
   };
 
   const triggerImportBackup = () => {
@@ -111,7 +118,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const processAvatarFile = (file: File) => {
-      if (!file.type.startsWith('image/')) return;
+      if (!file.type.startsWith('image/')) {
+        showToast("Archivo no válido. Debe ser una imagen.", "error");
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
           if (e.target?.result) setAvatarUrl(e.target.result as string);
@@ -167,7 +177,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-slate-800/20">
+            <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-slate-800/20 relative">
                 {activeTab === 'profile' && (
                     <div className="space-y-6 animate-fade-in">
                         <div>
@@ -241,7 +251,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             </h3>
                             <div className="space-y-3">
                                 <button 
-                                    onClick={onExportBackup}
+                                    onClick={() => { onExportBackup(); showToast("Generando backup optimizado...", "info"); }}
                                     className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-between group"
                                 >
                                     <span className="flex items-center gap-2">
@@ -270,7 +280,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     accept=".json,application/json" 
                                 />
                                 <p className="text-xs text-slate-500 italic px-1">
-                                    * Contiene tu API Key y progreso. No compartir.
+                                    * Contiene tu API Key y progreso.
                                 </p>
                             </div>
                         </div>
@@ -282,7 +292,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             </h3>
                             <div className="space-y-3">
                                 <button 
-                                    onClick={onExportCatalog}
+                                    onClick={() => { onExportCatalog(); showToast("Generando catálogo optimizado...", "info"); }}
                                     className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-between group"
                                 >
                                     <span className="flex items-center gap-2">
@@ -309,7 +319,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     accept=".json,application/json" 
                                 />
                                 <p className="text-xs text-slate-500 italic px-1">
-                                    * Solo exporta la lista de obras. Excluye progreso, notas y calificaciones. Ideal para compartir con amigos.
+                                    * Solo exporta la lista de obras. Excluye progreso y notas.
                                 </p>
                             </div>
                         </div>
@@ -317,7 +327,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 )}
 
                 {activeTab === 'security' && (
-                    <div className="space-y-6 animate-fade-in">
+                    <div className="space-y-6 animate-fade-in relative">
                         {/* API Key Section */}
                         <div>
                             <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
@@ -349,7 +359,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         <CheckCircle2 className="w-4 h-4" /> Contraseña activa
                                     </span>
                                     <button 
-                                        onClick={handleRemovePassword}
+                                        onClick={requestRemovePassword}
                                         className="text-xs text-red-400 hover:text-red-300 hover:underline"
                                     >
                                         Eliminar protección
@@ -386,6 +396,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 Guardar Cambios
                             </button>
                         </div>
+
+                        {/* Custom Confirmation Modal Overlay */}
+                        {showDeletePasswordConfirm && (
+                            <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-10 rounded-xl">
+                                <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
+                                    <AlertTriangle className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
+                                    <h3 className="text-lg font-bold text-white mb-2">¿Eliminar Contraseña?</h3>
+                                    <p className="text-sm text-slate-400 mb-6">
+                                        Cualquiera con acceso a este dispositivo podrá ver tu biblioteca completa.
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <button 
+                                            onClick={() => setShowDeletePasswordConfirm(false)}
+                                            className="flex-1 px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button 
+                                            onClick={confirmRemovePassword}
+                                            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

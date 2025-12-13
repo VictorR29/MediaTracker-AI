@@ -1,8 +1,16 @@
+
 <!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MediaTracker" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/6366f1/ffffff.png?text=MT&font=roboto" />
+    
     <title>MediaTracker AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -19,6 +27,7 @@
             animation: {
               'fade-in': 'fadeIn 0.5s ease-out',
               'fade-in-up': 'fadeInUp 0.5s ease-out',
+              'slide-in-right': 'slideInRight 0.3s ease-out',
             },
             keyframes: {
               fadeIn: {
@@ -28,6 +37,10 @@
               fadeInUp: {
                 '0%': { opacity: '0', transform: 'translateY(20px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              slideInRight: {
+                '0%': { opacity: '0', transform: 'translateX(100%)' },
+                '100%': { opacity: '1', transform: 'translateX(0)' },
               }
             }
           }
@@ -48,6 +61,7 @@
         width: 100%;
         max-width: 100vw;
         position: relative;
+        -webkit-tap-highlight-color: transparent;
       }
       /* Custom scrollbar for webkit */
       ::-webkit-scrollbar {
