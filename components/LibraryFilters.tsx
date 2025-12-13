@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Search, ArrowUpDown, Tags, Filter, X, Check, Star } from 'lucide-react';
 import { RATING_OPTIONS } from '../types';
@@ -95,6 +94,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                     <option value="All">Todos</option>
                     <option value="Anime">Anime</option>
                     <option value="Serie">Serie</option>
+                    <option value="Pelicula">Película</option>
                     <option value="Manhwa">Manhwa</option>
                     <option value="Manga">Manga</option>
                     <option value="Comic">Comic</option>
@@ -187,7 +187,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                      <div className="space-y-2">
                         <label className="text-xs text-slate-500 font-bold uppercase tracking-wider">Tipo de Medio</label>
                         <div className="grid grid-cols-2 gap-2">
-                             {['All', 'Anime', 'Serie', 'Pelicula', 'Manhwa', 'Libro'].map(opt => (
+                             {['All', 'Anime', 'Serie', 'Pelicula', 'Manhwa', 'Manga', 'Libro', 'Comic'].map(opt => (
                                  <button
                                     key={opt}
                                     onClick={() => handleChange('type', opt)}
@@ -197,7 +197,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                                         : 'bg-slate-800 border-slate-700 text-slate-400'
                                     }`}
                                  >
-                                     {opt === 'All' ? 'Todos' : opt}
+                                     {opt === 'All' ? 'Todos' : (opt === 'Pelicula' ? 'Película' : opt)}
                                  </button>
                              ))}
                         </div>
