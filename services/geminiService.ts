@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI } from "@google/genai";
 import { AIWorkData, normalizeGenre } from "../types";
 
@@ -171,4 +170,54 @@ export const getRecommendations = async (
     console.error("Recommendation Error:", error);
     return [];
   }
+};
+
+export const generateReviewSummary = async (
+    title: string,
+    rating: string,
+    tags: string[],
+    comment: string,
+    apiKey: string
+): Promise<string> => {
+    const ai = new GoogleGenAI({ apiKey });
+    const modelId = "gemini-2.5-flash";
+
+    const prompt = `
+    Actúa como un asistente personal de redacción para reseñas de entretenimiento.
+    
+    TU TAREA:
+    Sintetizar la opinión de un usuario sobre la obra "${title}" en un solo párrafo corto, cohesivo y natural (máximo 4 líneas).
+    
+    INPUTS DEL USUARIO:
+    1. Calificación: "${rating || 'Sin calificar'}".
+       - Esto define el TONO GENERAL. 
+       - Ejemplo: "God Tier" = tono eufórico/maravillado. "Malo" = tono crítico/decepcionado. "Regular" = tono tibio.
+    2. Etiquetas Emocionales: [${tags.join(', ')}].
+       - Úsalas como los puntos clave o adjetivos de la descripción.
+    3. Comentario Personal: "${comment}".
+       - Intégralo orgánicamente en el texto, preferiblemente como conclusión o matiz personal.
+    
+    REGLAS DE REDACCIÓN:
+    - Escribe en PRIMERA PERSONA (como si fueras el usuario).
+    - NO hagas listas. Debe ser prosa fluida.
+    - NO digas frases robóticas como "Mi calificación es X". Demuestra la calificación con tus palabras.
+    - Si el comentario personal contradice la calificación, dales sentido (ej: "Aunque es buena, el final me decepcionó").
+    - IDIOMA: Español neutro.
+    
+    OUTPUT:
+    Devuelve ÚNICAMENTE el párrafo de texto generado. Nada más.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelId,
+            contents: prompt,
+        });
+        return response.text?.trim() || "No se pudo generar la reseña.";
+    } catch (error) {
+        console.error("Generate Review Error:", error);
+        // Fallback simple construction in case of error
+        const tagText = tags.length > 0 ? `Destaco: ${tags.join(', ')}.` : '';
+        return `Acabo de ver "${title}". ${rating ? `Mi veredicto: ${rating}.` : ''} ${tagText} ${comment}`;
+    }
 };

@@ -984,6 +984,7 @@ export default function App() {
                       onUpdate={handleUpdateMedia} 
                       isNew={true}
                       username={userProfile.username}
+                      apiKey={userProfile.apiKey}
                    />
                 </div>
               )}
@@ -1039,6 +1040,7 @@ export default function App() {
                  onUpdate={handleUpdateMedia} 
                  onDelete={() => handleDeleteRequest(currentMedia)}
                  username={userProfile.username}
+                 apiKey={userProfile.apiKey}
               />
            </div>
         )}

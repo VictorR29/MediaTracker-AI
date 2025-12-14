@@ -2,7 +2,8 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { useToast } from '../context/ToastContext';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge } from 'lucide-react';
+import { generateReviewSummary } from '../services/geminiService';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -10,9 +11,10 @@ interface MediaCardProps {
   isNew?: boolean;
   onDelete?: () => void;
   username?: string;
+  apiKey?: string; // New prop for AI generation
 }
 
-export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false, onDelete, username }) => {
+export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false, onDelete, username, apiKey }) => {
   const { showToast } = useToast();
   const [tracking, setTracking] = useState<UserTrackingData>(item.trackingData);
   const [progressPercent, setProgressPercent] = useState(0);
@@ -21,6 +23,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [imgHasError, setImgHasError] = useState(false);
+  const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+  
+  // Share Modal State
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareTextContent, setShareTextContent] = useState('');
 
   // Use the AI provided color or fall back to a default Indigo-ish color if missing
   const dynamicColor = item.aiData.primaryColor || '#6366f1';
@@ -407,13 +414,53 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     reader.readAsDataURL(file);
   };
 
-  const handleShare = () => {
+  // --- MODIFIED SHARE LOGIC TO PREVENT PERMISSION ERRORS ---
+  const handleShare = async () => {
     const { title } = item.aiData;
     const { rating, emotionalTags, comment } = tracking;
-    const shareText = `📺 *${title}*\n⭐ Calificación: ${rating || 'Sin calificar'}\n🎭 Mood: ${emotionalTags.join(', ') || 'N/A'}\n📝 "${comment || 'Sin comentarios'}"\n\nTracked with MediaTracker AI`;
-    
-    navigator.clipboard.writeText(shareText);
-    showToast("¡Recomendación copiada al portapapeles!", "success");
+
+    // Helper to format simple text
+    const getSimpleText = () => `📺 *${title}*\n⭐ Calificación: ${rating || 'Sin calificar'}\n🎭 Mood: ${emotionalTags.join(', ') || 'N/A'}\n📝 "${comment || 'Sin comentarios'}"\n\nTracked with MediaTracker AI`;
+
+    if (apiKey) {
+        setIsGeneratingShare(true);
+        let textToShare = "";
+        try {
+            const synthesizedReview = await generateReviewSummary(title, rating, emotionalTags, comment, apiKey);
+            textToShare = `📺 ${title}\n⭐ ${rating || 'Sin calificar'}\n\n${synthesizedReview}\n\n#MediaTrackerAI #Recomendación`;
+        } catch (error) {
+            console.error("Error generating review", error);
+            showToast("Error de IA. Usando formato simple.", "warning");
+            textToShare = getSimpleText();
+        } finally {
+            setIsGeneratingShare(false);
+            setShareTextContent(textToShare);
+            setShowShareModal(true); // Open Modal instead of writing directly to clipboard
+        }
+    } else {
+        // Fallback or No API Key
+        const shareText = getSimpleText();
+        
+        // Try direct copy first since no async delay involved
+        try {
+            await navigator.clipboard.writeText(shareText);
+            showToast("¡Recomendación copiada al portapapeles!", "success");
+        } catch (e) {
+            // If even immediate copy fails, use modal
+            setShareTextContent(shareText);
+            setShowShareModal(true);
+        }
+    }
+  };
+
+  const executeCopy = async () => {
+      try {
+          await navigator.clipboard.writeText(shareTextContent);
+          showToast("¡Copiado!", "success");
+          setShowShareModal(false);
+      } catch (e) {
+          showToast("Error al copiar. Por favor selecciona y copia manualmente.", "error");
+      }
   };
 
   const triggerFileInput = () => fileInputRef.current?.click();
@@ -993,7 +1040,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                             }`}
                             style={isSelected ? {
                                 backgroundColor: `${dynamicColor}`, 
-                                borderColor: dynamicColor,
+                                borderColor: dynamicColor, 
                                 color: 'white'
                             } : {}}
                             title={config.label}
@@ -1006,13 +1053,23 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                   </div>
                 </div>
                 
-                {/* Share Button */}
+                {/* Share Button with AI Synthesis Support */}
                 <button 
                   onClick={handleShare}
-                  className="w-full flex items-center justify-center gap-2 py-2 mt-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-colors"
+                  disabled={isGeneratingShare}
+                  className="w-full flex items-center justify-center gap-2 py-2 mt-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-colors disabled:opacity-70 disabled:cursor-not-allowed group/share"
                 >
-                  <Share2 className="w-3 h-3" />
-                  Copiar Mi Recomendación
+                  {isGeneratingShare ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                        <span className="text-primary font-bold">Generando con IA...</span>
+                      </>
+                  ) : (
+                      <>
+                        {apiKey ? <Sparkles className="w-3 h-3 text-indigo-400 group-hover/share:text-indigo-300" /> : <Share2 className="w-3 h-3" />}
+                        {apiKey ? "Copiar Reseña IA" : "Copiar Recomendación"}
+                      </>
+                  )}
                 </button>
 
               </div>
@@ -1117,6 +1174,46 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
           
         </div>
       </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="bg-surface border border-slate-700 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
+                <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800/50">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Share2 className="w-5 h-5 text-indigo-400" />
+                        Compartir Reseña
+                    </h3>
+                    <button onClick={() => setShowShareModal(false)} className="text-slate-400 hover:text-white">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+                <div className="p-4">
+                    <p className="text-xs text-slate-400 mb-2">Puedes editar el texto antes de copiarlo.</p>
+                    <textarea 
+                        value={shareTextContent}
+                        onChange={(e) => setShareTextContent(e.target.value)}
+                        className="w-full h-40 bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-primary resize-none mb-4 font-mono"
+                    />
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => setShowShareModal(false)}
+                            className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            onClick={executeCopy}
+                            className="flex-1 px-4 py-2.5 bg-primary hover:bg-indigo-600 text-white rounded-lg font-bold shadow-lg flex items-center justify-center gap-2"
+                        >
+                            <Copy className="w-4 h-4" />
+                            Copiar Texto
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
