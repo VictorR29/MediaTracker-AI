@@ -22,8 +22,12 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [currentMedia, setCurrentMedia] = useState<MediaItem | null>(null);
   const [library, setLibrary] = useState<MediaItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState<string>(''); // New: detailed loading state
+  
+  // States separated to avoid full screen modal on search
+  const [isLoading, setIsLoading] = useState(false); // Global Overlay (Imports/Backups)
+  const [isSearching, setIsSearching] = useState(false); // Search Bar specific loading
+  const [loadingMessage, setLoadingMessage] = useState<string>(''); 
+
   const [view, setView] = useState<'search' | 'library' | 'details' | 'stats' | 'discovery' | 'upcoming'>('search');
   const [dbReady, setDbReady] = useState(false);
   
@@ -150,8 +154,8 @@ export default function App() {
         return;
     }
 
-    setIsLoading(true);
-    setLoadingMessage('Consultando a Gemini AI...');
+    // UPDATE: Use local searching state to avoid global full-screen modal
+    setIsSearching(true);
     setCurrentMedia(null);
     setSearchError(null);
     setView('search');
@@ -162,8 +166,6 @@ export default function App() {
       // Check for soft failure/generic fallback
       if (aiData.synopsis.includes("No se pudo obtener información automática")) {
          setSearchError(aiData.synopsis); // Use the message returned by service
-         setIsLoading(false);
-         setLoadingMessage('');
          return;
       }
 
@@ -197,8 +199,7 @@ export default function App() {
       setSearchError("Hubo un error de conexión buscando la información. Intenta de nuevo.");
       showToast("Error de conexión con IA", "error");
     } finally {
-      setIsLoading(false);
-      setLoadingMessage('');
+      setIsSearching(false);
     }
   };
 
@@ -734,7 +735,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background text-slate-200 font-sans selection:bg-primary selection:text-white flex flex-col pb-24 md:pb-0 relative">
       
-      {/* GLOBAL LOADING OVERLAY */}
+      {/* GLOBAL LOADING OVERLAY (IMPORTS / BACKUPS ONLY) */}
       {isLoading && (
           <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center animate-fade-in">
               <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
@@ -956,7 +957,8 @@ export default function App() {
                  <p className="text-slate-400">Agrega anime, series, películas o libros a tu colección.</p>
               </div>
 
-              <SearchBar key={searchKey} onSearch={handleSearch} isLoading={isLoading} />
+              {/* SEARCH BAR receives isSearching (local state) */}
+              <SearchBar key={searchKey} onSearch={handleSearch} isLoading={isSearching} />
               
               {searchError && (
                 <div className="max-w-xl mx-auto mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-200 animate-fade-in">
