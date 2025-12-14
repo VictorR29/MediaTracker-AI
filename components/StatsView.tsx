@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
-import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film, Award, Medal, Scroll, Clapperboard, Book, Layout } from 'lucide-react';
+import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film, Award, Medal, Scroll, Clapperboard, Book, Layout, Hash, Heart } from 'lucide-react';
 
 interface StatsViewProps {
   library: MediaItem[];
@@ -52,6 +52,10 @@ interface StatsData {
   readingMinutes: number;
   // New: Total consumption units for Ranking
   totalConsumptionUnits: number;
+
+  // New: Distribution Data Maps (Minutes per Tag)
+  genreConsumption: Record<string, number>;
+  emotionConsumption: Record<string, number>;
 }
 
 export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUpdateProfile }) => {
@@ -59,6 +63,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
   
   // Obsession Widget State
   const [obsessionTab, setObsessionTab] = useState<string>('Anime');
+
+  // Consumption Distribution Widget State
+  const [distributionAxis, setDistributionAxis] = useState<'genre' | 'emotion'>('genre');
 
   const [animeDuration, setAnimeDuration] = useState(userProfile.preferences?.animeEpisodeDuration || 24);
   const [seriesDuration, setSeriesDuration] = useState(userProfile.preferences?.seriesEpisodeDuration || 45);
@@ -80,6 +87,16 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
       setIsSettingsOpen(false);
   };
 
+  const formatTime = (totalMins: number) => {
+        const days = Math.floor(totalMins / (24 * 60));
+        const hours = Math.floor((totalMins % (24 * 60)) / 60);
+        const mins = totalMins % 60;
+        
+        if (days > 0) return `${days}d ${hours}h`;
+        if (hours > 0) return `${hours}h ${mins}m`;
+        return `${mins}m`;
+    };
+
   const stats: StatsData = useMemo(() => {
     const total = library.length;
     const completed = library.filter(i => i.trackingData.status === 'Completado').length;
@@ -93,10 +110,11 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         typeCount[type] = (typeCount[type] || 0) + 1;
     });
 
-    // Genre Distribution
+    // Genre Distribution (Count based)
     const genreCount: Record<string, number> = {};
     library.forEach(item => {
-        item.aiData.genres.forEach(g => {
+        const genres = item.aiData.genres || [];
+        genres.forEach(g => {
             genreCount[g] = (genreCount[g] || 0) + 1;
         });
     });
@@ -129,7 +147,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
             // God Tier Genre Logic
             if (r.startsWith('God Tier')) {
-                item.aiData.genres.forEach(g => {
+                const genres = item.aiData.genres || [];
+                genres.forEach(g => {
                     godTierGenres[g] = (godTierGenres[g] || 0) + 1;
                 });
             }
@@ -149,11 +168,11 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
 
     // --- Personal Recap (Granular) Logic ---
-    const animeMin = userProfile.preferences?.animeEpisodeDuration || 24;
-    const seriesMin = userProfile.preferences?.seriesEpisodeDuration || 45;
-    const movieMin = userProfile.preferences?.movieDuration || 90;
-    const mangaMin = userProfile.preferences?.mangaChapterDuration || 3;
-    const bookMin = userProfile.preferences?.bookChapterDuration || 15;
+    const animeMin = animeDuration;
+    const seriesMin = seriesDuration;
+    const movieMin = movieDuration;
+    const mangaMin = mangaDuration;
+    const bookMin = bookDuration;
     
     // Counters
     let animeEpisodes = 0;
@@ -166,6 +185,10 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     let visualMinutes = 0;
     let readingMinutes = 0;
     
+    // Maps for Distribution Widget
+    const genreConsumption: Record<string, number> = {};
+    const emotionConsumption: Record<string, number> = {};
+
     // Raw Collection for Sorting Top 3
     const rawItemsByType: Record<string, ObsessionItem[]> = {
         'Anime': [],
@@ -229,6 +252,21 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 categoryKey = 'Libros/Novelas';
             }
 
+            // --- Distribution Logic (New) ---
+            if (itemTime > 0) {
+                // Axis 1: Genres
+                const genres = item.aiData.genres || [];
+                genres.forEach(g => {
+                    genreConsumption[g] = (genreConsumption[g] || 0) + itemTime;
+                });
+                
+                // Axis 2: Emotions
+                const emotions = item.trackingData.emotionalTags || [];
+                emotions.forEach(t => {
+                    emotionConsumption[t] = (emotionConsumption[t] || 0) + itemTime;
+                });
+            }
+
             // Push to raw collection for sorting
             if (categoryKey) {
                 rawItemsByType[categoryKey].push({
@@ -274,16 +312,6 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     const consumedBooks = countConsumed(['Libro']);
 
 
-    const formatTime = (totalMins: number) => {
-        const days = Math.floor(totalMins / (24 * 60));
-        const hours = Math.floor((totalMins % (24 * 60)) / 60);
-        const mins = totalMins % 60;
-        
-        if (days > 0) return `${days}d ${hours}h`;
-        if (hours > 0) return `${hours}h ${mins}m`;
-        return `${mins}m`;
-    };
-
     const totalConsumptionUnits = animeEpisodes + seriesEpisodes + moviesWatched + readingChapters + bookChapters;
 
     return { 
@@ -300,9 +328,13 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         readingTimeDisplay: formatTime(readingMinutes),
         consumedAnimes, consumedSeries, consumedMovies, consumedManhwas, consumedBooks,
         visualMinutes, readingMinutes,
-        totalConsumptionUnits
+        totalConsumptionUnits,
+
+        // New Distribution
+        genreConsumption,
+        emotionConsumption
     };
-  }, [library, userProfile.preferences]);
+  }, [library, animeDuration, seriesDuration, movieDuration, mangaDuration, bookDuration]);
 
   // Set default obsession tab
   useEffect(() => {
@@ -450,6 +482,59 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
             label: `${index + 1}.`
         };
     }
+  };
+
+  // --- Distribution Chart Helpers ---
+  const CHART_COLORS = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#64748b'];
+  
+  const getDistributionData = () => {
+      const sourceMap = distributionAxis === 'genre' ? stats.genreConsumption : stats.emotionConsumption;
+      const entries = Object.entries(sourceMap).sort((a, b) => b[1] - a[1]);
+      
+      const totalTime = entries.reduce((acc, curr) => acc + curr[1], 0);
+      if (totalTime === 0) return { chartData: [], othersPercent: 0 };
+
+      // Take top 6
+      const topEntries = entries.slice(0, 6);
+      const otherEntries = entries.slice(6);
+      const othersTime = otherEntries.reduce((acc, curr) => acc + curr[1], 0);
+
+      const chartData = topEntries.map((entry, idx) => ({
+          label: entry[0],
+          value: entry[1],
+          percent: (entry[1] / totalTime) * 100,
+          color: CHART_COLORS[idx % CHART_COLORS.length]
+      }));
+
+      if (othersTime > 0) {
+          chartData.push({
+              label: 'Otros',
+              value: othersTime,
+              percent: (othersTime / totalTime) * 100,
+              color: '#334155' // Slate-700 for Others
+          });
+      }
+
+      return { chartData, totalTime };
+  };
+
+  const { chartData, totalTime } = getDistributionData();
+
+  // Generate Conic Gradient String
+  const getConicGradient = () => {
+      if (chartData.length === 0) return 'conic-gradient(#1e293b 0% 100%)';
+      
+      let gradientStr = 'conic-gradient(';
+      let currentPercent = 0;
+      
+      chartData.forEach((slice, idx) => {
+          const endPercent = currentPercent + slice.percent;
+          gradientStr += `${slice.color} ${currentPercent}% ${endPercent}%${idx < chartData.length - 1 ? ', ' : ''}`;
+          currentPercent = endPercent;
+      });
+      
+      gradientStr += ')';
+      return gradientStr;
   };
 
   return (
@@ -654,6 +739,84 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                      <Layout className="w-10 h-10 text-slate-500 mb-2" />
                      <p className="text-sm font-medium text-slate-400">Sin datos en {obsessionTab}.</p>
                      <p className="text-xs text-slate-600">Registra progreso para ver tu ranking.</p>
+                </div>
+            )}
+       </div>
+
+       {/* DISTRIBUTION BY TAG WIDGET (NEW) */}
+       <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md transition-all">
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                     <span className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
+                         <PieChart className="w-4 h-4 text-emerald-500" /> Distribución de Consumo
+                     </span>
+                     <p className="text-sm text-slate-400 mt-1">
+                         Impacto en tu tiempo (ponderado por duración)
+                     </p>
+                </div>
+                
+                {/* Axis Selector */}
+                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                    <button 
+                        onClick={() => setDistributionAxis('genre')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${distributionAxis === 'genre' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        <Hash className="w-3 h-3" /> Géneros
+                    </button>
+                    <button 
+                        onClick={() => setDistributionAxis('emotion')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${distributionAxis === 'emotion' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        <Heart className="w-3 h-3" /> Emociones
+                    </button>
+                </div>
+            </div>
+
+            {chartData.length > 0 ? (
+                <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 justify-center">
+                    
+                    {/* The Chart */}
+                    <div className="relative w-48 h-48 md:w-56 md:h-56 flex-shrink-0">
+                        <div 
+                            className="w-full h-full rounded-full shadow-2xl transition-all duration-1000 ease-in-out"
+                            style={{ 
+                                background: getConicGradient(),
+                                boxShadow: '0 0 30px rgba(0,0,0,0.5)'
+                            }}
+                        />
+                        {/* Center Hole for Donut Effect (Optional, using full pie for now per request "Pastel") */}
+                        {/* <div className="absolute inset-4 bg-slate-900 rounded-full" /> */}
+                    </div>
+
+                    {/* The Legend */}
+                    <div className="flex-1 w-full md:w-auto">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+                            {chartData.map((slice, idx) => (
+                                <div key={idx} className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-3">
+                                        <div 
+                                            className="w-3 h-3 rounded-full shadow-sm"
+                                            style={{ backgroundColor: slice.color }}
+                                        />
+                                        <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors truncate max-w-[120px]" title={slice.label}>
+                                            {slice.label === 'Otros' ? 'Otros tags' : slice.label}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-slate-200">
+                                            {slice.percent.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="w-full text-center py-10 opacity-50 flex flex-col items-center bg-slate-800/50 rounded-xl border border-slate-700/50 border-dashed">
+                     <PieChart className="w-10 h-10 text-slate-500 mb-2" />
+                     <p className="text-sm font-medium text-slate-400">Sin datos suficientes.</p>
+                     <p className="text-xs text-slate-600">Añade tags a tus obras consumidas para ver este gráfico.</p>
                 </div>
             )}
        </div>
