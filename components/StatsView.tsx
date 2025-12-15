@@ -560,11 +560,11 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            
            {/* Visual Time Card */}
-           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 shadow-2xl transition-all hover:border-indigo-500/30">
+           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 shadow-2xl transition-all hover:border-indigo-500/30 flex flex-col">
                 {/* Decorative background glow */}
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-indigo-500/30 transition-colors duration-700"></div>
                 
-                <div className="relative z-10 flex flex-col h-full">
+                <div className="relative z-10 flex flex-col flex-1 w-full">
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-2.5 bg-indigo-500/20 rounded-xl text-indigo-400 ring-1 ring-inset ring-indigo-500/30">
@@ -627,11 +627,11 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
            </div>
 
            {/* Reading Time Card */}
-           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 shadow-2xl transition-all hover:border-emerald-500/30">
+           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 shadow-2xl transition-all hover:border-emerald-500/30 flex flex-col">
                 {/* Decorative background glow */}
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-emerald-500/30 transition-colors duration-700"></div>
                 
-                <div className="relative z-10 flex flex-col h-full">
+                <div className="relative z-10 flex flex-col flex-1 w-full">
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-2.5 bg-emerald-500/20 rounded-xl text-emerald-400 ring-1 ring-inset ring-emerald-500/30">
@@ -650,8 +650,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                         </span>
                     </div>
 
-                    {/* Chips Grid */}
-                    <div className="grid grid-cols-2 gap-3 mt-auto">
+                    {/* Chips Grid - Stacked on Desktop to match height of Visual Card */}
+                    <div className="grid grid-cols-2 md:grid-cols-1 gap-3 mt-auto">
                         {/* Manhwa/Manga Chip */}
                         <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip">
                             <div className="flex items-center gap-2 mb-2">
