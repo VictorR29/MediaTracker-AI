@@ -2,6 +2,44 @@
 import { GoogleGenAI } from "@google/genai";
 import { AIWorkData, normalizeGenre } from "../types";
 
+// Helper to reliably extract JSON from potential markdown or messy text
+const extractJSON = (text: string, isArray: boolean = false): any => {
+  const openChar = isArray ? '[' : '{';
+  const closeChar = isArray ? ']' : '}';
+
+  // 1. Try identifying markdown code blocks first
+  const codeBlockRegex = isArray 
+    ? /```(?:json)?\s*(\[[\s\S]*?\])\s*```/ 
+    : /```(?:json)?\s*(\{[\s\S]*?\})\s*```/;
+  
+  const markdownMatch = text.match(codeBlockRegex);
+  if (markdownMatch) {
+    try {
+      return JSON.parse(markdownMatch[1]);
+    } catch (e) {
+      console.warn("Failed to parse JSON from markdown block, falling back to heuristic extraction.");
+    }
+  }
+
+  // 2. Heuristic extraction: Find first open brace and try closing braces from the end
+  const firstOpen = text.indexOf(openChar);
+  if (firstOpen !== -1) {
+    let currentClose = text.lastIndexOf(closeChar);
+    
+    while (currentClose > firstOpen) {
+      const candidate = text.substring(firstOpen, currentClose + 1);
+      try {
+        return JSON.parse(candidate);
+      } catch (e) {
+        // If parsing fails, try the next closing brace found backwards
+        currentClose = text.lastIndexOf(closeChar, currentClose - 1);
+      }
+    }
+  }
+
+  throw new Error(`No valid JSON ${isArray ? 'Array' : 'Object'} found in response.`);
+};
+
 export const searchMediaInfo = async (query: string, apiKey: string): Promise<AIWorkData> => {
   // Initialize AI client with the user-provided key
   const ai = new GoogleGenAI({ apiKey });
@@ -63,10 +101,8 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
       .filter((web: any) => web)
       .map((web: any) => ({ title: web.title, uri: web.uri })) || [];
 
-    // Attempt to parse JSON from the response text
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
+    try {
+      const parsed = extractJSON(text, false);
       
       // Normalize Genres immediately upon retrieval
       const normalizedGenres = Array.isArray(parsed.genres)
@@ -79,7 +115,8 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
         genres: uniqueGenres,
         sourceUrls: sources
       };
-    } else {
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError, "Raw Text:", text);
       throw new Error("Could not parse AI response.");
     }
 
@@ -158,14 +195,7 @@ export const getRecommendations = async (
     });
 
     const text = response.text || "";
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    } else {
-      console.warn("Could not parse recommendations JSON", text);
-      return [];
-    }
+    return extractJSON(text, true);
   } catch (error) {
     console.error("Recommendation Error:", error);
     return [];

@@ -14,7 +14,7 @@ import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
 import { MediaItem, UserProfile, normalizeGenre } from './types';
 import { useToast } from './context/ToastContext';
-import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark, Search, GitMerge, Loader2 } from 'lucide-react';
+import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark, Search, GitMerge, Loader2, PenTool, Edit3 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
@@ -29,6 +29,8 @@ export default function App() {
   const [loadingMessage, setLoadingMessage] = useState<string>(''); 
 
   const [view, setView] = useState<'search' | 'library' | 'details' | 'stats' | 'discovery' | 'upcoming'>('search');
+  const [searchMode, setSearchMode] = useState<'auto' | 'manual'>('auto');
+
   const [dbReady, setDbReady] = useState(false);
   
   // App Lock State
@@ -41,6 +43,10 @@ export default function App() {
   // Search State
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchKey, setSearchKey] = useState(0); // Used to reset search bar
+
+  // Manual Entry State
+  const [manualTitle, setManualTitle] = useState('');
+  const [manualType, setManualType] = useState('Anime');
 
   // Delete Confirmation State
   const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null);
@@ -196,11 +202,56 @@ export default function App() {
       setCurrentMedia(newItem);
     } catch (error) {
       console.error("Error searching media", error);
-      setSearchError("Hubo un error de conexión buscando la información. Intenta de nuevo.");
+      setSearchError("Límite de Búsqueda o Error de API.");
       showToast("Error de conexión con IA", "error");
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleManualEntry = () => {
+      if (!manualTitle.trim()) {
+          showToast("El título es obligatorio", "error");
+          return;
+      }
+
+      const newItem: MediaItem = {
+          id: uuidv4(),
+          aiData: {
+              title: manualTitle,
+              originalTitle: "",
+              mediaType: manualType as any,
+              synopsis: "Sinopsis pendiente...",
+              genres: [],
+              status: "Desconocido",
+              totalContent: "?",
+              coverDescription: "",
+              coverImage: "",
+              sourceUrls: [],
+              primaryColor: "#6366f1"
+          },
+          createdAt: Date.now(),
+          lastInteraction: Date.now(),
+          trackingData: {
+            status: 'Sin empezar',
+            currentSeason: 1,
+            totalSeasons: 1,
+            watchedEpisodes: 0,
+            totalEpisodesInSeason: manualType === 'Pelicula' ? 1 : 12,
+            accumulated_consumption: 0,
+            emotionalTags: [],
+            favoriteCharacters: [],
+            rating: '',
+            comment: '',
+            recommendedBy: '',
+            isSaga: false,
+            is_favorite: false
+          }
+      };
+
+      setCurrentMedia(newItem);
+      setManualTitle('');
+      setSearchError(null);
   };
 
   const handleUpdateMedia = async (updatedItem: MediaItem) => {
@@ -323,6 +374,7 @@ export default function App() {
       // Clear the search view and reset the search bar
       setCurrentMedia(null);
       setSearchKey(prev => prev + 1);
+      setManualTitle('');
       showToast("Agregado a la biblioteca", "success");
     }
   };
@@ -950,39 +1002,114 @@ export default function App() {
         {view === 'search' && (
            <div className="w-full max-w-5xl mx-auto px-2 animate-fade-in">
               
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
                     ¿Qué historia descubriste hoy?
                  </h2>
                  <p className="text-slate-400">Agrega anime, series, películas o libros a tu colección.</p>
               </div>
 
-              {/* SEARCH BAR receives isSearching (local state) */}
-              <SearchBar key={searchKey} onSearch={handleSearch} isLoading={isSearching} />
-              
-              {searchError && (
-                <div className="max-w-xl mx-auto mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-200 animate-fade-in">
-                   <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                   <p className="text-sm font-medium">{searchError}</p>
-                </div>
+              {/* Mode Toggle Tabs */}
+              <div className="max-w-md mx-auto mb-6 bg-slate-800 p-1 rounded-lg border border-slate-700 grid grid-cols-2">
+                  <button 
+                    onClick={() => { setSearchMode('auto'); setCurrentMedia(null); }}
+                    className={`flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all ${searchMode === 'auto' ? 'bg-primary text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  >
+                      <Search className="w-4 h-4" /> Buscar (Auto)
+                  </button>
+                  <button 
+                    onClick={() => { setSearchMode('manual'); setCurrentMedia(null); }}
+                    className={`flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all ${searchMode === 'manual' ? 'bg-primary text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  >
+                      <Edit3 className="w-4 h-4" /> Ingreso Manual
+                  </button>
+              </div>
+
+              {/* Conditional View: Search Bar vs Manual Form */}
+              {searchMode === 'auto' ? (
+                  <>
+                    <SearchBar key={searchKey} onSearch={handleSearch} isLoading={isSearching} />
+                    
+                    {searchError && (
+                        <div className="max-w-xl mx-auto mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex flex-col md:flex-row items-center gap-4 text-red-200 animate-fade-in">
+                            <div className="flex items-center gap-3">
+                                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                <p className="text-sm font-medium">{searchError}</p>
+                            </div>
+                            <button 
+                                onClick={() => { setSearchMode('manual'); setSearchError(null); }}
+                                className="text-xs bg-red-500/20 hover:bg-red-500/30 text-white px-3 py-1.5 rounded-lg border border-red-500/30 transition-colors whitespace-nowrap"
+                            >
+                                Usar Ingreso Manual
+                            </button>
+                        </div>
+                    )}
+                  </>
+              ) : (
+                  <div className="max-w-xl mx-auto mb-8 bg-surface border border-slate-700 rounded-xl p-6 animate-fade-in shadow-xl">
+                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                          <PenTool className="w-5 h-5 text-indigo-400" /> Crear Nueva Entrada
+                      </h3>
+                      <div className="space-y-4">
+                          <div>
+                              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Título</label>
+                              <input 
+                                  type="text" 
+                                  value={manualTitle}
+                                  onChange={(e) => setManualTitle(e.target.value)}
+                                  placeholder="Ej: Solo Leveling"
+                                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-primary outline-none"
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Tipo de Medio</label>
+                              <select 
+                                  value={manualType}
+                                  onChange={(e) => setManualType(e.target.value)}
+                                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-primary outline-none"
+                              >
+                                 <option value="Anime">Anime</option>
+                                 <option value="Serie">Serie</option>
+                                 <option value="Pelicula">Película</option>
+                                 <option value="Manhwa">Manhwa</option>
+                                 <option value="Manga">Manga</option>
+                                 <option value="Libro">Libro</option>
+                                 <option value="Comic">Comic</option>
+                                 <option value="Otro">Otro</option>
+                              </select>
+                          </div>
+                          <button 
+                              onClick={handleManualEntry}
+                              disabled={!manualTitle.trim()}
+                              className="w-full bg-primary hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                              <PlusCircle className="w-5 h-5" />
+                              Crear Borrador
+                          </button>
+                      </div>
+                  </div>
               )}
 
+              {/* Result Preview (Used for both Auto and Manual created items) */}
               {currentMedia && !library.find(i => i.id === currentMedia.id) && (
                 <div className="animate-fade-in-up pb-10">
                    <div className="flex justify-between items-center mb-4 px-2">
-                      <h3 className="text-xl font-bold text-white">Resultado de Búsqueda</h3>
+                      <h3 className="text-xl font-bold text-white">
+                          {searchMode === 'manual' ? 'Borrador de Entrada' : 'Resultado de Búsqueda'}
+                      </h3>
                       <button 
                         onClick={addToLibrary}
                         className="bg-primary hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg shadow-indigo-500/20 transition-all transform hover:-translate-y-1 flex items-center gap-2"
                       >
                          <PlusCircle className="w-5 h-5" />
-                         Agregar a Biblioteca
+                         Confirmar y Guardar
                       </button>
                    </div>
                    <MediaCard 
                       item={currentMedia} 
                       onUpdate={handleUpdateMedia} 
                       isNew={true}
+                      initialEditMode={searchMode === 'manual'} // Auto-enable edit mode for manual entries
                       username={userProfile.username}
                       apiKey={userProfile.apiKey}
                    />

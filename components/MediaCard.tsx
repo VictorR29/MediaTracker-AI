@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { useToast } from '../context/ToastContext';
 import { generateReviewSummary } from '../services/geminiService';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy, Pencil, Save } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -12,9 +12,10 @@ interface MediaCardProps {
   onDelete?: () => void;
   username?: string;
   apiKey?: string; // New prop for AI generation
+  initialEditMode?: boolean; // New prop to start in edit mode
 }
 
-export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false, onDelete, username, apiKey }) => {
+export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false, onDelete, username, apiKey, initialEditMode = false }) => {
   const { showToast } = useToast();
   const [tracking, setTracking] = useState<UserTrackingData>(item.trackingData);
   const [progressPercent, setProgressPercent] = useState(0);
@@ -25,6 +26,16 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const [imgHasError, setImgHasError] = useState(false);
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   
+  // Metadata Edit State
+  const [isEditingMetadata, setIsEditingMetadata] = useState(initialEditMode);
+  const [editTitle, setEditTitle] = useState(item.aiData.title);
+  const [editOriginalTitle, setEditOriginalTitle] = useState(item.aiData.originalTitle || '');
+  const [editSynopsis, setEditSynopsis] = useState(item.aiData.synopsis);
+  const [editGenres, setEditGenres] = useState(item.aiData.genres.join(', '));
+  const [editTotalContent, setEditTotalContent] = useState(item.aiData.totalContent);
+  const [editMediaType, setEditMediaType] = useState(item.aiData.mediaType);
+  const [editStatus, setEditStatus] = useState(item.aiData.status);
+
   // Share Modal State
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareTextContent, setShareTextContent] = useState('');
@@ -123,6 +134,40 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     }
     
     onUpdate({ ...item, trackingData: updated, lastInteraction: newTimestamp });
+  };
+
+  const handleSaveMetadata = () => {
+    if (!editTitle.trim()) {
+        showToast("El título es obligatorio", "error");
+        return;
+    }
+
+    const updatedAI = {
+        ...item.aiData,
+        title: editTitle,
+        originalTitle: editOriginalTitle,
+        synopsis: editSynopsis,
+        genres: editGenres.split(',').map(g => g.trim()).filter(Boolean),
+        totalContent: editTotalContent,
+        mediaType: editMediaType as any,
+        status: editStatus
+    };
+
+    onUpdate({ ...item, aiData: updatedAI });
+    setIsEditingMetadata(false);
+    showToast("Información actualizada", "success");
+  };
+
+  const handleCancelMetadata = () => {
+      // Revert fields
+      setEditTitle(item.aiData.title);
+      setEditOriginalTitle(item.aiData.originalTitle || '');
+      setEditSynopsis(item.aiData.synopsis);
+      setEditGenres(item.aiData.genres.join(', '));
+      setEditTotalContent(item.aiData.totalContent);
+      setEditMediaType(item.aiData.mediaType);
+      setEditStatus(item.aiData.status);
+      setIsEditingMetadata(false);
   };
 
   const handleCompleteSeason = () => {
@@ -544,41 +589,67 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                   style={{ backgroundColor: dynamicColor }}
                 >
                   <TypeIcon />
-                  {item.aiData.mediaType}
+                  {isEditingMetadata ? 'Editando...' : item.aiData.mediaType}
                 </span>
              </div>
              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect}/>
           </div>
 
           <div className="flex items-start justify-between gap-2 z-10 mb-1">
-            <h2 
-                className="text-2xl font-bold leading-tight" 
-                style={{ color: dynamicColor, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
-            >
-                {item.aiData.title}
-            </h2>
-            <div className="flex items-center gap-1">
-                <button 
-                  onClick={() => handleInputChange('is_favorite', !isFavorite)} 
-                  className="p-1.5 hover:bg-slate-800 rounded-full transition-colors"
-                  title={isFavorite ? "Quitar de Favoritos" : "Marcar como Favorito"}
-                >
-                    <Star className={`w-5 h-5 transition-all ${isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-500 hover:text-white'}`} />
-                </button>
-                {onDelete && (
-                    <button 
-                    onClick={onDelete} 
-                    className="text-slate-500 hover:text-red-500 transition-colors p-1"
-                    title="Eliminar de biblioteca"
+            {isEditingMetadata ? (
+                <div className="w-full">
+                    <input 
+                        className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-lg font-bold text-white mb-2 focus:border-primary outline-none"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Título principal"
+                    />
+                    <div className="flex gap-2">
+                        <button onClick={handleSaveMetadata} className="p-1.5 bg-green-600 rounded hover:bg-green-700 transition-colors" title="Guardar"><Save className="w-4 h-4 text-white" /></button>
+                        <button onClick={handleCancelMetadata} className="p-1.5 bg-slate-700 rounded hover:bg-slate-600 transition-colors" title="Cancelar"><X className="w-4 h-4 text-white" /></button>
+                    </div>
+                </div>
+            ) : (
+                <>
+                <div className="flex items-center gap-2">
+                    <h2 
+                        className="text-2xl font-bold leading-tight" 
+                        style={{ color: dynamicColor, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
                     >
-                        <Trash2 className="w-5 h-5" />
+                        {item.aiData.title}
+                    </h2>
+                     <button 
+                         onClick={() => setIsEditingMetadata(true)} 
+                         className="opacity-50 hover:opacity-100 transition-opacity p-1"
+                         title="Editar información (Metadata)"
+                     >
+                         <Pencil className="w-4 h-4 text-slate-400" />
+                     </button>
+                </div>
+                <div className="flex items-center gap-1">
+                    <button 
+                    onClick={() => handleInputChange('is_favorite', !isFavorite)} 
+                    className="p-1.5 hover:bg-slate-800 rounded-full transition-colors"
+                    title={isFavorite ? "Quitar de Favoritos" : "Marcar como Favorito"}
+                    >
+                        <Star className={`w-5 h-5 transition-all ${isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-500 hover:text-white'}`} />
                     </button>
-                )}
-            </div>
+                    {onDelete && (
+                        <button 
+                        onClick={onDelete} 
+                        className="text-slate-500 hover:text-red-500 transition-colors p-1"
+                        title="Eliminar de biblioteca"
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
+                </>
+            )}
           </div>
           
           {/* FRANCHISE LINK DISPLAY */}
-          {item.aiData.franchise_link && (
+          {item.aiData.franchise_link && !isEditingMetadata && (
              <div className="z-10 mb-2 animate-fade-in-up">
                 <div 
                     className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800/50 border border-slate-700/50 text-xs font-medium text-slate-300"
@@ -591,19 +662,59 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
              </div>
           )}
 
-          {item.aiData.originalTitle && (
-            <p className="text-slate-400 text-sm mb-4 italic z-10">{item.aiData.originalTitle}</p>
+          {isEditingMetadata ? (
+               <input 
+                 className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-slate-300 mb-2 focus:border-primary outline-none"
+                 value={editOriginalTitle}
+                 onChange={(e) => setEditOriginalTitle(e.target.value)}
+                 placeholder="Título original (opcional)"
+               />
+          ) : (
+            item.aiData.originalTitle && (
+                <p className="text-slate-400 text-sm mb-4 italic z-10">{item.aiData.originalTitle}</p>
+            )
           )}
           
           <div className="space-y-3 text-sm text-slate-300 z-10">
              <div>
                 <span className="text-slate-500 font-semibold block text-xs uppercase">Estado Publicación</span>
-                <span className="flex items-center gap-1">
-                   {item.aiData.status}
-                </span>
+                {isEditingMetadata ? (
+                    <input 
+                      className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-white focus:border-primary outline-none"
+                      value={editStatus}
+                      onChange={(e) => setEditStatus(e.target.value)}
+                      placeholder="Ej: Finalizado, En emisión..."
+                    />
+                ) : (
+                    <span className="flex items-center gap-1">
+                       {item.aiData.status}
+                    </span>
+                )}
              </div>
-             {/* Dates Section */}
-             {(item.aiData.releaseDate || item.aiData.endDate) && (
+             
+             {/* EDITING EXTRA FIELDS */}
+             {isEditingMetadata && (
+                <div>
+                     <span className="text-slate-500 font-semibold block text-xs uppercase">Tipo de Medio</span>
+                     <select 
+                        className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-white focus:border-primary outline-none"
+                        value={editMediaType}
+                        onChange={(e) => setEditMediaType(e.target.value as any)}
+                     >
+                         <option value="Anime">Anime</option>
+                         <option value="Serie">Serie</option>
+                         <option value="Pelicula">Película</option>
+                         <option value="Manhwa">Manhwa</option>
+                         <option value="Manga">Manga</option>
+                         <option value="Libro">Libro</option>
+                         <option value="Comic">Comic</option>
+                         <option value="Otro">Otro</option>
+                     </select>
+                </div>
+             )}
+
+             {/* Dates Section - Only Show Read Only */}
+             {!isEditingMetadata && (item.aiData.releaseDate || item.aiData.endDate) && (
                 <div className="grid grid-cols-2 gap-2">
                     {item.aiData.releaseDate && (
                          <div>
@@ -622,19 +733,38 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
              <div>
                 <span className="text-slate-500 font-semibold block text-xs uppercase">Contenido Total</span>
-                {item.aiData.totalContent}
+                {isEditingMetadata ? (
+                     <input 
+                       className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-white focus:border-primary outline-none"
+                       value={editTotalContent}
+                       onChange={(e) => setEditTotalContent(e.target.value)}
+                       placeholder="Ej: 12 Caps, 240 Páginas..."
+                     />
+                ) : (
+                    item.aiData.totalContent
+                )}
              </div>
              <div>
                 <span className="text-slate-500 font-semibold block text-xs uppercase">Géneros</span>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {item.aiData.genres.map(g => (
-                    <span key={g} className="px-2 py-0.5 bg-slate-800 rounded text-xs text-slate-300 border border-slate-700">{g}</span>
-                  ))}
-                </div>
+                {isEditingMetadata ? (
+                     <input 
+                       className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-white focus:border-primary outline-none"
+                       value={editGenres}
+                       onChange={(e) => setEditGenres(e.target.value)}
+                       placeholder="Acción, Comedia, Drama..."
+                     />
+                ) : (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                    {item.aiData.genres.map(g => (
+                        <span key={g} className="px-2 py-0.5 bg-slate-800 rounded text-xs text-slate-300 border border-slate-700">{g}</span>
+                    ))}
+                    </div>
+                )}
              </div>
              
              {/* Sources & Links Section */}
-             <div className="pt-4 border-t border-slate-700/50 space-y-4">
+             {!isEditingMetadata && (
+                <div className="pt-4 border-t border-slate-700/50 space-y-4">
                {/* Official Sources */}
                {item.aiData.sourceUrls && item.aiData.sourceUrls.length > 0 && (
                   <div>
@@ -706,6 +836,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                    </form>
                </div>
              </div>
+             )}
           </div>
         </div>
 
@@ -716,9 +847,18 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
               <BookOpen className="w-5 h-5" style={{ color: dynamicColor }} />
               Sinopsis
             </h3>
-            <p className="text-slate-300 text-sm leading-relaxed bg-slate-900/30 p-4 rounded-lg border border-slate-700/50">
-              {item.aiData.synopsis}
-            </p>
+            {isEditingMetadata ? (
+                <textarea 
+                    className="w-full bg-slate-900/50 border border-slate-600 rounded-lg p-3 text-sm text-slate-200 focus:border-primary outline-none h-32 resize-none"
+                    value={editSynopsis}
+                    onChange={(e) => setEditSynopsis(e.target.value)}
+                    placeholder="Escribe una sinopsis..."
+                />
+            ) : (
+                <p className="text-slate-300 text-sm leading-relaxed bg-slate-900/30 p-4 rounded-lg border border-slate-700/50">
+                    {item.aiData.synopsis}
+                </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
