@@ -2,8 +2,8 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { useToast } from '../context/ToastContext';
-import { generateReviewSummary } from '../services/geminiService';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy, Pencil, Save } from 'lucide-react';
+import { generateReviewSummary, searchMediaInfo } from '../services/geminiService';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy, Pencil, Save, RefreshCw } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -25,6 +25,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const [isDragging, setIsDragging] = useState(false);
   const [imgHasError, setImgHasError] = useState(false);
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+  const [isRefreshingInfo, setIsRefreshingInfo] = useState(false);
   
   // Metadata Edit State
   const [isEditingMetadata, setIsEditingMetadata] = useState(initialEditMode);
@@ -168,6 +169,25 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
       setEditMediaType(item.aiData.mediaType);
       setEditStatus(item.aiData.status);
       setIsEditingMetadata(false);
+  };
+
+  const handleRefreshInfo = async () => {
+    if (!apiKey) return;
+    
+    setIsRefreshingInfo(true);
+    try {
+        const freshData = await searchMediaInfo(item.aiData.title, apiKey);
+        onUpdate({
+            ...item,
+            aiData: freshData
+        });
+        showToast("Metadatos actualizados con IA", "success");
+    } catch (error) {
+        console.error("Refresh error:", error);
+        showToast("Error al actualizar la información", "error");
+    } finally {
+        setIsRefreshingInfo(false);
+    }
   };
 
   const handleCompleteSeason = () => {
@@ -855,9 +875,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                     placeholder="Escribe una sinopsis..."
                 />
             ) : (
+                <>
                 <p className="text-slate-300 text-sm leading-relaxed bg-slate-900/30 p-4 rounded-lg border border-slate-700/50">
                     {item.aiData.synopsis}
                 </p>
+                <div className="mt-2 flex justify-end">
+                    <button 
+                        onClick={handleRefreshInfo}
+                        disabled={!apiKey || isRefreshingInfo}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Regenerar información usando el título actual"
+                    >
+                        <RefreshCw className={`w-3 h-3 ${isRefreshingInfo ? 'animate-spin' : ''}`} />
+                        {isRefreshingInfo ? 'Actualizando...' : 'Actualizar Info con IA'}
+                    </button>
+                </div>
+                </>
             )}
           </div>
 
