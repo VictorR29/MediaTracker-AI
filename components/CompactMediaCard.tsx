@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem } from '../types';
 import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle, Star, Image as ImageIcon, Trash2 } from 'lucide-react';
@@ -256,7 +255,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
 
         {/* Type Badge - Moved to Bottom Left (above title) to make room for Delete button */}
         {/* INCREASED Z-INDEX TO 50 AND ADDED SHADOW/BORDER TO POP OUT */}
-        <div className="absolute bottom-16 left-2 z-50">
+        <div className="absolute bottom-20 left-2 z-50">
             <span 
                 className="flex items-center gap-1.5 px-2 py-1 rounded-md text-white text-[10px] md:text-[11px] font-bold uppercase tracking-wider backdrop-blur-md shadow-lg border border-white/20"
                 style={{ backgroundColor: dynamicColor, textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
