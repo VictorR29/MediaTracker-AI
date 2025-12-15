@@ -14,7 +14,7 @@ import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
 import { MediaItem, UserProfile, normalizeGenre } from './types';
 import { useToast } from './context/ToastContext';
-import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark, Search, GitMerge, Loader2, PenTool, Edit3 } from 'lucide-react';
+import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark, Search, GitMerge, Loader2, PenTool, Edit3, ArrowUp } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
@@ -53,6 +53,9 @@ export default function App() {
 
   // Import Merge Confirmation State
   const [pendingImport, setPendingImport] = useState<{ library: MediaItem[] } | null>(null);
+
+  // Scroll to Top State
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Filters State
   const [filters, setFilters] = useState<FilterState>({
@@ -117,6 +120,19 @@ export default function App() {
     };
     init();
   }, []);
+
+  // Scroll Listener for Back to Top Button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const applyTheme = (colorValue: string) => {
     document.documentElement.style.setProperty('--color-primary', colorValue);
@@ -807,8 +823,8 @@ export default function App() {
          onImportCatalog={handleImportCatalog}
       />
 
-      {/* Header */}
-      <header className="bg-surface/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-40 transition-colors duration-500">
+      {/* Header - Fixed Position */}
+      <header className="bg-surface/80 backdrop-blur-md border-b border-slate-700 fixed top-0 w-full z-50 transition-colors duration-500 shadow-md">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           
           {/* Logo / Left Section (Desktop: Logo, Mobile: Avatar/User) */}
@@ -992,8 +1008,8 @@ export default function App() {
          </button>
       </nav>
 
-      {/* Main Content Area */}
-      <main className="flex-grow pt-6 md:pt-8 min-h-[calc(100vh-64px)]">
+      {/* Main Content Area - Increased Padding Top for Fixed Header */}
+      <main className="flex-grow pt-24 md:pt-28 min-h-screen">
         
         {/* Persistent Contextual Greeting */}
         <ContextualGreeting userProfile={userProfile} library={library} view={view} />
@@ -1227,6 +1243,17 @@ export default function App() {
         )}
 
       </main>
+
+      {/* Floating Scroll to Top Button */}
+      {showScrollTop && (view === 'library' || view === 'upcoming') && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 p-3 bg-primary text-white rounded-full shadow-2xl hover:bg-indigo-600 transition-all animate-fade-in hover:scale-110 border border-white/20 backdrop-blur-sm"
+          aria-label="Volver arriba"
+        >
+          <ArrowUp className="w-6 h-6" />
+        </button>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
