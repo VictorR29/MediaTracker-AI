@@ -142,7 +142,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-        <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col md:flex-row h-[600px] md:h-auto relative">
+        {/* CHANGED: max-w-2xl -> max-w-4xl, md:h-auto -> md:h-auto md:max-h-[85vh] to limit vertical growth */}
+        <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row h-[600px] md:h-auto md:max-h-[85vh] relative">
             
             {/* Close Button - Positioned absolutely relative to container for better mobile layout */}
             <button 
