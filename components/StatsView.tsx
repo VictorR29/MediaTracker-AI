@@ -560,122 +560,120 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            
            {/* Visual Time Card */}
-           <div className="bg-gradient-to-br from-indigo-900/50 to-slate-900 border border-slate-700 rounded-2xl p-4 md:p-6 relative overflow-hidden shadow-xl">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 shadow-2xl transition-all hover:border-indigo-500/30">
+                {/* Decorative background glow */}
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-indigo-500/30 transition-colors duration-700"></div>
                 
-                <h3 className="text-lg font-bold text-white mb-3 md:mb-4 flex items-center gap-2 relative z-10">
-                    <MonitorPlay className="w-5 h-5 text-indigo-400" />
-                    Tiempo Visual
-                </h3>
-
-                <div className="mb-5 md:mb-6">
-                    <span className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-                        {stats.visualTimeDisplay}
-                    </span>
-                    <p className="text-xs text-slate-400 mt-1">Invertidos en pantallas</p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2 relative z-10">
-                    {/* Animes */}
-                    <div className="flex items-center justify-between bg-slate-800/40 p-2.5 sm:p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
-                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-hidden">
-                            <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400 shrink-0">
-                                <Tv className="w-4 h-4" />
-                            </div>
-                            <div className="truncate">
-                                <span className="text-sm font-bold text-slate-200 block truncate">Animes</span>
-                                <span className="text-[10px] text-slate-500">{stats.animeEpisodes} caps</span>
-                            </div>
+                <div className="relative z-10 flex flex-col h-full">
+                    {/* Header */}
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2.5 bg-indigo-500/20 rounded-xl text-indigo-400 ring-1 ring-inset ring-indigo-500/30">
+                            <MonitorPlay className="w-6 h-6" />
                         </div>
-                        <div className="text-right shrink-0">
-                           <span className="text-lg font-bold text-white leading-none block">{stats.consumedAnimes}</span>
-                           <span className="text-[10px] text-slate-500">obras</span>
+                        <div>
+                            <h3 className="text-lg font-bold text-white leading-none">Tiempo Visual</h3>
+                            <p className="text-xs text-slate-400 mt-1">Invertidos en pantallas</p>
                         </div>
                     </div>
 
-                    {/* Series */}
-                    <div className="flex items-center justify-between bg-slate-800/40 p-2.5 sm:p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
-                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-hidden">
-                            <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400 shrink-0">
-                                <Layers className="w-4 h-4" />
-                            </div>
-                            <div className="truncate">
-                                <span className="text-sm font-bold text-slate-200 block truncate">Series</span>
-                                <span className="text-[10px] text-slate-500">{stats.seriesEpisodes} caps</span>
-                            </div>
-                        </div>
-                         <div className="text-right shrink-0">
-                           <span className="text-lg font-bold text-white leading-none block">{stats.consumedSeries}</span>
-                           <span className="text-[10px] text-slate-500">obras</span>
-                        </div>
+                    {/* Main Metric */}
+                    <div className="mb-8">
+                        <span className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-100 to-indigo-300 drop-shadow-sm tracking-tight">
+                            {stats.visualTimeDisplay}
+                        </span>
                     </div>
 
-                    {/* Peliculas */}
-                    <div className="flex items-center justify-between bg-slate-800/40 p-2.5 sm:p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
-                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-hidden">
-                            <div className="p-2 bg-pink-500/20 rounded-lg text-pink-400 shrink-0">
-                                <Film className="w-4 h-4" />
+                    {/* Chips Grid */}
+                    <div className="grid grid-cols-2 gap-3 mt-auto">
+                        {/* Anime Chip */}
+                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Tv className="w-3.5 h-3.5 text-indigo-400" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-indigo-300 transition-colors">Animes</span>
                             </div>
-                            <div className="truncate">
-                                <span className="text-sm font-bold text-slate-200 block truncate">Películas</span>
-                                <span className="text-[10px] text-slate-500">{stats.consumedMovies} vistas</span>
+                            <div>
+                                <span className="block text-xl font-bold text-white mb-0.5">{stats.animeEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
+                                <span className="block text-[10px] text-slate-500">{stats.consumedAnimes} obras</span>
                             </div>
                         </div>
-                         <div className="text-right shrink-0">
-                           <span className="text-lg font-bold text-white leading-none block">{stats.consumedMovies}</span>
-                           <span className="text-[10px] text-slate-500">obras</span>
+
+                        {/* Series Chip */}
+                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Layers className="w-3.5 h-3.5 text-purple-400" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-purple-300 transition-colors">Series</span>
+                            </div>
+                            <div>
+                                <span className="block text-xl font-bold text-white mb-0.5">{stats.seriesEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
+                                <span className="block text-[10px] text-slate-500">{stats.consumedSeries} obras</span>
+                            </div>
+                        </div>
+
+                        {/* Movies Chip - Full width on bottom */}
+                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors col-span-2 group/chip">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Film className="w-3.5 h-3.5 text-pink-400" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-pink-300 transition-colors">Películas</span>
+                            </div>
+                            <div className="flex justify-between items-end">
+                                <div>
+                                    <span className="block text-xl font-bold text-white mb-0.5">{stats.consumedMovies} <span className="text-xs font-medium text-slate-500">vistas</span></span>
+                                    <span className="block text-[10px] text-slate-500">{stats.consumedMovies} obras</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
            </div>
 
            {/* Reading Time Card */}
-           <div className="bg-gradient-to-br from-emerald-900/50 to-slate-900 border border-slate-700 rounded-2xl p-4 md:p-6 relative overflow-hidden shadow-xl">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 shadow-2xl transition-all hover:border-emerald-500/30">
+                {/* Decorative background glow */}
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-emerald-500/30 transition-colors duration-700"></div>
                 
-                <h3 className="text-lg font-bold text-white mb-3 md:mb-4 flex items-center gap-2 relative z-10">
-                    <BookOpen className="w-5 h-5 text-emerald-400" />
-                    Tiempo Lectura
-                </h3>
-
-                <div className="mb-5 md:mb-6">
-                    <span className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
-                        {stats.readingTimeDisplay}
-                    </span>
-                    <p className="text-xs text-slate-400 mt-1">Sumergido en historias</p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2 relative z-10">
-                    {/* Manhwa/Manga */}
-                    <div className="flex items-center justify-between bg-slate-800/40 p-2.5 sm:p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
-                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-hidden">
-                            <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400 shrink-0">
-                                <BookOpen className="w-4 h-4" />
-                            </div>
-                            <div className="truncate">
-                                <span className="text-sm font-bold text-slate-200 block truncate">Manhwa/Manga</span>
-                                <span className="text-[10px] text-slate-500">{stats.readingChapters} caps</span>
-                            </div>
+                <div className="relative z-10 flex flex-col h-full">
+                    {/* Header */}
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2.5 bg-emerald-500/20 rounded-xl text-emerald-400 ring-1 ring-inset ring-emerald-500/30">
+                            <BookOpen className="w-6 h-6" />
                         </div>
-                        <div className="text-right shrink-0">
-                           <span className="text-lg font-bold text-white leading-none block">{stats.consumedManhwas}</span>
-                           <span className="text-[10px] text-slate-500">obras</span>
+                        <div>
+                            <h3 className="text-lg font-bold text-white leading-none">Tiempo Lectura</h3>
+                            <p className="text-xs text-slate-400 mt-1">Sumergido en historias</p>
                         </div>
                     </div>
-                    {/* Libros */}
-                    <div className="flex items-center justify-between bg-slate-800/40 p-2.5 sm:p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
-                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-hidden">
-                            <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400 shrink-0">
-                                <Book className="w-4 h-4" />
+
+                    {/* Main Metric */}
+                    <div className="mb-8">
+                        <span className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-emerald-100 to-emerald-300 drop-shadow-sm tracking-tight">
+                            {stats.readingTimeDisplay}
+                        </span>
+                    </div>
+
+                    {/* Chips Grid */}
+                    <div className="grid grid-cols-2 gap-3 mt-auto">
+                        {/* Manhwa/Manga Chip */}
+                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip">
+                            <div className="flex items-center gap-2 mb-2">
+                                <BookOpen className="w-3.5 h-3.5 text-orange-400" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-orange-300 transition-colors truncate">Manhwa/Manga</span>
                             </div>
-                            <div className="truncate">
-                                <span className="text-sm font-bold text-slate-200 block truncate">Libros/Novelas</span>
-                                <span className="text-[10px] text-slate-500">{stats.bookChapters} págs</span>
+                            <div>
+                                <span className="block text-xl font-bold text-white mb-0.5">{stats.readingChapters} <span className="text-xs font-medium text-slate-500">caps</span></span>
+                                <span className="block text-[10px] text-slate-500">{stats.consumedManhwas} obras</span>
                             </div>
                         </div>
-                        <div className="text-right shrink-0">
-                           <span className="text-lg font-bold text-white leading-none block">{stats.consumedBooks}</span>
-                           <span className="text-[10px] text-slate-500">obras</span>
+
+                        {/* Libros Chip */}
+                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Book className="w-3.5 h-3.5 text-emerald-400" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-emerald-300 transition-colors">Libros</span>
+                            </div>
+                            <div>
+                                <span className="block text-xl font-bold text-white mb-0.5">{stats.bookChapters} <span className="text-xs font-medium text-slate-500">pág</span></span>
+                                <span className="block text-[10px] text-slate-500">{stats.consumedBooks} obras</span>
+                            </div>
                         </div>
                     </div>
                 </div>
