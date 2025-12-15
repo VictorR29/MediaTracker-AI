@@ -1,16 +1,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle, Star, Image as ImageIcon } from 'lucide-react';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle, Star, Image as ImageIcon, Trash2 } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
   onClick: () => void;
   onIncrement: (item: MediaItem) => void;
   onToggleFavorite?: (item: MediaItem) => void;
+  onDelete?: (item: MediaItem) => void;
 }
 
-export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClick, onIncrement, onToggleFavorite }) => {
+export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClick, onIncrement, onToggleFavorite, onDelete }) => {
   const { aiData, trackingData } = item;
   const isFavorite = trackingData.is_favorite || false;
   
@@ -145,6 +146,13 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       }
   };
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (onDelete) {
+          onDelete(item);
+      }
+  }
+
   const renderProgressText = () => {
       if (isMovie) {
           return trackingData.status === 'Completado' ? <span className="text-green-400 font-bold">Visto</span> : 'Pendiente';
@@ -234,8 +242,20 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
             </div>
         )}
 
+        {/* Delete Button (Top Right) - Added as requested */}
+        {onDelete && (
+             <button
+                onClick={handleDeleteClick}
+                className="absolute top-2 right-2 z-40 p-1.5 rounded-full bg-black/40 backdrop-blur-sm hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 text-slate-300 hover:text-white"
+                title="Eliminar Obra"
+             >
+                 <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
+             </button>
+        )}
 
-        <div className="absolute top-2 right-2">
+
+        {/* Type Badge - Moved to Bottom Left (above title) to make room for Delete button */}
+        <div className="absolute bottom-16 left-2 z-30">
             <span 
                 className="flex items-center gap-1 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md text-white text-[9px] md:text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm"
                 style={{ backgroundColor: dynamicColor }}

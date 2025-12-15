@@ -13,10 +13,11 @@ interface SettingsModalProps {
   onExportBackup: () => void;
   onImportCatalog: (file: File) => void;
   onExportCatalog: () => void;
+  onClearLibrary?: () => void; // New Prop
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ 
-    isOpen, onClose, userProfile, onUpdateProfile, onImportBackup, onExportBackup, onImportCatalog, onExportCatalog
+    isOpen, onClose, userProfile, onUpdateProfile, onImportBackup, onExportBackup, onImportCatalog, onExportCatalog, onClearLibrary
 }) => {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'data'>('profile');
@@ -29,6 +30,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   
   // Custom Confirm State
   const [showDeletePasswordConfirm, setShowDeletePasswordConfirm] = useState(false);
+  const [showClearLibraryConfirm, setShowClearLibraryConfirm] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const catalogInputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +67,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       onUpdateProfile(updatedProfile);
       setShowDeletePasswordConfirm(false);
       showToast("Contraseña eliminada. Acceso libre.", "warning");
+  };
+
+  const confirmClearLibrary = () => {
+      if (onClearLibrary) {
+          onClearLibrary();
+          setShowClearLibraryConfirm(false);
+          onClose();
+          showToast("Biblioteca eliminada por completo.", "warning");
+      }
   };
 
   const triggerImportBackup = () => {
@@ -243,7 +254,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 )}
 
                 {activeTab === 'data' && (
-                    <div className="space-y-8 animate-fade-in">
+                    <div className="space-y-8 animate-fade-in relative">
                         {/* Section 1: Full Backup */}
                         <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
                              <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -323,6 +334,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 </p>
                             </div>
                         </div>
+
+                         {/* DANGER ZONE - Clear Library */}
+                         <div className="bg-red-900/10 p-4 rounded-xl border border-red-900/30 mt-6">
+                            <h3 className="text-sm font-bold text-red-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4" /> Zona de Peligro
+                            </h3>
+                             <button 
+                                onClick={() => setShowClearLibraryConfirm(true)}
+                                className="w-full px-4 py-3 bg-red-900/20 hover:bg-red-900/40 border border-red-800/50 rounded-lg text-red-200 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                             >
+                                 <Trash2 className="w-4 h-4" />
+                                 Eliminar Toda la Biblioteca
+                             </button>
+                             <p className="text-xs text-red-400/70 mt-2 text-center">
+                                 Esta acción no se puede deshacer. Borra todas las obras.
+                             </p>
+                         </div>
+
+                         {/* Clear Library Confirmation Overlay */}
+                         {showClearLibraryConfirm && (
+                            <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-20 rounded-xl">
+                                <div className="bg-surface border border-red-500/50 p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
+                                    <Trash2 className="w-12 h-12 text-red-500 mx-auto mb-3" />
+                                    <h3 className="text-lg font-bold text-white mb-2">¿Borrar TODO?</h3>
+                                    <p className="text-sm text-slate-300 mb-6">
+                                        Perderás el progreso de <strong>todas</strong> tus obras. Tu perfil se mantendrá.
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <button 
+                                            onClick={() => setShowClearLibraryConfirm(false)}
+                                            className="flex-1 px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button 
+                                            onClick={confirmClearLibrary}
+                                            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold shadow-lg shadow-red-600/20"
+                                        >
+                                            SÍ, BORRAR
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

@@ -1,3 +1,4 @@
+
 import { MediaItem, UserProfile } from '../types';
 
 const DB_NAME = 'MediaTrackerDB';
@@ -72,6 +73,18 @@ export const deleteMediaItem = async (id: string): Promise<void> => {
     const transaction = db.transaction([STORE_LIBRARY], 'readwrite');
     const store = transaction.objectStore(STORE_LIBRARY);
     const request = store.delete(id);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+};
+
+export const clearLibrary = async (): Promise<void> => {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_LIBRARY], 'readwrite');
+    const store = transaction.objectStore(STORE_LIBRARY);
+    const request = store.clear();
 
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);

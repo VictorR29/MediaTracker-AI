@@ -11,7 +11,7 @@ import { StatsView } from './components/StatsView';
 import { DiscoveryView } from './components/DiscoveryView'; // Import DiscoveryView
 import { ContextualGreeting } from './components/ContextualGreeting'; // Import ContextualGreeting
 import { searchMediaInfo } from './services/geminiService';
-import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem } from './services/storage';
+import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem, clearLibrary } from './services/storage';
 import { MediaItem, UserProfile, normalizeGenre } from './types';
 import { useToast } from './context/ToastContext';
 import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark, Search, GitMerge, Loader2, PenTool, Edit3, ArrowUp } from 'lucide-react';
@@ -326,6 +326,12 @@ export default function App() {
   };
 
   const cancelDelete = () => setDeleteTarget(null);
+
+  const handleClearLibrary = async () => {
+      await clearLibrary();
+      setLibrary([]);
+      setCurrentMedia(null);
+  };
 
   const handleQuickIncrement = async (item: MediaItem) => {
     // covers: "Clic en +1 Visto/Leído"
@@ -821,6 +827,7 @@ export default function App() {
          onImportBackup={handleImportBackup}
          onExportCatalog={handleExportCatalog}
          onImportCatalog={handleImportCatalog}
+         onClearLibrary={handleClearLibrary} // Pass function
       />
 
       {/* Header - Fixed Position */}
@@ -1159,6 +1166,7 @@ export default function App() {
                           onClick={() => openDetail(item)}
                           onIncrement={handleQuickIncrement}
                           onToggleFavorite={handleToggleFavorite}
+                          onDelete={handleDeleteRequest} // Pass delete handler
                        />
                     ))}
                  </div>
@@ -1235,6 +1243,7 @@ export default function App() {
                                 onClick={() => openDetail(item)}
                                 onIncrement={handleQuickIncrement}
                                 onToggleFavorite={handleToggleFavorite}
+                                onDelete={handleDeleteRequest} // Pass delete handler
                             />
                         ))}
                     </div>
