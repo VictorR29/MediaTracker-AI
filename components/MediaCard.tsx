@@ -234,7 +234,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   };
 
   const toggleTag = (tag: string) => {
-    const currentTags = tracking.emotionalTags;
+    const currentTags = tracking.emotionalTags || [];
     const newTags = currentTags.includes(tag)
       ? currentTags.filter(t => t !== tag)
       : [...currentTags, tag];
@@ -1131,7 +1131,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                    <label className="block text-xs font-medium text-slate-400 mb-2">Resumen Emocional</label>
                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                       {EMOTIONAL_TAGS_OPTIONS.map(opt => {
-                        const isActive = tracking.emotionalTags.includes(opt.label);
+                        const currentTags = tracking.emotionalTags || [];
+                        const isActive = currentTags.includes(opt.label);
                         const isNegative = opt.sentiment === 'negative';
                         return (
                           <button
