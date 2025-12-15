@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem } from '../types';
 import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle, Star, Image as ImageIcon, Trash2 } from 'lucide-react';
@@ -186,15 +185,6 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
     return trackingData.status;
   };
 
-  // Dynamic Positioning Logic
-  const badgePositionClass = isPlanned 
-    ? 'top-2 left-2' 
-    : (showQuickAction ? 'bottom-16 md:bottom-14 left-2' : 'bottom-12 left-2');
-  
-  const favoritePositionClass = isPlanned 
-    ? 'top-10 left-2' 
-    : 'top-2 left-2';
-
   return (
     <div 
       ref={cardRef}
@@ -230,44 +220,8 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
             />
         )}
         
-        {/* Favorite Toggle */}
-        {onToggleFavorite && (
-             <button
-                onClick={handleFavoriteClick}
-                className={`absolute z-20 p-1.5 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 ${favoritePositionClass}`}
-                title={isFavorite ? "Quitar de Favoritos" : "Marcar como Favorito"}
-             >
-                 <Star 
-                    className={`w-4 h-4 md:w-5 md:h-5 transition-all ${isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300 hover:text-white'}`} 
-                 />
-             </button>
-        )}
-        {/* Always show star if favorite, even if not hovering */}
-        {isFavorite && !onToggleFavorite && (
-            <div className={`absolute z-20 p-1.5 rounded-full bg-black/20 backdrop-blur-sm ${favoritePositionClass}`}>
-                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-            </div>
-        )}
-        {isFavorite && onToggleFavorite && (
-             <div className={`absolute z-10 p-1.5 rounded-full bg-black/20 backdrop-blur-sm group-hover:opacity-0 transition-opacity ${favoritePositionClass}`}>
-                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-            </div>
-        )}
-
-        {/* Delete Button (Top Right) */}
-        {onDelete && (
-             <button
-                onClick={handleDeleteClick}
-                className="absolute top-2 right-2 z-40 p-1.5 rounded-full bg-black/40 backdrop-blur-sm hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 text-slate-300 hover:text-white"
-                title="Eliminar Obra"
-             >
-                 <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
-             </button>
-        )}
-
-
-        {/* Type Badge - Position adjusted to avoid overlap with title (Wishlist) or Quick Action (Watching) */}
-        <div className={`absolute z-50 transition-all duration-300 ${badgePositionClass}`}>
+        {/* Type Badge - Moved to Top Left */}
+        <div className="absolute top-2 left-2 z-50">
             <span 
                 className="flex items-center gap-1.5 px-2 py-1 rounded-md text-white text-[10px] md:text-[11px] font-bold uppercase tracking-wider backdrop-blur-md shadow-lg border border-white/20"
                 style={{ backgroundColor: dynamicColor, textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
@@ -275,6 +229,47 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
                 <TypeIcon />
                 {aiData.mediaType}
             </span>
+        </div>
+
+        {/* Action Buttons Stack (Top Right) */}
+        <div className="absolute top-2 right-2 z-50 flex flex-col gap-2">
+            {/* Favorite Toggle */}
+            {onToggleFavorite && (
+                <button
+                    onClick={handleFavoriteClick}
+                    className="p-1.5 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title={isFavorite ? "Quitar de Favoritos" : "Marcar como Favorito"}
+                >
+                    <Star 
+                        className={`w-4 h-4 md:w-5 md:h-5 transition-all ${isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300 hover:text-white'}`} 
+                    />
+                </button>
+            )}
+            
+            {/* Read-only Favorite Indicator (if no toggle function but is favorite) */}
+            {isFavorite && !onToggleFavorite && (
+                <div className="p-1.5 rounded-full bg-black/20 backdrop-blur-sm">
+                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                </div>
+            )}
+
+            {/* Ghost Favorite Indicator to show state when not hovering (if toggle exists) */}
+             {isFavorite && onToggleFavorite && (
+                <div className="absolute top-0 right-0 p-1.5 rounded-full bg-black/20 backdrop-blur-sm pointer-events-none group-hover:opacity-0 transition-opacity">
+                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                </div>
+            )}
+
+            {/* Delete Button */}
+            {onDelete && (
+                <button
+                    onClick={handleDeleteClick}
+                    className="p-1.5 rounded-full bg-black/40 backdrop-blur-sm hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 text-slate-300 hover:text-white"
+                    title="Eliminar Obra"
+                >
+                    <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
+            )}
         </div>
         
         {/* Wishlist / Upcoming Context Overlays */}
