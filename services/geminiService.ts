@@ -72,7 +72,7 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
       "synopsis": "A concise synopsis in Spanish (max 300 chars)",
       "genres": ["Genre1", "Genre2"],
       "status": "Publication/Broadcast status (e.g., En emisión, Finalizado, En pausa)",
-      "totalContent": "String describing total content (e.g., '3 Temporadas, 64 Caps' or '120 Capítulos' or 'Duración 1h 57m')",
+      "totalContent": "FOR ANIME/SERIES: You MUST use a list format separating lines with '\\n'. Example: '3 Temporadas:\\nTemporada 1: 24 Caps\\nTemporada 2: 12 Caps'. FOR OTHERS: Just string like '120 Capítulos' or 'Duración 1h 57m'.",
       "coverDescription": "A short English visual description of the official poster (e.g. 'poster of Naruto anime')",
       "coverImage": "Find a DIRECT public URL (https) for the official poster. PREFER URLs from 'upload.wikimedia.org', 'm.media-amazon.com', 'cdn.myanimelist.net' or 'static.wikia.nocookie.net'. The URL MUST end in .jpg, .png or .webp. If uncertain, leave empty.",
       "primaryColor": "Identify the DOMINANT HEX COLOR associated with the work's cover art or branding (e.g. '#FF5733'). It MUST be a 6-digit HEX code.",

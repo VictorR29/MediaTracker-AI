@@ -754,14 +754,24 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
              <div>
                 <span className="text-slate-500 font-semibold block text-xs uppercase">Contenido Total</span>
                 {isEditingMetadata ? (
-                     <input 
-                       className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-white focus:border-primary outline-none"
+                     <textarea 
+                       className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-white focus:border-primary outline-none resize-y min-h-[60px]"
                        value={editTotalContent}
                        onChange={(e) => setEditTotalContent(e.target.value)}
-                       placeholder="Ej: 12 Caps, 240 Páginas..."
+                       placeholder={`Ej: 2 Temporadas:\nTemporada 1: 12 Caps\nTemporada 2: 24 Caps`}
                      />
                 ) : (
-                    item.aiData.totalContent
+                    <div className="text-sm">
+                        {item.aiData.totalContent.includes('\n') ? (
+                            item.aiData.totalContent.split('\n').map((line, i) => (
+                                <div key={i} className={`${i === 0 ? 'font-bold text-slate-200 mb-1' : 'text-slate-400 text-xs ml-0'}`}>
+                                    {line}
+                                </div>
+                            ))
+                        ) : (
+                            item.aiData.totalContent
+                        )}
+                    </div>
                 )}
              </div>
              <div>
