@@ -577,51 +577,51 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
                 <div className="grid grid-cols-1 gap-2 relative z-10">
                     {/* Animes */}
-                    <div className="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
+                    <div className="flex items-center justify-between bg-slate-800/40 p-2.5 sm:p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
+                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-hidden">
+                            <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400 shrink-0">
                                 <Tv className="w-4 h-4" />
                             </div>
-                            <div>
-                                <span className="text-sm font-bold text-slate-200 block">Animes</span>
+                            <div className="truncate">
+                                <span className="text-sm font-bold text-slate-200 block truncate">Animes</span>
                                 <span className="text-[10px] text-slate-500">{stats.animeEpisodes} caps</span>
                             </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                            <span className="text-lg font-bold text-white leading-none block">{stats.consumedAnimes}</span>
                            <span className="text-[10px] text-slate-500">obras</span>
                         </div>
                     </div>
 
                     {/* Series */}
-                    <div className="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400">
+                    <div className="flex items-center justify-between bg-slate-800/40 p-2.5 sm:p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
+                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-hidden">
+                            <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400 shrink-0">
                                 <Layers className="w-4 h-4" />
                             </div>
-                            <div>
-                                <span className="text-sm font-bold text-slate-200 block">Series</span>
+                            <div className="truncate">
+                                <span className="text-sm font-bold text-slate-200 block truncate">Series</span>
                                 <span className="text-[10px] text-slate-500">{stats.seriesEpisodes} caps</span>
                             </div>
                         </div>
-                         <div className="text-right">
+                         <div className="text-right shrink-0">
                            <span className="text-lg font-bold text-white leading-none block">{stats.consumedSeries}</span>
                            <span className="text-[10px] text-slate-500">obras</span>
                         </div>
                     </div>
 
                     {/* Peliculas */}
-                    <div className="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-pink-500/20 rounded-lg text-pink-400">
+                    <div className="flex items-center justify-between bg-slate-800/40 p-2.5 sm:p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
+                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-hidden">
+                            <div className="p-2 bg-pink-500/20 rounded-lg text-pink-400 shrink-0">
                                 <Film className="w-4 h-4" />
                             </div>
-                            <div>
-                                <span className="text-sm font-bold text-slate-200 block">Películas</span>
+                            <div className="truncate">
+                                <span className="text-sm font-bold text-slate-200 block truncate">Películas</span>
                                 <span className="text-[10px] text-slate-500">{stats.consumedMovies} vistas</span>
                             </div>
                         </div>
-                         <div className="text-right">
+                         <div className="text-right shrink-0">
                            <span className="text-lg font-bold text-white leading-none block">{stats.consumedMovies}</span>
                            <span className="text-[10px] text-slate-500">obras</span>
                         </div>
@@ -647,33 +647,33 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
                 <div className="grid grid-cols-1 gap-2 relative z-10">
                     {/* Manhwa/Manga */}
-                    <div className="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400">
+                    <div className="flex items-center justify-between bg-slate-800/40 p-2.5 sm:p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
+                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-hidden">
+                            <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400 shrink-0">
                                 <BookOpen className="w-4 h-4" />
                             </div>
-                            <div>
-                                <span className="text-sm font-bold text-slate-200 block">Manhwa/Manga</span>
+                            <div className="truncate">
+                                <span className="text-sm font-bold text-slate-200 block truncate">Manhwa/Manga</span>
                                 <span className="text-[10px] text-slate-500">{stats.readingChapters} caps</span>
                             </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                            <span className="text-lg font-bold text-white leading-none block">{stats.consumedManhwas}</span>
                            <span className="text-[10px] text-slate-500">obras</span>
                         </div>
                     </div>
                     {/* Libros */}
-                    <div className="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400">
+                    <div className="flex items-center justify-between bg-slate-800/40 p-2.5 sm:p-3 rounded-xl border border-white/5 hover:bg-slate-800/60 transition-colors">
+                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-hidden">
+                            <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400 shrink-0">
                                 <Book className="w-4 h-4" />
                             </div>
-                            <div>
-                                <span className="text-sm font-bold text-slate-200 block">Libros/Novelas</span>
+                            <div className="truncate">
+                                <span className="text-sm font-bold text-slate-200 block truncate">Libros/Novelas</span>
                                 <span className="text-[10px] text-slate-500">{stats.bookChapters} págs</span>
                             </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                            <span className="text-lg font-bold text-white leading-none block">{stats.consumedBooks}</span>
                            <span className="text-[10px] text-slate-500">obras</span>
                         </div>
@@ -783,7 +783,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
        {/* DISTRIBUTION BY TAG WIDGET (NEW) */}
        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md transition-all">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                      <span className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
                          <PieChart className="w-4 h-4 text-emerald-500" /> Distribución de Consumo
@@ -794,7 +794,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 </div>
                 
                 {/* Axis Selector */}
-                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 self-start sm:self-auto">
                     <button 
                         onClick={() => setDistributionAxis('genre')}
                         className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${distributionAxis === 'genre' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
@@ -822,8 +822,6 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                                 boxShadow: '0 0 30px rgba(0,0,0,0.5)'
                             }}
                         />
-                        {/* Center Hole for Donut Effect (Optional, using full pie for now per request "Pastel") */}
-                        {/* <div className="absolute inset-4 bg-slate-900 rounded-full" /> */}
                     </div>
 
                     {/* The Legend */}
@@ -1004,7 +1002,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
            </div>
        )}
 
-       {/* Settings Modal */}
+       {/* Settings Modal (Unchanged) */}
        {isSettingsOpen && (
            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
                <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
