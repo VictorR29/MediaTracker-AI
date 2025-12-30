@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, HelpCircle, Star, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, Star, Trash2 } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
@@ -10,7 +11,7 @@ interface CompactMediaCardProps {
   onDelete?: (item: MediaItem) => void;
 }
 
-export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClick, onIncrement, onToggleFavorite, onDelete }) => {
+export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ item, onClick, onIncrement, onToggleFavorite, onDelete }) => {
   const { aiData, trackingData } = item;
   const isFavorite = trackingData.is_favorite || false;
   
@@ -60,7 +61,6 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
     return `en ${diffDays} días`;
   };
 
-  // Prioritize user-defined next release date, otherwise use AI release date
   const targetDateDisplay = trackingData.nextReleaseDate || aiData.releaseDate;
   const timeRemaining = getCountdown(targetDateDisplay);
 
@@ -76,7 +76,6 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
 
   const isCompleteSeason = !isMovie && trackingData.totalEpisodesInSeason > 0 && trackingData.watchedEpisodes >= trackingData.totalEpisodesInSeason;
 
-  // Icon based on type
   const TypeIcon = () => {
     switch (aiData.mediaType) {
       case 'Anime': return <Tv className="w-3 h-3" />;
@@ -91,11 +90,9 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
   const getPlaceholder = () => 
     `https://placehold.co/300x450/1e293b/94a3b8?text=${encodeURIComponent(aiData.title || 'Sin Imagen')}&font=roboto`;
 
-  // Helper to check if string is a valid image source (URL or Data URI)
   const isValidSource = (src?: string) => 
     src && (src.startsWith('http') || src.startsWith('data:'));
 
-  // Determine initial image (but don't load yet)
   const actualImageSource = isValidSource(aiData.coverImage)
     ? aiData.coverImage!
     : getPlaceholder();
@@ -103,31 +100,24 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
   const [imgSrc, setImgSrc] = useState<string | undefined>(undefined);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Intersection Observer for Lazy Loading
+  // Optimized Intersection Observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-            setImgSrc(actualImageSource); // Trigger image load
-            observer.disconnect(); // Stop observing once visible
-          }
-        });
+        if (entries[0].isIntersecting) {
+          setIsVisible(true);
+          setImgSrc(actualImageSource);
+          observer.disconnect();
+        }
       },
-      {
-        rootMargin: '200px', // Start loading 200px before it enters viewport
-        threshold: 0.01,
-      }
+      { rootMargin: '100px' } // Reduced margin to trigger closer to viewport
     );
 
     if (cardRef.current) {
       observer.observe(cardRef.current);
     }
 
-    return () => {
-      if (observer) observer.disconnect();
-    };
+    return () => observer.disconnect();
   }, [actualImageSource]);
 
   const handleImageError = () => {
@@ -143,16 +133,12 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (onToggleFavorite) {
-          onToggleFavorite(item);
-      }
+      if (onToggleFavorite) onToggleFavorite(item);
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (onDelete) {
-          onDelete(item);
-      }
+      if (onDelete) onDelete(item);
   }
 
   const renderProgressText = () => {
@@ -160,7 +146,6 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
           return trackingData.status === 'Completado' ? <span className="text-green-400 font-bold">Visto</span> : 'Pendiente';
       }
       
-      const label = isBook ? 'Pág.' : 'Cap.';
       const progress = `${trackingData.watchedEpisodes}/${trackingData.totalEpisodesInSeason}`;
       return (
          <span className="flex items-center gap-1 font-mono">
@@ -189,12 +174,13 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
     <div 
       ref={cardRef}
       onClick={onClick}
-      className={`group bg-surface rounded-xl overflow-hidden shadow-lg border border-slate-800 hover:border-opacity-50 cursor-pointer transition-all duration-700 ease-out hover:shadow-2xl relative ${isReturnDue ? 'ring-2 ring-red-500 shadow-red-900/40' : ''} ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+      className={`group bg-surface rounded-xl overflow-hidden shadow-lg border border-slate-800 hover:border-opacity-50 cursor-pointer transition-transform duration-300 ease-out hover:shadow-2xl relative ${isReturnDue ? 'ring-2 ring-red-500 shadow-red-900/40' : ''} ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
       }`}
       style={{
-        // Add a slight random delay for the staggered effect if loading multiple at once
-        transitionDelay: `${Math.random() * 100}ms` 
+        willChange: 'transform, opacity', // Performance hint for GPU
+        contentVisibility: 'auto', // Browser optimization for layout
+        containIntrinsicSize: '300px 450px' // Hint for content visibility
       }}
     >
       {isReturnDue && (
@@ -204,23 +190,25 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       )}
 
       <div className="relative aspect-[2/3] md:aspect-[3/4] overflow-hidden bg-slate-900">
-        {/* Placeholder / Skeleton while loading */}
-        <div className={`absolute inset-0 bg-slate-800 animate-pulse transition-opacity duration-500 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`} />
+        {/* Skeleton */}
+        <div className={`absolute inset-0 bg-slate-800 ${imageLoaded ? 'hidden' : 'animate-pulse'}`} />
 
-        {/* The Actual Image */}
+        {/* Image - Optimized */}
         {imgSrc && (
             <img 
             src={imgSrc} 
             alt={aiData.title}
             onError={handleImageError}
             onLoad={() => setImageLoaded(true)}
-            className={`w-full h-full object-cover transition-all duration-700 ${
-                imageLoaded ? 'opacity-90 group-hover:opacity-100 scale-100' : 'opacity-0 scale-105'
+            loading="lazy"
+            decoding="async"
+            className={`w-full h-full object-cover transition-opacity duration-500 ${
+                imageLoaded ? 'opacity-90 group-hover:opacity-100' : 'opacity-0'
             }`}
             />
         )}
         
-        {/* Type Badge - Moved to Top Left */}
+        {/* Type Badge */}
         <div className="absolute top-2 left-2 z-50">
             <span 
                 className="flex items-center gap-1.5 px-2 py-1 rounded-md text-white text-[10px] md:text-[11px] font-bold uppercase tracking-wider backdrop-blur-md shadow-lg border border-white/20"
@@ -231,9 +219,8 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
             </span>
         </div>
 
-        {/* Action Buttons Stack (Top Right) */}
+        {/* Action Buttons */}
         <div className="absolute top-2 right-2 z-50 flex flex-col gap-2">
-            {/* Favorite Toggle */}
             {onToggleFavorite && (
                 <button
                     onClick={handleFavoriteClick}
@@ -246,21 +233,18 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
                 </button>
             )}
             
-            {/* Read-only Favorite Indicator (if no toggle function but is favorite) */}
             {isFavorite && !onToggleFavorite && (
                 <div className="p-1.5 rounded-full bg-black/20 backdrop-blur-sm">
                     <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                 </div>
             )}
 
-            {/* Ghost Favorite Indicator to show state when not hovering (if toggle exists) */}
              {isFavorite && onToggleFavorite && (
                 <div className="absolute top-0 right-0 p-1.5 rounded-full bg-black/20 backdrop-blur-sm pointer-events-none group-hover:opacity-0 transition-opacity">
                     <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                 </div>
             )}
 
-            {/* Delete Button */}
             {onDelete && (
                 <button
                     onClick={handleDeleteClick}
@@ -272,11 +256,10 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
             )}
         </div>
         
-        {/* Wishlist / Upcoming Context Overlays */}
+        {/* Wishlist Overlay */}
         {isPlanned && (
              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white backdrop-blur-[1px] p-4 text-center z-20">
                   {timeRemaining ? (
-                    // Scenario A: Future Date Found
                     <>
                         <div className="bg-slate-900/80 p-2 md:p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
                             <Hourglass className="w-5 h-5 md:w-6 md:h-6 text-yellow-400 animate-pulse" />
@@ -285,7 +268,6 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
                         <span className="text-[10px] md:text-xs text-yellow-400 mt-1 font-bold bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-md border border-white/10">{targetDateDisplay}</span>
                     </>
                   ) : (
-                    // Scenario B: No Date / Waiting for Announcement
                     <>
                          <div className="w-12 h-12 rounded-full border border-white/20 bg-black/40 backdrop-blur-sm flex items-center justify-center mb-2">
                             <CalendarDays className="w-6 h-6 text-white/80" />
@@ -297,11 +279,11 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
              </div>
         )}
 
-        {/* Quick Action Button - Floating on Image - Z-INDEX INCREASED TO 40 TO FIX OVERLAP */}
+        {/* Quick Action */}
         {showQuickAction && (
              <button
                 onClick={handleQuickAction}
-                className={`absolute bottom-16 md:bottom-14 right-2 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-lg transition-all transform active:scale-90 z-40 md:opacity-0 md:group-hover:opacity-100 opacity-100 ${
+                className={`absolute bottom-16 md:bottom-14 right-2 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90 z-40 md:opacity-0 md:group-hover:opacity-100 opacity-100 ${
                     isCompleteSeason ? 'bg-green-500 hover:bg-green-600' : 'bg-white/90 hover:bg-white text-slate-900'
                 }`}
                 title={isCompleteSeason ? "Completar" : "+1"}
@@ -314,14 +296,14 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
              </button>
         )}
 
-        {/* Title Container - Z-30 to sit above overlays */}
+        {/* Title */}
         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-3 pt-12 z-30">
            <h3 className="text-white font-bold text-sm leading-tight line-clamp-2 drop-shadow-md">{aiData.title}</h3>
            <p className="text-slate-400 text-[10px] md:text-xs mt-0.5 truncate">{renderStatus()}</p>
         </div>
       </div>
       
-      {/* Progress Bar Mini - Dynamic Color */}
+      {/* Mini Progress Bar */}
       <div className="h-1 w-full bg-slate-700">
          <div 
            className="h-full transition-all duration-500" 
@@ -348,4 +330,4 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = ({ item, onClic
       </div>
     </div>
   );
-};
+});
