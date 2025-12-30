@@ -485,57 +485,60 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
   };
 
   // --- Distribution Chart Helpers ---
-  const CHART_COLORS = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#64748b'];
+  // Extended Palette for more slices
+  const CHART_COLORS = [
+      '#6366f1', // Indigo
+      '#ec4899', // Pink
+      '#10b981', // Emerald
+      '#f59e0b', // Amber
+      '#3b82f6', // Blue
+      '#8b5cf6', // Violet
+      '#f43f5e', // Rose
+      '#14b8a6', // Teal
+      '#84cc16', // Lime
+      '#ef4444', // Red
+      '#06b6d4', // Cyan
+      '#d946ef', // Fuchsia
+      '#eab308', // Yellow
+      '#22c55e', // Green
+      '#64748b'  // Slate (Fallback)
+  ];
   
   const getDistributionData = () => {
       const sourceMap = distributionAxis === 'genre' ? stats.genreConsumption : stats.emotionConsumption;
-      const entries = Object.entries(sourceMap).sort((a, b) => b[1] - a[1]);
+      // Filter out zero or negative values just in case
+      const entries = Object.entries(sourceMap)
+          .filter(([, val]) => val > 0)
+          .sort((a, b) => b[1] - a[1]);
       
       const totalTime = entries.reduce((acc, curr) => acc + curr[1], 0);
-      if (totalTime === 0) return { chartData: [], othersPercent: 0 };
+      if (totalTime === 0) return { chartData: [], totalTime: 0 };
 
-      // Take top 6
-      const topEntries = entries.slice(0, 6);
-      const otherEntries = entries.slice(6);
-      const othersTime = otherEntries.reduce((acc, curr) => acc + curr[1], 0);
-
-      const chartData = topEntries.map((entry, idx) => ({
+      // Map ALL entries without aggregation. 
+      // SVG can handle small slices. The legend will scroll.
+      const chartData = entries.map((entry, idx) => ({
           label: entry[0],
           value: entry[1],
           percent: (entry[1] / totalTime) * 100,
           color: CHART_COLORS[idx % CHART_COLORS.length]
       }));
 
-      if (othersTime > 0) {
-          chartData.push({
-              label: 'Otros',
-              value: othersTime,
-              percent: (othersTime / totalTime) * 100,
-              color: '#334155' // Slate-700 for Others
-          });
-      }
-
       return { chartData, totalTime };
   };
 
   const { chartData, totalTime } = getDistributionData();
 
-  // Generate Conic Gradient String
-  const getConicGradient = () => {
-      if (chartData.length === 0) return 'conic-gradient(#1e293b 0% 100%)';
-      
-      let gradientStr = 'conic-gradient(';
-      let currentPercent = 0;
-      
-      chartData.forEach((slice, idx) => {
-          const endPercent = currentPercent + slice.percent;
-          gradientStr += `${slice.color} ${currentPercent}% ${endPercent}%${idx < chartData.length - 1 ? ', ' : ''}`;
-          currentPercent = endPercent;
-      });
-      
-      gradientStr += ')';
-      return gradientStr;
-  };
+  // SVG Chart Calculation (Pie/Donut logic)
+  const radius = 25;
+  const circumference = 2 * Math.PI * radius;
+  let cumulativePercent = 0;
+
+  const svgSlices = chartData.map((slice) => {
+      const strokeDasharray = `${(slice.percent / 100) * circumference} ${circumference}`;
+      const strokeDashoffset = -((cumulativePercent / 100) * circumference);
+      cumulativePercent += slice.percent; // Increment for next slice start
+      return { ...slice, strokeDasharray, strokeDashoffset };
+  });
 
   return (
     <div className="animate-fade-in space-y-6 pb-12 relative">
@@ -779,7 +782,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
             )}
        </div>
 
-       {/* DISTRIBUTION BY TAG WIDGET (NEW) */}
+       {/* DISTRIBUTION BY TAG WIDGET (SVG Pie Chart) */}
        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md transition-all">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
@@ -809,31 +812,43 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
             </div>
 
             {chartData.length > 0 ? (
-                <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 justify-center">
+                <div className="flex flex-col md:flex-row items-start gap-8 md:gap-16 justify-center">
                     
-                    {/* The Chart */}
-                    <div className="relative w-48 h-48 md:w-56 md:h-56 flex-shrink-0">
-                        <div 
-                            className="w-full h-full rounded-full shadow-2xl transition-all duration-1000 ease-in-out"
-                            style={{ 
-                                background: getConicGradient(),
-                                boxShadow: '0 0 30px rgba(0,0,0,0.5)'
-                            }}
-                        />
+                    {/* The Chart (SVG Based) */}
+                    <div className="relative w-48 h-48 md:w-56 md:h-56 flex-shrink-0 flex items-center justify-center self-center">
+                        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 transform overflow-visible">
+                           {svgSlices.map((slice, i) => (
+                               <circle
+                                   key={slice.label} // Key ensures React tracks transition
+                                   cx="50"
+                                   cy="50"
+                                   r={radius}
+                                   fill="transparent"
+                                   stroke={slice.color}
+                                   strokeWidth="50" // width=2*radius makes it a solid pie. Use smaller for donut.
+                                   strokeDasharray={slice.strokeDasharray}
+                                   strokeDashoffset={slice.strokeDashoffset}
+                                   className="transition-all duration-1000 ease-out hover:opacity-90 cursor-pointer hover:scale-105 origin-center"
+                               />
+                           ))}
+                        </svg>
+                        {/* Center Hole (Optional, if you want a Donut instead of Pie, reduce strokeWidth above and add a circle here) 
+                            Currently implemented as SOLID PIE as per user request context.
+                        */}
                     </div>
 
-                    {/* The Legend */}
-                    <div className="flex-1 w-full md:w-auto">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+                    {/* The Legend - SCROLLABLE & COMPLETE */}
+                    <div className="flex-1 w-full md:w-auto h-64 overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="grid grid-cols-1 gap-2">
                             {chartData.map((slice, idx) => (
-                                <div key={idx} className="flex items-center justify-between group">
+                                <div key={idx} className="flex items-center justify-between group cursor-default hover:bg-slate-800/50 p-1.5 rounded-lg transition-colors">
                                     <div className="flex items-center gap-3">
                                         <div 
-                                            className="w-3 h-3 rounded-full shadow-sm"
+                                            className="w-3 h-3 rounded-full shadow-sm flex-shrink-0"
                                             style={{ backgroundColor: slice.color }}
                                         />
-                                        <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors truncate max-w-[120px]" title={slice.label}>
-                                            {slice.label === 'Otros' ? 'Otros tags' : slice.label}
+                                        <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors truncate max-w-[150px] md:max-w-[200px]" title={slice.label}>
+                                            {slice.label}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
