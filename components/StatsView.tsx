@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { MediaItem, UserProfile, RATING_TO_SCORE } from '../types';
+import { MediaItem, UserProfile, RATING_TO_SCORE, normalizeGenre } from '../types';
 import { BarChart2, Star, Layers, Trophy, Clock, PieChart, Timer, Crown, Zap, Settings, X, Save, Tv, BookOpen, MonitorPlay, Film, Award, Medal, Scroll, Clapperboard, Book, Layout, Hash, Heart } from 'lucide-react';
 
 interface StatsViewProps {
@@ -58,6 +58,13 @@ interface StatsData {
   emotionConsumption: Record<string, number>;
 }
 
+// Helper to Capitalize Title Case nicely (e.g. "ciencia ficción" -> "Ciencia Ficción")
+const toTitleCase = (str: string) => {
+  return str.toLowerCase().replace(/(?:^|\s)\w/g, function(match) {
+      return match.toUpperCase();
+  });
+};
+
 export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUpdateProfile }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
@@ -110,12 +117,13 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         typeCount[type] = (typeCount[type] || 0) + 1;
     });
 
-    // Genre Distribution (Count based)
+    // Genre Distribution (Count based) - Normalized
     const genreCount: Record<string, number> = {};
     library.forEach(item => {
         const genres = item.aiData.genres || [];
         genres.forEach(g => {
-            genreCount[g] = (genreCount[g] || 0) + 1;
+            const normalizedKey = normalizeGenre(g); // Use helper from types to ensure 'Acción' == 'acción'
+            genreCount[normalizedKey] = (genreCount[normalizedKey] || 0) + 1;
         });
     });
     // Find top genre
@@ -124,7 +132,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     Object.entries(genreCount).forEach(([g, count]) => {
         if (count > maxGenreCount) {
             maxGenreCount = count;
-            topGenre = g;
+            topGenre = toTitleCase(g);
         }
     });
 
@@ -149,7 +157,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
             if (r.startsWith('God Tier')) {
                 const genres = item.aiData.genres || [];
                 genres.forEach(g => {
-                    godTierGenres[g] = (godTierGenres[g] || 0) + 1;
+                    const normalizedKey = normalizeGenre(g);
+                    godTierGenres[normalizedKey] = (godTierGenres[normalizedKey] || 0) + 1;
                 });
             }
         }
@@ -162,7 +171,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     Object.entries(godTierGenres).forEach(([g, count]) => {
         if (count > maxGodTierCount) {
             maxGodTierCount = count;
-            highestRatedGenre = g;
+            highestRatedGenre = toTitleCase(g);
         }
     });
 
@@ -252,18 +261,22 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 categoryKey = 'Libros/Novelas';
             }
 
-            // --- Distribution Logic (New) ---
+            // --- Distribution Logic (New with Strict Normalization) ---
             if (itemTime > 0) {
                 // Axis 1: Genres
                 const genres = item.aiData.genres || [];
                 genres.forEach(g => {
-                    genreConsumption[g] = (genreConsumption[g] || 0) + itemTime;
+                    const normalized = normalizeGenre(g);
+                    const label = toTitleCase(normalized); // Enforce consistent casing
+                    genreConsumption[label] = (genreConsumption[label] || 0) + itemTime;
                 });
                 
                 // Axis 2: Emotions
                 const emotions = item.trackingData.emotionalTags || [];
                 emotions.forEach(t => {
-                    emotionConsumption[t] = (emotionConsumption[t] || 0) + itemTime;
+                    // Normalize emotions too just in case (trim + title case)
+                    const label = toTitleCase(t.trim());
+                    emotionConsumption[label] = (emotionConsumption[label] || 0) + itemTime;
                 });
             }
 
@@ -506,24 +519,34 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
   
   const getDistributionData = () => {
       const sourceMap = distributionAxis === 'genre' ? stats.genreConsumption : stats.emotionConsumption;
-      // Filter out zero or negative values just in case
-      const entries = Object.entries(sourceMap)
-          .filter(([, val]) => val > 0)
-          .sort((a, b) => b[1] - a[1]);
       
-      const totalTime = entries.reduce((acc, curr) => acc + curr[1], 0);
-      if (totalTime === 0) return { chartData: [], totalTime: 0 };
+      const MIN_PERCENTAGE_THRESHOLD = 2.5; // Only show items with >= 2.5% contribution
 
-      // Map ALL entries without aggregation. 
-      // SVG can handle small slices. The legend will scroll.
-      const chartData = entries.map((entry, idx) => ({
+      // 1. Calculate Grand Total of ALL items (for real percentage calc logic, though we might normalize visual)
+      // Actually, standard is to ignore small items.
+      const entries = Object.entries(sourceMap).sort((a, b) => b[1] - a[1]);
+      
+      const grandTotal = entries.reduce((acc, curr) => acc + curr[1], 0);
+      if (grandTotal === 0) return { chartData: [], totalTime: 0 };
+
+      // 2. Filter out insignificant items
+      const significantEntries = entries.filter(([, val]) => {
+          const percent = (val / grandTotal) * 100;
+          return percent >= MIN_PERCENTAGE_THRESHOLD;
+      });
+
+      // 3. Recalculate Total for the Chart Geometry (So the pie is full 360 deg for the visible items)
+      // This "Normalizes" the chart to only show the significant items as 100% of the visual space.
+      const visibleTotal = significantEntries.reduce((acc, curr) => acc + curr[1], 0);
+
+      const chartData = significantEntries.map((entry, idx) => ({
           label: entry[0],
           value: entry[1],
-          percent: (entry[1] / totalTime) * 100,
+          percent: (entry[1] / visibleTotal) * 100, // Visual percent (adds up to 100% of visible slices)
           color: CHART_COLORS[idx % CHART_COLORS.length]
       }));
 
-      return { chartData, totalTime };
+      return { chartData, totalTime: visibleTotal };
   };
 
   const { chartData, totalTime } = getDistributionData();
@@ -865,7 +888,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 <div className="w-full text-center py-10 opacity-50 flex flex-col items-center bg-slate-800/50 rounded-xl border border-slate-700/50 border-dashed">
                      <PieChart className="w-10 h-10 text-slate-500 mb-2" />
                      <p className="text-sm font-medium text-slate-400">Sin datos suficientes.</p>
-                     <p className="text-xs text-slate-600">Añade tags a tus obras consumidas para ver este gráfico.</p>
+                     <p className="text-xs text-slate-600">Añade tags a tus obras o aumenta tu consumo para ver este gráfico.</p>
                 </div>
             )}
        </div>
