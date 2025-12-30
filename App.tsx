@@ -193,6 +193,14 @@ export default function App() {
       await saveUserProfile(updatedProfile);
   };
 
+  // Helper to check duplicates
+  const checkDuplicate = useCallback((title: string, type: string) => {
+      return library.find(item => 
+          item.aiData.title.toLowerCase().trim() === title.toLowerCase().trim() &&
+          item.aiData.mediaType === type
+      );
+  }, [library]);
+
   const handleSearch = async (query: string) => {
     if (!userProfile?.apiKey) {
         setSearchError("No tienes una API Key configurada. Ve a Configuración.");
@@ -213,6 +221,15 @@ export default function App() {
       if (aiData.synopsis.includes("No se pudo obtener información automática")) {
          setSearchError(aiData.synopsis); // Use the message returned by service
          return;
+      }
+
+      // DUPLICATE CHECK
+      const existingItem = checkDuplicate(aiData.title, aiData.mediaType);
+      if (existingItem) {
+          showToast(`"${aiData.title}" (${aiData.mediaType}) ya existe en tu biblioteca.`, "info");
+          setCurrentMedia(existingItem);
+          setView('details'); // Redirect directly to existing item
+          return;
       }
 
       const newItem: MediaItem = {
@@ -252,6 +269,13 @@ export default function App() {
   const handleManualEntry = () => {
       if (!manualTitle.trim()) {
           showToast("El título es obligatorio", "error");
+          return;
+      }
+
+      // DUPLICATE CHECK
+      const existingItem = checkDuplicate(manualTitle, manualType);
+      if (existingItem) {
+          showToast(`"${existingItem.aiData.title}" ya existe como ${manualType}.`, "error");
           return;
       }
 
@@ -389,15 +413,24 @@ export default function App() {
   }, [currentMedia, showToast]);
 
   const addToLibrary = async () => {
-    if (currentMedia && !library.find(i => i.id === currentMedia.id)) {
-      const mediaToAdd = { ...currentMedia, lastInteraction: Date.now() };
-      const newLib = [mediaToAdd, ...library];
-      setLibrary(newLib);
-      await saveMediaItem(mediaToAdd);
-      setCurrentMedia(null);
-      setSearchKey(prev => prev + 1);
-      setManualTitle('');
-      showToast("Agregado a la biblioteca", "success");
+    if (currentMedia) {
+      // Final duplicate check in case title was edited in draft mode
+      const existingItem = checkDuplicate(currentMedia.aiData.title, currentMedia.aiData.mediaType);
+      if (existingItem) {
+          showToast(`Error: "${existingItem.aiData.title}" ya existe en la biblioteca.`, "error");
+          return;
+      }
+
+      if (!library.find(i => i.id === currentMedia.id)) {
+        const mediaToAdd = { ...currentMedia, lastInteraction: Date.now() };
+        const newLib = [mediaToAdd, ...library];
+        setLibrary(newLib);
+        await saveMediaItem(mediaToAdd);
+        setCurrentMedia(null);
+        setSearchKey(prev => prev + 1);
+        setManualTitle('');
+        showToast("Agregado a la biblioteca", "success");
+      }
     }
   };
 
