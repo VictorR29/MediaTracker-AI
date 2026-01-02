@@ -2,8 +2,8 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { useToast } from '../context/ToastContext';
-import { generateReviewSummary, searchMediaInfo } from '../services/geminiService';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy, Pencil, Save, RefreshCw } from 'lucide-react';
+import { generateReviewSummary, searchMediaInfo, updateMediaInfo } from '../services/geminiService';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy, Pencil, Save, RefreshCw, Search } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -13,9 +13,10 @@ interface MediaCardProps {
   username?: string;
   apiKey?: string; // New prop for AI generation
   initialEditMode?: boolean; // New prop to start in edit mode
+  onSearch?: (query: string) => void; // New prop for content search
 }
 
-export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false, onDelete, username, apiKey, initialEditMode = false }) => {
+export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = false, onDelete, username, apiKey, initialEditMode = false, onSearch }) => {
   const { showToast } = useToast();
   const [tracking, setTracking] = useState<UserTrackingData>(item.trackingData);
   const [progressPercent, setProgressPercent] = useState(0);
@@ -77,17 +78,32 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
      const templates = [
          // T1: Victoria Clásica
-         `¡Victoria, ${user}! Has conquistado "${title}" y añadido otra gema a tu colección.`,
+         { 
+             title: `¡Victoria, ${user}!`, 
+             body: `Has conquistado "${title}" y añadido otra gema a tu colección.` 
+         },
          // T2: Despedida Personaje
-         character 
-            ? `¡Felicidades! Ha sido un largo viaje junto a ${character}. La historia de "${title}" vivirá en tu memoria.`
-            : `¡Enhorabuena! Has llegado al final de "${title}". Un viaje inolvidable.`,
+         { 
+             title: character ? `¡Felicidades!` : `¡Enhorabuena!`, 
+             body: character 
+                ? `Ha sido un largo viaje junto a ${character}. La historia de "${title}" vivirá en tu memoria.`
+                : `Has llegado al final de "${title}". Un viaje inolvidable.`
+         },
          // T3: Logro Desbloqueado
-         `¡Logro Desbloqueado! Completaste "${title}". Tu perfil de ${item.aiData.mediaType} sube de nivel.`,
+         { 
+             title: `¡Logro Desbloqueado!`, 
+             body: `Completaste "${title}". Tu perfil de ${item.aiData.mediaType} sube de nivel.`
+         },
          // T4: Emocional
-         `Has cerrado el ciclo de "${title}", ${user}. Es hora de procesar lo vivido.`,
+         { 
+             title: `Ciclo cerrado.`, 
+             body: `Has completado "${title}", ${user}. Es hora de procesar lo vivido.` 
+         },
          // T5: Coleccionista
-         `Una obra más para los libros de historia. "${title}" ha sido completada con éxito.`
+         { 
+             title: `Honor a quien honor merece.`, 
+             body: `"${title}" ha sido completada con éxito. Tu colección brilla más hoy.` 
+         }
      ];
 
      // Random selection to feel dynamic
@@ -176,15 +192,31 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     
     setIsRefreshingInfo(true);
     try {
-        const freshData = await searchMediaInfo(item.aiData.title, apiKey);
-        onUpdate({
-            ...item,
-            aiData: freshData
-        });
-        showToast("Metadatos actualizados con IA", "success");
+        // Use the new smart update service
+        const { updatedData, hasChanges } = await updateMediaInfo(item.aiData, apiKey);
+        
+        if (hasChanges) {
+            const mergedAiData = {
+                ...item.aiData,
+                ...updatedData,
+                // Ensure we don't overwrite if API returns null/undefined for fields we want to keep
+                synopsis: updatedData.synopsis || item.aiData.synopsis,
+                // Explicitly preserve image and color
+                coverImage: item.aiData.coverImage,
+                primaryColor: item.aiData.primaryColor
+            };
+
+            onUpdate({
+                ...item,
+                aiData: mergedAiData
+            });
+            showToast("Información actualizada con éxito", "success");
+        } else {
+            showToast("Ya posees la información más reciente", "info");
+        }
     } catch (error) {
         console.error("Refresh error:", error);
-        showToast("Error al actualizar la información", "error");
+        showToast("Error al verificar actualizaciones", "error");
     } finally {
         setIsRefreshingInfo(false);
     }
@@ -557,6 +589,74 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     "Pérdida de tiempo": { icon: Trash2, label: "Pérdida de tiempo", shortLabel: "Basura" },
   };
 
+  // Helper to parse and render complex content strings
+  const processContentString = (text: string) => {
+      // Basic cleanup first
+      let processed = text.replace(/\), /g, ')\n');
+      
+      // If the content comes from the new format (Header + Indented), it should already be newlines.
+      // But we double check for legacy comma separation just in case.
+      if (!text.includes('\n')) {
+          // Attempt to split legacy comma lists intelligently
+          processed = processed.replace(/, (\d+ )/g, '\n$1');
+      }
+
+      return processed.split('\n').filter(line => line.trim() !== '');
+  };
+
+  const renderContentLine = (line: string, index: number) => {
+    // Regex to capture title in single or double quotes
+    // Looks for "1 Film ('Title')" or "Pelicula ('Title')"
+    const movieRegex = /(?:Film|Movie|Película|Special|Especial|OVA).*?['"“](.+?)['"”]/i;
+    const match = line.match(movieRegex);
+
+    // Classification Logic
+    const trimLine = line.trim();
+    // 1. Headers: "X Temporadas" or "X Seasons" (No dash, starts with number)
+    const isSeasonHeader = /^\d+\s+(Temporadas|Seasons|Series)/i.test(trimLine) && !trimLine.startsWith('-');
+    
+    // 2. Details: Starts with "-" or "Season X"
+    const isSeasonDetail = trimLine.startsWith('-') || /^(Season|Temporada)/i.test(trimLine);
+    
+    // 3. Extras: Contains "OVA", "Pelicula", "Film" (and usually has a match from movieRegex)
+    const isExtra = /OVA|Película|Movie|Film|Special|Especial/i.test(trimLine) && !isSeasonHeader;
+
+    // Cleanup line for display
+    let displayLine = trimLine;
+    if (displayLine.endsWith(')')) displayLine = displayLine.slice(0, -1); 
+    if (displayLine.startsWith('-')) displayLine = displayLine.substring(1).trim(); 
+
+    // Styles
+    let containerClass = "text-sm text-slate-200";
+    let bullet = "";
+
+    if (isSeasonHeader) {
+        containerClass = "font-bold text-white text-sm mb-1 mt-2 border-b border-white/10 pb-1";
+    } else if (isSeasonDetail) {
+        containerClass = "ml-4 text-xs text-slate-300 flex items-center gap-2";
+        bullet = "•";
+    } else if (isExtra) {
+        containerClass = "font-semibold text-indigo-200 mt-2 text-xs flex flex-wrap gap-1 items-center bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20 w-fit";
+    }
+
+    return (
+        <div key={index} className={containerClass}>
+            {bullet && <span className="text-slate-500">{bullet}</span>}
+            <span>{displayLine}</span>
+            {match && onSearch && (
+                <button
+                    onClick={() => onSearch(match[1])}
+                    className="flex items-center gap-1 px-2 py-0.5 bg-primary/20 hover:bg-primary/40 text-primary text-[10px] rounded border border-primary/30 transition-colors ml-1 cursor-pointer"
+                    title={`Buscar "${match[1]}" en la biblioteca`}
+                >
+                    <Search className="w-3 h-3" />
+                    <span className="underline font-medium">{match[1]}</span>
+                </button>
+            )}
+        </div>
+    );
+  };
+
   return (
     <div 
       className="bg-surface rounded-2xl shadow-xl overflow-hidden border w-full max-w-5xl mx-auto transition-all duration-500"
@@ -763,19 +863,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                        className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-white focus:border-primary outline-none resize-y min-h-[60px]"
                        value={editTotalContent}
                        onChange={(e) => setEditTotalContent(e.target.value)}
-                       placeholder={`Ej: 2 Temporadas:\nTemporada 1: 12 Caps\nTemporada 2: 24 Caps`}
+                       placeholder={`Ej: 2 Temporadas:\n- Temporada 1: 12 Caps\n- Temporada 2: 24 Caps`}
                      />
                 ) : (
-                    <div className="text-sm">
-                        {item.aiData.totalContent.includes('\n') ? (
-                            item.aiData.totalContent.split('\n').map((line, i) => (
-                                <div key={i} className={`${i === 0 ? 'font-bold text-slate-200 mb-1' : 'text-slate-400 text-xs ml-0'}`}>
-                                    {line}
-                                </div>
-                            ))
-                        ) : (
-                            item.aiData.totalContent
-                        )}
+                    <div className="bg-slate-950/30 p-2 rounded-lg border border-slate-700/30 mt-1">
+                        {processContentString(item.aiData.totalContent).map((line, i) => renderContentLine(line, i))}
                     </div>
                 )}
              </div>
@@ -930,9 +1022,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                       <div className="p-2 bg-amber-500/20 rounded-full flex-shrink-0">
                           <Medal className="w-5 h-5 text-amber-400" />
                       </div>
-                      <p className="text-sm text-amber-100 font-medium leading-relaxed">
-                          {completionMessage}
-                      </p>
+                      <div>
+                          <p className="text-sm font-bold text-amber-100 mb-0.5">
+                              {completionMessage.title}
+                          </p>
+                          <p className="text-xs text-amber-200/80 leading-relaxed">
+                              {completionMessage.body}
+                          </p>
+                      </div>
                   </div>
               )}
               
@@ -1020,7 +1117,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                         </button>
 
                         {tracking.status === 'Completado' && (
-                            <div className="animate-fade-in-up">
+                            <div className="animate-fade-in">
                                 <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
                                     <Calendar className="w-3 h-3" /> Fecha de Visualización
                                 </label>

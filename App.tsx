@@ -1085,6 +1085,7 @@ export default function App() {
                       initialEditMode={searchMode === 'manual'}
                       username={userProfile.username}
                       apiKey={userProfile.apiKey}
+                      onSearch={handleSearch}
                    />
                 </div>
               )}
@@ -1149,6 +1150,7 @@ export default function App() {
                  onDelete={() => handleDeleteRequest(currentMedia)}
                  username={userProfile.username}
                  apiKey={userProfile.apiKey}
+                 onSearch={handleSearch}
               />
            </div>
         )}

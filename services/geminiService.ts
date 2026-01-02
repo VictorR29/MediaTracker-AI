@@ -41,7 +41,6 @@ const extractJSON = (text: string, isArray: boolean = false): any => {
 };
 
 export const searchMediaInfo = async (query: string, apiKey: string): Promise<AIWorkData> => {
-  // Initialize AI client with the user-provided key
   const ai = new GoogleGenAI({ apiKey });
   const modelId = "gemini-2.5-flash"; 
   
@@ -72,7 +71,7 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
       "synopsis": "A concise synopsis in Spanish (max 300 chars)",
       "genres": ["Genre1", "Genre2"],
       "status": "Publication/Broadcast status (e.g., En emisión, Finalizado, En pausa)",
-      "totalContent": "FOR ANIME/SERIES: You MUST use a list format separating lines with '\\n'. Example: '3 Temporadas:\\nTemporada 1: 24 Caps\\nTemporada 2: 12 Caps'. FOR OTHERS: Just string like '120 Capítulos' or 'Duración 1h 57m'.",
+      "totalContent": "FOR ANIME/SERIES: You MUST use a strict vertical format separating lines with '\\n'. Structure:\nLine 1: '[X] Temporadas'\nLine 2+: '- Temporada 1: [X] Caps' (Indented with dash)\nLast Lines: Any Movies/OVAs/Specials listed separately.\n\nExample:\n'3 Temporadas\n- Temporada 1: 24 Caps\n- Temporada 2: 12 Caps\n1 Película ('Mugen Train')'\n\nFOR OTHERS: Just string like '120 Capítulos' or 'Duración 1h 57m'.",
       "coverDescription": "A short English visual description of the official poster (e.g. 'poster of Naruto anime')",
       "coverImage": "Find a DIRECT public URL (https) for the official poster. PREFER URLs from 'upload.wikimedia.org', 'm.media-amazon.com', 'cdn.myanimelist.net' or 'static.wikia.nocookie.net'. The URL MUST end in .jpg, .png or .webp. If uncertain, leave empty.",
       "primaryColor": "Identify the DOMINANT HEX COLOR associated with the work's cover art or branding (e.g. '#FF5733'). It MUST be a 6-digit HEX code.",
@@ -99,38 +98,36 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
       ?.map((chunk: any) => chunk.web)
       .filter((web: any) => web)
-      .map((web: any) => ({ title: web.title, uri: web.uri })) || [];
+      .map((web: any) => ({ title: web.title, uri: web.uri }));
 
-    try {
-      const parsed = extractJSON(text, false);
-      
-      // Normalize Genres immediately upon retrieval
-      const normalizedGenres = Array.isArray(parsed.genres)
-         ? parsed.genres.map((g: string) => normalizeGenre(g))
-         : [];
-      const uniqueGenres = [...new Set(normalizedGenres)]; // Dedupe after normalization
-
-      return {
-        ...parsed,
-        genres: uniqueGenres,
-        sourceUrls: sources
-      };
-    } catch (parseError) {
-      console.error("JSON Parse Error:", parseError, "Raw Text:", text);
-      throw new Error("Could not parse AI response.");
-    }
-
+    const jsonPart = extractJSON(text);
+    
+    return {
+      title: jsonPart.title || query,
+      originalTitle: jsonPart.originalTitle,
+      mediaType: jsonPart.mediaType || "Otro",
+      synopsis: jsonPart.synopsis || "Sinopsis no disponible.",
+      genres: jsonPart.genres || [],
+      status: jsonPart.status || "Desconocido",
+      totalContent: jsonPart.totalContent || "?",
+      coverDescription: jsonPart.coverDescription || "",
+      coverImage: jsonPart.coverImage || "",
+      sourceUrls: sources || [],
+      primaryColor: jsonPart.primaryColor || "#6366f1",
+      releaseDate: jsonPart.releaseDate,
+      endDate: jsonPart.endDate,
+      franchise_link: jsonPart.franchise_link
+    };
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    // Fallback data in case of failure
+    console.error("Gemini Search Error:", error);
     return {
       title: query,
       mediaType: "Otro",
-      synopsis: "No se pudo obtener información automática. Por favor verifica tu API Key o conexión.",
+      synopsis: "No se pudo obtener información automática. Por favor edita los detalles manualmente.",
       genres: [],
       status: "Desconocido",
       totalContent: "?",
-      coverDescription: "abstract shapes",
+      coverDescription: "",
       coverImage: "",
       sourceUrls: [],
       primaryColor: "#6366f1"
@@ -138,52 +135,135 @@ export const searchMediaInfo = async (query: string, apiKey: string): Promise<AI
   }
 };
 
+// NEW: Smart Update Function
+export const updateMediaInfo = async (currentData: AIWorkData, apiKey: string): Promise<{ updatedData: Partial<AIWorkData>, hasChanges: boolean }> => {
+  const ai = new GoogleGenAI({ apiKey });
+  const modelId = "gemini-2.5-flash";
+
+  const prompt = `
+    Act as a media database expert auditor.
+    Target: "${currentData.title}" (${currentData.mediaType}).
+    
+    Current Data:
+    - Status: ${currentData.status}
+    - Total Content: ${currentData.totalContent}
+    - Release Date: ${currentData.releaseDate || 'N/A'}
+    - End Date: ${currentData.endDate || 'N/A'}
+    
+    Task: Search for the absolute latest status, content count (seasons/episodes) and broadcast dates.
+    Compare with Current Data.
+    
+    Rules for Synopsis:
+    - Do NOT suggest a new synopsis if the current one is still accurate.
+    - ONLY suggest a new synopsis if there is a MAJOR update (e.g. a new season started with a different plot focus) AND the current synopsis is clearly outdated.
+    
+    Return a JSON object:
+    {
+      "status": "The latest correct status",
+      "totalContent": "The latest episode/chapter/season count. IMPORTANT: Use vertical structure:\nLine 1: 'X Temporadas'\nLine 2+: '- Temporada X: Y Caps'\nThen Extras (Movies/OVAs).",
+      "releaseDate": "YYYY-MM-DD",
+      "endDate": "YYYY-MM-DD (or null if ongoing)",
+      "synopsis": "New string OR null (if no major change needed)",
+      "hasChanges": boolean (true ONLY if status, totalContent, or dates are factually different. False if they are effectively the same)
+    }
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelId,
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+        // responseMimeType not supported with tools in this context
+      },
+    });
+
+    const text = response.text || "{}";
+    // Use manual extraction since responseMimeType is not used
+    const result = extractJSON(text);
+
+    return {
+        updatedData: {
+            status: result.status,
+            totalContent: result.totalContent,
+            releaseDate: result.releaseDate,
+            endDate: result.endDate,
+            ...(result.synopsis ? { synopsis: result.synopsis } : {})
+        },
+        hasChanges: result.hasChanges
+    };
+
+  } catch (error) {
+    console.error("Update check failed", error);
+    throw error;
+  }
+};
+
+export const generateReviewSummary = async (title: string, rating: string, tags: string[], comment: string, apiKey: string): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey });
+  const modelId = "gemini-2.5-flash";
+  
+  const prompt = `
+    Genera una reseña corta, entusiasta y atractiva para redes sociales (Twitter/Instagram) sobre "${title}".
+    
+    Datos del usuario:
+    - Calificación: ${rating}
+    - Sentimientos: ${tags.join(', ')}
+    - Comentario personal: "${comment}"
+    
+    La reseña debe ser en primera persona, natural, usar emojis y hashtags relevantes. Max 280 caracteres si es posible, pero prioriza el contenido.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+        model: modelId,
+        contents: prompt
+    });
+    return response.text || "Reseña generada.";
+  } catch (e) {
+      console.error(e);
+      return `¡Acabo de ver ${title}! ${rating}. ${tags.join(' ')}.`;
+  }
+};
+
 export interface RecommendationResult {
   title: string;
+  mediaType: string;
   synopsis: string;
   reason: string;
-  mediaType: string;
 }
 
 export const getRecommendations = async (
   likedTitles: string[],
   topGenres: string[],
   excludedTitles: string[],
-  mediaType: string,
+  targetType: string,
   apiKey: string
 ): Promise<RecommendationResult[]> => {
   const ai = new GoogleGenAI({ apiKey });
   const modelId = "gemini-2.5-flash";
 
   const prompt = `
-    Act as a sophisticated media recommendation engine.
+    Act as an expert recommender system for Entertainment Media.
     
-    CONTEXT:
-    The user is looking for recommendations for media type: "${mediaType}".
+    User Profile:
+    - Favorite Titles: ${likedTitles.join(', ')}
+    - Top Genres: ${topGenres.join(', ')}
     
-    INPUT DATA (SEEDS):
-    - Reference Titles (User loves these): ${likedTitles.slice(0, 20).join(", ") || "None specific provided, use genres"}
-    - Key Genres/Vibe: ${topGenres.join(", ") || "General High Quality"}
+    Task: Recommend 4 UNIQUE titles of type "${targetType}" that the user might like.
     
-    TASK:
-    Recommend 4 NEW ${mediaType} titles that perfectly match the mood, themes, storytelling style, and atmosphere of the "Reference Titles" provided above.
-    If no specific titles are provided, rely on the genres.
+    Constraints:
+    - DO NOT recommend any of these already known titles: ${excludedTitles.join(', ')}
+    - The titles must be real and popular enough to be found.
+    - Diversity: Try to include 1 hidden gem and 3 hits.
     
-    CONSTRAINTS:
-    1. EXCLUDE these titles (already in library): ${excludedTitles.join(", ")}.
-    2. Focus on finding matches that share the same "DNA" as the reference titles (e.g. if reference is "Dark Souls", recommend dark fantasy).
-    3. Ensure the recommendations are actually of type "${mediaType}".
-    4. LANGUAGE: The response (synopsis and reason) MUST BE IN SPANISH.
-    
-    OUTPUT FORMAT:
-    Return a strict JSON array of objects. Do not use Markdown.
-    Structure:
+    Return a JSON Array of objects with this structure:
     [
       {
         "title": "Title Name",
-        "synopsis": "One sentence summary in SPANISH.",
-        "reason": "Explain specifically WHY this matches the reference titles (in SPANISH).",
-        "mediaType": "${mediaType}"
+        "mediaType": "${targetType}",
+        "synopsis": "Short synopsis (max 15 words) in Spanish.",
+        "reason": "Why it fits based on user profile (e.g. 'Since you liked X, this has similar Y') in Spanish."
       }
     ]
   `;
@@ -192,62 +272,15 @@ export const getRecommendations = async (
     const response = await ai.models.generateContent({
       model: modelId,
       contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
     });
 
-    const text = response.text || "";
-    return extractJSON(text, true);
+    const text = response.text || "[]";
+    return JSON.parse(text);
   } catch (error) {
     console.error("Recommendation Error:", error);
     return [];
   }
-};
-
-export const generateReviewSummary = async (
-    title: string,
-    rating: string,
-    tags: string[],
-    comment: string,
-    apiKey: string
-): Promise<string> => {
-    const ai = new GoogleGenAI({ apiKey });
-    const modelId = "gemini-2.5-flash";
-
-    const prompt = `
-    Actúa como un asistente personal de redacción para reseñas de entretenimiento.
-    
-    TU TAREA:
-    Sintetizar la opinión de un usuario sobre la obra "${title}" en un solo párrafo corto, cohesivo y natural (máximo 4 líneas).
-    
-    INPUTS DEL USUARIO:
-    1. Calificación: "${rating || 'Sin calificar'}".
-       - Esto define el TONO GENERAL. 
-       - Ejemplo: "God Tier" = tono eufórico/maravillado. "Malo" = tono crítico/decepcionado. "Regular" = tono tibio.
-    2. Etiquetas Emocionales: [${tags.join(', ')}].
-       - Úsalas como los puntos clave o adjetivos de la descripción.
-    3. Comentario Personal: "${comment}".
-       - Intégralo orgánicamente en el texto, preferiblemente como conclusión o matiz personal.
-    
-    REGLAS DE REDACCIÓN:
-    - Escribe en PRIMERA PERSONA (como si fueras el usuario).
-    - NO hagas listas. Debe ser prosa fluida.
-    - NO digas frases robóticas como "Mi calificación es X". Demuestra la calificación con tus palabras.
-    - Si el comentario personal contradice la calificación, dales sentido (ej: "Aunque es buena, el final me decepcionó").
-    - IDIOMA: Español neutro.
-    
-    OUTPUT:
-    Devuelve ÚNICAMENTE el párrafo de texto generado. Nada más.
-    `;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: modelId,
-            contents: prompt,
-        });
-        return response.text?.trim() || "No se pudo generar la reseña.";
-    } catch (error) {
-        console.error("Generate Review Error:", error);
-        // Fallback simple construction in case of error
-        const tagText = tags.length > 0 ? `Destaco: ${tags.join(', ')}.` : '';
-        return `Acabo de ver "${title}". ${rating ? `Mi veredicto: ${rating}.` : ''} ${tagText} ${comment}`;
-    }
 };
