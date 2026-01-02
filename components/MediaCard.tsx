@@ -482,17 +482,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   // --- MODIFIED SHARE LOGIC TO PREVENT PERMISSION ERRORS ---
   const handleShare = async () => {
     const { title } = item.aiData;
-    const { rating, emotionalTags, comment } = tracking;
+    const { rating, emotionalTags, comment, customLinks } = tracking;
+
+    // Format Custom Links to include in recommendation
+    const formattedLinks = customLinks && customLinks.length > 0 
+        ? '\n\n' + customLinks.map(l => `🔗 ${l.title || 'Ver en'}: ${l.url}`).join('\n') 
+        : '';
 
     // Helper to format simple text
-    const getSimpleText = () => `📺 *${title}*\n⭐ Calificación: ${rating || 'Sin calificar'}\n🎭 Mood: ${emotionalTags.join(', ') || 'N/A'}\n📝 "${comment || 'Sin comentarios'}"\n\nTracked with MediaTracker AI`;
+    const getSimpleText = () => `📺 *${title}*\n⭐ Calificación: ${rating || 'Sin calificar'}\n🎭 Mood: ${emotionalTags.join(', ') || 'N/A'}\n📝 "${comment || 'Sin comentarios'}"${formattedLinks}\n\nTracked with MediaTracker AI`;
 
     if (apiKey) {
         setIsGeneratingShare(true);
         let textToShare = "";
         try {
             const synthesizedReview = await generateReviewSummary(title, rating, emotionalTags, comment, apiKey);
-            textToShare = `📺 ${title}\n⭐ ${rating || 'Sin calificar'}\n\n${synthesizedReview}\n\n#MediaTrackerAI #Recomendación`;
+            textToShare = `📺 ${title}\n⭐ ${rating || 'Sin calificar'}\n\n${synthesizedReview}${formattedLinks}\n\n#MediaTrackerAI #Recomendación`;
         } catch (error) {
             console.error("Error generating review", error);
             showToast("Error de IA. Usando formato simple.", "warning");
