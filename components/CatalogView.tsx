@@ -120,9 +120,10 @@ const Shelf: React.FC<{
             </div>
             
             <div className="relative group/shelf">
-                <div className="flex overflow-x-auto gap-4 md:gap-6 px-4 md:px-8 pb-8 snap-x snap-mandatory scrollbar-hide pt-4">
+                {/* Horizontal Scroll Container - Explicit flex-nowrap and scrollbar hiding */}
+                <div className="flex flex-nowrap overflow-x-auto gap-4 md:gap-6 px-4 md:px-8 pb-8 snap-x snap-mandatory scrollbar-hide pt-4 items-center">
                     {items.map(item => (
-                        <div key={item.id} className="snap-center">
+                        <div key={item.id} className="snap-center flex-shrink-0">
                             <CatalogPoster 
                                 item={item} 
                                 onDetail={() => onOpenDetail(item)}
@@ -130,11 +131,9 @@ const Shelf: React.FC<{
                             />
                         </div>
                     ))}
-                    {/* Padding Right to allow last item visibility */}
+                    {/* Padding Right to allow last item visibility without cut-off */}
                     <div className="w-8 flex-shrink-0"></div> 
                 </div>
-                
-                {/* Visual Cue for Scroll - Left/Right Fades could be added here */}
             </div>
         </div>
     );
@@ -174,11 +173,6 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
             title: genre.charAt(0).toUpperCase() + genre.slice(1),
             items: library.filter(i => i.aiData.genres.map(normalizeGenre).includes(genre))
         }));
-
-        // Exclude items already shown in specific genre rows? 
-        // No, in Netflix style, items can appear in multiple lists (e.g. Action and Anime)
-        // However, we shouldn't duplicate "Continue Watching" items excessively if possible, 
-        // but for simplicity and discoverability, duplication is acceptable in Catalog view.
 
         return {
             continueWatching,
@@ -239,14 +233,22 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
                 )}
             </div>
 
-            {/* CSS Utilities for Flip Card (Injecting via style tag for scoped usage if Tailwind classes missing) */}
+            {/* CSS Utilities for Flip Card and Scrollbar Hiding */}
             <style>{`
                 .perspective-1000 { perspective: 1000px; }
                 .transform-style-3d { transform-style: preserve-3d; }
                 .backface-hidden { backface-visibility: hidden; }
                 .rotate-y-180 { transform: rotateY(180deg); }
-                .scrollbar-hide::-webkit-scrollbar { display: none; }
-                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+                
+                /* Hide Scrollbar for Chrome, Safari and Opera */
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+                /* Hide scrollbar for IE, Edge and Firefox */
+                .scrollbar-hide {
+                    -ms-overflow-style: none;  /* IE and Edge */
+                    scrollbar-width: none;  /* Firefox */
+                }
             `}</style>
         </div>
     );
