@@ -73,6 +73,12 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
   // Consumption Distribution Widget State
   const [distributionAxis, setDistributionAxis] = useState<'genre' | 'emotion'>('genre');
+  const [highlightedSlice, setHighlightedSlice] = useState<string | null>(null);
+
+  // Reset highlight when axis changes
+  useEffect(() => {
+      setHighlightedSlice(null);
+  }, [distributionAxis]);
 
   const [animeDuration, setAnimeDuration] = useState(userProfile.preferences?.animeEpisodeDuration || 24);
   const [seriesDuration, setSeriesDuration] = useState(userProfile.preferences?.seriesEpisodeDuration || 45);
@@ -840,47 +846,73 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                     {/* The Chart (SVG Based) */}
                     <div className="relative w-48 h-48 md:w-56 md:h-56 flex-shrink-0 flex items-center justify-center self-center">
                         <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 transform overflow-visible">
-                           {svgSlices.map((slice, i) => (
-                               <circle
-                                   key={slice.label} // Key ensures React tracks transition
-                                   cx="50"
-                                   cy="50"
-                                   r={radius}
-                                   fill="transparent"
-                                   stroke={slice.color}
-                                   strokeWidth="50" // width=2*radius makes it a solid pie. Use smaller for donut.
-                                   strokeDasharray={slice.strokeDasharray}
-                                   strokeDashoffset={slice.strokeDashoffset}
-                                   className="transition-all duration-1000 ease-out hover:opacity-90 cursor-pointer hover:scale-105 origin-center"
-                               />
-                           ))}
+                           {svgSlices.map((slice, i) => {
+                               const isHighlighted = highlightedSlice === slice.label;
+                               const isDimmed = highlightedSlice !== null && !isHighlighted;
+                               
+                               return (
+                                   <circle
+                                       key={slice.label}
+                                       cx="50"
+                                       cy="50"
+                                       r={radius}
+                                       fill="transparent"
+                                       stroke={slice.color}
+                                       strokeWidth="50"
+                                       strokeDasharray={slice.strokeDasharray}
+                                       strokeDashoffset={slice.strokeDashoffset}
+                                       onClick={() => setHighlightedSlice(isHighlighted ? null : slice.label)}
+                                       className={`transition-all duration-300 ease-out origin-center cursor-pointer 
+                                           ${isHighlighted ? 'scale-110 drop-shadow-lg z-10 relative' : ''}
+                                           ${isDimmed ? 'opacity-30 grayscale-[0.5]' : 'hover:opacity-90 hover:scale-105'}
+                                       `}
+                                       style={{ strokeOpacity: isHighlighted ? 1 : (isDimmed ? 0.4 : 1) }}
+                                   />
+                               );
+                           })}
                         </svg>
-                        {/* Center Hole (Optional, if you want a Donut instead of Pie, reduce strokeWidth above and add a circle here) 
-                            Currently implemented as SOLID PIE as per user request context.
-                        */}
+                        {/* Center Hole Overlay for Donut effect if desired, or text in middle */}
+                        {highlightedSlice && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <span className="text-xs font-bold text-white bg-black/60 px-2 py-1 rounded backdrop-blur-md">
+                                    {chartData.find(d => d.label === highlightedSlice)?.percent.toFixed(1)}%
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     {/* The Legend - SCROLLABLE & COMPLETE */}
                     <div className="flex-1 w-full md:w-auto h-64 overflow-y-auto pr-2 custom-scrollbar">
                         <div className="grid grid-cols-1 gap-2">
-                            {chartData.map((slice, idx) => (
-                                <div key={idx} className="flex items-center justify-between group cursor-default hover:bg-slate-800/50 p-1.5 rounded-lg transition-colors">
+                            {chartData.map((slice, idx) => {
+                                const isHighlighted = highlightedSlice === slice.label;
+                                const isDimmed = highlightedSlice !== null && !isHighlighted;
+                                
+                                return (
+                                <div 
+                                    key={idx} 
+                                    onClick={() => setHighlightedSlice(isHighlighted ? null : slice.label)}
+                                    className={`flex items-center justify-between group cursor-pointer p-1.5 rounded-lg transition-all duration-300
+                                        ${isHighlighted ? 'bg-white/10 shadow-lg border border-white/10 translate-x-1' : 'hover:bg-slate-800/50 border border-transparent'}
+                                        ${isDimmed ? 'opacity-40 grayscale-[0.5]' : 'opacity-100'}
+                                    `}
+                                >
                                     <div className="flex items-center gap-3">
                                         <div 
-                                            className="w-3 h-3 rounded-full shadow-sm flex-shrink-0"
+                                            className={`w-3 h-3 rounded-full shadow-sm flex-shrink-0 transition-transform ${isHighlighted ? 'scale-125' : ''}`}
                                             style={{ backgroundColor: slice.color }}
                                         />
-                                        <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors truncate max-w-[150px] md:max-w-[200px]" title={slice.label}>
+                                        <span className={`text-sm font-medium transition-colors truncate max-w-[150px] md:max-w-[200px] ${isHighlighted ? 'text-white font-bold' : 'text-slate-300 group-hover:text-white'}`} title={slice.label}>
                                             {slice.label}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold text-slate-200">
+                                        <span className={`text-xs transition-colors ${isHighlighted ? 'text-white font-bold' : 'text-slate-200'}`}>
                                             {slice.percent.toFixed(1)}%
                                         </span>
                                     </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
                 </div>
