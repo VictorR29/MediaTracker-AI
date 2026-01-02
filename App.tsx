@@ -3,13 +3,14 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
 import { CompactMediaCard } from './components/CompactMediaCard';
+import { CatalogView } from './components/CatalogView'; // Import CatalogView
 import { Onboarding } from './components/Onboarding';
 import { LoginScreen } from './components/LoginScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { LibraryFilters, FilterState } from './components/LibraryFilters';
 import { StatsView } from './components/StatsView';
-import { DiscoveryView } from './components/DiscoveryView'; // Import DiscoveryView
-import { ContextualGreeting } from './components/ContextualGreeting'; // Import ContextualGreeting
+import { DiscoveryView } from './components/DiscoveryView'; 
+import { ContextualGreeting } from './components/ContextualGreeting'; 
 import { searchMediaInfo } from './services/geminiService';
 import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem, clearLibrary } from './services/storage';
 import { MediaItem, UserProfile, normalizeGenre } from './types';
@@ -30,6 +31,9 @@ export default function App() {
 
   const [view, setView] = useState<'search' | 'library' | 'details' | 'stats' | 'discovery' | 'upcoming'>('search');
   const [searchMode, setSearchMode] = useState<'auto' | 'manual'>('auto');
+  
+  // New View Mode State for Library (Grid vs Catalog)
+  const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'catalog'>('grid');
 
   const [dbReady, setDbReady] = useState(false);
   
@@ -137,6 +141,7 @@ export default function App() {
   // Infinite Scroll Observer
   useEffect(() => {
     if (view !== 'library' && view !== 'upcoming') return;
+    if (libraryViewMode === 'catalog') return; // Disable infinite scroll logic for Catalog view (it has its own structure)
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -152,7 +157,7 @@ export default function App() {
     }
 
     return () => observer.disconnect();
-  }, [view, filters, library]); // Re-attach if view/filters change
+  }, [view, filters, library, libraryViewMode]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -979,6 +984,7 @@ export default function App() {
         {/* SEARCH VIEW */}
         {view === 'search' && (
            <div className="w-full max-w-5xl mx-auto px-2 animate-fade-in">
+              {/* ... (Search UI remains the same) ... */}
               <div className="text-center mb-6">
                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
                     ¿Qué historia descubriste hoy?
@@ -1094,44 +1100,59 @@ export default function App() {
 
         {/* LIBRARY VIEW */}
         {view === 'library' && (
-           <div className="w-full max-w-7xl mx-auto px-4 animate-fade-in pb-10">
-              <LibraryFilters 
-                 filters={filters} 
-                 onChange={setFilters} 
-                 availableGenres={availableGenres}
-              />
+           <div className={`w-full max-w-7xl mx-auto px-0 md:px-4 animate-fade-in pb-10 ${libraryViewMode === 'catalog' ? 'max-w-full' : ''}`}>
+              <div className="px-4 md:px-0">
+                <LibraryFilters 
+                    filters={filters} 
+                    onChange={setFilters} 
+                    availableGenres={availableGenres}
+                    viewMode={libraryViewMode}
+                    onToggleViewMode={() => setLibraryViewMode(prev => prev === 'grid' ? 'catalog' : 'grid')}
+                />
+              </div>
               
-              {filteredLibrary.length === 0 ? (
-                 <div className="text-center py-20 text-slate-500">
-                    <LayoutGrid className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <p className="text-lg">No se encontraron obras con estos filtros.</p>
-                    {filters.onlyFavorites && <p className="text-sm mt-1 text-yellow-500/70">Estás viendo solo favoritos.</p>}
-                    <button onClick={() => setView('search')} className="text-primary hover:underline mt-2">Agregar nueva obra</button>
-                 </div>
+              {/* Conditional Rendering: Grid vs Catalog */}
+              {libraryViewMode === 'catalog' ? (
+                  <CatalogView 
+                      library={filteredLibrary}
+                      onOpenDetail={openDetail}
+                  />
               ) : (
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                    {filteredLibrary.slice(0, visibleCount).map(item => (
-                       <CompactMediaCard 
-                          key={item.id} 
-                          item={item} 
-                          onClick={() => openDetail(item)}
-                          onIncrement={handleQuickIncrement}
-                          onToggleFavorite={handleToggleFavorite}
-                          onDelete={handleDeleteRequest}
-                       />
-                    ))}
-                 </div>
-              )}
-              
-              {/* Load More Trigger */}
-              {visibleCount < filteredLibrary.length && (
-                  <div ref={loadMoreRef} className="py-8 flex justify-center">
-                      <Loader2 className="w-6 h-6 text-slate-600 animate-spin" />
-                  </div>
+                  <>
+                    {filteredLibrary.length === 0 ? (
+                        <div className="text-center py-20 text-slate-500 px-4">
+                            <LayoutGrid className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                            <p className="text-lg">No se encontraron obras con estos filtros.</p>
+                            {filters.onlyFavorites && <p className="text-sm mt-1 text-yellow-500/70">Estás viendo solo favoritos.</p>}
+                            <button onClick={() => setView('search')} className="text-primary hover:underline mt-2">Agregar nueva obra</button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 px-4 md:px-0">
+                            {filteredLibrary.slice(0, visibleCount).map(item => (
+                            <CompactMediaCard 
+                                key={item.id} 
+                                item={item} 
+                                onClick={() => openDetail(item)}
+                                onIncrement={handleQuickIncrement}
+                                onToggleFavorite={handleToggleFavorite}
+                                onDelete={handleDeleteRequest}
+                            />
+                            ))}
+                        </div>
+                    )}
+                    
+                    {/* Load More Trigger */}
+                    {visibleCount < filteredLibrary.length && (
+                        <div ref={loadMoreRef} className="py-8 flex justify-center">
+                            <Loader2 className="w-6 h-6 text-slate-600 animate-spin" />
+                        </div>
+                    )}
+                  </>
               )}
            </div>
         )}
 
+        {/* ... (Rest of views remain unchanged: details, stats, etc.) ... */}
         {/* DETAILS VIEW */}
         {view === 'details' && currentMedia && (
            <div className="w-full px-2 py-4 animate-fade-in">
@@ -1229,6 +1250,7 @@ export default function App() {
         </button>
       )}
 
+      {/* Delete/Import Modals remain the same... */}
       {deleteTarget && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
             <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in-up">

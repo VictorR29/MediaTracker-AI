@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, ArrowUpDown, Tags, Filter, X, Check, Star } from 'lucide-react';
+import { Search, ArrowUpDown, Tags, Filter, X, Check, Star, LayoutGrid, GalleryVerticalEnd } from 'lucide-react';
 import { RATING_OPTIONS } from '../types';
 
 export interface FilterState {
@@ -17,9 +17,11 @@ interface LibraryFiltersProps {
   filters: FilterState;
   onChange: (filters: FilterState) => void;
   availableGenres: string[];
+  viewMode: 'grid' | 'catalog'; // New Prop
+  onToggleViewMode: () => void; // New Prop
 }
 
-export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChange, availableGenres }) => {
+export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChange, availableGenres, viewMode, onToggleViewMode }) => {
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
 
   const handleChange = (key: keyof FilterState, value: any) => {
@@ -40,7 +42,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
   return (
     <>
         {/* Search Bar - Always Visible */}
-        <div className="bg-surface border border-slate-700 rounded-xl p-3 mb-4 space-y-3 shadow-lg">
+        <div className="bg-surface border border-slate-700 rounded-xl p-3 mb-4 space-y-3 shadow-lg relative z-20">
             <div className="flex gap-2">
                 <div className="relative flex-grow">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -65,6 +67,19 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                 >
                     <Star className={`w-5 h-5 ${filters.onlyFavorites ? 'fill-current' : ''}`} />
                     <span className="hidden md:inline-block ml-2 text-sm font-medium">Favoritos</span>
+                </button>
+
+                {/* View Mode Toggle (Catalog vs Grid) */}
+                <button
+                    onClick={onToggleViewMode}
+                    className={`flex items-center justify-center w-10 h-10 border rounded-lg transition-all ${
+                        viewMode === 'catalog'
+                        ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' 
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                    title={viewMode === 'catalog' ? "Volver a Lista" : "Modo Catálogo"}
+                >
+                    {viewMode === 'catalog' ? <LayoutGrid className="w-5 h-5" /> : <GalleryVerticalEnd className="w-5 h-5" />}
                 </button>
 
                 {/* Mobile Filter Trigger Button */}
