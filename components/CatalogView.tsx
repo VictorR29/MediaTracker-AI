@@ -1,7 +1,7 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { MediaItem, normalizeGenre } from '../types';
-import { PlayCircle, Star, Tv, BookOpen, Clapperboard, ChevronRight, Info, Eye } from 'lucide-react';
+import { PlayCircle, Star, Tv, BookOpen, Clapperboard, ChevronRight, ChevronLeft, Info, Eye } from 'lucide-react';
 
 interface CatalogViewProps {
   library: MediaItem[]; // Filtered items from parent
@@ -109,6 +109,36 @@ const Shelf: React.FC<{
     onOpenDetail: (item: MediaItem) => void;
     onHoverColor: (color: string) => void;
 }> = ({ title, icon: Icon, items, onOpenDetail, onHoverColor }) => {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [showLeftArrow, setShowLeftArrow] = useState(false);
+    const [showRightArrow, setShowRightArrow] = useState(true);
+
+    const handleScroll = () => {
+        if (scrollContainerRef.current) {
+            const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+            setShowLeftArrow(scrollLeft > 0);
+            // Use a small threshold (5px) for calculating if we reached the end
+            setShowRightArrow(scrollLeft + clientWidth < scrollWidth - 5);
+        }
+    };
+
+    const scroll = (direction: 'left' | 'right') => {
+        if (scrollContainerRef.current) {
+            const container = scrollContainerRef.current;
+            // Scroll roughly 75% of the visible width
+            const scrollAmount = container.clientWidth * 0.75; 
+            container.scrollBy({
+                left: direction === 'right' ? scrollAmount : -scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    };
+
+    // Initial check when items change
+    useEffect(() => {
+        handleScroll();
+    }, [items]);
+
     if (items.length === 0) return null;
 
     return (
@@ -120,8 +150,33 @@ const Shelf: React.FC<{
             </div>
             
             <div className="relative group/shelf">
-                {/* Horizontal Scroll Container - Explicit flex-nowrap and scrollbar hiding */}
-                <div className="flex flex-nowrap overflow-x-auto gap-4 md:gap-6 px-4 md:px-8 pb-8 snap-x snap-mandatory scrollbar-hide pt-4 items-center">
+                {/* Desktop Navigation Arrows (Hidden on Mobile) */}
+                {showLeftArrow && (
+                    <button
+                        onClick={() => scroll('left')}
+                        className="absolute left-0 top-0 bottom-8 z-30 w-12 bg-gradient-to-r from-black/80 to-transparent flex items-center justify-center opacity-0 group-hover/shelf:opacity-100 transition-opacity duration-300 hidden md:flex cursor-pointer hover:from-black"
+                        aria-label="Scroll Left"
+                    >
+                        <ChevronLeft className="w-10 h-10 text-white drop-shadow-lg" />
+                    </button>
+                )}
+
+                {showRightArrow && (
+                    <button
+                        onClick={() => scroll('right')}
+                        className="absolute right-0 top-0 bottom-8 z-30 w-12 bg-gradient-to-l from-black/80 to-transparent flex items-center justify-center opacity-0 group-hover/shelf:opacity-100 transition-opacity duration-300 hidden md:flex cursor-pointer hover:from-black"
+                        aria-label="Scroll Right"
+                    >
+                        <ChevronRight className="w-10 h-10 text-white drop-shadow-lg" />
+                    </button>
+                )}
+
+                {/* Horizontal Scroll Container */}
+                <div 
+                    ref={scrollContainerRef}
+                    onScroll={handleScroll}
+                    className="flex flex-nowrap overflow-x-auto gap-4 md:gap-6 px-4 md:px-8 pb-8 snap-x snap-mandatory scrollbar-hide pt-4 items-center"
+                >
                     {items.map(item => (
                         <div key={item.id} className="snap-center flex-shrink-0">
                             <CatalogPoster 
