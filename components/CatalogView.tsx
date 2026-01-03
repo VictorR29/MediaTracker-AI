@@ -56,44 +56,58 @@ const CatalogPoster: React.FC<{
 
                 {/* BACK FACE (Info) */}
                 <div 
-                    className="absolute w-full h-full backface-hidden rotate-y-180 rounded-xl overflow-hidden p-4 flex flex-col bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl"
+                    className="absolute w-full h-full backface-hidden rotate-y-180 rounded-xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900"
                     style={{ boxShadow: `inset 0 0 20px ${aiData.primaryColor}20` }}
                 >
-                    <div className="mb-2">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full">
-                            {aiData.mediaType}
-                        </span>
+                    {/* Background Image Layer (Blurred) */}
+                    <div className="absolute inset-0 z-0">
+                         <img 
+                            src={imageSrc} 
+                            alt="" 
+                            className="w-full h-full object-cover blur-[2px] scale-105 opacity-60" 
+                         />
+                         {/* Dark Overlay for Text Readability - Lighter than before */}
+                         <div className="absolute inset-0 bg-slate-950/60"></div>
                     </div>
-                    
-                    <h3 className="text-white font-bold text-sm md:text-base leading-tight mb-2 line-clamp-3">
-                        {aiData.title}
-                    </h3>
-                    
-                    <p className="text-xs text-slate-400 line-clamp-4 mb-4 flex-grow">
-                        {aiData.synopsis}
-                    </p>
 
-                    <div className="mt-auto space-y-3">
-                        {/* Progress Bar */}
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-[10px] text-slate-400">
-                                <span>Progreso</span>
-                                <span>{Math.round(progressPercent)}%</span>
-                            </div>
-                            <div className="h-1 w-full bg-slate-700 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full rounded-full transition-all"
-                                    style={{ width: `${progressPercent}%`, backgroundColor: aiData.primaryColor || '#6366f1' }}
-                                />
-                            </div>
+                    {/* Content Layer */}
+                    <div className="relative z-10 h-full p-4 flex flex-col">
+                        <div className="mb-2">
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-300 border border-slate-600/50 bg-slate-900/50 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                                {aiData.mediaType}
+                            </span>
                         </div>
+                        
+                        <h3 className="text-white font-bold text-sm md:text-base leading-tight mb-2 line-clamp-3 drop-shadow-md text-shadow-sm">
+                            {aiData.title}
+                        </h3>
+                        
+                        <p className="text-xs text-slate-200 line-clamp-4 mb-4 flex-grow drop-shadow-md font-medium text-shadow-sm">
+                            {aiData.synopsis}
+                        </p>
 
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); onDetail(); }}
-                            className="w-full py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 border border-white/10"
-                        >
-                            <Info className="w-3 h-3" /> Ver Detalles
-                        </button>
+                        <div className="mt-auto space-y-3">
+                            {/* Progress Bar */}
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-[10px] text-white font-bold drop-shadow-md">
+                                    <span>Progreso</span>
+                                    <span>{Math.round(progressPercent)}%</span>
+                                </div>
+                                <div className="h-1 w-full bg-slate-700/60 rounded-full overflow-hidden backdrop-blur-sm border border-white/10">
+                                    <div 
+                                        className="h-full rounded-full transition-all shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                                        style={{ width: `${progressPercent}%`, backgroundColor: aiData.primaryColor || '#6366f1' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); onDetail(); }}
+                                className="w-full py-2 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 border border-white/20 backdrop-blur-md shadow-lg"
+                            >
+                                <Info className="w-3 h-3" /> Ver Detalles
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
