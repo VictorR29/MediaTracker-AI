@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { MediaItem, normalizeGenre } from '../types';
 import { PlayCircle, Star, Tv, BookOpen, Clapperboard, ChevronRight, ChevronLeft, Info, Eye } from 'lucide-react';
 
@@ -111,21 +111,27 @@ const Shelf: React.FC<{
 }> = ({ title, icon: Icon, items, onOpenDetail, onHoverColor }) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [showLeftArrow, setShowLeftArrow] = useState(false);
-    const [showRightArrow, setShowRightArrow] = useState(true);
+    // Initialize true if there are enough items to likely overflow (approx > 4-5 on desktop)
+    const [showRightArrow, setShowRightArrow] = useState(items.length > 4); 
 
-    const handleScroll = () => {
+    const checkScroll = useCallback(() => {
         if (scrollContainerRef.current) {
             const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-            setShowLeftArrow(scrollLeft > 0);
-            // Use a small threshold (5px) for calculating if we reached the end
-            setShowRightArrow(scrollLeft + clientWidth < scrollWidth - 5);
+            
+            // Check if scroll is possible
+            const isScrollable = scrollWidth > clientWidth;
+            
+            setShowLeftArrow(scrollLeft > 10);
+            
+            // Tolerance of 10px to handle browser sub-pixel rendering differences
+            const isAtEnd = Math.ceil(scrollLeft + clientWidth) >= scrollWidth - 10;
+            setShowRightArrow(isScrollable && !isAtEnd);
         }
-    };
+    }, []);
 
     const scroll = (direction: 'left' | 'right') => {
         if (scrollContainerRef.current) {
             const container = scrollContainerRef.current;
-            // Scroll roughly 75% of the visible width
             const scrollAmount = container.clientWidth * 0.75; 
             container.scrollBy({
                 left: direction === 'right' ? scrollAmount : -scrollAmount,
@@ -134,10 +140,20 @@ const Shelf: React.FC<{
         }
     };
 
-    // Initial check when items change
+    // Recalculate on items change or resize
     useEffect(() => {
-        handleScroll();
-    }, [items]);
+        // Immediate check
+        checkScroll();
+        
+        // Delayed check to allow DOM layout to settle (important for correct scrollWidth)
+        const timer = setTimeout(checkScroll, 100);
+        
+        window.addEventListener('resize', checkScroll);
+        return () => {
+            window.removeEventListener('resize', checkScroll);
+            clearTimeout(timer);
+        };
+    }, [items, checkScroll]);
 
     if (items.length === 0) return null;
 
@@ -150,31 +166,31 @@ const Shelf: React.FC<{
             </div>
             
             <div className="relative group/shelf">
-                {/* Desktop Navigation Arrows (Hidden on Mobile) */}
+                {/* Desktop Navigation Arrows */}
                 {showLeftArrow && (
                     <button
                         onClick={() => scroll('left')}
-                        className="absolute left-0 top-0 bottom-8 z-30 w-12 bg-gradient-to-r from-black/80 to-transparent flex items-center justify-center opacity-0 group-hover/shelf:opacity-100 transition-opacity duration-300 hidden md:flex cursor-pointer hover:from-black"
+                        className="absolute left-0 top-0 bottom-8 z-30 w-12 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex items-center justify-center opacity-0 group-hover/shelf:opacity-100 transition-opacity duration-300 hidden md:flex cursor-pointer hover:from-black/90"
                         aria-label="Scroll Left"
                     >
-                        <ChevronLeft className="w-10 h-10 text-white drop-shadow-lg" />
+                        <ChevronLeft className="w-10 h-10 text-white drop-shadow-lg transition-transform hover:scale-110" />
                     </button>
                 )}
 
                 {showRightArrow && (
                     <button
                         onClick={() => scroll('right')}
-                        className="absolute right-0 top-0 bottom-8 z-30 w-12 bg-gradient-to-l from-black/80 to-transparent flex items-center justify-center opacity-0 group-hover/shelf:opacity-100 transition-opacity duration-300 hidden md:flex cursor-pointer hover:from-black"
+                        className="absolute right-0 top-0 bottom-8 z-30 w-12 bg-gradient-to-l from-black/80 via-black/40 to-transparent flex items-center justify-center opacity-0 group-hover/shelf:opacity-100 transition-opacity duration-300 hidden md:flex cursor-pointer hover:from-black/90"
                         aria-label="Scroll Right"
                     >
-                        <ChevronRight className="w-10 h-10 text-white drop-shadow-lg" />
+                        <ChevronRight className="w-10 h-10 text-white drop-shadow-lg transition-transform hover:scale-110" />
                     </button>
                 )}
 
                 {/* Horizontal Scroll Container */}
                 <div 
                     ref={scrollContainerRef}
-                    onScroll={handleScroll}
+                    onScroll={checkScroll}
                     className="flex flex-nowrap overflow-x-auto gap-4 md:gap-6 px-4 md:px-8 pb-8 snap-x snap-mandatory scrollbar-hide pt-4 items-center"
                 >
                     {items.map(item => (
@@ -186,7 +202,7 @@ const Shelf: React.FC<{
                             />
                         </div>
                     ))}
-                    {/* Padding Right to allow last item visibility without cut-off */}
+                    {/* Padding Right */}
                     <div className="w-8 flex-shrink-0"></div> 
                 </div>
             </div>
@@ -210,7 +226,6 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
             .sort((a, b) => (b.lastInteraction || 0) - (a.lastInteraction || 0));
 
         // 3. Dynamic Genres
-        // Identify top genres in the CURRENT filtered library
         const genreCounts: Record<string, number> = {};
         library.forEach(item => {
             item.aiData.genres.forEach(g => {
@@ -221,7 +236,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
 
         const topGenres = Object.entries(genreCounts)
             .sort(([, a], [, b]) => b - a)
-            .slice(0, 5) // Limit to top 5 genres to avoid infinite scroll
+            .slice(0, 5) 
             .map(([g]) => g);
 
         const genreShelves = topGenres.map(genre => ({
