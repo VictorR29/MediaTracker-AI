@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { MediaItem, normalizeGenre } from '../types';
-import { PlayCircle, Star, Tv, BookOpen, Clapperboard, ChevronRight, ChevronLeft, Info, Eye } from 'lucide-react';
+import { PlayCircle, Star, Tv, BookOpen, Clapperboard, ChevronRight, ChevronLeft, Info, Eye, Compass } from 'lucide-react';
 
 interface CatalogViewProps {
   library: MediaItem[]; // Filtered items from parent
@@ -213,41 +213,124 @@ const Shelf: React.FC<{
 export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail }) => {
     const [activeColor, setActiveColor] = useState<string>('#0f172a');
 
-    // -- Smart Shelves Logic --
+    // -- Smart Shelves Logic (Anchor + Saturation Redistribution) --
     const shelves = useMemo(() => {
-        // 1. Continue Watching
+        const assignedIds = new Set<string>();
+
+        // 1. PRIORITY: Continue Watching
         const continueWatching = library
             .filter(i => i.trackingData.status === 'Viendo/Leyendo')
             .sort((a, b) => (b.lastInteraction || 0) - (a.lastInteraction || 0));
 
-        // 2. Your Gems (Favorites)
+        continueWatching.forEach(i => assignedIds.add(i.id));
+
+        // 2. PRIORITY: Favorites (Only if not already in Continue Watching)
         const favorites = library
-            .filter(i => i.trackingData.is_favorite)
+            .filter(i => i.trackingData.is_favorite && !assignedIds.has(i.id))
             .sort((a, b) => (b.lastInteraction || 0) - (a.lastInteraction || 0));
 
-        // 3. Dynamic Genres
-        const genreCounts: Record<string, number> = {};
-        library.forEach(item => {
-            item.aiData.genres.forEach(g => {
-                const norm = normalizeGenre(g);
-                genreCounts[norm] = (genreCounts[norm] || 0) + 1;
-            });
+        favorites.forEach(i => assignedIds.add(i.id));
+
+        // 3. REMAINING ITEMS
+        const remainingItems = library.filter(i => !assignedIds.has(i.id));
+        
+        // --- PHASE A: ANCHORING (Primary Genre) ---
+        // Assign items to their FIRST genre initially.
+        const genreBuckets: Record<string, MediaItem[]> = {};
+        
+        // Sort remaining items by recency first
+        remainingItems.sort((a, b) => (b.lastInteraction || 0) - (a.lastInteraction || 0));
+
+        remainingItems.forEach(item => {
+            const genres = item.aiData.genres;
+            const primaryGenre = genres.length > 0 ? normalizeGenre(genres[0]) : 'otros';
+            
+            if (!genreBuckets[primaryGenre]) genreBuckets[primaryGenre] = [];
+            genreBuckets[primaryGenre].push(item);
         });
 
-        const topGenres = Object.entries(genreCounts)
-            .sort(([, a], [, b]) => b - a)
-            .slice(0, 5) 
-            .map(([g]) => g);
+        // --- PHASE B: SATURATION & REDISTRIBUTION ---
+        const SATURATION_LIMIT = 20;
+        const TARGET_MIN_DENSITY = 4;
 
-        const genreShelves = topGenres.map(genre => ({
-            title: genre.charAt(0).toUpperCase() + genre.slice(1),
-            items: library.filter(i => i.aiData.genres.map(normalizeGenre).includes(genre))
-        }));
+        // Iterate through known buckets to find saturated ones
+        Object.keys(genreBuckets).forEach(genre => {
+            const items = genreBuckets[genre];
+            
+            // Only redistribute if the shelf is saturated (> 20 items)
+            if (items.length > SATURATION_LIMIT) {
+                // Keep the Core (First 20 items, or 30% of total if that's larger/safer, but strictly sticking to max 20 per prompt logic)
+                // The prompt says "unless that shelf exceeds... 20". So we cap at 20.
+                const coreItems = items.slice(0, SATURATION_LIMIT);
+                const overflowItems = items.slice(SATURATION_LIMIT);
+                
+                // Set the bucket to just the core for now
+                genreBuckets[genre] = coreItems;
+                
+                // Try to move overflow items
+                const unmoveableItems: MediaItem[] = [];
+
+                overflowItems.forEach(item => {
+                    let moved = false;
+                    
+                    // Check 2nd, 3rd, etc. genres
+                    for (let i = 1; i < item.aiData.genres.length; i++) {
+                        const candidateGenre = normalizeGenre(item.aiData.genres[i]);
+                        const candidateBucket = genreBuckets[candidateGenre] || [];
+                        
+                        // LOGIC: Move if target is NOT saturated (< 20).
+                        // PRIORITY: Strongly prefer if target is SPARSE (< 4) to fill it up.
+                        // Since we iterate genres sequentially for a single item, we take the first valid one.
+                        // Ideally we'd scan all candidate genres and pick the sparsest, but finding *any* valid non-saturated slot is good enough.
+                        
+                        if (candidateBucket.length < SATURATION_LIMIT) {
+                            if (!genreBuckets[candidateGenre]) genreBuckets[candidateGenre] = [];
+                            genreBuckets[candidateGenre].push(item);
+                            moved = true;
+                            break; // Item handled, stop looking
+                        }
+                    }
+
+                    if (!moved) {
+                        unmoveableItems.push(item);
+                    }
+                });
+
+                // If items couldn't be moved, they MUST return to the original bucket
+                // even if it exceeds the limit (Anchor logic takes precedence if no alternatives)
+                if (unmoveableItems.length > 0) {
+                     genreBuckets[genre] = [...genreBuckets[genre], ...unmoveableItems];
+                }
+            }
+        });
+
+        // --- PHASE C: CLEANUP & FORMATTING ---
+        const finalGenreShelves: { title: string; items: MediaItem[] }[] = [];
+        let exploreMoreItems: MediaItem[] = [];
+
+        Object.entries(genreBuckets).forEach(([genre, items]) => {
+            // Filter: If a shelf ended up too small (< 3), dissolve it into Explore More
+            if (items.length < 3) {
+                exploreMoreItems.push(...items);
+            } else {
+                finalGenreShelves.push({
+                    title: genre.charAt(0).toUpperCase() + genre.slice(1),
+                    items: items // Note: Items might be > 20 if redistribution failed, which is acceptable behavior
+                });
+            }
+        });
+
+        // Sort explore items by recency
+        exploreMoreItems.sort((a, b) => (b.lastInteraction || 0) - (a.lastInteraction || 0));
+
+        // ORDERING: Sort shelves by VOLUME (Largest first)
+        finalGenreShelves.sort((a, b) => b.items.length - a.items.length);
 
         return {
             continueWatching,
             favorites,
-            genreShelves
+            genreShelves: finalGenreShelves,
+            exploreMore: exploreMoreItems
         };
     }, [library]);
 
@@ -292,6 +375,15 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
                         onHoverColor={setActiveColor}
                     />
                 ))}
+
+                {/* Shelf 4: Explore More (Fallback) */}
+                <Shelf 
+                    title="Explorar más" 
+                    icon={Compass}
+                    items={shelves.exploreMore} 
+                    onOpenDetail={onOpenDetail}
+                    onHoverColor={setActiveColor}
+                />
 
                 {/* Empty State */}
                 {library.length === 0 && (
