@@ -350,13 +350,22 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
 
     return (
         <div className="relative min-h-screen pb-20">
-            {/* Dynamic Ambient Background */}
+            {/* Dynamic Ambient Background - Solid Layer with transition */}
             <div 
-                className="fixed inset-0 z-0 pointer-events-none transition-colors duration-1000 ease-in-out"
+                className="fixed inset-0 z-0 pointer-events-none transition-[background-color] duration-700 ease-in-out"
                 style={{ 
-                    background: `radial-gradient(circle at 50% 30%, ${activeColor}40 0%, #0f172a 70%)` 
+                    backgroundColor: activeColor,
+                    opacity: 0.5 
                 }}
             />
+            {/* Vignette Mask Layer - Fixed Gradient to blend center into dark background */}
+            <div 
+                className="fixed inset-0 z-0 pointer-events-none"
+                style={{ 
+                    background: 'radial-gradient(circle at 50% 30%, transparent 0%, #0f172a 80%)'
+                }}
+            />
+            {/* Blur Texture Layer */}
             <div className="fixed inset-0 z-0 bg-slate-900/40 backdrop-blur-3xl pointer-events-none"></div>
 
             <div className="relative z-10 pt-4">
