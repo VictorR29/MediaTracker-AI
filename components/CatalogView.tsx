@@ -15,6 +15,10 @@ const CatalogPoster: React.FC<{
     onHoverColor: (color: string) => void;
 }> = ({ item, onDetail, onHoverColor }) => {
     const [isFlipped, setIsFlipped] = useState(false);
+    
+    // Safety check: Ensure item data exists
+    if (!item || !item.aiData || !item.trackingData) return null;
+
     const { aiData, trackingData } = item;
     
     // Fallback Image
@@ -229,24 +233,27 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
 
     // -- Smart Shelves Logic (Anchor + Saturation Redistribution) --
     const shelves = useMemo(() => {
+        // Sanitize library to remove corrupted items lacking core data
+        const validLibrary = library.filter(item => item && item.aiData && item.trackingData);
+
         const assignedIds = new Set<string>();
 
         // 1. PRIORITY: Continue Watching
-        const continueWatching = library
+        const continueWatching = validLibrary
             .filter(i => i.trackingData.status === 'Viendo/Leyendo')
             .sort((a, b) => (b.lastInteraction || 0) - (a.lastInteraction || 0));
 
         continueWatching.forEach(i => assignedIds.add(i.id));
 
         // 2. PRIORITY: Favorites (Only if not already in Continue Watching)
-        const favorites = library
+        const favorites = validLibrary
             .filter(i => i.trackingData.is_favorite && !assignedIds.has(i.id))
             .sort((a, b) => (b.lastInteraction || 0) - (a.lastInteraction || 0));
 
         favorites.forEach(i => assignedIds.add(i.id));
 
         // 3. REMAINING ITEMS
-        const remainingItems = library.filter(i => !assignedIds.has(i.id));
+        const remainingItems = validLibrary.filter(i => !assignedIds.has(i.id));
         
         // --- PHASE A: ANCHORING (Primary Genre) ---
         // Assign items to their FIRST genre initially.

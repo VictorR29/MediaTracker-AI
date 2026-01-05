@@ -948,9 +948,10 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
              color={{ bg: 'bg-yellow-500', text: 'text-yellow-500' }} 
           />
            <StatCard 
-             title="Género Top" 
+             title="Género Más Común" 
              value={stats.topGenre} 
-             icon={Star} 
+             subtext={`En ${stats.maxGenreCount} obras (${Math.round((stats.maxGenreCount / (stats.total || 1)) * 100)}%)`}
+             icon={Hash} 
              color={{ bg: 'bg-purple-500', text: 'text-purple-500' }} 
           />
        </div>
