@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
 import { CompactMediaCard } from './components/CompactMediaCard';
-import { CatalogView } from './components/CatalogView'; // Import CatalogView
+import { CatalogView } from './components/CatalogView'; 
 import { Onboarding } from './components/Onboarding';
 import { LoginScreen } from './components/LoginScreen';
 import { SettingsModal } from './components/SettingsModal';
@@ -805,6 +805,8 @@ export default function App() {
          onExportCatalog={handleExportCatalog}
          onImportCatalog={handleImportCatalog}
          onClearLibrary={handleClearLibrary}
+         library={library}
+         onLibraryUpdate={setLibrary}
       />
 
       {/* Header */}
@@ -933,387 +935,357 @@ export default function App() {
         </div>
       </header>
 
-      {/* Mobile Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-slate-700 z-50 flex justify-around px-2 py-2 shadow-2xl">
-         <button 
-           onClick={() => {
-                setView('search');
-                setCurrentMedia(null);
-                setSearchKey(prev => prev + 1);
-            }}
-           className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${view === 'search' ? 'text-primary' : 'text-slate-500'}`}
-         >
-            <Search className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Buscar</span>
-         </button>
-         <button 
-           onClick={() => setView('library')}
-           className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${view === 'library' || view === 'details' ? 'text-primary' : 'text-slate-500'}`}
-         >
-            <LayoutGrid className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Colección</span>
-         </button>
-         <button 
-           onClick={() => setView('upcoming')}
-           className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${view === 'upcoming' ? 'text-primary' : 'text-slate-500'}`}
-         >
-            <Bookmark className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Wishlist</span>
-         </button>
-         <button 
-           onClick={() => setView('discovery')}
-           className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${view === 'discovery' ? 'text-primary' : 'text-slate-500'}`}
-         >
-            <Compass className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Descubrir</span>
-         </button>
-         <button 
-           onClick={() => setView('stats')}
-           className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${view === 'stats' ? 'text-primary' : 'text-slate-500'}`}
-         >
-            <BarChart2 className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Stats</span>
-         </button>
-      </nav>
+      {/* Main Content Area - Renders the selected View */}
+      <main className="max-w-7xl mx-auto px-4 pt-20 md:pt-24 pb-12 animate-fade-in min-h-[calc(100vh-80px)]">
+         
+         {/* Contextual Greeting (Only on Library/Home view) */}
+         {view === 'library' && userProfile && (
+             <ContextualGreeting userProfile={userProfile} library={library} view={view} />
+         )}
 
-      {/* Main Content */}
-      <main className="flex-grow pt-24 md:pt-28 min-h-screen">
-        
-        <ContextualGreeting userProfile={userProfile} library={library} view={view} />
-
-        {/* SEARCH VIEW */}
-        {view === 'search' && (
-           <div className="w-full max-w-5xl mx-auto px-2 animate-fade-in">
-              {/* ... (Search UI remains the same) ... */}
-              <div className="text-center mb-6">
-                 <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
-                    ¿Qué historia descubriste hoy?
-                 </h2>
-                 <p className="text-slate-400">Agrega anime, series, películas o libros a tu colección.</p>
-              </div>
-
-              <div className="max-w-md mx-auto mb-6 bg-slate-800 p-1 rounded-lg border border-slate-700 grid grid-cols-2">
-                  <button 
-                    onClick={() => { setSearchMode('auto'); setCurrentMedia(null); }}
-                    className={`flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all ${searchMode === 'auto' ? 'bg-primary text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                  >
-                      <Search className="w-4 h-4" /> Buscar (Auto)
-                  </button>
-                  <button 
-                    onClick={() => { setSearchMode('manual'); setCurrentMedia(null); }}
-                    className={`flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all ${searchMode === 'manual' ? 'bg-primary text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                  >
-                      <Edit3 className="w-4 h-4" /> Ingreso Manual
-                  </button>
-              </div>
-
-              {searchMode === 'auto' ? (
-                  <>
-                    <SearchBar key={searchKey} onSearch={handleSearch} isLoading={isSearching} />
-                    {searchError && (
-                        <div className="max-w-xl mx-auto mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex flex-col md:flex-row items-center gap-4 text-red-200 animate-fade-in">
-                            <div className="flex items-center gap-3">
-                                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                                <p className="text-sm font-medium">{searchError}</p>
-                            </div>
-                            <button 
-                                onClick={() => { setSearchMode('manual'); setSearchError(null); }}
-                                className="text-xs bg-red-500/20 hover:bg-red-500/30 text-white px-3 py-1.5 rounded-lg border border-red-500/30 transition-colors whitespace-nowrap"
-                            >
-                                Usar Ingreso Manual
-                            </button>
-                        </div>
-                    )}
-                  </>
-              ) : (
-                  <div className="max-w-xl mx-auto mb-8 bg-surface border border-slate-700 rounded-xl p-6 animate-fade-in shadow-xl">
-                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                          <PenTool className="w-5 h-5 text-indigo-400" /> Crear Nueva Entrada
-                      </h3>
-                      <div className="space-y-4">
-                          <div>
-                              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Título</label>
-                              <input 
-                                  type="text" 
-                                  value={manualTitle}
-                                  onChange={(e) => setManualTitle(e.target.value)}
-                                  placeholder="Ej: Solo Leveling"
-                                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-primary outline-none"
-                              />
-                          </div>
-                          <div>
-                              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Tipo de Medio</label>
-                              <select 
-                                  value={manualType}
-                                  onChange={(e) => setManualType(e.target.value)}
-                                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-primary outline-none"
-                              >
-                                 <option value="Anime">Anime</option>
-                                 <option value="Serie">Serie</option>
-                                 <option value="Pelicula">Película</option>
-                                 <option value="Manhwa">Manhwa</option>
-                                 <option value="Manga">Manga</option>
-                                 <option value="Libro">Libro</option>
-                                 <option value="Comic">Comic</option>
-                                 <option value="Otro">Otro</option>
-                              </select>
-                          </div>
-                          <button 
-                              onClick={handleManualEntry}
-                              disabled={!manualTitle.trim()}
-                              className="w-full bg-primary hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                          >
-                              <PlusCircle className="w-5 h-5" />
-                              Crear Borrador
-                          </button>
-                      </div>
-                  </div>
-              )}
-
-              {currentMedia && !library.find(i => i.id === currentMedia.id) && (
-                <div className="animate-fade-in-up pb-10">
-                   <div className="flex justify-between items-center mb-4 px-2">
-                      <h3 className="text-xl font-bold text-white">
-                          {searchMode === 'manual' ? 'Borrador de Entrada' : 'Resultado de Búsqueda'}
-                      </h3>
-                      <button 
-                        onClick={addToLibrary}
-                        className="bg-primary hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg shadow-indigo-500/20 transition-all transform hover:-translate-y-1 flex items-center gap-2"
-                      >
-                         <PlusCircle className="w-5 h-5" />
-                         Confirmar y Guardar
-                      </button>
+         {/* VIEW: SEARCH (New Entry) */}
+         {view === 'search' && (
+            <div className="animate-fade-in">
+               <div className="flex flex-col items-center mb-8">
+                   <h2 className="text-3xl font-bold text-white mb-2">Añadir Nueva Obra</h2>
+                   <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                       <button 
+                         onClick={() => setSearchMode('auto')}
+                         className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${searchMode === 'auto' ? 'bg-primary text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                       >
+                           Búsqueda AI
+                       </button>
+                       <button 
+                         onClick={() => setSearchMode('manual')}
+                         className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${searchMode === 'manual' ? 'bg-primary text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                       >
+                           Manual
+                       </button>
                    </div>
-                   <MediaCard 
-                      item={currentMedia} 
-                      onUpdate={handleUpdateMedia} 
-                      isNew={true}
-                      initialEditMode={searchMode === 'manual'}
-                      username={userProfile.username}
-                      apiKey={userProfile.apiKey}
-                      onSearch={handleSearch}
-                   />
-                </div>
-              )}
-           </div>
-        )}
+               </div>
 
-        {/* LIBRARY VIEW */}
-        {view === 'library' && (
-           <div className={`w-full max-w-7xl mx-auto px-0 md:px-4 animate-fade-in pb-10 ${libraryViewMode === 'catalog' ? 'max-w-full' : ''}`}>
-              <div className="px-4 md:px-0">
-                <LibraryFilters 
+               {searchMode === 'auto' ? (
+                   <>
+                     <SearchBar onSearch={handleSearch} isLoading={isSearching} key={searchKey} />
+                     {searchError && (
+                        <div className="max-w-2xl mx-auto mt-4 p-4 bg-red-900/20 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-200 animate-fade-in">
+                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                            <p>{searchError}</p>
+                        </div>
+                     )}
+                   </>
+               ) : (
+                   <div className="max-w-xl mx-auto bg-surface p-6 rounded-2xl border border-slate-700 shadow-xl">
+                       <div className="space-y-4">
+                           <div>
+                               <label className="block text-sm font-bold text-slate-400 mb-2">Título</label>
+                               <input 
+                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-primary outline-none"
+                                 placeholder="Ej: Solo Leveling"
+                                 value={manualTitle}
+                                 onChange={(e) => setManualTitle(e.target.value)}
+                               />
+                           </div>
+                           <div>
+                               <label className="block text-sm font-bold text-slate-400 mb-2">Tipo</label>
+                               <div className="grid grid-cols-3 gap-2">
+                                   {['Anime', 'Serie', 'Pelicula', 'Manhwa', 'Libro', 'Comic'].map(t => (
+                                       <button
+                                         key={t}
+                                         onClick={() => setManualType(t)}
+                                         className={`py-2 rounded-lg text-xs font-bold border transition-colors ${manualType === t ? 'bg-primary border-primary text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                                       >
+                                           {t}
+                                       </button>
+                                   ))}
+                               </div>
+                           </div>
+                           <button 
+                             onClick={handleManualEntry}
+                             className="w-full bg-primary hover:bg-indigo-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                           >
+                               <PenTool className="w-4 h-4" /> Crear Borrador
+                           </button>
+                       </div>
+                   </div>
+               )}
+
+               {currentMedia && !library.find(i => i.id === currentMedia.id) && (
+                   <div className="mt-8 animate-fade-in-up">
+                       <div className="flex justify-center mb-4">
+                           <button 
+                             onClick={addToLibrary}
+                             className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-green-600/20 transform hover:scale-105 transition-all flex items-center gap-2"
+                           >
+                               <PlusCircle className="w-5 h-5" />
+                               Guardar en Biblioteca
+                           </button>
+                       </div>
+                       <MediaCard 
+                          item={currentMedia} 
+                          onUpdate={(updated) => setCurrentMedia(updated)} 
+                          isNew={true} 
+                          username={userProfile?.username}
+                          apiKey={userProfile?.apiKey}
+                          initialEditMode={searchMode === 'manual'}
+                          onSearch={handleSearch}
+                       />
+                   </div>
+               )}
+            </div>
+         )}
+
+         {/* VIEW: LIBRARY */}
+         {view === 'library' && (
+             <div className="animate-fade-in">
+                 <LibraryFilters 
                     filters={filters} 
                     onChange={setFilters} 
                     availableGenres={availableGenres}
                     viewMode={libraryViewMode}
                     onToggleViewMode={() => setLibraryViewMode(prev => prev === 'grid' ? 'catalog' : 'grid')}
-                />
-              </div>
-              
-              {/* Conditional Rendering: Grid vs Catalog */}
-              {libraryViewMode === 'catalog' ? (
-                  <CatalogView 
-                      library={filteredLibrary}
-                      onOpenDetail={openDetail}
-                  />
-              ) : (
-                  <>
-                    {filteredLibrary.length === 0 ? (
-                        <div className="text-center py-20 text-slate-500 px-4">
-                            <LayoutGrid className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                            <p className="text-lg">No se encontraron obras con estos filtros.</p>
-                            {filters.onlyFavorites && <p className="text-sm mt-1 text-yellow-500/70">Estás viendo solo favoritos.</p>}
-                            <button onClick={() => setView('search')} className="text-primary hover:underline mt-2">Agregar nueva obra</button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 px-4 md:px-0">
-                            {filteredLibrary.slice(0, visibleCount).map(item => (
-                            <CompactMediaCard 
-                                key={item.id} 
-                                item={item} 
-                                onClick={() => openDetail(item)}
-                                onIncrement={handleQuickIncrement}
-                                onToggleFavorite={handleToggleFavorite}
-                                onDelete={handleDeleteRequest}
+                 />
+                 
+                 {library.length === 0 ? (
+                     <div className="text-center py-20 opacity-50">
+                         <LayoutGrid className="w-16 h-16 mx-auto mb-4 text-slate-600" />
+                         <p className="text-xl font-bold text-slate-500">Tu biblioteca está vacía</p>
+                         <button onClick={() => setView('search')} className="mt-4 text-primary hover:underline">
+                             Buscar algo para añadir
+                         </button>
+                     </div>
+                 ) : (
+                     <>
+                        {libraryViewMode === 'catalog' ? (
+                            <CatalogView 
+                                library={filteredLibrary} 
+                                onOpenDetail={openDetail} 
                             />
-                            ))}
-                        </div>
-                    )}
-                    
-                    {/* Load More Trigger */}
-                    {visibleCount < filteredLibrary.length && (
-                        <div ref={loadMoreRef} className="py-8 flex justify-center">
-                            <Loader2 className="w-6 h-6 text-slate-600 animate-spin" />
-                        </div>
-                    )}
-                  </>
-              )}
-           </div>
-        )}
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-6">
+                                {filteredLibrary.slice(0, visibleCount).map(item => (
+                                    <CompactMediaCard 
+                                        key={item.id} 
+                                        item={item} 
+                                        onClick={() => openDetail(item)}
+                                        onIncrement={handleQuickIncrement}
+                                        onToggleFavorite={handleToggleFavorite}
+                                        onDelete={handleDeleteRequest}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                        
+                        {/* Infinite Scroll Trigger */}
+                        {libraryViewMode === 'grid' && filteredLibrary.length > visibleCount && (
+                            <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
+                                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                            </div>
+                        )}
+                     </>
+                 )}
+             </div>
+         )}
 
-        {/* ... (Rest of views remain unchanged: details, stats, etc.) ... */}
-        {/* DETAILS VIEW */}
-        {view === 'details' && currentMedia && (
-           <div className="w-full px-2 py-4 animate-fade-in">
-              <div className="max-w-5xl mx-auto mb-4 flex items-center gap-2">
+         {/* VIEW: DETAILS */}
+         {view === 'details' && currentMedia && (
+             <div className="animate-fade-in">
                  <button 
                    onClick={() => setView('library')}
-                   className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-slate-800"
+                   className="mb-4 flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
                  >
-                    <ArrowLeft className="w-5 h-5" />
-                    Volver
+                     <ArrowLeft className="w-4 h-4" /> Volver
                  </button>
-              </div>
-              <MediaCard 
-                 item={currentMedia} 
-                 onUpdate={handleUpdateMedia} 
-                 onDelete={() => handleDeleteRequest(currentMedia)}
-                 username={userProfile.username}
-                 apiKey={userProfile.apiKey}
-                 onSearch={handleSearch}
-              />
-           </div>
-        )}
+                 <MediaCard 
+                    item={currentMedia} 
+                    onUpdate={handleUpdateMedia} 
+                    onDelete={() => handleDeleteRequest(currentMedia)}
+                    username={userProfile?.username}
+                    apiKey={userProfile?.apiKey}
+                    onSearch={handleSearch}
+                 />
+             </div>
+         )}
 
-        {/* STATS VIEW */}
-        {view === 'stats' && (
-            <div className="w-full max-w-7xl mx-auto px-4 py-6 animate-fade-in">
-                <StatsView 
-                    library={library} 
-                    userProfile={userProfile} 
-                    onUpdateProfile={handleUpdateUserProfile}
-                />
-            </div>
-        )}
+         {/* VIEW: STATS */}
+         {view === 'stats' && userProfile && (
+             <StatsView 
+                library={library} 
+                userProfile={userProfile} 
+                onUpdateProfile={handleUpdateUserProfile}
+             />
+         )}
 
-        {/* DISCOVERY VIEW */}
-        {view === 'discovery' && (
-            <div className="w-full max-w-7xl mx-auto px-4 py-6 animate-fade-in">
-                <DiscoveryView 
-                    library={library}
-                    apiKey={userProfile.apiKey}
-                    onSelectRecommendation={(title) => {
-                        handleSearch(title);
-                    }}
-                />
-            </div>
-        )}
+         {/* VIEW: DISCOVERY */}
+         {view === 'discovery' && userProfile && (
+             <DiscoveryView 
+                library={library}
+                apiKey={userProfile.apiKey}
+                onSelectRecommendation={(title) => {
+                    handleSearch(title);
+                }}
+             />
+         )}
 
-        {/* UPCOMING VIEW */}
-        {view === 'upcoming' && (
-            <div className="w-full max-w-7xl mx-auto px-4 py-6 animate-fade-in pb-10">
-                <div className="flex items-center gap-3 mb-6">
-                     <Bookmark className="w-6 h-6 text-yellow-500" />
-                     <h2 className="text-2xl font-bold text-white">Lista de Deseos & Próximos Estrenos</h2>
-                </div>
-                
-                {upcomingLibrary.length === 0 ? (
-                    <div className="text-center py-20 bg-slate-800/30 rounded-2xl border border-slate-700 border-dashed">
-                        <CalendarClock className="w-16 h-16 mx-auto mb-4 text-slate-600" />
-                        <p className="text-slate-400 text-lg">No tienes items marcados como "Planeado / Pendiente".</p>
-                        <p className="text-slate-500 text-sm mt-2">Cambia el estado de una obra a 'Planeado' para verla aquí.</p>
+         {/* VIEW: UPCOMING / WISHLIST */}
+         {view === 'upcoming' && (
+             <div className="animate-fade-in">
+                 <div className="flex items-center gap-3 mb-6 border-l-4 border-yellow-500 pl-4">
+                     <h2 className="text-2xl font-bold text-white">Wishlist & Próximos</h2>
+                     <span className="bg-yellow-500/20 text-yellow-500 text-xs font-bold px-2 py-1 rounded-full border border-yellow-500/30">
+                         {upcomingLibrary.length}
+                     </span>
+                 </div>
+
+                 {upcomingLibrary.length === 0 ? (
+                     <div className="text-center py-20 opacity-50 bg-slate-900/50 rounded-2xl border border-slate-800 border-dashed">
+                         <Bookmark className="w-16 h-16 mx-auto mb-4 text-slate-600" />
+                         <p className="text-lg font-bold text-slate-500">No tienes nada planeado.</p>
+                         <p className="text-sm text-slate-600">Marca obras como "Planeado" para verlas aquí.</p>
+                     </div>
+                 ) : (
+                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-6">
+                         {upcomingLibrary.slice(0, visibleCount).map(item => (
+                             <CompactMediaCard 
+                                 key={item.id} 
+                                 item={item} 
+                                 onClick={() => openDetail(item)}
+                                 onIncrement={handleQuickIncrement}
+                                 onToggleFavorite={handleToggleFavorite}
+                                 onDelete={handleDeleteRequest}
+                             />
+                         ))}
+                     </div>
+                 )}
+                 {upcomingLibrary.length > visibleCount && (
+                    <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 text-primary animate-spin" />
                     </div>
-                ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                        {upcomingLibrary.slice(0, visibleCount).map(item => (
-                            <CompactMediaCard 
-                                key={item.id} 
-                                item={item} 
-                                onClick={() => openDetail(item)}
-                                onIncrement={handleQuickIncrement}
-                                onToggleFavorite={handleToggleFavorite}
-                                onDelete={handleDeleteRequest}
-                            />
-                        ))}
-                    </div>
-                )}
-                
-                {/* Load More Trigger */}
-                {visibleCount < upcomingLibrary.length && (
-                    <div ref={loadMoreRef} className="py-8 flex justify-center">
-                        <Loader2 className="w-6 h-6 text-slate-600 animate-spin" />
-                    </div>
-                )}
-            </div>
-        )}
+                 )}
+             </div>
+         )}
 
       </main>
 
-      {showScrollTop && (view === 'library' || view === 'upcoming') && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 p-3 bg-primary text-white rounded-full shadow-2xl hover:bg-indigo-600 transition-all animate-fade-in hover:scale-110 border border-white/20 backdrop-blur-sm"
-          aria-label="Volver arriba"
-        >
-          <ArrowUp className="w-6 h-6" />
-        </button>
-      )}
-
-      {/* Delete/Import Modals remain the same... */}
+      {/* Delete Confirmation Modal */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in-up">
-                <div className="flex flex-col items-center text-center">
-                    <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
-                        <Trash2 className="w-6 h-6 text-red-500" />
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-2">¿Eliminar Obra?</h3>
-                    <p className="text-slate-400 mb-6 text-sm">
-                        Estás a punto de eliminar <span className="text-white font-bold">"{deleteTarget.aiData.title}"</span>. 
-                        Esta acción no se puede deshacer y perderás todo el progreso registrado.
-                    </p>
-                    <div className="flex gap-3 w-full">
-                        <button 
-                            onClick={cancelDelete}
-                            className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors font-medium"
-                        >
-                            Cancelar
-                        </button>
-                        <button 
-                            onClick={confirmDelete}
-                            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-bold shadow-lg shadow-red-600/20"
-                        >
-                            Eliminar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-      )}
-
-      {pendingImport && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-             <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-md w-full animate-fade-in-up">
-                 <div className="flex flex-col items-center text-center">
-                    <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4">
-                        <GitMerge className="w-6 h-6 text-yellow-500" />
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-2">Fusión de Copia de Seguridad</h3>
-                    <p className="text-slate-400 mb-6 text-sm">
-                        Este archivo es un backup completo (incluye perfil). 
-                        ¿Deseas <strong>ignorar el perfil</strong> e importar solo las 
-                        <strong className="text-white"> {pendingImport.library.length} obras </strong> 
-                        para fusionarlas con tu biblioteca actual?
-                    </p>
-                    <div className="flex gap-3 w-full">
-                        <button 
-                            onClick={() => setPendingImport(null)}
-                            className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors font-medium"
-                        >
-                            Cancelar
-                        </button>
-                        <button 
-                            onClick={() => processCatalogImport(pendingImport.library)}
-                            className="flex-1 px-4 py-2 bg-primary hover:bg-indigo-600 text-white rounded-lg transition-colors font-bold shadow-lg"
-                        >
-                            Sí, fusionar
-                        </button>
-                    </div>
-                 </div>
-             </div>
+          <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+              <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center animate-fade-in-up">
+                  <div className="w-16 h-16 bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Trash2 className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">¿Eliminar obra?</h3>
+                  <p className="text-slate-400 mb-6 text-sm">
+                      Se borrará "{deleteTarget.aiData.title}" y todo su progreso. Esta acción no se puede deshacer.
+                  </p>
+                  <div className="flex gap-3">
+                      <button 
+                        onClick={cancelDelete}
+                        className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition-colors"
+                      >
+                          Cancelar
+                      </button>
+                      <button 
+                        onClick={confirmDelete}
+                        className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-600/20 transition-colors"
+                      >
+                          Eliminar
+                      </button>
+                  </div>
+              </div>
           </div>
       )}
+
+      {/* Import Merge Modal */}
+      {pendingImport && (
+          <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+              <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-md w-full animate-fade-in-up">
+                  <div className="flex items-center gap-3 mb-4">
+                      <GitMerge className="w-6 h-6 text-purple-400" />
+                      <h3 className="text-xl font-bold text-white">Importar Catálogo</h3>
+                  </div>
+                  <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+                      Se han detectado <strong>{pendingImport.library.length}</strong> obras en el archivo. 
+                      Las obras que ya existan en tu biblioteca se omitirán para evitar duplicados. 
+                      Se importarán como "Sin empezar".
+                  </p>
+                  <div className="flex gap-3">
+                      <button 
+                        onClick={() => setPendingImport(null)}
+                        className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition-colors"
+                      >
+                          Cancelar
+                      </button>
+                      <button 
+                        onClick={() => processCatalogImport(pendingImport.library)}
+                        className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-lg shadow-purple-600/20 transition-colors"
+                      >
+                          Confirmar Importación
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700 z-50 pb-safe transition-all duration-300">
+          <div className="flex justify-around items-center h-16 px-2">
+              <button 
+                  onClick={() => setView('library')}
+                  className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${view === 'library' || view === 'details' ? 'text-primary' : 'text-slate-400'}`}
+              >
+                  <LayoutGrid className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Colección</span>
+              </button>
+              
+              <button 
+                  onClick={() => setView('upcoming')}
+                  className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${view === 'upcoming' ? 'text-primary' : 'text-slate-400'}`}
+              >
+                  <Bookmark className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Wishlist</span>
+              </button>
+
+              <button 
+                  onClick={() => {
+                      setView('search');
+                      setCurrentMedia(null);
+                      setSearchKey(prev => prev + 1);
+                  }}
+                  className="flex flex-col items-center justify-center w-full h-full -mt-5"
+              >
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border-4 border-background ${view === 'search' ? 'bg-primary text-white' : 'bg-slate-700 text-slate-300'}`}>
+                      <PlusCircle className="w-6 h-6" />
+                  </div>
+                  <span className={`text-[10px] font-medium mt-1 ${view === 'search' ? 'text-primary' : 'text-slate-400'}`}>Nuevo</span>
+              </button>
+
+              <button 
+                  onClick={() => setView('discovery')}
+                  className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${view === 'discovery' ? 'text-primary' : 'text-slate-400'}`}
+              >
+                  <Compass className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Explorar</span>
+              </button>
+
+              <button 
+                  onClick={() => setView('stats')}
+                  className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${view === 'stats' ? 'text-primary' : 'text-slate-400'}`}
+              >
+                  <BarChart2 className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Stats</span>
+              </button>
+          </div>
+      </nav>
+
+      {/* Scroll to Top Button */}
+      <button
+        onClick={scrollToTop}
+        className={`fixed bottom-24 md:bottom-8 left-1/2 md:left-auto md:right-8 -translate-x-1/2 md:translate-x-0 z-40 bg-slate-800/80 backdrop-blur-md border border-slate-600 p-3 rounded-full shadow-xl transition-all duration-300 ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+      >
+          <ArrowUp className="w-5 h-5 text-white" />
+      </button>
+
     </div>
   );
 }
