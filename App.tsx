@@ -446,6 +446,38 @@ export default function App() {
 
   // --- DATA MANAGEMENT & OPTIMIZATION ---
 
+  // Helper for Smart Compression (Shared logic for export)
+  const compressImageForExport = (base64Str: string): Promise<string> => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = base64Str;
+        img.onload = () => {
+            const maxWidth = 300; // Optimal size for mobile cards
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(img, 0, 0, width, height);
+                // Aggressive compression for sharing (WebP q=0.7)
+                resolve(canvas.toDataURL('image/webp', 0.7));
+            } else {
+                resolve(base64Str);
+            }
+        };
+        img.onerror = () => resolve(""); // Remove if broken
+    });
+  };
+
   const optimizeForExport = (obj: any): any => {
       if (Array.isArray(obj)) {
           return obj.map(v => optimizeForExport(v)).filter(v => v !== null && v !== undefined);
@@ -484,49 +516,74 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  const handleExportCatalog = () => {
-      const sanitizedLibrary = library.map(item => ({
-          ...item,
-          aiData: item.aiData,
-          trackingData: {
-            status: 'Sin empezar',
-            currentSeason: 1,
-            totalSeasons: item.trackingData.totalSeasons || 1,
-            watchedEpisodes: 0,
-            totalEpisodesInSeason: item.trackingData.totalEpisodesInSeason,
-            accumulated_consumption: 0,
-            emotionalTags: [],
-            favoriteCharacters: [],
-            rating: '',
-            comment: '',
-            recommendedBy: '',
-            isSaga: item.trackingData.isSaga || false,
-            finishedAt: undefined,
-            customLinks: [],
-            scheduledReturnDate: undefined,
-            nextReleaseDate: undefined,
-            is_favorite: false
-          },
-          createdAt: Date.now(),
-          lastInteraction: Date.now()
-      }));
+  const handleExportCatalog = async () => {
+      setIsLoading(true);
+      setLoadingMessage('Optimizando imágenes para compartir...');
 
-      const rawData = {
-          library: sanitizedLibrary,
-          version: 1,
-          exportedAt: new Date().toISOString(),
-          type: 'catalog_share'
-      };
+      try {
+          // Process library to compress images instead of stripping them
+          const sanitizedLibrary = await Promise.all(library.map(async (item) => {
+              let finalImage = item.aiData.coverImage || "";
 
-      const optimizedData = optimizeForExport(rawData);
-      const blob = new Blob([JSON.stringify(optimizedData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `mediatracker_catalog_share_${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+              // If it's a heavy base64 string, compress it
+              if (finalImage.startsWith('data:')) {
+                  finalImage = await compressImageForExport(finalImage);
+              }
+
+              return {
+                  ...item,
+                  aiData: {
+                      ...item.aiData,
+                      coverImage: finalImage // Keep the visual!
+                  },
+                  trackingData: {
+                    status: 'Sin empezar',
+                    currentSeason: 1,
+                    totalSeasons: item.trackingData.totalSeasons || 1,
+                    watchedEpisodes: 0,
+                    totalEpisodesInSeason: item.trackingData.totalEpisodesInSeason,
+                    accumulated_consumption: 0,
+                    emotionalTags: [],
+                    favoriteCharacters: [],
+                    rating: '',
+                    comment: '',
+                    recommendedBy: '',
+                    isSaga: item.trackingData.isSaga || false,
+                    finishedAt: undefined,
+                    customLinks: [],
+                    scheduledReturnDate: undefined,
+                    nextReleaseDate: undefined,
+                    is_favorite: false
+                  },
+                  createdAt: Date.now(),
+                  lastInteraction: Date.now()
+              };
+          }));
+
+          const rawData = {
+              library: sanitizedLibrary,
+              version: 1,
+              exportedAt: new Date().toISOString(),
+              type: 'catalog_share'
+          };
+
+          const optimizedData = optimizeForExport(rawData);
+          const blob = new Blob([JSON.stringify(optimizedData, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `mediatracker_catalog_share_${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+      } catch (error) {
+          console.error("Export error", error);
+          showToast("Error al exportar catálogo", "error");
+      } finally {
+          setIsLoading(false);
+          setLoadingMessage('');
+      }
   };
 
   const importItemsInBatch = async (items: MediaItem[], onProgress: (count: number, total: number) => void) => {
