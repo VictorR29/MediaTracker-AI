@@ -28,6 +28,7 @@ interface StatsData {
   maxGenreCount: number;
   ratingCount: Record<string, number>;
   averageScore: string;
+  averageLabel: string; // Human readable verdict
   highestRatedGenre: string;
   
   // New Obsession Data Structure: Top 3 per category
@@ -170,7 +171,19 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         }
     });
 
-    const averageScore = ratedItemsCount > 0 ? (totalScore / ratedItemsCount).toFixed(1) : "N/A";
+    const averageScoreVal = ratedItemsCount > 0 ? (totalScore / ratedItemsCount) : 0;
+    const averageScore = ratedItemsCount > 0 ? averageScoreVal.toFixed(1) : "N/A";
+    
+    // Verdict Logic (Labels)
+    let averageLabel = "Sin datos";
+    if (ratedItemsCount > 0) {
+        if (averageScoreVal >= 9) averageLabel = "Estándar Épico";
+        else if (averageScoreVal >= 8) averageLabel = "Gusto Refinado";
+        else if (averageScoreVal >= 7) averageLabel = "Disfruta mucho";
+        else if (averageScoreVal >= 6) averageLabel = "Equilibrado";
+        else if (averageScoreVal >= 5) averageLabel = "Exigente";
+        else averageLabel = "Crítico Duro";
+    }
 
     let highestRatedGenre = "N/A";
     let maxGodTierCount = 0;
@@ -336,7 +349,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     return { 
         total, completed, onHold, watching, typeCount, 
         topGenre, maxGenreCount, ratingCount,
-        averageScore, highestRatedGenre,
+        averageScore, averageLabel, highestRatedGenre,
         
         topItemsByType,
         globalMaxCategory,
@@ -943,7 +956,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
            <StatCard 
              title="Calificación Prom." 
              value={stats.averageScore === "N/A" ? "-" : stats.averageScore} 
-             subtext={stats.averageScore === "N/A" ? "" : "sobre 10"}
+             subtext={stats.averageScore === "N/A" ? "" : stats.averageLabel}
              icon={Zap} 
              color={{ bg: 'bg-yellow-500', text: 'text-yellow-500' }} 
           />
