@@ -176,14 +176,14 @@ const Shelf: React.FC<{
     if (items.length === 0) return null;
 
     return (
-        <div className="mb-10 animate-fade-in-up">
+        <div className="mb-10 animate-fade-in-up w-full max-w-full">
             <div className="flex items-center gap-2 mb-4 px-4 md:px-8">
                 {Icon && <Icon className="w-5 h-5 text-white/70" />}
                 <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight drop-shadow-md">{title}</h2>
                 <span className="text-sm text-slate-500 font-medium ml-2">({items.length})</span>
             </div>
             
-            <div className="relative group/shelf">
+            <div className="relative group/shelf w-full">
                 {/* Desktop Navigation Arrows */}
                 {showLeftArrow && (
                     <button
@@ -209,7 +209,7 @@ const Shelf: React.FC<{
                 <div 
                     ref={scrollContainerRef}
                     onScroll={checkScroll}
-                    className="flex flex-nowrap overflow-x-auto gap-4 md:gap-6 px-4 md:px-8 pb-8 snap-x snap-mandatory scrollbar-hide pt-4 items-center"
+                    className="flex flex-nowrap overflow-x-auto gap-4 md:gap-6 px-4 md:px-8 pb-8 snap-x snap-mandatory scrollbar-hide pt-4 items-center w-full"
                 >
                     {items.map(item => (
                         <div key={item.id} className="snap-center flex-shrink-0">
@@ -356,7 +356,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
     }, [library]);
 
     return (
-        <div className="relative min-h-screen pb-20">
+        <div className="relative min-h-screen pb-20 w-full max-w-full overflow-x-hidden">
             {/* Dynamic Ambient Background - Solid Layer with transition */}
             <div 
                 className="fixed inset-0 z-0 pointer-events-none transition-[background-color] duration-700 ease-in-out"
@@ -375,7 +375,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
             {/* Blur Texture Layer */}
             <div className="fixed inset-0 z-0 bg-slate-900/40 backdrop-blur-3xl pointer-events-none"></div>
 
-            <div className="relative z-10 pt-4">
+            <div className="relative z-10 pt-4 w-full">
                 
                 {/* Shelf 1: Continue Watching */}
                 <Shelf 

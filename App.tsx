@@ -1,871 +1,647 @@
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { 
+  Loader2, Sparkles, User, PlusCircle, LayoutGrid, Bookmark, Compass, 
+  BarChart2, ChevronDown, Settings, Download, ArrowLeft, Trash2, GitMerge, ArrowUp,
+  AlertCircle, PenTool
+} from 'lucide-react';
+import { useToast } from './context/ToastContext';
+import { MediaItem, UserProfile, AIWorkData, UserTrackingData, normalizeGenre, THEME_COLORS } from './types';
+import { 
+  initDB, getUserProfile, saveUserProfile, getLibrary, 
+  saveMediaItem, deleteMediaItem, clearLibrary 
+} from './services/storage';
+import { searchMediaInfo } from './services/geminiService';
+
 import { SearchBar } from './components/SearchBar';
 import { MediaCard } from './components/MediaCard';
 import { CompactMediaCard } from './components/CompactMediaCard';
-import { CatalogView } from './components/CatalogView'; 
-import { Onboarding } from './components/Onboarding';
-import { LoginScreen } from './components/LoginScreen';
-import { SettingsModal } from './components/SettingsModal';
 import { LibraryFilters, FilterState } from './components/LibraryFilters';
+import { SettingsModal } from './components/SettingsModal';
 import { StatsView } from './components/StatsView';
-import { DiscoveryView } from './components/DiscoveryView'; 
-import { ContextualGreeting } from './components/ContextualGreeting'; 
-import { searchMediaInfo } from './services/geminiService';
-import { getLibrary, saveMediaItem, getUserProfile, saveUserProfile, initDB, deleteMediaItem, clearLibrary } from './services/storage';
-import { MediaItem, UserProfile, normalizeGenre } from './types';
-import { useToast } from './context/ToastContext';
-import { LayoutGrid, Sparkles, PlusCircle, ArrowLeft, User, BarChart2, AlertCircle, Trash2, Download, Upload, ChevronDown, Settings, Compass, CalendarClock, Bookmark, Search, GitMerge, Loader2, PenTool, Edit3, ArrowUp } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
+import { DiscoveryView } from './components/DiscoveryView';
+import { CatalogView } from './components/CatalogView';
+import { ContextualGreeting } from './components/ContextualGreeting';
+import { LoginScreen } from './components/LoginScreen';
+import { Onboarding } from './components/Onboarding';
 
 export default function App() {
   const { showToast } = useToast();
+
+  // --- STATE ---
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  
+  // Auth & Profile
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [currentMedia, setCurrentMedia] = useState<MediaItem | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isOnboarding, setIsOnboarding] = useState(false);
+
+  // Library Data
   const [library, setLibrary] = useState<MediaItem[]>([]);
   
-  // States separated to avoid full screen modal on search
-  const [isLoading, setIsLoading] = useState(false); // Global Overlay (Imports/Backups)
-  const [isSearching, setIsSearching] = useState(false); // Search Bar specific loading
-  const [loadingMessage, setLoadingMessage] = useState<string>(''); 
-
-  const [view, setView] = useState<'search' | 'library' | 'details' | 'stats' | 'discovery' | 'upcoming'>('search');
-  const [searchMode, setSearchMode] = useState<'auto' | 'manual'>('auto');
-  
-  // New View Mode State for Library (Grid vs Catalog)
-  const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'catalog'>('grid');
-
-  const [dbReady, setDbReady] = useState(false);
-  
-  // App Lock State
-  const [isLocked, setIsLocked] = useState(false);
-
-  // User Menu State
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  // Navigation & Views
+  const [view, setView] = useState('library'); // library, search, details, stats, discovery, upcoming
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  
-  // Search State
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [searchKey, setSearchKey] = useState(0); // Used to reset search bar
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
+  // Search View State
+  const [searchMode, setSearchMode] = useState<'auto' | 'manual'>('auto');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchKey, setSearchKey] = useState(0);
+  const [currentMedia, setCurrentMedia] = useState<MediaItem | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  
   // Manual Entry State
   const [manualTitle, setManualTitle] = useState('');
   const [manualType, setManualType] = useState('Anime');
 
-  // Delete Confirmation State
-  const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null);
-
-  // Import Merge Confirmation State
-  const [pendingImport, setPendingImport] = useState<{ library: MediaItem[] } | null>(null);
-
-  // Scroll to Top & Smart Nav State
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
-  const lastScrollY = useRef(0);
-
-  // Pagination / Infinite Scroll State
-  const [visibleCount, setVisibleCount] = useState(24);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-
-  // Filters State
+  // Filters
   const [filters, setFilters] = useState<FilterState>({
     query: '',
     type: 'All',
     status: 'All',
     rating: 'All',
-    genre: 'All', // Initialize genre filter
+    genre: 'All',
     sortBy: 'updated',
     onlyFavorites: false
   });
+  const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'catalog'>('grid');
 
-  // Initialize DB and load data
+  // Pagination / Scroll
+  const [visibleCount, setVisibleCount] = useState(24);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Modals
+  const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null);
+  const [pendingImport, setPendingImport] = useState<{ library: MediaItem[] } | null>(null);
+
+  // --- THEME APPLICATION ---
+  const applyTheme = useCallback((colorValue: string) => {
+      const colorObj = THEME_COLORS.find(c => c.value === colorValue);
+      const rgbValue = colorObj ? colorObj.value : colorValue; 
+      document.documentElement.style.setProperty('--color-primary', rgbValue);
+  }, []);
+
+  useEffect(() => {
+      if (userProfile?.accentColor) {
+          applyTheme(userProfile.accentColor);
+      }
+  }, [userProfile, applyTheme]);
+
+  // --- INITIALIZATION ---
+
   useEffect(() => {
     const init = async () => {
       try {
         await initDB();
         const profile = await getUserProfile();
-        const items = await getLibrary();
+        const libs = await getLibrary();
         
+        setLibrary(libs);
+
         if (profile) {
-          // Check for migration or missing prefs
-          if (!profile.preferences) {
-            profile.preferences = {
-                animeEpisodeDuration: 24,
-                seriesEpisodeDuration: 45,
-                mangaChapterDuration: 3,
-                movieDuration: 90,
-                bookChapterDuration: 15
-            };
-          } else {
-             if (profile.preferences.movieDuration === undefined) profile.preferences.movieDuration = 90;
-             if (profile.preferences.bookChapterDuration === undefined) profile.preferences.bookChapterDuration = 15;
-             if (profile.preferences.seriesEpisodeDuration === undefined) profile.preferences.seriesEpisodeDuration = 45;
-          }
-
-          // Check for missing apiKey (migration from old version)
-          if (!profile.apiKey) {
-              profile.apiKey = ""; // Will prompt user or fail gracefully
-          }
-
           setUserProfile(profile);
-          applyTheme(profile.accentColor);
-
-          // Lock if password exists
+          applyTheme(profile.accentColor); 
           if (profile.password) {
-              setIsLocked(true);
+            setIsAuthenticated(false);
+          } else {
+            setIsAuthenticated(true);
           }
+        } else {
+          setIsOnboarding(true);
         }
-        
-        setLibrary(items);
-        setDbReady(true);
-        
-        // If we have items and a profile, start in library view by default
-        if (profile && items.length > 0) {
-          setView('library');
-        }
-      } catch (err) {
-        console.error("Initialization failed", err);
-        showToast("Error iniciando base de datos", "error");
+      } catch (e) {
+        console.error("Init failed", e);
+        showToast("Error inicializando base de datos", "error");
+      } finally {
+        setIsLoading(false);
       }
     };
     init();
-  }, []);
+  }, [showToast, applyTheme]);
 
-  // Scroll Listener for Smart Nav & Back to Top
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Back to Top Logic
-      setShowScrollTop(currentScrollY > 300);
-
-      // Smart Nav Logic (Pinterest style)
-      // Only trigger if we moved enough to avoid jitter
-      const diff = Math.abs(currentScrollY - lastScrollY.current);
-      
-      if (diff > 10) {
-          if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
-              // Scrolling Down AND not at top -> Hide
-              setIsBottomNavVisible(false);
-          } else {
-              // Scrolling Up OR at top -> Show
-              setIsBottomNavVisible(true);
-          }
-      }
-      
-      // Always show if at very top
-      if (currentScrollY < 50) setIsBottomNavVisible(true);
-
-      lastScrollY.current = currentScrollY;
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Infinite Scroll Observer
-  useEffect(() => {
-    if (view !== 'library' && view !== 'upcoming') return;
-    if (libraryViewMode === 'catalog') return; // Disable infinite scroll logic for Catalog view (it has its own structure)
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => prev + 24);
-        }
-      },
-      { rootMargin: '400px' }
-    );
-
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
+  // --- AUTH HANDLERS ---
+  const handleUnlock = (password: string) => {
+    if (userProfile && userProfile.password === password) {
+      setIsAuthenticated(true);
+      return true;
     }
-
-    return () => observer.disconnect();
-  }, [view, filters, library, libraryViewMode]);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const applyTheme = (colorValue: string) => {
-    document.documentElement.style.setProperty('--color-primary', colorValue);
+    return false;
   };
 
   const handleOnboardingComplete = async (profile: UserProfile) => {
-    // Set defaults on onboarding
-    const profileWithPrefs = {
-        ...profile,
-        preferences: { 
-            animeEpisodeDuration: 24, 
-            seriesEpisodeDuration: 45,
-            mangaChapterDuration: 3,
-            movieDuration: 90,
-            bookChapterDuration: 15
-        }
-    };
-    setUserProfile(profileWithPrefs);
-    applyTheme(profile.accentColor);
-    await saveUserProfile(profileWithPrefs);
+    await saveUserProfile(profile);
+    setUserProfile(profile);
+    setIsAuthenticated(true);
+    setIsOnboarding(false);
   };
 
-  const handleUnlock = (passwordAttempt: string) => {
-      if (userProfile && userProfile.password === passwordAttempt) {
-          setIsLocked(false);
-          return true;
-      }
-      return false;
+  const handleUpdateUserProfile = async (profile: UserProfile) => {
+    await saveUserProfile(profile);
+    setUserProfile(profile);
   };
 
-  const handleUpdateUserProfile = async (updatedProfile: UserProfile) => {
-      setUserProfile(updatedProfile);
-      applyTheme(updatedProfile.accentColor);
-      await saveUserProfile(updatedProfile);
-  };
+  // --- LIBRARY ACTIONS ---
 
-  // Helper to check duplicates
-  const checkDuplicate = useCallback((title: string, type: string) => {
-      return library.find(item => 
-          item.aiData.title.toLowerCase().trim() === title.toLowerCase().trim() &&
-          item.aiData.mediaType === type
-      );
-  }, [library]);
-
-  const handleSearch = async (query: string) => {
-    if (!userProfile?.apiKey) {
-        setSearchError("No tienes una API Key configurada. Ve a Configuración.");
-        showToast("Falta API Key", "warning");
-        return;
-    }
-
-    // UPDATE: Use local searching state to avoid global full-screen modal
-    setIsSearching(true);
-    setCurrentMedia(null);
-    setSearchError(null);
-    setView('search');
-
+  const addToLibrary = async () => {
+    if (!currentMedia) return;
     try {
-      const aiData = await searchMediaInfo(query, userProfile.apiKey);
-      
-      // Check for soft failure/generic fallback
-      if (aiData.synopsis.includes("No se pudo obtener información automática")) {
-         setSearchError(aiData.synopsis); // Use the message returned by service
-         return;
-      }
-
-      // DUPLICATE CHECK
-      const existingItem = checkDuplicate(aiData.title, aiData.mediaType);
-      if (existingItem) {
-          showToast(`"${aiData.title}" (${aiData.mediaType}) ya existe en tu biblioteca.`, "info");
-          setCurrentMedia(existingItem);
-          setView('details'); // Redirect directly to existing item
-          return;
-      }
-
-      const newItem: MediaItem = {
-        id: uuidv4(),
-        aiData,
-        createdAt: Date.now(),
-        lastInteraction: Date.now(), // Initialize timestamp
-        trackingData: {
-          status: 'Sin empezar', // Updated default status
-          currentSeason: 1,
-          totalSeasons: 1, 
-          watchedEpisodes: 0,
-          totalEpisodesInSeason: aiData.mediaType === 'Pelicula' ? 1 : 12, 
-          accumulated_consumption: 0, // Initialize new field
-          emotionalTags: [],
-          favoriteCharacters: [],
-          rating: '',
-          comment: '',
-          recommendedBy: '',
-          isSaga: false,
-          finishedAt: undefined,
-          nextReleaseDate: undefined,
-          is_favorite: false
-        }
-      };
-
-      setCurrentMedia(newItem);
-    } catch (error) {
-      console.error("Error searching media", error);
-      setSearchError("Límite de Búsqueda o Error de API.");
-      showToast("Error de conexión con IA", "error");
-    } finally {
-      setIsSearching(false);
+      await saveMediaItem(currentMedia);
+      setLibrary(prev => [currentMedia, ...prev]);
+      showToast("Guardado en la biblioteca", "success");
+      setView('library');
+    } catch (e) {
+      showToast("Error al guardar", "error");
     }
   };
 
-  const handleManualEntry = () => {
-      if (!manualTitle.trim()) {
-          showToast("El título es obligatorio", "error");
-          return;
+  const handleUpdateMedia = async (updatedItem: MediaItem) => {
+    try {
+      await saveMediaItem(updatedItem);
+      setLibrary(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+      if (currentMedia && currentMedia.id === updatedItem.id) {
+        setCurrentMedia(updatedItem);
       }
-
-      // DUPLICATE CHECK
-      const existingItem = checkDuplicate(manualTitle, manualType);
-      if (existingItem) {
-          showToast(`"${existingItem.aiData.title}" ya existe como ${manualType}.`, "error");
-          return;
-      }
-
-      const newItem: MediaItem = {
-          id: uuidv4(),
-          aiData: {
-              title: manualTitle,
-              originalTitle: "",
-              mediaType: manualType as any,
-              synopsis: "Sinopsis pendiente...",
-              genres: [],
-              status: "Desconocido",
-              totalContent: "?",
-              coverDescription: "",
-              coverImage: "",
-              sourceUrls: [],
-              primaryColor: "#6366f1"
-          },
-          createdAt: Date.now(),
-          lastInteraction: Date.now(),
-          trackingData: {
-            status: 'Sin empezar',
-            currentSeason: 1,
-            totalSeasons: 1,
-            watchedEpisodes: 0,
-            totalEpisodesInSeason: manualType === 'Pelicula' ? 1 : 12,
-            accumulated_consumption: 0,
-            emotionalTags: [],
-            favoriteCharacters: [],
-            rating: '',
-            comment: '',
-            recommendedBy: '',
-            isSaga: false,
-            is_favorite: false
-          }
-      };
-
-      setCurrentMedia(newItem);
-      setManualTitle('');
-      setSearchError(null);
+    } catch (e) {
+      showToast("Error al actualizar", "error");
+    }
   };
 
-  const handleUpdateMedia = useCallback(async (updatedItem: MediaItem) => {
-    setCurrentMedia(updatedItem);
-    setLibrary(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
-    await saveMediaItem(updatedItem);
-  }, []);
-
-  const handleToggleFavorite = useCallback(async (item: MediaItem) => {
-      const updatedTracking = {
-          ...item.trackingData,
-          is_favorite: !item.trackingData.is_favorite
-      };
-      const updatedItem = {
-          ...item,
-          trackingData: updatedTracking,
-          lastInteraction: item.lastInteraction
-      };
-      
-      setLibrary(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
-      
-      if (currentMedia && currentMedia.id === updatedItem.id) {
-          setCurrentMedia(updatedItem);
-      }
-
-      await saveMediaItem(updatedItem);
-      if (updatedTracking.is_favorite) showToast("Añadido a Favoritos ⭐", "success");
-  }, [currentMedia, showToast]);
-
-  const handleDeleteRequest = useCallback((item: MediaItem) => setDeleteTarget(item), []);
+  const handleDeleteRequest = (item: MediaItem) => {
+    setDeleteTarget(item);
+  };
 
   const confirmDelete = async () => {
-      if (deleteTarget) {
-          await deleteMediaItem(deleteTarget.id);
-          setLibrary(prev => prev.filter(i => i.id !== deleteTarget.id));
-          if (currentMedia?.id === deleteTarget.id) {
-              setView('library');
-              setCurrentMedia(null);
-          }
-          setDeleteTarget(null);
-          showToast("Obra eliminada", "info");
+    if (!deleteTarget) return;
+    try {
+      await deleteMediaItem(deleteTarget.id);
+      setLibrary(prev => prev.filter(i => i.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      showToast("Eliminado correctamente", "success");
+      if (view === 'details' && currentMedia?.id === deleteTarget.id) {
+        setView('library');
       }
+    } catch (e) {
+      showToast("Error al eliminar", "error");
+    }
   };
 
   const cancelDelete = () => setDeleteTarget(null);
 
   const handleClearLibrary = async () => {
-      await clearLibrary();
-      setLibrary([]);
-      setCurrentMedia(null);
+    await clearLibrary();
+    setLibrary([]);
   };
 
-  const handleQuickIncrement = useCallback(async (item: MediaItem) => {
-    const { trackingData, aiData } = item;
-    const isSeries = ['Anime', 'Serie'].includes(aiData.mediaType);
-    const isBookSaga = aiData.mediaType === 'Libro' && trackingData.isSaga;
-    const isMovie = aiData.mediaType === 'Pelicula';
-
-    if (isMovie) return;
-
-    let updatedTracking = { ...trackingData };
-    
-    if (trackingData.totalEpisodesInSeason > 0 && trackingData.watchedEpisodes >= trackingData.totalEpisodesInSeason) {
-        if (isSeries || isBookSaga) {
-            if (trackingData.totalSeasons > 0 && trackingData.currentSeason >= trackingData.totalSeasons) {
-                updatedTracking.status = 'Completado';
-            } else {
-                const currentAccumulated = updatedTracking.accumulated_consumption || 0;
-                updatedTracking.accumulated_consumption = currentAccumulated + updatedTracking.watchedEpisodes;
-                updatedTracking.currentSeason += 1;
-                updatedTracking.watchedEpisodes = 0;
-                updatedTracking.status = 'Viendo/Leyendo';
-            }
-        } else {
-             updatedTracking.status = 'Completado';
-        }
-    } else {
-        updatedTracking.watchedEpisodes += 1;
-        if (updatedTracking.status === 'Sin empezar') {
-            updatedTracking.status = 'Viendo/Leyendo';
-        }
-    }
-
-    const updatedItem = { 
+  const handleQuickIncrement = async (item: MediaItem) => {
+    const updated = { 
         ...item, 
-        trackingData: updatedTracking,
-        lastInteraction: Date.now() 
+        trackingData: { 
+            ...item.trackingData, 
+            watchedEpisodes: item.trackingData.watchedEpisodes + 1 
+        },
+        lastInteraction: Date.now()
     };
-    
-    setLibrary(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
-    await saveMediaItem(updatedItem);
-    if (currentMedia && currentMedia.id === updatedItem.id) setCurrentMedia(updatedItem);
-    
-    showToast(`+1 Agregado a ${aiData.title}`, "success");
-  }, [currentMedia, showToast]);
+    await handleUpdateMedia(updated);
+    showToast(`Progreso actualizado: ${updated.trackingData.watchedEpisodes}`, "success");
+  };
 
-  const addToLibrary = async () => {
-    if (currentMedia) {
-      // Final duplicate check in case title was edited in draft mode
-      const existingItem = checkDuplicate(currentMedia.aiData.title, currentMedia.aiData.mediaType);
-      if (existingItem) {
-          showToast(`Error: "${existingItem.aiData.title}" ya existe en la biblioteca.`, "error");
-          return;
-      }
+  const handleToggleFavorite = async (item: MediaItem) => {
+      const updated = {
+          ...item,
+          trackingData: {
+              ...item.trackingData,
+              is_favorite: !item.trackingData.is_favorite
+          }
+      };
+      await handleUpdateMedia(updated);
+      showToast(updated.trackingData.is_favorite ? "Añadido a Favoritos" : "Eliminado de Favoritos", "success");
+  }
 
-      if (!library.find(i => i.id === currentMedia.id)) {
-        const mediaToAdd = { ...currentMedia, lastInteraction: Date.now() };
-        const newLib = [mediaToAdd, ...library];
-        setLibrary(newLib);
-        await saveMediaItem(mediaToAdd);
-        setCurrentMedia(null);
-        setSearchKey(prev => prev + 1);
-        setManualTitle('');
-        showToast("Agregado a la biblioteca", "success");
-      }
+  // --- SEARCH & ENTRY ---
+
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) return;
+    
+    setIsSearching(true);
+    setSearchError(null);
+    setSearchMode('auto'); 
+    if (view !== 'search') setView('search');
+
+    try {
+        const apiKey = userProfile?.apiKey || '';
+        if (!apiKey) {
+            throw new Error("Falta API Key");
+        }
+        
+        const info = await searchMediaInfo(query, apiKey);
+        
+        const newItem: MediaItem = {
+            id: Date.now().toString(),
+            aiData: info,
+            trackingData: {
+                status: 'Sin empezar',
+                currentSeason: 1,
+                totalSeasons: 1,
+                watchedEpisodes: 0,
+                totalEpisodesInSeason: 0, 
+                emotionalTags: [],
+                favoriteCharacters: [],
+                rating: '',
+                comment: ''
+            },
+            createdAt: Date.now(),
+            lastInteraction: Date.now()
+        };
+        setCurrentMedia(newItem);
+    } catch (e) {
+        setSearchError("Error buscando información. Intenta de nuevo o usa modo manual.");
+    } finally {
+        setIsSearching(false);
     }
   };
 
-  const openDetail = useCallback((item: MediaItem) => {
-    setCurrentMedia(item);
-    setView('details');
-  }, []);
-
-  // --- DATA MANAGEMENT & OPTIMIZATION ---
-
-  // Helper for Smart Compression (Shared logic for export)
-  const compressImageForExport = (base64Str: string): Promise<string> => {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.src = base64Str;
-        img.onload = () => {
-            const maxWidth = 300; // Optimal size for mobile cards
-            let width = img.width;
-            let height = img.height;
-
-            if (width > maxWidth) {
-                height = Math.round((height * maxWidth) / width);
-                width = maxWidth;
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.drawImage(img, 0, 0, width, height);
-                // Aggressive compression for sharing (WebP q=0.7)
-                resolve(canvas.toDataURL('image/webp', 0.7));
-            } else {
-                resolve(base64Str);
-            }
-        };
-        img.onerror = () => resolve(""); // Remove if broken
-    });
+  const handleManualEntry = () => {
+      if (!manualTitle.trim()) return;
+      
+      const newItem: MediaItem = {
+          id: Date.now().toString(),
+          aiData: {
+              title: manualTitle,
+              mediaType: manualType as any,
+              synopsis: 'Sinopsis pendiente...',
+              genres: [],
+              status: 'Desconocido',
+              totalContent: '?',
+              coverDescription: '',
+              coverImage: ''
+          },
+          trackingData: {
+              status: 'Sin empezar',
+              currentSeason: 1,
+              totalSeasons: 1,
+              watchedEpisodes: 0,
+              totalEpisodesInSeason: 0,
+              emotionalTags: [],
+              favoriteCharacters: [],
+              rating: '',
+              comment: ''
+          },
+          createdAt: Date.now(),
+          lastInteraction: Date.now()
+      };
+      setCurrentMedia(newItem);
+      setManualTitle('');
   };
 
-  const optimizeForExport = (obj: any): any => {
-      if (Array.isArray(obj)) {
-          return obj.map(v => optimizeForExport(v)).filter(v => v !== null && v !== undefined);
-      } else if (obj !== null && typeof obj === 'object') {
-          return Object.entries(obj).reduce((acc, [key, value]) => {
-              if (value === null || value === undefined) return acc;
-              if (typeof value === 'string' && value.trim() === '') return acc;
-              if (Array.isArray(value) && value.length === 0) return acc;
-              if (key === 'coverImage' && typeof value === 'string' && value.includes('placehold.co')) {
-                  return acc;
-              }
-              acc[key] = optimizeForExport(value);
-              return acc;
-          }, {} as any);
-      }
-      return obj;
-  };
+  // --- IMPORT / EXPORT ---
 
   const handleExportBackup = () => {
-    if (!userProfile) return;
-    const rawData = {
-        profile: userProfile,
-        library: library,
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        type: 'full_backup'
-    };
-    const optimizedData = optimizeForExport(rawData);
-    const blob = new Blob([JSON.stringify(optimizedData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `mediatracker_full_backup_${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      if (!userProfile) {
+          showToast("Error: No hay perfil para exportar", "error");
+          return;
+      }
+      const data = {
+          userProfile,
+          library,
+          exportedAt: new Date().toISOString(),
+          version: 1
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mediatracker_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
   };
 
-  const handleExportCatalog = async () => {
-      setIsLoading(true);
-      setLoadingMessage('Optimizando imágenes para compartir...');
+  const handleImportBackup = (file: File) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+          setIsLoading(true);
+          setLoadingMessage('Analizando archivo...');
+          
+          try {
+              const content = e.target?.result;
+              if (typeof content !== 'string') throw new Error("No se pudo leer el archivo");
 
-      try {
-          // Process library to compress images instead of stripping them
-          const sanitizedLibrary = await Promise.all(library.map(async (item) => {
-              let finalImage = item.aiData.coverImage || "";
-
-              // If it's a heavy base64 string, compress it
-              if (finalImage.startsWith('data:')) {
-                  finalImage = await compressImageForExport(finalImage);
+              let data;
+              try {
+                  data = JSON.parse(content);
+              } catch (parseError) {
+                  throw new Error("El archivo no es un JSON válido");
               }
 
-              return {
-                  ...item,
-                  aiData: {
-                      ...item.aiData,
-                      coverImage: finalImage // Keep the visual!
-                  },
-                  trackingData: {
-                    status: 'Sin empezar',
-                    currentSeason: 1,
-                    totalSeasons: item.trackingData.totalSeasons || 1,
-                    watchedEpisodes: 0,
-                    totalEpisodesInSeason: item.trackingData.totalEpisodesInSeason,
-                    accumulated_consumption: 0,
-                    emotionalTags: [],
-                    favoriteCharacters: [],
-                    rating: '',
-                    comment: '',
-                    recommendedBy: '',
-                    isSaga: item.trackingData.isSaga || false,
-                    finishedAt: undefined,
-                    customLinks: [],
-                    scheduledReturnDate: undefined,
-                    nextReleaseDate: undefined,
-                    is_favorite: false
-                  },
-                  createdAt: Date.now(),
-                  lastInteraction: Date.now()
-              };
-          }));
+              // Normalization logic: Handle legacy, flat arrays, or structured backups
+              let importedLibrary: MediaItem[] = [];
+              let importedProfile: UserProfile | null = null;
 
-          const rawData = {
-              library: sanitizedLibrary,
-              version: 1,
-              exportedAt: new Date().toISOString(),
-              type: 'catalog_share'
-          };
+              if (Array.isArray(data)) {
+                  // Legacy: Root is array
+                  importedLibrary = data;
+              } else {
+                  // Structured: has library/catalog/userProfile keys
+                  importedLibrary = Array.isArray(data.library) ? data.library : (Array.isArray(data.catalog) ? data.catalog : []);
+                  importedProfile = data.userProfile || data.profile || null;
+              }
 
-          const optimizedData = optimizeForExport(rawData);
-          const blob = new Blob([JSON.stringify(optimizedData, null, 2)], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `mediatracker_catalog_share_${new Date().toISOString().slice(0, 10)}.json`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-      } catch (error) {
-          console.error("Export error", error);
-          showToast("Error al exportar catálogo", "error");
+              if (importedLibrary.length === 0 && !importedProfile) {
+                  throw new Error("El archivo no contiene datos reconocibles.");
+              }
+
+              setLoadingMessage('Restaurando datos...');
+
+              // 1. Restore Library if present
+              if (importedLibrary.length > 0) {
+                  // Clear existing if it's a full backup restore
+                  await clearLibrary();
+                  
+                  // Batch Import
+                  const CHUNK_SIZE = 50;
+                  for (let i = 0; i < importedLibrary.length; i += CHUNK_SIZE) {
+                      const chunk = importedLibrary.slice(i, i + CHUNK_SIZE);
+                      await Promise.all(chunk.map((item: MediaItem) => saveMediaItem(item)));
+                      await new Promise(resolve => setTimeout(resolve, 5));
+                  }
+                  setLibrary(importedLibrary);
+              }
+
+              // 2. Restore Profile if present
+              if (importedProfile) {
+                  await saveUserProfile(importedProfile);
+                  setUserProfile(importedProfile);
+                  applyTheme(importedProfile.accentColor);
+                  if (isOnboarding) setIsOnboarding(false);
+              } else {
+                  // Fallback: If no profile but we have library (e.g. catalog import as backup),
+                  // we notify the user but don't crash.
+                  if (isOnboarding && importedLibrary.length > 0) {
+                      showToast("Biblioteca importada. Por favor completa tu perfil.", "info");
+                      // Does NOT close onboarding, allows user to set name/key manually
+                  }
+              }
+
+              showToast("Restauración completada", "success");
+              setIsSettingsOpen(false);
+
+          } catch (err: any) {
+              console.error(err);
+              showToast(err.message || "Error al importar el archivo", "error");
+          } finally {
+              setIsLoading(false);
+              setLoadingMessage('');
+          }
+      };
+      reader.readAsText(file);
+  };
+
+  const handleExportCatalog = () => {
+       const catalog = library.map(item => ({
+           id: item.id,
+           aiData: item.aiData,
+           // Only basic tracking info for sharing catalog
+           status: item.trackingData.status, 
+           rating: item.trackingData.rating
+       }));
+       const blob = new Blob([JSON.stringify({ catalog, exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = `mediatracker_catalog_${new Date().toISOString().split('T')[0]}.json`;
+       a.click();
+       URL.revokeObjectURL(url);
+  };
+
+  const handleImportCatalog = (file: File) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+          try {
+              const data = JSON.parse(e.target?.result as string);
+              // Handle both full backup format (data.library) and catalog format (data.catalog)
+              const items = data.library || data.catalog; 
+              
+              if (Array.isArray(items)) {
+                  // Filter out items that already exist by ID or Title (approx)
+                  const newItems = items.filter((newItem: any) => {
+                       // Convert simplified catalog item to full MediaItem if needed
+                       return !library.some(existing => existing.id === newItem.id || existing.aiData.title === newItem.aiData.title);
+                  }).map((item: any) => {
+                      // Ensure full structure if importing simplified catalog
+                      if (!item.trackingData) {
+                          return {
+                              ...item,
+                              id: Date.now().toString() + Math.random().toString().slice(2,6), // Regen ID to avoid collision
+                              trackingData: {
+                                  status: 'Sin empezar',
+                                  currentSeason: 1,
+                                  totalSeasons: 1,
+                                  watchedEpisodes: 0,
+                                  totalEpisodesInSeason: 0,
+                                  emotionalTags: [],
+                                  favoriteCharacters: [],
+                                  rating: '',
+                                  comment: ''
+                              },
+                              createdAt: Date.now(),
+                              lastInteraction: Date.now()
+                          } as MediaItem;
+                      }
+                      return item as MediaItem;
+                  });
+
+                  if (newItems.length > 0) {
+                      setPendingImport({ library: newItems });
+                  } else {
+                      showToast("No se encontraron obras nuevas para importar.", "info");
+                  }
+              } else {
+                  throw new Error("Formato inválido");
+              }
+          } catch (err) {
+              showToast("Error al leer catálogo", "error");
+          }
+      };
+      reader.readAsText(file);
+  };
+
+  const processCatalogImport = async (newItems: MediaItem[]) => {
+      setIsLoading(true);
+      setLoadingMessage('Importando obras...');
+      try {
+          // Batch process import
+          const CHUNK_SIZE = 50;
+          for (let i = 0; i < newItems.length; i += CHUNK_SIZE) {
+              const chunk = newItems.slice(i, i + CHUNK_SIZE);
+              await Promise.all(chunk.map(item => saveMediaItem(item)));
+              await new Promise(resolve => setTimeout(resolve, 5));
+          }
+
+          const updatedLib = await getLibrary();
+          setLibrary(updatedLib);
+          setPendingImport(null);
+          showToast(`Importadas ${newItems.length} obras exitosamente`, "success");
+      } catch (e) {
+          showToast("Error guardando importación", "error");
       } finally {
           setIsLoading(false);
           setLoadingMessage('');
       }
   };
 
-  const importItemsInBatch = async (items: MediaItem[], onProgress: (count: number, total: number) => void) => {
-      const CHUNK_SIZE = 20; 
-      let processed = 0;
-      
-      for (let i = 0; i < items.length; i += CHUNK_SIZE) {
-          const chunk = items.slice(i, i + CHUNK_SIZE);
-          await Promise.all(chunk.map(item => saveMediaItem(item)));
-          processed += chunk.length;
-          onProgress(Math.min(processed, items.length), items.length);
-          await new Promise(resolve => setTimeout(resolve, 10));
-      }
+
+  // --- VIEW HELPERS ---
+  const openDetail = (item: MediaItem) => {
+      setCurrentMedia(item);
+      setView('details');
+      window.scrollTo(0,0);
   };
 
-  const handleImportBackup = (file: File) => {
-    if (!file.name.endsWith('.json') && file.type !== 'application/json') {
-        showToast("El archivo debe ser JSON", "error");
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onerror = () => showToast("Error leyendo archivo", "error");
-
-    reader.onload = async (event) => {
-        try {
-            const content = event.target?.result;
-            if (typeof content !== 'string') return;
-            const data = JSON.parse(content);
-
-            if (!data.profile || !Array.isArray(data.library)) {
-                showToast("Formato de backup inválido", "error");
-                return;
-            }
-
-            setIsLoading(true);
-            setLoadingMessage('Restaurando biblioteca...');
-            
-            try {
-                await saveUserProfile(data.profile);
-                await importItemsInBatch(data.library, (current, total) => {
-                    setLoadingMessage(`Restaurando obras: ${current}/${total}`);
-                });
-                
-                setUserProfile(data.profile);
-                applyTheme(data.profile.accentColor);
-                const updatedLibrary = await getLibrary();
-                setLibrary(updatedLibrary);
-                
-                setIsLoading(false);
-                setLoadingMessage('');
-                setIsUserMenuOpen(false);
-                setIsSettingsOpen(false);
-                showToast("Copia de seguridad restaurada", "success");
-
-            } catch (saveError) {
-                console.error("Save error", saveError);
-                showToast("Error guardando datos", "error");
-                setIsLoading(false);
-                setLoadingMessage('');
-            }
-
-        } catch (error) {
-            console.error("JSON Parse error", error);
-            showToast("Archivo corrupto", "error");
-            setIsLoading(false);
-            setLoadingMessage('');
-        }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleImportCatalog = (file: File) => {
-      if (!file.name.endsWith('.json') && file.type !== 'application/json') {
-          showToast("El archivo debe ser JSON", "error");
-          return;
-      }
-
-      const reader = new FileReader();
-      reader.onerror = () => showToast("Error de lectura", "error");
-      
-      reader.onload = async (event) => {
-          try {
-              const content = event.target?.result;
-              if (typeof content !== 'string') return;
-              const data = JSON.parse(content);
-              
-              if (!data.library || !Array.isArray(data.library)) {
-                  showToast("Lista de obras no encontrada", "error");
-                  return;
-              }
-
-              if (data.profile) {
-                   setPendingImport({ library: data.library });
-              } else {
-                   processCatalogImport(data.library);
-              }
-
-          } catch (error) {
-              console.error("Import error", error);
-              showToast("Error al procesar archivo", "error");
-              setIsLoading(false);
-          }
-      };
-      reader.readAsText(file);
-  };
-
-  const processCatalogImport = async (incomingItems: MediaItem[]) => {
-       setIsLoading(true);
-       setLoadingMessage('Analizando obras...');
-       
-       const itemsToImport: MediaItem[] = [];
-
-       for (const item of incomingItems) {
-           const exists = library.some(existing => 
-               existing.aiData.title.toLowerCase() === item.aiData.title.toLowerCase() && 
-               existing.aiData.mediaType === item.aiData.mediaType
-           );
-
-           if (!exists) {
-               const newItem: MediaItem = {
-                   ...item,
-                   id: uuidv4(), 
-                   trackingData: {
-                       ...item.trackingData,
-                       status: 'Sin empezar',
-                       watchedEpisodes: 0,
-                       accumulated_consumption: 0,
-                       rating: '',
-                       emotionalTags: [],
-                       favoriteCharacters: [],
-                       comment: '',
-                       customLinks: [],
-                       is_favorite: false
-                   },
-                   createdAt: Date.now(),
-                   lastInteraction: Date.now()
-               };
-               itemsToImport.push(newItem);
-           }
-       }
-       
-       if (itemsToImport.length > 0) {
-            setLoadingMessage('Importando catálogo...');
-            await importItemsInBatch(itemsToImport, (current, total) => {
-                 setLoadingMessage(`Importando: ${current}/${total}`);
-            });
-       }
-
-       const updatedLibrary = await getLibrary();
-       setLibrary(updatedLibrary);
-       setIsLoading(false);
-       setLoadingMessage('');
-       setPendingImport(null);
-       setIsSettingsOpen(false);
-       
-       if (itemsToImport.length > 0) {
-           showToast(`Se importaron ${itemsToImport.length} obras nuevas`, "success");
-       } else {
-           showToast("No se encontraron obras nuevas para importar", "info");
-       }
-  };
-
-  const availableGenres = useMemo(() => {
-    const genreSet = new Set<string>();
-    library.forEach(item => {
-        if (item.aiData.genres && Array.isArray(item.aiData.genres)) {
-            item.aiData.genres.forEach(g => genreSet.add(normalizeGenre(g)));
-        }
-    });
-    return Array.from(genreSet).sort();
-  }, [library]);
-
+  // --- FILTER & SORT LOGIC ---
   const filteredLibrary = useMemo(() => {
     let result = [...library];
-    if (filters.query.trim()) {
+    
+    if (filters.query) {
       const q = filters.query.toLowerCase();
-      result = result.filter(item => item.aiData.title.toLowerCase().includes(q));
+      result = result.filter(i => i.aiData.title.toLowerCase().includes(q));
     }
-    if (filters.type !== 'All') result = result.filter(item => item.aiData.mediaType === filters.type);
-    if (filters.status !== 'All') result = result.filter(item => item.trackingData.status === filters.status);
-    if (filters.rating !== 'All') result = result.filter(item => item.trackingData.rating === filters.rating);
-    if (filters.onlyFavorites) {
-        result = result.filter(item => item.trackingData.is_favorite);
+
+    if (filters.type !== 'All') {
+      result = result.filter(i => i.aiData.mediaType === filters.type);
     }
+
+    if (filters.status !== 'All') {
+      result = result.filter(i => i.trackingData.status === filters.status);
+    }
+
+    if (filters.rating !== 'All') {
+      result = result.filter(i => i.trackingData.rating === filters.rating);
+    }
+
     if (filters.genre !== 'All') {
-        result = result.filter(item => 
-            item.aiData.genres && item.aiData.genres.some(g => normalizeGenre(g) === filters.genre)
-        );
+       result = result.filter(i => 
+           i.aiData.genres.some(g => normalizeGenre(g) === filters.genre)
+       );
     }
-    result.sort((a, b) => {
-      switch (filters.sortBy) {
-        case 'title': return a.aiData.title.localeCompare(b.aiData.title);
-        case 'progress':
-          const progA = a.trackingData.totalEpisodesInSeason > 0 ? (a.trackingData.watchedEpisodes / a.trackingData.totalEpisodesInSeason) : 0;
-          const progB = b.trackingData.totalEpisodesInSeason > 0 ? (b.trackingData.watchedEpisodes / b.trackingData.totalEpisodesInSeason) : 0;
-          return progB - progA;
-        case 'updated': default: 
-          return (b.lastInteraction || b.createdAt) - (a.lastInteraction || a.createdAt); 
-      }
-    });
+
+    if (filters.onlyFavorites) {
+        result = result.filter(i => i.trackingData.is_favorite);
+    }
+
+    // Sort
+    if (filters.sortBy === 'title') {
+      result.sort((a, b) => a.aiData.title.localeCompare(b.aiData.title));
+    } else if (filters.sortBy === 'progress') {
+       result.sort((a, b) => {
+           // Helper to get pct
+           const getPct = (i: MediaItem) => {
+               if (i.trackingData.status === 'Completado') return 100;
+               if (i.trackingData.totalEpisodesInSeason > 0) return (i.trackingData.watchedEpisodes / i.trackingData.totalEpisodesInSeason) * 100;
+               return 0;
+           };
+           return getPct(b) - getPct(a);
+       });
+    } else {
+      // Updated / Recent interaction
+      result.sort((a, b) => (b.lastInteraction || b.createdAt) - (a.lastInteraction || a.createdAt));
+    }
+
     return result;
   }, [library, filters]);
 
-  // Reset pagination when filters or view change
-  useEffect(() => {
-    setVisibleCount(24);
-  }, [filters, view]);
-
   const upcomingLibrary = useMemo(() => {
-     const now = new Date();
-     return library.filter(item => {
-         return item.trackingData.status === 'Planeado / Pendiente';
-     }).sort((a, b) => {
-         const dateAStr = a.trackingData.nextReleaseDate || a.aiData.releaseDate;
-         const dateBStr = b.trackingData.nextReleaseDate || b.aiData.releaseDate;
-         const dateA = dateAStr ? new Date(dateAStr) : null;
-         const dateB = dateBStr ? new Date(dateBStr) : null;
-         const isFutureA = dateA && !isNaN(dateA.getTime()) && dateA > now;
-         const isFutureB = dateB && !isNaN(dateB.getTime()) && dateB > now;
-
-         if (isFutureA && isFutureB) {
-             return dateA!.getTime() - dateB!.getTime();
-         }
-         if (isFutureA) return -1;
-         if (isFutureB) return 1;
-         return b.createdAt - a.createdAt;
-     });
+      return library.filter(i => i.trackingData.status === 'Planeado / Pendiente')
+             .sort((a, b) => {
+                 // Sort by release date if available, else creation
+                 const dateA = a.trackingData.nextReleaseDate || a.aiData.releaseDate || '';
+                 const dateB = b.trackingData.nextReleaseDate || b.aiData.releaseDate || '';
+                 if (dateA && dateB) return dateA.localeCompare(dateB);
+                 if (dateA) return -1;
+                 if (dateB) return 1;
+                 return (b.createdAt - a.createdAt);
+             });
   }, [library]);
 
-  if (!dbReady) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Sparkles className="w-10 h-10 text-primary animate-spin" />
-      </div>
-    );
+  const availableGenres = useMemo(() => {
+      const s = new Set<string>();
+      library.forEach(i => i.aiData.genres.forEach(g => s.add(normalizeGenre(g))));
+      return Array.from(s).sort();
+  }, [library]);
+
+
+  // --- INFINITE SCROLL SIMULATION ---
+  useEffect(() => {
+      const observer = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting) {
+              setVisibleCount(prev => prev + 24);
+          }
+      }, { rootMargin: '100px' });
+      
+      if (loadMoreRef.current) observer.observe(loadMoreRef.current);
+      return () => observer.disconnect();
+  }, [filteredLibrary, view]);
+
+
+  // --- SCROLL HANDLERS ---
+  const scrollToTop = () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+      const handleScroll = () => {
+          const currentScrollY = window.scrollY;
+          
+          // Bottom Nav Logic
+          if (currentScrollY > lastScrollY && currentScrollY > 100) {
+              setIsBottomNavVisible(false);
+          } else {
+              setIsBottomNavVisible(true);
+          }
+          
+          // Scroll Top Logic
+          setShowScrollTop(currentScrollY > 300);
+          
+          setLastScrollY(currentScrollY);
+      };
+
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
+  // Determine if we are in Full Screen Catalog Mode
+  const isCatalogMode = view === 'library' && libraryViewMode === 'catalog';
+
+  // --- RENDER ---
+
+  if (isLoading) {
+      return (
+          <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center fixed inset-0 z-[100]">
+              <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
+              <p className="text-white font-medium animate-pulse">{loadingMessage || 'Cargando tu universo...'}</p>
+          </div>
+      );
   }
 
-  if (!userProfile) {
+  if (isOnboarding) {
+      return <Onboarding onComplete={handleOnboardingComplete} onImport={handleImportBackup} />;
+  }
+
+  if (!isAuthenticated && userProfile) {
       return (
-        <Onboarding 
-            onComplete={handleOnboardingComplete} 
-            onImport={handleImportBackup} 
+        <LoginScreen 
+            onUnlock={handleUnlock} 
+            username={userProfile.username} 
+            avatarUrl={userProfile.avatarUrl}
+            library={library}
         />
       );
   }
 
-  if (isLocked) {
-      return (
-          <LoginScreen 
-            onUnlock={handleUnlock} 
-            username={userProfile.username}
-            avatarUrl={userProfile.avatarUrl}
-            library={library}
-          />
-      );
-  }
+  if (!userProfile) return null; // Should not happen after init
 
   return (
     <div className="min-h-screen bg-background text-slate-200 font-sans selection:bg-primary selection:text-white flex flex-col pb-24 md:pb-0 relative">
@@ -1018,11 +794,18 @@ export default function App() {
       </header>
 
       {/* Main Content Area - Renders the selected View */}
-      <main className="max-w-7xl mx-auto px-4 pt-20 md:pt-24 pb-12 animate-fade-in min-h-[calc(100vh-80px)]">
+      {/* DYNAMIC LAYOUT: Full width for Catalog, Centered container for others */}
+      <main className={`transition-all duration-300 min-h-[calc(100vh-80px)] overflow-x-hidden ${
+          isCatalogMode 
+            ? 'w-full pt-16 pb-0' // Full width, less top padding (header is floating)
+            : 'max-w-7xl mx-auto px-4 pt-20 md:pt-24 pb-12' // Standard container
+      }`}>
          
-         {/* Contextual Greeting (Only on Library/Home view) */}
+         {/* Contextual Greeting (Always visible on Library) */}
          {view === 'library' && userProfile && (
-             <ContextualGreeting userProfile={userProfile} library={library} view={view} />
+             <div className={isCatalogMode ? "max-w-5xl mx-auto px-4 md:px-0 pt-6" : ""}>
+                <ContextualGreeting userProfile={userProfile} library={library} view={view} />
+             </div>
          )}
 
          {/* VIEW: SEARCH (New Entry) */}
@@ -1120,13 +903,16 @@ export default function App() {
          {/* VIEW: LIBRARY */}
          {view === 'library' && (
              <div className="animate-fade-in">
-                 <LibraryFilters 
-                    filters={filters} 
-                    onChange={setFilters} 
-                    availableGenres={availableGenres}
-                    viewMode={libraryViewMode}
-                    onToggleViewMode={() => setLibraryViewMode(prev => prev === 'grid' ? 'catalog' : 'grid')}
-                 />
+                 {/* Wrap filters to keep them contained even in full-width mode */}
+                 <div className={isCatalogMode ? "max-w-7xl mx-auto px-4 pt-4 md:pt-4 z-30 relative" : ""}>
+                    <LibraryFilters 
+                        filters={filters} 
+                        onChange={setFilters} 
+                        availableGenres={availableGenres}
+                        viewMode={libraryViewMode}
+                        onToggleViewMode={() => setLibraryViewMode(prev => prev === 'grid' ? 'catalog' : 'grid')}
+                    />
+                 </div>
                  
                  {library.length === 0 ? (
                      <div className="text-center py-20 opacity-50">
@@ -1171,7 +957,7 @@ export default function App() {
 
          {/* VIEW: DETAILS */}
          {view === 'details' && currentMedia && (
-             <div className="animate-fade-in">
+             <div className="animate-fade-in max-w-7xl mx-auto px-4 md:px-0">
                  <button 
                    onClick={() => setView('library')}
                    className="mb-4 flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
