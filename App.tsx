@@ -58,8 +58,10 @@ export default function App() {
   // Import Merge Confirmation State
   const [pendingImport, setPendingImport] = useState<{ library: MediaItem[] } | null>(null);
 
-  // Scroll to Top State
+  // Scroll to Top & Smart Nav State
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
+  const lastScrollY = useRef(0);
 
   // Pagination / Infinite Scroll State
   const [visibleCount, setVisibleCount] = useState(24);
@@ -129,12 +131,35 @@ export default function App() {
     init();
   }, []);
 
-  // Scroll Listener for Back to Top Button
+  // Scroll Listener for Smart Nav & Back to Top
   useEffect(() => {
     const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 300);
+      const currentScrollY = window.scrollY;
+      
+      // Back to Top Logic
+      setShowScrollTop(currentScrollY > 300);
+
+      // Smart Nav Logic (Pinterest style)
+      // Only trigger if we moved enough to avoid jitter
+      const diff = Math.abs(currentScrollY - lastScrollY.current);
+      
+      if (diff > 10) {
+          if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+              // Scrolling Down AND not at top -> Hide
+              setIsBottomNavVisible(false);
+          } else {
+              // Scrolling Up OR at top -> Show
+              setIsBottomNavVisible(true);
+          }
+      }
+      
+      // Always show if at very top
+      if (currentScrollY < 50) setIsBottomNavVisible(true);
+
+      lastScrollY.current = currentScrollY;
     };
-    window.addEventListener('scroll', handleScroll);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -1285,7 +1310,7 @@ export default function App() {
       )}
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700 z-50 pb-safe transition-all duration-300">
+      <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700 z-50 pb-safe transition-transform duration-300 ${isBottomNavVisible ? 'translate-y-0' : 'translate-y-full'}`}>
           <div className="flex justify-around items-center h-16 px-2">
               <button 
                   onClick={() => setView('library')}
