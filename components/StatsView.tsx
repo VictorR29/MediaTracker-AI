@@ -335,12 +335,15 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
             item.trackingData.customLinks.forEach(link => {
                 try {
                     const url = new URL(link.url);
-                    let domain = url.hostname.replace('www.', '');
-                    // Normalize common ones for display
-                    let name = domain.split('.')[0];
-                    name = name.charAt(0).toUpperCase() + name.slice(1);
+                    let hostname = url.hostname;
+                    // Remove technical subdomains (www, ww3, web, m, etc.) to get cleaner brand name
+                    hostname = hostname.replace(/^(www\d*|web|m|mobile|touch|v\d+)\./i, '');
                     
-                    platformMap[domain] = (platformMap[domain] || 0) + 1;
+                    // Group by the cleaned domain (e.g. "animeonline.ninja" instead of "ww3.animeonline.ninja")
+                    // This allows grouping multiple subdomains under the same platform
+                    const key = hostname; 
+                    
+                    platformMap[key] = (platformMap[key] || 0) + 1;
                 } catch (e) {
                     // Ignore invalid URLs
                 }
@@ -386,7 +389,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     // Process Top Platforms
     const topPlatforms = Object.entries(platformMap)
         .map(([domain, count]) => {
-            let name = domain.split('.')[0];
+            const parts = domain.split('.');
+            let name = parts[0];
+            
+            // Heuristic: If name is generic (like 'watch' or 'app') and there's another part, take the next one.
+            if (['app', 'watch', 'read', 'ver', 'm', 'mobile'].includes(name) && parts.length > 1) {
+                name = parts[1];
+            }
+
             name = name.charAt(0).toUpperCase() + name.slice(1);
             return { domain, count, name };
         })
