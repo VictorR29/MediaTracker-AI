@@ -522,14 +522,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
   }, [stats]);
 
   const StatCard = ({ title, value, icon: Icon, color, subtext }: any) => (
-    <div className="bg-surface border border-slate-700 p-6 rounded-2xl flex items-center justify-between hover:border-slate-500 transition-colors shadow-md">
-       <div>
-         <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">{title}</p>
-         <p className="text-3xl font-bold text-white mb-1 truncate max-w-[150px]" title={String(value)}>{value}</p>
-         {subtext && <p className="text-xs text-slate-500">{subtext}</p>}
+    <div className="bg-surface border border-slate-700 p-4 md:p-6 rounded-2xl flex items-center justify-between hover:border-slate-500 transition-colors shadow-md min-w-0">
+       <div className="min-w-0 flex-1 mr-3">
+         <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 truncate">{title}</p>
+         <p className="text-2xl md:text-3xl font-bold text-white mb-1 truncate" title={String(value)}>{value}</p>
+         {subtext && <p className="text-xs text-slate-500 truncate">{subtext}</p>}
        </div>
-       <div className={`p-4 rounded-xl bg-opacity-10 ${color.bg} shadow-inner`}>
-         <Icon className={`w-8 h-8 ${color.text}`} />
+       <div className={`p-3 md:p-4 rounded-xl bg-opacity-10 ${color.bg} shadow-inner flex-shrink-0`}>
+         <Icon className={`w-6 h-6 md:w-8 md:h-8 ${color.text}`} />
        </div>
     </div>
   );
@@ -672,7 +672,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            
            {/* Visual Time Card */}
-           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 shadow-2xl transition-all hover:border-indigo-500/30 flex flex-col">
+           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-5 md:p-8 shadow-2xl transition-all hover:border-indigo-500/30 flex flex-col">
                 {/* Decorative background glow */}
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-indigo-500/30 transition-colors duration-700"></div>
                 
@@ -739,7 +739,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
            </div>
 
            {/* Reading Time Card */}
-           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 shadow-2xl transition-all hover:border-emerald-500/30 flex flex-col">
+           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-5 md:p-8 shadow-2xl transition-all hover:border-emerald-500/30 flex flex-col">
                 {/* Decorative background glow */}
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-emerald-500/30 transition-colors duration-700"></div>
                 
@@ -794,7 +794,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        </div>
 
        {/* Dynamic Obsession Tracker Widget (TOP 3) */}
-       <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-md transition-all">
+       <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-md transition-all">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
                      <span className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
@@ -892,7 +892,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        </div>
 
        {/* DISTRIBUTION BY TAG WIDGET (SVG Pie Chart / Platform Ecosystem) */}
-       <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md transition-all">
+       <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-md transition-all">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                      <span className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
@@ -904,22 +904,22 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 </div>
                 
                 {/* Axis Selector */}
-                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 self-start sm:self-auto">
+                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 self-start sm:self-auto overflow-x-auto max-w-full no-scrollbar">
                     <button 
                         onClick={() => setDistributionAxis('genre')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${distributionAxis === 'genre' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${distributionAxis === 'genre' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
                     >
                         <Hash className="w-3 h-3" /> Géneros
                     </button>
                     <button 
                         onClick={() => setDistributionAxis('emotion')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${distributionAxis === 'emotion' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${distributionAxis === 'emotion' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
                     >
                         <Heart className="w-3 h-3" /> Emociones
                     </button>
                     <button 
                         onClick={() => setDistributionAxis('platform')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${distributionAxis === 'platform' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${distributionAxis === 'platform' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
                     >
                         <Globe className="w-3 h-3" /> Plataformas
                     </button>
@@ -956,8 +956,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {stats.topPlatforms.map((p, idx) => (
                                 <div key={p.domain} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:bg-slate-800 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center overflow-hidden border border-white/10">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center overflow-hidden border border-white/10 flex-shrink-0">
                                             <img 
                                                 src={`https://s2.googleusercontent.com/s2/favicons?domain=${p.domain}&sz=32`} 
                                                 alt={p.name}
@@ -966,9 +966,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                                             />
                                             <LinkIcon className="w-4 h-4 text-slate-500 absolute -z-10" />
                                         </div>
-                                        <span className="text-sm font-medium text-slate-200">{p.name}</span>
+                                        <span className="text-sm font-medium text-slate-200 truncate">{p.name}</span>
                                     </div>
-                                    <span className="text-xs font-mono text-slate-400 bg-black/20 px-2 py-1 rounded">{p.count} obras</span>
+                                    <span className="text-xs font-mono text-slate-400 bg-black/20 px-2 py-1 rounded flex-shrink-0">{p.count} obras</span>
                                 </div>
                             ))}
                         </div>
@@ -1101,7 +1101,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        {/* Charts Row */}
        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Type Distribution */}
-          <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-lg">
+          <div className="bg-surface border border-slate-700 p-4 md:p-6 rounded-2xl shadow-lg">
              <div className="flex items-center gap-2 mb-6">
                 <PieChart className="w-5 h-5 text-slate-400" />
                 <h3 className="text-lg font-bold text-white">Por Tipo de Contenido</h3>
@@ -1133,7 +1133,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
           </div>
 
            {/* Rating Distribution */}
-          <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-lg flex flex-col">
+          <div className="bg-surface border border-slate-700 p-4 md:p-6 rounded-2xl shadow-lg flex flex-col">
              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                     <Star className="w-5 h-5 text-slate-400" />
