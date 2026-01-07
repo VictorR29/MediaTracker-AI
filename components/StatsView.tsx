@@ -650,7 +650,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
   const localPercent = totalItemsEcosystem > 0 ? (stats.itemsWithoutLinks / totalItemsEcosystem) * 100 : 0;
 
   return (
-    <div className="animate-fade-in space-y-6 pb-12 relative">
+    <div className="animate-fade-in space-y-6 pb-12 relative overflow-hidden">
        
        <div className="flex items-center justify-between mb-6">
            <div className="flex items-center gap-3">
@@ -803,8 +803,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                      <p className="text-sm text-slate-400 mt-1">Las obras que más tiempo han consumido de tu vida</p>
                 </div>
                 
-                {/* Dynamic Selector Tabs */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-slate-900 p-1 rounded-lg">
+                {/* Dynamic Selector Tabs - Scrollable on Mobile, Grid on Desktop */}
+                <div className="flex overflow-x-auto sm:grid sm:grid-cols-4 gap-1 bg-slate-900 p-1 rounded-lg no-scrollbar">
                     {OBSESSION_TABS.map(tab => {
                         const Icon = tab.icon;
                         const isActive = obsessionTab === tab.id;
@@ -812,14 +812,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                             <button
                                 key={tab.id}
                                 onClick={() => setObsessionTab(tab.id)}
-                                className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
                                     isActive 
                                     ? 'bg-primary text-white shadow' 
                                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
                                 }`}
                             >
                                 <Icon className="w-3 h-3 flex-shrink-0" />
-                                <span className="truncate">{tab.label}</span>
+                                <span>{tab.label}</span>
                             </button>
                         );
                     })}
@@ -933,8 +933,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                     {/* 1. Bar Chart: Online vs Local */}
                     <div className="mb-8">
                         <div className="flex justify-between text-xs text-slate-400 mb-2 font-medium">
-                            <span className="flex items-center gap-1"><Globe className="w-3 h-3 text-indigo-400"/> Streaming / Web ({linkPercent.toFixed(0)}%)</span>
-                            <span className="flex items-center gap-1"><HardDrive className="w-3 h-3 text-slate-500"/> Local / Físico ({localPercent.toFixed(0)}%)</span>
+                            <span className="flex items-center gap-1 min-w-0 truncate mr-2"><Globe className="w-3 h-3 text-indigo-400 flex-shrink-0"/> <span className="truncate">Streaming / Web ({linkPercent.toFixed(0)}%)</span></span>
+                            <span className="flex items-center gap-1 min-w-0 truncate"><HardDrive className="w-3 h-3 text-slate-500 flex-shrink-0"/> <span className="truncate">Local / Físico ({localPercent.toFixed(0)}%)</span></span>
                         </div>
                         <div className="h-4 w-full bg-slate-800 rounded-full overflow-hidden flex">
                             <div 
@@ -1197,7 +1197,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                        <rankingSystem.RankIcon className="w-4 h-4" />
                        <span className="text-xs font-bold uppercase tracking-widest">{rankingSystem.rankTitle}</span>
                    </div>
-                   <h2 className="text-xl md:text-2xl font-bold text-slate-200 mb-3 leading-tight italic">
+                   <h2 className="text-xl md:text-2xl font-bold text-slate-200 mb-3 leading-tight italic break-words">
                        "{rankingSystem.message}"
                    </h2>
                    <div className="w-full bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden max-w-xs mx-auto">
