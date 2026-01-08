@@ -803,8 +803,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                      <p className="text-sm text-slate-400 mt-1">Las obras que más tiempo han consumido de tu vida</p>
                 </div>
                 
-                {/* Dynamic Selector Tabs - Scrollable on Mobile, Grid on Desktop */}
-                <div className="flex overflow-x-auto sm:grid sm:grid-cols-4 gap-1 bg-slate-900 p-1 rounded-lg no-scrollbar max-w-full pb-2 md:pb-1">
+                {/* FIX: Use Grid instead of Flex/Scroll for Tabs to prevent horizontal overflow on narrow screens */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900 p-2 rounded-lg w-full md:w-auto">
                     {OBSESSION_TABS.map(tab => {
                         const Icon = tab.icon;
                         const isActive = obsessionTab === tab.id;
@@ -812,7 +812,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                             <button
                                 key={tab.id}
                                 onClick={() => setObsessionTab(tab.id)}
-                                className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
+                                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap w-full ${
                                     isActive 
                                     ? 'bg-primary text-white shadow' 
                                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -903,25 +903,25 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                      </p>
                 </div>
                 
-                {/* Axis Selector */}
-                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 self-start sm:self-auto overflow-x-auto max-w-full no-scrollbar pb-1">
+                {/* FIX: Use Grid for Distribution Tabs as well */}
+                <div className="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg w-full md:w-auto">
                     <button 
                         onClick={() => setDistributionAxis('genre')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${distributionAxis === 'genre' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-2 py-1.5 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap w-full ${distributionAxis === 'genre' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
                     >
-                        <Hash className="w-3 h-3" /> Géneros
+                        <Hash className="w-3 h-3 hidden sm:inline" /> Géneros
                     </button>
                     <button 
                         onClick={() => setDistributionAxis('emotion')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${distributionAxis === 'emotion' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-2 py-1.5 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap w-full ${distributionAxis === 'emotion' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
                     >
-                        <Heart className="w-3 h-3" /> Emociones
+                        <Heart className="w-3 h-3 hidden sm:inline" /> Emociones
                     </button>
                     <button 
                         onClick={() => setDistributionAxis('platform')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${distributionAxis === 'platform' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-2 py-1.5 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap w-full ${distributionAxis === 'platform' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
                     >
-                        <Globe className="w-3 h-3" /> Plataformas
+                        <Globe className="w-3 h-3 hidden sm:inline" /> Plataformas
                     </button>
                 </div>
             </div>
