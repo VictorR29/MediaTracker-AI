@@ -668,7 +668,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
       
       <div className="md:flex">
         <div 
-          className="md:w-1/3 p-6 flex flex-col relative overflow-hidden bg-slate-900"
+          className="md:w-1/3 p-4 md:p-6 flex flex-col relative overflow-hidden bg-slate-900"
         >
           <div 
             className="absolute inset-0 pointer-events-none"
@@ -738,7 +738,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                 <>
                 <div className="flex items-center gap-2">
                     <h2 
-                        className="text-2xl font-bold leading-tight" 
+                        className="text-xl md:text-2xl font-bold leading-tight" 
                         style={{ color: dynamicColor, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
                     >
                         {item.aiData.title}
@@ -967,7 +967,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
           </div>
         </div>
 
-        <div className="md:w-2/3 p-6 md:p-8 flex flex-col gap-6 bg-gradient-to-br from-surface to-slate-800">
+        <div className="md:w-2/3 p-4 md:p-8 flex flex-col gap-6 bg-gradient-to-br from-surface to-slate-800">
           
           <div className="prose prose-invert max-w-none">
             <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
@@ -1003,7 +1003,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div 
-              className="bg-slate-900/50 p-5 rounded-xl border relative overflow-hidden transition-colors duration-500"
+              className="bg-slate-900/50 p-4 md:p-5 rounded-xl border relative overflow-hidden transition-colors duration-500"
               style={{ borderColor: `${dynamicColor}40` }}
             >
               <div 
@@ -1247,7 +1247,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
             </div>
 
             <div 
-                className="bg-slate-900/50 p-5 rounded-xl border border-slate-700/50 flex flex-col h-full"
+                className="bg-slate-900/50 p-4 md:p-5 rounded-xl border border-slate-700/50 flex flex-col h-full"
                 style={{ borderColor: `${dynamicColor}40` }}
             >
                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">

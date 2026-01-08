@@ -798,7 +798,7 @@ export default function App() {
       <main className={`transition-all duration-300 min-h-[calc(100vh-80px)] overflow-x-hidden ${
           isCatalogMode 
             ? 'w-full pt-16 pb-0' // Full width, less top padding (header is floating)
-            : 'max-w-7xl mx-auto px-4 pt-20 md:pt-24 pb-12' // Standard container
+            : 'max-w-7xl mx-auto px-2 md:px-4 pt-20 md:pt-24 pb-12' // Standard container with reduced mobile padding
       }`}>
          
          {/* Contextual Greeting (Always visible on Library) */}
@@ -957,7 +957,7 @@ export default function App() {
 
          {/* VIEW: DETAILS */}
          {view === 'details' && currentMedia && (
-             <div className="animate-fade-in max-w-7xl mx-auto px-4 md:px-0">
+             <div className="animate-fade-in max-w-7xl mx-auto px-0 md:px-0">
                  <button 
                    onClick={() => setView('library')}
                    className="mb-4 flex items-center gap-2 text-slate-400 hover:text-white transition-colors"

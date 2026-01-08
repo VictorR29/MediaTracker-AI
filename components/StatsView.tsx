@@ -522,8 +522,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
   }, [stats]);
 
   const StatCard = ({ title, value, icon: Icon, color, subtext }: any) => (
-    <div className="bg-surface border border-slate-700 p-4 md:p-6 rounded-2xl flex items-center justify-between hover:border-slate-500 transition-colors shadow-md min-w-0">
-       <div className="min-w-0 flex-1 mr-3">
+    <div className="bg-surface border border-slate-700 p-4 md:p-6 rounded-2xl flex items-center justify-between hover:border-slate-500 transition-colors shadow-md min-w-0 overflow-hidden">
+       <div className="min-w-0 flex-1 mr-3 overflow-hidden">
          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 truncate">{title}</p>
          <p className="text-2xl md:text-3xl font-bold text-white mb-1 truncate" title={String(value)}>{value}</p>
          {subtext && <p className="text-xs text-slate-500 truncate">{subtext}</p>}
@@ -650,14 +650,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
   const localPercent = totalItemsEcosystem > 0 ? (stats.itemsWithoutLinks / totalItemsEcosystem) * 100 : 0;
 
   return (
-    <div className="animate-fade-in space-y-4 md:space-y-6 pb-12 w-full max-w-full overflow-x-hidden">
+    <div className="animate-fade-in space-y-4 md:space-y-6 pb-12 w-full max-w-[100vw] overflow-x-hidden">
        
        <div className="flex items-center justify-between mb-6">
            <div className="flex items-center gap-3 min-w-0">
                 <div className="p-2 bg-slate-800 rounded-lg shadow shadow-primary/20 flex-shrink-0">
                     <BarChart2 className="w-6 h-6 text-primary" />
                 </div>
-                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 tracking-tight truncate">Mis Insights</h2>
+                <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 tracking-tight truncate">Mis Insights</h2>
            </div>
            <button 
              onClick={() => setIsSettingsOpen(true)}
@@ -690,7 +690,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
                     {/* Main Metric */}
                     <div className="mb-8">
-                        <span className="text-3xl sm:text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-100 to-indigo-300 drop-shadow-sm tracking-tight break-all">
+                        <span className="text-3xl sm:text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-100 to-indigo-300 drop-shadow-sm tracking-tight break-words">
                             {stats.visualTimeDisplay}
                         </span>
                     </div>
@@ -757,7 +757,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
                     {/* Main Metric */}
                     <div className="mb-8">
-                        <span className="text-3xl sm:text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-emerald-100 to-emerald-300 drop-shadow-sm tracking-tight break-all">
+                        <span className="text-3xl sm:text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-emerald-100 to-emerald-300 drop-shadow-sm tracking-tight break-words">
                             {stats.readingTimeDisplay}
                         </span>
                     </div>
@@ -794,7 +794,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        </div>
 
        {/* Dynamic Obsession Tracker Widget (TOP 3) */}
-       <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-md transition-all">
+       <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-md transition-all overflow-hidden">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
                      <span className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
@@ -892,7 +892,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        </div>
 
        {/* DISTRIBUTION BY TAG WIDGET (SVG Pie Chart / Platform Ecosystem) */}
-       <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-md transition-all">
+       <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-md transition-all overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                      <span className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
@@ -982,10 +982,10 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
             ) : (
                 // --- PIE CHART WIDGET (Genre / Emotions) ---
                 chartData.length > 0 ? (
-                    <div className="flex flex-col md:flex-row items-start gap-8 md:gap-16 justify-center animate-fade-in">
+                    <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 justify-center animate-fade-in">
                         
                         {/* The Chart (SVG Based) */}
-                        <div className="relative w-48 h-48 md:w-56 md:h-56 flex-shrink-0 flex items-center justify-center self-center">
+                        <div className="relative w-40 h-40 md:w-56 md:h-56 flex-shrink-0 flex items-center justify-center self-center">
                             <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 transform overflow-visible">
                             {svgSlices.map((slice, i) => {
                                 const isHighlighted = highlightedSlice === slice.label;
@@ -1023,7 +1023,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                         </div>
 
                         {/* The Legend - SCROLLABLE & COMPLETE */}
-                        <div className="flex-1 w-full md:w-auto h-64 overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="flex-1 w-full md:w-auto max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                             <div className="grid grid-cols-1 gap-2">
                                 {chartData.map((slice, idx) => {
                                     const isHighlighted = highlightedSlice === slice.label;
@@ -1101,7 +1101,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        {/* Charts Row */}
        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Type Distribution */}
-          <div className="bg-surface border border-slate-700 p-4 md:p-6 rounded-2xl shadow-lg">
+          <div className="bg-surface border border-slate-700 p-4 md:p-6 rounded-2xl shadow-lg overflow-hidden">
              <div className="flex items-center gap-2 mb-6">
                 <PieChart className="w-5 h-5 text-slate-400" />
                 <h3 className="text-lg font-bold text-white">Por Tipo de Contenido</h3>
@@ -1133,7 +1133,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
           </div>
 
            {/* Rating Distribution */}
-          <div className="bg-surface border border-slate-700 p-4 md:p-6 rounded-2xl shadow-lg flex flex-col">
+          <div className="bg-surface border border-slate-700 p-4 md:p-6 rounded-2xl shadow-lg flex flex-col overflow-hidden">
              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                     <Star className="w-5 h-5 text-slate-400" />
@@ -1188,9 +1188,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
              style={{ borderColor: userProfile.accentColor ? '#' + userProfile.accentColor.split(' ')[0] + '40' : '#6366f140' }}
            >
                {/* Decorative Elements */}
-               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 opacity-50"></div>
-               <div className="absolute top-2 left-2 text-slate-700 opacity-20"><rankingSystem.RankIcon className="w-12 h-12 md:w-16 md:h-16" /></div>
-               <div className="absolute bottom-2 right-2 text-slate-700 opacity-20"><rankingSystem.RankIcon className="w-12 h-12 md:w-16 md:h-16" /></div>
+               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 opacity-50 pointer-events-none"></div>
+               <div className="absolute top-2 left-2 text-slate-700 opacity-20 pointer-events-none"><rankingSystem.RankIcon className="w-12 h-12 md:w-16 md:h-16" /></div>
+               <div className="absolute bottom-2 right-2 text-slate-700 opacity-20 pointer-events-none"><rankingSystem.RankIcon className="w-12 h-12 md:w-16 md:h-16" /></div>
 
                <div className="relative z-10 max-w-2xl mx-auto">
                    <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700 shadow-xl mb-4 ${rankingSystem.rankColor}`}>
