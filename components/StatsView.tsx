@@ -650,7 +650,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
   const localPercent = totalItemsEcosystem > 0 ? (stats.itemsWithoutLinks / totalItemsEcosystem) * 100 : 0;
 
   return (
-    <div className="animate-fade-in space-y-6 pb-12 relative w-full max-w-[100vw] overflow-hidden">
+    <div className="animate-fade-in space-y-4 md:space-y-6 pb-12 w-full max-w-full overflow-x-hidden">
        
        <div className="flex items-center justify-between mb-6">
            <div className="flex items-center gap-3 min-w-0">
@@ -672,7 +672,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            
            {/* Visual Time Card */}
-           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-5 md:p-8 shadow-2xl transition-all hover:border-indigo-500/30 flex flex-col">
+           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-4 md:p-8 shadow-2xl transition-all hover:border-indigo-500/30 flex flex-col">
                 {/* Decorative background glow */}
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-indigo-500/30 transition-colors duration-700"></div>
                 
@@ -690,13 +690,13 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
                     {/* Main Metric */}
                     <div className="mb-8">
-                        <span className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-100 to-indigo-300 drop-shadow-sm tracking-tight break-all">
+                        <span className="text-3xl sm:text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-100 to-indigo-300 drop-shadow-sm tracking-tight break-all">
                             {stats.visualTimeDisplay}
                         </span>
                     </div>
 
                     {/* Chips Grid */}
-                    <div className="grid grid-cols-2 gap-3 mt-auto">
+                    <div className="grid grid-cols-2 gap-2 md:gap-3 mt-auto">
                         {/* Anime Chip */}
                         <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip min-w-0">
                             <div className="flex items-center gap-2 mb-2 min-w-0">
@@ -704,7 +704,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-indigo-300 transition-colors truncate">Animes</span>
                             </div>
                             <div className="min-w-0">
-                                <span className="block text-xl font-bold text-white mb-0.5 truncate">{stats.animeEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
+                                <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.animeEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
                                 <span className="block text-[10px] text-slate-500 truncate">{stats.consumedAnimes} obras</span>
                             </div>
                         </div>
@@ -716,7 +716,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-purple-300 transition-colors truncate">Series</span>
                             </div>
                             <div className="min-w-0">
-                                <span className="block text-xl font-bold text-white mb-0.5 truncate">{stats.seriesEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
+                                <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.seriesEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
                                 <span className="block text-[10px] text-slate-500 truncate">{stats.consumedSeries} obras</span>
                             </div>
                         </div>
@@ -729,7 +729,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                             </div>
                             <div className="flex justify-between items-end min-w-0">
                                 <div className="min-w-0">
-                                    <span className="block text-xl font-bold text-white mb-0.5 truncate">{stats.consumedMovies} <span className="text-xs font-medium text-slate-500">vistas</span></span>
+                                    <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.consumedMovies} <span className="text-xs font-medium text-slate-500">vistas</span></span>
                                     <span className="block text-[10px] text-slate-500 truncate">{stats.consumedMovies} obras</span>
                                 </div>
                             </div>
@@ -739,7 +739,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
            </div>
 
            {/* Reading Time Card */}
-           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-5 md:p-8 shadow-2xl transition-all hover:border-emerald-500/30 flex flex-col">
+           <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-4 md:p-8 shadow-2xl transition-all hover:border-emerald-500/30 flex flex-col">
                 {/* Decorative background glow */}
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-emerald-500/30 transition-colors duration-700"></div>
                 
@@ -757,13 +757,13 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
                     {/* Main Metric */}
                     <div className="mb-8">
-                        <span className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-emerald-100 to-emerald-300 drop-shadow-sm tracking-tight break-all">
+                        <span className="text-3xl sm:text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-emerald-100 to-emerald-300 drop-shadow-sm tracking-tight break-all">
                             {stats.readingTimeDisplay}
                         </span>
                     </div>
 
                     {/* Chips Grid - Stacked on Desktop to match height of Visual Card */}
-                    <div className="grid grid-cols-2 md:grid-cols-1 gap-3 mt-auto">
+                    <div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-3 mt-auto">
                         {/* Manhwa/Manga Chip */}
                         <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip min-w-0">
                             <div className="flex items-center gap-2 mb-2 min-w-0">
@@ -771,7 +771,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-orange-300 transition-colors truncate">Manhwa/Manga</span>
                             </div>
                             <div className="min-w-0">
-                                <span className="block text-xl font-bold text-white mb-0.5 truncate">{stats.readingChapters} <span className="text-xs font-medium text-slate-500">caps</span></span>
+                                <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.readingChapters} <span className="text-xs font-medium text-slate-500">caps</span></span>
                                 <span className="block text-[10px] text-slate-500 truncate">{stats.consumedManhwas} obras</span>
                             </div>
                         </div>
@@ -783,7 +783,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-emerald-300 transition-colors truncate">Libros</span>
                             </div>
                             <div className="min-w-0">
-                                <span className="block text-xl font-bold text-white mb-0.5 truncate">{stats.bookChapters} <span className="text-xs font-medium text-slate-500">pág</span></span>
+                                <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.bookChapters} <span className="text-xs font-medium text-slate-500">pág</span></span>
                                 <span className="block text-[10px] text-slate-500 truncate">{stats.consumedBooks} obras</span>
                             </div>
                         </div>
@@ -804,7 +804,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 </div>
                 
                 {/* Dynamic Selector Tabs - Scrollable on Mobile, Grid on Desktop */}
-                <div className="flex overflow-x-auto sm:grid sm:grid-cols-4 gap-1 bg-slate-900 p-1 rounded-lg no-scrollbar max-w-full">
+                <div className="flex overflow-x-auto sm:grid sm:grid-cols-4 gap-1 bg-slate-900 p-1 rounded-lg no-scrollbar max-w-full pb-2 md:pb-1">
                     {OBSESSION_TABS.map(tab => {
                         const Icon = tab.icon;
                         const isActive = obsessionTab === tab.id;
@@ -904,7 +904,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 </div>
                 
                 {/* Axis Selector */}
-                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 self-start sm:self-auto overflow-x-auto max-w-full no-scrollbar">
+                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 self-start sm:self-auto overflow-x-auto max-w-full no-scrollbar pb-1">
                     <button 
                         onClick={() => setDistributionAxis('genre')}
                         className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${distributionAxis === 'genre' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
@@ -1184,13 +1184,13 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
        {/* Ranking & Achievement Banner (Dynamic) */}
        {stats.totalConsumptionUnits > 0 && (
            <div 
-             className="w-full bg-slate-900 border border-slate-700 rounded-xl p-8 text-center relative overflow-hidden transition-all duration-500 hover:border-slate-500"
+             className="w-full bg-slate-900 border border-slate-700 rounded-xl p-6 md:p-8 text-center relative overflow-hidden transition-all duration-500 hover:border-slate-500"
              style={{ borderColor: userProfile.accentColor ? '#' + userProfile.accentColor.split(' ')[0] + '40' : '#6366f140' }}
            >
                {/* Decorative Elements */}
                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 opacity-50"></div>
-               <div className="absolute top-4 left-4 text-slate-700 opacity-20"><rankingSystem.RankIcon className="w-16 h-16" /></div>
-               <div className="absolute bottom-4 right-4 text-slate-700 opacity-20"><rankingSystem.RankIcon className="w-16 h-16" /></div>
+               <div className="absolute top-2 left-2 text-slate-700 opacity-20"><rankingSystem.RankIcon className="w-12 h-12 md:w-16 md:h-16" /></div>
+               <div className="absolute bottom-2 right-2 text-slate-700 opacity-20"><rankingSystem.RankIcon className="w-12 h-12 md:w-16 md:h-16" /></div>
 
                <div className="relative z-10 max-w-2xl mx-auto">
                    <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700 shadow-xl mb-4 ${rankingSystem.rankColor}`}>
