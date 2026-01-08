@@ -650,21 +650,21 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
   const localPercent = totalItemsEcosystem > 0 ? (stats.itemsWithoutLinks / totalItemsEcosystem) * 100 : 0;
 
   return (
-    <div className="animate-fade-in space-y-6 pb-12 relative overflow-hidden">
+    <div className="animate-fade-in space-y-6 pb-12 relative w-full max-w-[100vw] overflow-hidden">
        
        <div className="flex items-center justify-between mb-6">
-           <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-800 rounded-lg shadow shadow-primary/20">
+           <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-slate-800 rounded-lg shadow shadow-primary/20 flex-shrink-0">
                     <BarChart2 className="w-6 h-6 text-primary" />
                 </div>
-                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 tracking-tight">Mis Insights</h2>
+                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 tracking-tight truncate">Mis Insights</h2>
            </div>
            <button 
              onClick={() => setIsSettingsOpen(true)}
-             className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium"
+             className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium flex-shrink-0"
            >
                <Settings className="w-4 h-4" />
-               Configurar
+               <span className="hidden sm:inline">Configurar</span>
            </button>
        </div>
 
@@ -690,7 +690,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
                     {/* Main Metric */}
                     <div className="mb-8">
-                        <span className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-100 to-indigo-300 drop-shadow-sm tracking-tight">
+                        <span className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-100 to-indigo-300 drop-shadow-sm tracking-tight break-all">
                             {stats.visualTimeDisplay}
                         </span>
                     </div>
@@ -698,39 +698,39 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                     {/* Chips Grid */}
                     <div className="grid grid-cols-2 gap-3 mt-auto">
                         {/* Anime Chip */}
-                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Tv className="w-3.5 h-3.5 text-indigo-400" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-indigo-300 transition-colors">Animes</span>
+                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip min-w-0">
+                            <div className="flex items-center gap-2 mb-2 min-w-0">
+                                <Tv className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-indigo-300 transition-colors truncate">Animes</span>
                             </div>
-                            <div>
-                                <span className="block text-xl font-bold text-white mb-0.5">{stats.animeEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
-                                <span className="block text-[10px] text-slate-500">{stats.consumedAnimes} obras</span>
+                            <div className="min-w-0">
+                                <span className="block text-xl font-bold text-white mb-0.5 truncate">{stats.animeEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
+                                <span className="block text-[10px] text-slate-500 truncate">{stats.consumedAnimes} obras</span>
                             </div>
                         </div>
 
                         {/* Series Chip */}
-                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Layers className="w-3.5 h-3.5 text-purple-400" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-purple-300 transition-colors">Series</span>
+                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip min-w-0">
+                            <div className="flex items-center gap-2 mb-2 min-w-0">
+                                <Layers className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-purple-300 transition-colors truncate">Series</span>
                             </div>
-                            <div>
-                                <span className="block text-xl font-bold text-white mb-0.5">{stats.seriesEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
-                                <span className="block text-[10px] text-slate-500">{stats.consumedSeries} obras</span>
+                            <div className="min-w-0">
+                                <span className="block text-xl font-bold text-white mb-0.5 truncate">{stats.seriesEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
+                                <span className="block text-[10px] text-slate-500 truncate">{stats.consumedSeries} obras</span>
                             </div>
                         </div>
 
                         {/* Movies Chip - Full width on bottom */}
-                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors col-span-2 group/chip">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Film className="w-3.5 h-3.5 text-pink-400" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-pink-300 transition-colors">Películas</span>
+                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors col-span-2 group/chip min-w-0">
+                            <div className="flex items-center gap-2 mb-2 min-w-0">
+                                <Film className="w-3.5 h-3.5 text-pink-400 flex-shrink-0" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-pink-300 transition-colors truncate">Películas</span>
                             </div>
-                            <div className="flex justify-between items-end">
-                                <div>
-                                    <span className="block text-xl font-bold text-white mb-0.5">{stats.consumedMovies} <span className="text-xs font-medium text-slate-500">vistas</span></span>
-                                    <span className="block text-[10px] text-slate-500">{stats.consumedMovies} obras</span>
+                            <div className="flex justify-between items-end min-w-0">
+                                <div className="min-w-0">
+                                    <span className="block text-xl font-bold text-white mb-0.5 truncate">{stats.consumedMovies} <span className="text-xs font-medium text-slate-500">vistas</span></span>
+                                    <span className="block text-[10px] text-slate-500 truncate">{stats.consumedMovies} obras</span>
                                 </div>
                             </div>
                         </div>
@@ -757,7 +757,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
                     {/* Main Metric */}
                     <div className="mb-8">
-                        <span className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-emerald-100 to-emerald-300 drop-shadow-sm tracking-tight">
+                        <span className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-emerald-100 to-emerald-300 drop-shadow-sm tracking-tight break-all">
                             {stats.readingTimeDisplay}
                         </span>
                     </div>
@@ -765,26 +765,26 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                     {/* Chips Grid - Stacked on Desktop to match height of Visual Card */}
                     <div className="grid grid-cols-2 md:grid-cols-1 gap-3 mt-auto">
                         {/* Manhwa/Manga Chip */}
-                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip">
-                            <div className="flex items-center gap-2 mb-2">
-                                <BookOpen className="w-3.5 h-3.5 text-orange-400" />
+                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip min-w-0">
+                            <div className="flex items-center gap-2 mb-2 min-w-0">
+                                <BookOpen className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-orange-300 transition-colors truncate">Manhwa/Manga</span>
                             </div>
-                            <div>
-                                <span className="block text-xl font-bold text-white mb-0.5">{stats.readingChapters} <span className="text-xs font-medium text-slate-500">caps</span></span>
-                                <span className="block text-[10px] text-slate-500">{stats.consumedManhwas} obras</span>
+                            <div className="min-w-0">
+                                <span className="block text-xl font-bold text-white mb-0.5 truncate">{stats.readingChapters} <span className="text-xs font-medium text-slate-500">caps</span></span>
+                                <span className="block text-[10px] text-slate-500 truncate">{stats.consumedManhwas} obras</span>
                             </div>
                         </div>
 
                         {/* Libros Chip */}
-                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Book className="w-3.5 h-3.5 text-emerald-400" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-emerald-300 transition-colors">Libros</span>
+                        <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip min-w-0">
+                            <div className="flex items-center gap-2 mb-2 min-w-0">
+                                <Book className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-emerald-300 transition-colors truncate">Libros</span>
                             </div>
-                            <div>
-                                <span className="block text-xl font-bold text-white mb-0.5">{stats.bookChapters} <span className="text-xs font-medium text-slate-500">pág</span></span>
-                                <span className="block text-[10px] text-slate-500">{stats.consumedBooks} obras</span>
+                            <div className="min-w-0">
+                                <span className="block text-xl font-bold text-white mb-0.5 truncate">{stats.bookChapters} <span className="text-xs font-medium text-slate-500">pág</span></span>
+                                <span className="block text-[10px] text-slate-500 truncate">{stats.consumedBooks} obras</span>
                             </div>
                         </div>
                     </div>
@@ -804,7 +804,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                 </div>
                 
                 {/* Dynamic Selector Tabs - Scrollable on Mobile, Grid on Desktop */}
-                <div className="flex overflow-x-auto sm:grid sm:grid-cols-4 gap-1 bg-slate-900 p-1 rounded-lg no-scrollbar">
+                <div className="flex overflow-x-auto sm:grid sm:grid-cols-4 gap-1 bg-slate-900 p-1 rounded-lg no-scrollbar max-w-full">
                     {OBSESSION_TABS.map(tab => {
                         const Icon = tab.icon;
                         const isActive = obsessionTab === tab.id;
@@ -1038,16 +1038,16 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
                                             ${isDimmed ? 'opacity-40 grayscale-[0.5]' : 'opacity-100'}
                                         `}
                                     >
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
                                             <div 
                                                 className={`w-3 h-3 rounded-full shadow-sm flex-shrink-0 transition-transform ${isHighlighted ? 'scale-125' : ''}`}
                                                 style={{ backgroundColor: slice.color }}
                                             />
-                                            <span className={`text-sm font-medium transition-colors truncate max-w-[150px] md:max-w-[200px] ${isHighlighted ? 'text-white font-bold' : 'text-slate-300 group-hover:text-white'}`} title={slice.label}>
+                                            <span className={`text-sm font-medium transition-colors truncate flex-1 min-w-0 ${isHighlighted ? 'text-white font-bold' : 'text-slate-300 group-hover:text-white'}`} title={slice.label}>
                                                 {slice.label}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                                             <span className={`text-xs transition-colors ${isHighlighted ? 'text-white font-bold' : 'text-slate-200'}`}>
                                                 {slice.percent.toFixed(1)}%
                                             </span>
