@@ -33,9 +33,8 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState<'up' | 'down' | null>(null);
 
-  // 3D Tilt Ref
+  // 3D Tilt Ref (State removed for performance)
   const cardRef = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   
   // Touch Handling Ref
   const touchStartY = useRef<number>(0);
@@ -139,8 +138,32 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
 
   // --- INTERACTION LOGIC ---
 
+  // Direct DOM manipulation to avoid Re-renders on every pixel move (60fps target)
+  const applyTilt = (clientX: number, clientY: number, isActive: boolean) => {
+      if (!cardRef.current) return;
+      
+      if (!isActive) {
+          cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+          return;
+      }
+
+      const { left, top, width, height } = cardRef.current.getBoundingClientRect();
+      const x = (clientX - left) / width;
+      const y = (clientY - top) / height;
+      
+      const tiltX = (0.5 - y) * 20; 
+      const tiltY = (x - 0.5) * 20;
+
+      cardRef.current.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.02)`;
+  };
+
   const handleNext = () => {
-      // We allow going one index PAST the last recommendation to show the "End/Load More" card
+      // Reset transform before animating out via class
+      if (cardRef.current) {
+          cardRef.current.style.transform = ''; 
+          cardRef.current.style.transition = '';
+      }
+
       if (currentIndex < recommendations.length) {
           setSwipeDirection('up');
           setTimeout(() => {
@@ -152,6 +175,11 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   };
 
   const handlePrev = () => {
+      if (cardRef.current) {
+          cardRef.current.style.transform = '';
+          cardRef.current.style.transition = '';
+      }
+
       if (currentIndex > 0) {
           setSwipeDirection('down');
           setTimeout(() => {
@@ -162,36 +190,60 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       }
   };
 
-  const calculateTilt = (clientX: number, clientY: number) => {
-      if (!cardRef.current) return;
-      const { left, top, width, height } = cardRef.current.getBoundingClientRect();
-      const x = (clientX - left) / width;
-      const y = (clientY - top) / height;
-      
-      const tiltX = (0.5 - y) * 20; 
-      const tiltY = (x - 0.5) * 20;
-
-      setTilt({ x: tiltX, y: tiltY });
-  }
-
+  // Event Handlers
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-      calculateTilt(e.clientX, e.clientY);
-  };
-
-  const handleMouseLeave = () => {
-      setTilt({ x: 0, y: 0 });
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-      if (e.touches.length > 0) {
-          const touch = e.touches[0];
-          calculateTilt(touch.clientX, touch.clientY);
+      // Small optimization: only apply if no swipe in progress
+      if (!swipeDirection) {
+          if (cardRef.current) cardRef.current.style.transition = 'transform 0.1s ease-out'; // Fast follow
+          applyTilt(e.clientX, e.clientY, true);
       }
   };
 
+  const handleMouseLeave = () => {
+      if (cardRef.current) cardRef.current.style.transition = 'transform 0.5s ease-out'; // Smooth return
+      applyTilt(0, 0, false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+      touchStartY.current = e.touches[0].clientY;
+      // Disable transition for 1:1 finger tracking
+      if (cardRef.current) cardRef.current.style.transition = 'none';
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+      if (e.touches.length > 0 && !swipeDirection) {
+          applyTilt(e.touches[0].clientX, e.touches[0].clientY, true);
+      }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+      // Re-enable transition for snap back
+      if (cardRef.current) cardRef.current.style.transition = 'transform 0.5s ease-out';
+      
+      const touchEndY = e.changedTouches[0].clientY;
+      const diff = touchStartY.current - touchEndY;
+      
+      // Reset tilt visual
+      applyTilt(0, 0, false);
+
+      if (diff > 50) { 
+          if (!isEndCard) handleNext();
+      } else if (diff < -50) {
+          if (isInfoOpen) setIsInfoOpen(false);
+          else handlePrev();
+      }
+  };
+
+  // Ensure styles are cleaned up when swipe direction changes via state
+  useEffect(() => {
+      if (swipeDirection && cardRef.current) {
+          cardRef.current.style.transform = '';
+          cardRef.current.style.transition = '';
+      }
+  }, [swipeDirection]);
+
   // --- RENDER HELPERS ---
   
-  // Helper to generate deterministic colors from string
   const getColorData = (title: string) => {
       const seed = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       
@@ -212,7 +264,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   const isEndCard = currentIndex === recommendations.length;
   const currentCard = recommendations[currentIndex];
   
-  // Dynamic Background Gradient based on current card
   const bgStyle = useMemo(() => {
       if (isEndCard) return { background: '#0f172a' };
       if (!currentCard) return { background: '#0f172a' };
@@ -222,31 +273,24 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       };
   }, [currentCard, isEndCard]);
 
-  // --- GENERATIVE COVER RENDERER ---
+  // --- RENDER CONTENT ---
   const renderGenerativeCard = (title: string, type: string) => {
       const colors = getColorData(title);
-      
       return (
           <div className={`w-full h-full bg-gradient-to-br ${colors.bg} flex flex-col items-center justify-center p-8 text-center relative overflow-hidden`}>
-              {/* Texture Overlay */}
               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-              
-              {/* Decorative Circle */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
 
-              {/* Content */}
               <div className="relative z-10 flex flex-col items-center h-full justify-between py-12">
                   <div className="border border-white/30 bg-white/10 p-3 rounded-full backdrop-blur-md shadow-lg">
                       <Sparkles className="w-8 h-8 text-white drop-shadow-md" />
                   </div>
-                  
                   <div className="flex-grow flex items-center justify-center w-full">
                       <h1 className="text-3xl md:text-5xl font-black text-white leading-tight uppercase tracking-tighter drop-shadow-xl break-words w-full" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
                           {title}
                       </h1>
                   </div>
-
                   <span className="px-4 py-1.5 bg-black/30 text-white rounded-full text-xs font-bold uppercase tracking-[0.2em] backdrop-blur-md border border-white/10 shadow-lg">
                       {type}
                   </span>
@@ -259,19 +303,16 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       return (
           <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl">
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-slate-900 to-slate-800"></div>
-              
               <div className="relative z-10 flex flex-col items-center gap-6">
                   <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50 shadow-xl shadow-primary/20">
                       <RefreshCw className="w-10 h-10 text-primary" />
                   </div>
-                  
                   <div>
                       <h2 className="text-2xl font-bold text-white mb-2">¡Todo visto!</h2>
                       <p className="text-slate-400 text-sm max-w-xs mx-auto">
                           Has revisado las 6 recomendaciones. ¿Quieres generar otro lote basado en los mismos gustos?
                       </p>
                   </div>
-
                   <div className="flex flex-col gap-3 w-full max-w-xs">
                       <button 
                           onClick={() => handleDiscovery(true)}
@@ -300,12 +341,10 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
              className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden touch-none"
              style={bgStyle}
           >
-              {/* Animated Background Overlay */}
               <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px]"></div>
 
-              {/* NAVIGATION BAR (Floating Pills) */}
+              {/* NAVIGATION BAR */}
               <div className="absolute top-4 left-0 right-0 z-50 px-4 md:px-6 pt-safe flex justify-between items-center w-full max-w-lg mx-auto pointer-events-none">
-                  {/* Left: Counter Badge (Hidden on End Card) */}
                   {!isEndCard ? (
                       <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg animate-fade-in-up">
                           <Sparkles className="w-3 h-3 text-yellow-400" />
@@ -315,7 +354,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                       </div>
                   ) : <div></div>}
 
-                  {/* Right: Back Button */}
                   <button 
                       onClick={() => setViewMode('filters')}
                       className="pointer-events-auto bg-black/40 hover:bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold transition-all border border-white/10 flex items-center gap-2 shadow-lg animate-fade-in-up hover:scale-105"
@@ -336,28 +374,25 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                    {/* ACTIVE CARD */}
                    <div 
                       ref={cardRef}
-                      className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transition-all duration-500 ease-out cursor-pointer transform-style-3d ${
-                          swipeDirection === 'up' ? '-translate-y-[150%] opacity-0 rotate-12' : 
-                          swipeDirection === 'down' ? 'translate-y-[150%] opacity-0 -rotate-12' : 'translate-y-0 opacity-100'
+                      className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transform-style-3d cursor-pointer ${
+                          swipeDirection === 'up' ? 'transition-all duration-500 -translate-y-[150%] opacity-0 rotate-12' : 
+                          swipeDirection === 'down' ? 'transition-all duration-500 translate-y-[150%] opacity-0 -rotate-12' : 
+                          // No transition class here by default, managed via style for drag performance
+                          'opacity-100' 
                       }`}
                       style={{
-                          transform: !swipeDirection 
-                            ? `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1)` 
-                            : undefined,
+                          willChange: 'transform', // GPU hint
                           boxShadow: isEndCard ? 'none' : `0 25px 50px -12px ${cardColors.shadow}60`
                       }}
                       onMouseMove={handleMouseMove}
                       onMouseLeave={handleMouseLeave}
                       onClick={() => !isEndCard && setIsInfoOpen(true)}
                    >
-                        {/* CARD CONTENT */}
                         {isEndCard ? (
                             renderEndCard()
                         ) : (
                             <div className="absolute inset-0 rounded-3xl overflow-hidden bg-slate-900 border border-white/10">
                                 {renderGenerativeCard(currentCard.title, currentCard.mediaType)}
-
-                                {/* Info Hint Overlay */}
                                 <div className="absolute bottom-6 left-0 right-0 text-center transition-opacity duration-300 pointer-events-none" style={{ opacity: isInfoOpen ? 0 : 1 }}>
                                     <p className="text-xs font-medium text-white/60 flex items-center justify-center gap-2 bg-black/20 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit">
                                         <Info className="w-3 h-3" /> Toca para detalles
@@ -367,7 +402,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                         )}
                    </div>
 
-                   {/* NAVIGATION ZONES (Desktop) - Hidden on End Card */}
+                   {/* Desktop Navigation Arrows */}
                    {!isEndCard && (
                        <div 
                           className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
@@ -390,14 +425,13 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                    )}
               </div>
 
-              {/* GLASSMORPHISM INFO SHEET - Only if not end card */}
+              {/* INFO SHEET */}
               {!isEndCard && currentCard && (
                   <div 
                      className={`absolute bottom-0 left-0 right-0 bg-slate-900/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${
                          isInfoOpen ? 'translate-y-0' : 'translate-y-full'
                      }`}
                   >
-                      {/* Handle Bar */}
                       <div 
                         className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 cursor-pointer"
                         onClick={() => setIsInfoOpen(false)}
@@ -424,7 +458,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                            <p className="text-slate-200 text-sm leading-relaxed font-medium">
                                {currentCard.synopsis}
                            </p>
-                           
                            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 flex gap-3">
                                <Quote className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5 fill-current opacity-50" />
                                <p className="text-xs md:text-sm text-indigo-200 font-medium italic">
@@ -454,28 +487,14 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                   </div>
               )}
 
-              {/* Mobile Swipe Trigger Zone (Invisible) - Extended to handle End Card */}
+              {/* Mobile Swipe Trigger Zone (Invisible Overlay) */}
               <div 
                  className="absolute inset-0 z-40 md:hidden"
+                 style={{ touchAction: 'none' }} // Critical for smooth drag without scrolling
                  onClick={() => !isEndCard && !isInfoOpen && setIsInfoOpen(true)}
-                 onTouchStart={(e) => {
-                     touchStartY.current = e.touches[0].clientY;
-                 }}
+                 onTouchStart={handleTouchStart}
                  onTouchMove={handleTouchMove}
-                 onTouchEnd={(e) => {
-                     const touchEndY = e.changedTouches[0].clientY;
-                     const diff = touchStartY.current - touchEndY;
-                     
-                     setTilt({ x: 0, y: 0 }); // Reset tilt on release
-
-                     if (diff > 50) { 
-                         // Prevent swipe up on End Card unless we want something specific
-                         if (!isEndCard) handleNext();
-                     } else if (diff < -50) {
-                         if (isInfoOpen) setIsInfoOpen(false);
-                         else handlePrev();
-                     }
-                 }}
+                 onTouchEnd={handleTouchEnd}
               />
               <style>{`
                 .perspective-1000 { perspective: 1000px; }
@@ -504,7 +523,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       </div>
 
       <div className="bg-gradient-to-br from-surface to-slate-900 border border-slate-700 rounded-2xl p-4 md:p-8 mb-8 shadow-xl relative overflow-hidden">
-         {/* Background Decoration */}
          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
          <div className="relative z-10 max-w-5xl">
@@ -520,7 +538,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                  </div>
              </div>
 
-             {/* Type Selector */}
              <div className="flex flex-wrap gap-2 md:gap-3 mb-8">
                 {MEDIA_TYPES.map(type => {
                     const Icon = type.icon;
@@ -542,7 +559,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                 })}
              </div>
 
-             {/* SEED REFINER */}
              <div className="bg-slate-950/60 rounded-xl border border-slate-700/60 overflow-hidden mb-8 transition-all">
                 <div 
                     className="p-4 bg-slate-900/50 border-b border-slate-700/50 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors"
@@ -568,7 +584,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                 
                 {isRefineOpen && (
                     <div className="p-4 space-y-4 animate-fade-in">
-                        {/* Selected Seeds */}
                         {selectedSeeds.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {selectedSeeds.map(seedId => {
@@ -587,7 +602,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                             </div>
                         )}
 
-                        {/* Search */}
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                             <input 
@@ -599,7 +613,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                             />
                         </div>
 
-                        {/* Candidates */}
                         <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                                 {filteredSeedCandidates
