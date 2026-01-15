@@ -1035,6 +1035,13 @@ export default function App() {
 
       </main>
 
+      {/* Footer */}
+      <footer className="w-full py-3 border-t border-slate-800/50 bg-slate-900/20 backdrop-blur-sm text-center">
+          <p className="text-[10px] text-slate-500 font-medium tracking-wide">
+              © 2026 Victor Ramones
+          </p>
+      </footer>
+
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
           <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
