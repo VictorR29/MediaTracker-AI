@@ -262,8 +262,8 @@ export const getRecommendations = async (
       {
         "title": "Title Name",
         "mediaType": "${targetType}",
-        "synopsis": "Short synopsis (max 15 words) in Spanish.",
-        "reason": "Why it fits based on user profile (e.g. 'Since you liked X, this has similar Y') in Spanish."
+        "synopsis": "A compelling, descriptive synopsis in Spanish (approx 40-60 words). It should clearly explain the premise and hook of the story, avoiding vague descriptions.",
+        "reason": "A specific, personalized reason in Spanish (approx 25-40 words). Explain WHY this fits the user based on the specific themes, tone, or complexity of their 'Favorite Titles'. Do not use generic phrases like 'Because you like anime'."
       }
     ]
   `;
