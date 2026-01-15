@@ -1,8 +1,7 @@
-
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
-import { getRecommendations, RecommendationResult } from '../services/geminiService';
-import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp, Filter, Check, X, Search, Wand2, Lightbulb } from 'lucide-react';
+import { getRecommendations, RecommendationResult, searchMediaInfo } from '../services/geminiService';
+import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp, Filter, X, Search, Wand2, ArrowLeft, Info } from 'lucide-react';
 
 interface DiscoveryViewProps {
   library: MediaItem[];
@@ -10,87 +9,48 @@ interface DiscoveryViewProps {
   onSelectRecommendation: (title: string) => void;
 }
 
-// Subcomponent to handle individual card state (expand/collapse)
-const RecommendationCard: React.FC<{ 
-    rec: RecommendationResult; 
-    onSelect: (title: string) => void 
-}> = ({ rec, onSelect }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-
-    return (
-        <div 
-            className="bg-surface border border-slate-700 rounded-xl p-6 hover:border-slate-500 transition-all shadow-lg flex flex-col group h-full relative overflow-hidden"
-        >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -translate-y-10 translate-x-10 pointer-events-none group-hover:bg-primary/10 transition-colors"></div>
-
-            <div className="flex justify-between items-start mb-3 relative z-10">
-                <h4 className="text-lg font-bold text-white group-hover:text-primary transition-colors leading-tight">{rec.title}</h4>
-                <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700 shrink-0 ml-2">
-                    {rec.mediaType}
-                </span>
-            </div>
-            
-            <div className="mb-4 flex-grow relative z-10">
-                <p className={`text-slate-400 text-sm transition-all duration-300 ${isExpanded ? '' : 'line-clamp-3'}`}>
-                    {rec.synopsis}
-                </p>
-                <button 
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="text-xs text-primary mt-1 hover:underline focus:outline-none flex items-center gap-1 font-medium"
-                >
-                    {isExpanded ? (
-                        <><ChevronUp className="w-3 h-3" /> Leer menos</>
-                    ) : (
-                        <><ChevronDown className="w-3 h-3" /> Leer más</>
-                    )}
-                </button>
-            </div>
-
-            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 mb-4 relative z-10">
-                <p className="text-xs text-indigo-300 italic flex gap-2">
-                    <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                    <span className={isExpanded ? '' : 'line-clamp-2'}>"{rec.reason}"</span>
-                </p>
-            </div>
-
-            <button 
-                onClick={() => onSelect(rec.title)}
-                className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 rounded-lg transition-colors border border-slate-700 hover:border-primary/50 group/btn mt-auto relative z-10"
-            >
-                <Plus className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
-                Agregar a Biblioteca
-            </button>
-        </div>
-    );
-};
+// Extended type to handle hydration state
+interface HydratedRecommendation extends RecommendationResult {
+  imageUrl?: string;
+  primaryColor?: string;
+  imageLoaded?: boolean;
+}
 
 export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, onSelectRecommendation }) => {
+  // Mode State
+  const [viewMode, setViewMode] = useState<'filters' | 'immersive'>('filters');
+  
+  // Filter State
   const [selectedType, setSelectedType] = useState<string>('Anime');
-  const [selectedSeeds, setSelectedSeeds] = useState<string[]>([]); // Array of MediaItem IDs
-  const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
+  const [selectedSeeds, setSelectedSeeds] = useState<string[]>([]);
+  const [seedSearchQuery, setSeedSearchQuery] = useState('');
+  const [isRefineOpen, setIsRefineOpen] = useState(true);
+
+  // Recommendations State
+  const [recommendations, setRecommendations] = useState<HydratedRecommendation[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Immersive View State
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState<'up' | 'down' | null>(null);
+
+  // 3D Tilt Ref
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   
-  // Search state for seeds
-  const [seedSearchQuery, setSeedSearchQuery] = useState('');
-  const [isRefineOpen, setIsRefineOpen] = useState(true); // Default open to show functionality
+  // Touch Handling Ref
+  const touchStartY = useRef<number>(0);
 
-  // Clear seeds when type changes
-  useEffect(() => {
-    setSelectedSeeds([]);
-    setSeedSearchQuery('');
-  }, [selectedType]);
-
-  // Determine items available for selection as seeds based on current type
+  // --- LOGIC: Seed Selection ---
   const availableSeedItems = useMemo(() => {
     const targetTypes = selectedType === 'Manhwa' 
         ? ['Manhwa', 'Manga', 'Comic'] 
         : [selectedType];
-    
     return library.filter(item => targetTypes.includes(item.aiData.mediaType));
   }, [library, selectedType]);
 
-  // Filter available items based on search
   const filteredSeedCandidates = useMemo(() => {
       if (!seedSearchQuery.trim()) return availableSeedItems;
       return availableSeedItems.filter(item => 
@@ -98,71 +58,38 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       );
   }, [availableSeedItems, seedSearchQuery]);
 
-  // Logic to Prepare Data for AI
   const { topGenres, likedTitles, excludedTitles } = useMemo(() => {
     const genreCounts: Record<string, number> = {};
     const liked: string[] = [];
     const excluded: string[] = [];
 
-    // Always exclude everything in the library to prevent duplicates
     library.forEach(item => excluded.push(item.aiData.title));
 
     if (selectedSeeds.length > 0) {
-        // --- REFINED MODE: Use ONLY selected items as base ---
         const seedItems = library.filter(item => selectedSeeds.includes(item.id));
-        
         seedItems.forEach(item => {
             liked.push(item.aiData.title);
-            item.aiData.genres.forEach(g => {
-                genreCounts[g] = (genreCounts[g] || 0) + 1;
-            });
+            item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
         });
-
     } else {
-        // --- DEFAULT MODE: Use "Taste Profile" of entire category ---
-        const targetTypes = selectedType === 'Manhwa' 
-            ? ['Manhwa', 'Manga', 'Comic'] 
-            : [selectedType];
-
+        const targetTypes = selectedType === 'Manhwa' ? ['Manhwa', 'Manga', 'Comic'] : [selectedType];
         library.forEach(item => {
             if (targetTypes.includes(item.aiData.mediaType)) {
                 const rating = item.trackingData.rating;
                 const score = RATING_TO_SCORE[rating] || 0;
-                
-                // Consider "liked" if high score (>=7) OR completed (and not rated bad)
-                const isBad = score > 0 && score < 6; 
-                if (!isBad && (score >= 7 || (score === 0 && item.trackingData.status === 'Completado'))) {
+                if ((score >= 7 || (score === 0 && item.trackingData.status === 'Completado'))) {
                     liked.push(item.aiData.title);
-                    item.aiData.genres.forEach(g => {
-                        genreCounts[g] = (genreCounts[g] || 0) + 1;
-                    });
+                    item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
                 }
             }
         });
     }
 
-    const sortedGenres = Object.entries(genreCounts)
-      .sort(([, a], [, b]) => b - a)
-      .map(([g]) => g)
-      .slice(0, 5); // Take top 5 genres
-
-    return { 
-        topGenres: sortedGenres, 
-        likedTitles: liked, 
-        excludedTitles: excluded
-    };
+    const sortedGenres = Object.entries(genreCounts).sort(([, a], [, b]) => b - a).map(([g]) => g).slice(0, 5);
+    return { topGenres: sortedGenres, likedTitles: liked, excludedTitles: excluded };
   }, [library, selectedType, selectedSeeds]);
 
-  const handleAddSeed = (id: string) => {
-      if (!selectedSeeds.includes(id)) {
-          setSelectedSeeds(prev => [...prev, id]);
-      }
-      setSeedSearchQuery(''); // Optional: clear search after adding
-  };
-
-  const handleRemoveSeed = (id: string) => {
-      setSelectedSeeds(prev => prev.filter(seedId => seedId !== id));
-  };
+  // --- ACTIONS ---
 
   const handleDiscovery = async () => {
     if (!apiKey) {
@@ -175,26 +102,336 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
     setRecommendations([]);
 
     try {
-      const results = await getRecommendations(
-        likedTitles,
-        topGenres,
-        excludedTitles,
-        selectedType,
-        apiKey
-      );
+      const results = await getRecommendations(likedTitles, topGenres, excludedTitles, selectedType, apiKey);
       
       if (results.length === 0) {
-          setError("La IA no devolvió resultados válidos. Intenta de nuevo con diferentes filtros.");
+          setError("La IA no devolvió resultados válidos. Intenta de nuevo.");
+          setIsLoading(false);
       } else {
-          setRecommendations(results);
+          // Initialize hydrated array
+          const hydrated = results.map(r => ({ ...r }));
+          setRecommendations(hydrated);
+          setCurrentIndex(0);
+          setViewMode('immersive');
+          setIsLoading(false);
       }
     } catch (err) {
       console.error(err);
-      setError("Error al conectar con Gemini. Verifica tu conexión.");
-    } finally {
+      setError("Error al conectar con Gemini.");
       setIsLoading(false);
     }
   };
+
+  // --- HYDRATION LOGIC ---
+  // Fetches image for the current and next card to ensure smooth experience without hitting rate limits instantly
+  useEffect(() => {
+      if (viewMode === 'immersive' && recommendations.length > 0) {
+          const indicesToLoad = [currentIndex, currentIndex + 1].filter(i => i < recommendations.length);
+          
+          indicesToLoad.forEach(idx => {
+              const rec = recommendations[idx];
+              if (!rec.imageUrl && !rec.imageLoaded) {
+                  // Mark as loading to prevent double fetch
+                  setRecommendations(prev => {
+                      const copy = [...prev];
+                      copy[idx].imageLoaded = true; // Temporary flag to say "we tried"
+                      return copy;
+                  });
+
+                  // Fetch
+                  searchMediaInfo(rec.title, apiKey).then(info => {
+                      setRecommendations(prev => {
+                          const copy = [...prev];
+                          if (info.coverImage && info.coverImage.startsWith('http')) {
+                              copy[idx].imageUrl = info.coverImage;
+                              copy[idx].primaryColor = info.primaryColor;
+                          }
+                          return copy;
+                      });
+                  });
+              }
+          });
+      }
+  }, [currentIndex, viewMode, recommendations.length, apiKey]); // dependencies refined
+
+  // --- INTERACTION LOGIC ---
+
+  const handleNext = () => {
+      if (currentIndex < recommendations.length - 1) {
+          setSwipeDirection('up');
+          setTimeout(() => {
+              setCurrentIndex(prev => prev + 1);
+              setSwipeDirection(null);
+              setIsInfoOpen(false);
+          }, 400); // Wait for animation
+      } else {
+          // Loop back or finish? Let's loop back for endless feel or stay.
+          // For now, bounce effect
+      }
+  };
+
+  const handlePrev = () => {
+      if (currentIndex > 0) {
+          setSwipeDirection('down');
+          setTimeout(() => {
+              setCurrentIndex(prev => prev - 1);
+              setSwipeDirection(null);
+              setIsInfoOpen(false);
+          }, 400);
+      }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!cardRef.current) return;
+      const { left, top, width, height } = cardRef.current.getBoundingClientRect();
+      const x = (e.clientX - left) / width;
+      const y = (e.clientY - top) / height;
+      
+      // Calculate tilt (max 15 degrees)
+      const tiltX = (0.5 - y) * 20; 
+      const tiltY = (x - 0.5) * 20;
+
+      setTilt({ x: tiltX, y: tiltY });
+  };
+
+  const handleMouseLeave = () => {
+      setTilt({ x: 0, y: 0 });
+  };
+
+  // --- RENDER HELPERS ---
+  const currentCard = recommendations[currentIndex];
+  
+  // Dynamic Background Gradient based on current card
+  const bgStyle = useMemo(() => {
+      const color = currentCard?.primaryColor || '#6366f1';
+      return {
+          background: currentCard 
+            ? `radial-gradient(circle at 50% 30%, ${color}40 0%, #0f172a 100%)` 
+            : '#0f172a'
+      };
+  }, [currentCard]);
+
+  // Card Fallback Style (Gradient + Typography)
+  const getCardFallback = (title: string, type: string) => {
+      // Generate deterministic gradient from title char codes
+      const seed = title.charCodeAt(0) + title.charCodeAt(title.length - 1);
+      const hues = [
+          'from-pink-500 to-rose-500', 
+          'from-indigo-500 to-blue-500', 
+          'from-emerald-500 to-teal-500', 
+          'from-amber-500 to-orange-500', 
+          'from-purple-500 to-violet-500'
+      ];
+      const gradient = hues[seed % hues.length];
+      
+      return (
+          <div className={`w-full h-full bg-gradient-to-br ${gradient} flex flex-col items-center justify-center p-8 text-center`}>
+              <div className="border-4 border-white/20 p-4 rounded-full mb-4 backdrop-blur-sm">
+                  <Sparkles className="w-12 h-12 text-white" />
+              </div>
+              <h1 className="text-3xl md:text-5xl font-black text-white leading-tight uppercase tracking-tighter drop-shadow-lg break-words w-full">
+                  {title}
+              </h1>
+              <span className="mt-4 px-3 py-1 bg-black/20 text-white rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md">
+                  {type}
+              </span>
+          </div>
+      );
+  };
+
+  if (viewMode === 'immersive' && currentCard) {
+      return (
+          <div 
+             className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden touch-none"
+             style={bgStyle}
+          >
+              {/* Animated Background Overlay */}
+              <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px]"></div>
+
+              {/* TOP BAR */}
+              <div className="absolute top-0 left-0 right-0 p-4 md:p-6 z-50 flex justify-between items-start pt-safe">
+                  <div className="flex flex-col">
+                      <h2 className="text-white font-bold text-lg drop-shadow-md flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-yellow-400" /> Descubrimiento
+                      </h2>
+                      <span className="text-xs text-white/60 font-medium">
+                          {currentIndex + 1} de {recommendations.length}
+                      </span>
+                  </div>
+                  <button 
+                      onClick={() => setViewMode('filters')}
+                      className="bg-black/40 hover:bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold transition-all border border-white/10 flex items-center gap-2"
+                  >
+                      <ArrowLeft className="w-3 h-3" />
+                      Filtros
+                  </button>
+              </div>
+
+              {/* CARD CONTAINER */}
+              <div className="relative w-full max-w-md h-[70vh] md:h-[600px] perspective-1000 flex items-center justify-center">
+                   
+                   {/* Previous Card Ghost (Animation) */}
+                   {swipeDirection === 'up' && (
+                       <div className="absolute inset-0 bg-slate-800 rounded-3xl opacity-0 transform -translate-y-full scale-75 transition-all duration-500 ease-out pointer-events-none"></div>
+                   )}
+
+                   {/* ACTIVE CARD */}
+                   <div 
+                      ref={cardRef}
+                      className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transition-all duration-500 ease-out cursor-pointer transform-style-3d ${
+                          swipeDirection === 'up' ? '-translate-y-[150%] opacity-0 rotate-12' : 
+                          swipeDirection === 'down' ? 'translate-y-[150%] opacity-0 -rotate-12' : 'translate-y-0 opacity-100'
+                      }`}
+                      style={{
+                          transform: !swipeDirection 
+                            ? `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1)` 
+                            : undefined,
+                          boxShadow: `0 25px 50px -12px ${currentCard.primaryColor || '#000'}60`
+                      }}
+                      onMouseMove={handleMouseMove}
+                      onMouseLeave={handleMouseLeave}
+                      onClick={() => setIsInfoOpen(true)}
+                   >
+                        {/* CARD CONTENT */}
+                        <div className="absolute inset-0 rounded-3xl overflow-hidden bg-slate-900 border border-white/10">
+                             {currentCard.imageUrl ? (
+                                 <>
+                                    <img 
+                                        src={currentCard.imageUrl} 
+                                        alt={currentCard.title} 
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                                 </>
+                             ) : (
+                                 getCardFallback(currentCard.title, currentCard.mediaType)
+                             )}
+
+                             {/* Title Overlay (Always Visible) */}
+                             <div className="absolute bottom-0 left-0 right-0 p-6 pb-12 transition-opacity duration-300" style={{ opacity: isInfoOpen ? 0 : 1 }}>
+                                 <h2 className="text-3xl font-black text-white leading-none mb-2 drop-shadow-lg text-shadow-sm line-clamp-2">
+                                     {currentCard.title}
+                                 </h2>
+                                 <p className="text-sm font-medium text-white/80 flex items-center gap-2">
+                                     <Info className="w-4 h-4" /> Toca para saber más
+                                 </p>
+                             </div>
+                        </div>
+                   </div>
+
+                   {/* NAVIGATION ZONES (Desktop) */}
+                   <div 
+                      className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
+                      onClick={(e) => { e.stopPropagation(); handleNext(); }}
+                   >
+                       <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
+                            <ChevronDown className="w-6 h-6 text-white" />
+                       </div>
+                   </div>
+                   {currentIndex > 0 && (
+                        <div 
+                        className="absolute left-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
+                        onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+                        >
+                            <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
+                                    <ChevronUp className="w-6 h-6 text-white" />
+                            </div>
+                        </div>
+                   )}
+              </div>
+
+              {/* GLASSMORPHISM INFO SHEET */}
+              <div 
+                 className={`absolute bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${
+                     isInfoOpen ? 'translate-y-0' : 'translate-y-full'
+                 }`}
+              >
+                  {/* Handle Bar */}
+                  <div 
+                    className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 cursor-pointer"
+                    onClick={() => setIsInfoOpen(false)}
+                  ></div>
+
+                  <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1 pr-4">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1 block">
+                            Recomendación IA
+                        </span>
+                        <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+                            {currentCard.title}
+                        </h2>
+                      </div>
+                      <button 
+                         onClick={() => setIsInfoOpen(false)}
+                         className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"
+                      >
+                          <ChevronDown className="w-5 h-5 text-white" />
+                      </button>
+                  </div>
+
+                  <div className="space-y-4 mb-8">
+                       <p className="text-slate-300 text-sm leading-relaxed border-l-2 border-primary/50 pl-3">
+                           {currentCard.synopsis}
+                       </p>
+                       
+                       <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 flex gap-3">
+                           <Sparkles className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                           <p className="text-xs md:text-sm text-indigo-200 font-medium italic">
+                               "{currentCard.reason}"
+                           </p>
+                       </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                      <button 
+                        onClick={() => {
+                            onSelectRecommendation(currentCard.title);
+                            setIsInfoOpen(false);
+                            // Optional: Automatically move next after adding?
+                        }}
+                        className="flex-1 bg-white text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-lg"
+                      >
+                          <Plus className="w-5 h-5" />
+                          Añadir a Biblioteca
+                      </button>
+                      <button 
+                         onClick={handleNext}
+                         className="px-6 py-3.5 bg-slate-800 text-white font-bold rounded-xl border border-white/10 hover:bg-slate-700 transition-colors"
+                      >
+                          Siguiente
+                      </button>
+                  </div>
+              </div>
+
+              {/* Mobile Swipe Trigger Zone (Invisible) */}
+              <div 
+                 className="absolute inset-0 z-40 md:hidden"
+                 onClick={() => !isInfoOpen && setIsInfoOpen(true)} // Tap to open info
+                 // Simple Swipe Logic
+                 onTouchStart={(e) => {
+                     touchStartY.current = e.touches[0].clientY;
+                 }}
+                 onTouchEnd={(e) => {
+                     const touchEndY = e.changedTouches[0].clientY;
+                     const diff = touchStartY.current - touchEndY;
+                     if (diff > 50) { // Swipe Up
+                         handleNext();
+                     } else if (diff < -50) { // Swipe Down
+                         if (isInfoOpen) setIsInfoOpen(false);
+                         else handlePrev();
+                     }
+                 }}
+              />
+              <style>{`
+                .perspective-1000 { perspective: 1000px; }
+                .transform-style-3d { transform-style: preserve-3d; }
+                .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
+              `}</style>
+          </div>
+      );
+  }
+
+  // --- STANDARD FILTERS VIEW ---
 
   const MEDIA_TYPES = [
     { label: 'Anime', value: 'Anime', icon: Tv, color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/50' },
@@ -250,9 +487,8 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                 })}
              </div>
 
-             {/* SEED REFINER SECTION - IMPROVED DESIGN */}
+             {/* SEED REFINER */}
              <div className="bg-slate-950/60 rounded-xl border border-slate-700/60 overflow-hidden mb-8 transition-all">
-                {/* Header */}
                 <div 
                     className="p-4 bg-slate-900/50 border-b border-slate-700/50 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors"
                     onClick={() => setIsRefineOpen(!isRefineOpen)}
@@ -267,48 +503,36 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                             </h4>
                             <p className="text-xs text-slate-500">
                                 {selectedSeeds.length > 0 
-                                    ? `${selectedSeeds.length} obras seleccionadas como referencia.`
-                                    : "Opcional: Selecciona obras específicas para encontrar similares."}
+                                    ? `${selectedSeeds.length} obras seleccionadas.`
+                                    : "Opcional: Selecciona obras para encontrar similares."}
                             </p>
                         </div>
                     </div>
                     <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isRefineOpen ? 'rotate-180' : ''}`} />
                 </div>
                 
-                {/* Body */}
                 {isRefineOpen && (
                     <div className="p-4 space-y-4 animate-fade-in">
-                        {/* 1. Selected Seeds Display */}
+                        {/* Selected Seeds */}
                         {selectedSeeds.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {selectedSeeds.map(seedId => {
                                     const item = library.find(i => i.id === seedId);
                                     if (!item) return null;
                                     return (
-                                        <div 
-                                            key={seedId} 
-                                            className="inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-primary/20 border border-primary/40 rounded-full text-xs font-bold text-white shadow-sm animate-fade-in"
-                                        >
+                                        <div key={seedId} className="inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-primary/20 border border-primary/40 rounded-full text-xs font-bold text-white shadow-sm">
                                             <span className="truncate max-w-[150px]">{item.aiData.title}</span>
-                                            <button 
-                                                onClick={() => handleRemoveSeed(seedId)}
-                                                className="p-0.5 hover:bg-primary/40 rounded-full transition-colors"
-                                            >
+                                            <button onClick={() => setSelectedSeeds(prev => prev.filter(id => id !== seedId))} className="p-0.5 hover:bg-primary/40 rounded-full">
                                                 <X className="w-3 h-3" />
                                             </button>
                                         </div>
                                     );
                                 })}
-                                <button 
-                                    onClick={() => setSelectedSeeds([])}
-                                    className="text-xs text-slate-500 hover:text-red-400 underline decoration-dotted underline-offset-2 ml-2 transition-colors"
-                                >
-                                    Limpiar todo
-                                </button>
+                                <button onClick={() => setSelectedSeeds([])} className="text-xs text-slate-500 hover:text-red-400 underline ml-2">Limpiar</button>
                             </div>
                         )}
 
-                        {/* 2. Search Bar */}
+                        {/* Search */}
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                             <input 
@@ -316,63 +540,35 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                                 placeholder={`Buscar ${selectedType} en tu biblioteca...`}
                                 value={seedSearchQuery}
                                 onChange={(e) => setSeedSearchQuery(e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all placeholder-slate-600"
+                                className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-primary transition-all placeholder-slate-600"
                             />
                         </div>
 
-                        {/* 3. Candidates List */}
+                        {/* Candidates */}
                         <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                            {filteredSeedCandidates.length === 0 ? (
-                                <div className="text-center py-6 text-slate-500">
-                                    {seedSearchQuery ? (
-                                        <p className="text-xs">No se encontraron obras con ese nombre.</p>
-                                    ) : (
-                                        <div className="flex flex-col items-center">
-                                            <Lightbulb className="w-6 h-6 text-slate-600 mb-2 opacity-50" />
-                                            <p className="text-xs">No hay obras de este tipo disponibles para seleccionar.</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                {filteredSeedCandidates
+                                    .filter(item => !selectedSeeds.includes(item.id))
+                                    .slice(0, 20)
+                                    .map(item => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => {
+                                            if (!selectedSeeds.includes(item.id)) setSelectedSeeds(prev => [...prev, item.id]);
+                                            setSeedSearchQuery('');
+                                        }}
+                                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all text-left group"
+                                    >
+                                        <div className="w-8 h-10 bg-slate-800 rounded flex items-center justify-center text-slate-600 text-[8px] font-bold border border-slate-700">
+                                            {item.aiData.mediaType.slice(0,2)}
                                         </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                                    {filteredSeedCandidates
-                                        .filter(item => !selectedSeeds.includes(item.id)) // Hide already selected
-                                        .slice(0, 20) // Limit displayed items for perf if query is empty
-                                        .map(item => (
-                                        <button
-                                            key={item.id}
-                                            onClick={() => handleAddSeed(item.id)}
-                                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all text-left group"
-                                        >
-                                            {item.aiData.coverImage && !item.aiData.coverImage.includes('placehold.co') ? (
-                                                <img 
-                                                    src={item.aiData.coverImage} 
-                                                    alt="" 
-                                                    className="w-8 h-10 object-cover rounded shadow-sm opacity-80 group-hover:opacity-100 transition-opacity" 
-                                                />
-                                            ) : (
-                                                <div className="w-8 h-10 bg-slate-800 rounded flex items-center justify-center text-slate-600 text-[8px] font-bold border border-slate-700">
-                                                    {item.aiData.mediaType.slice(0,2)}
-                                                </div>
-                                            )}
-                                            <div className="min-w-0">
-                                                <p className="text-xs font-medium text-slate-300 group-hover:text-white truncate">
-                                                    {item.aiData.title}
-                                                </p>
-                                                <p className="text-[10px] text-slate-500 truncate">
-                                                    {item.aiData.genres.slice(0,2).join(', ')}
-                                                </p>
-                                            </div>
-                                            <Plus className="w-4 h-4 text-slate-600 group-hover:text-primary ml-auto opacity-0 group-hover:opacity-100 transition-all" />
-                                        </button>
-                                    ))}
-                                    {filteredSeedCandidates.length > 20 && !seedSearchQuery && (
-                                        <p className="text-[10px] text-slate-500 text-center col-span-full py-2">
-                                            Escribe para buscar más obras...
-                                        </p>
-                                    )}
-                                </div>
-                            )}
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-medium text-slate-300 group-hover:text-white truncate">{item.aiData.title}</p>
+                                        </div>
+                                        <Plus className="w-4 h-4 text-slate-600 group-hover:text-primary ml-auto opacity-0 group-hover:opacity-100 transition-all" />
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -382,7 +578,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                  <div className="text-xs text-slate-400 hidden md:block">
                      {selectedSeeds.length > 0 
                         ? <span className="text-primary font-medium">Búsqueda personalizada activa</span>
-                        : <span>Analizando tu perfil general</span>
+                        : <span>Analizando perfil general</span>
                      }
                  </div>
                  <button
@@ -391,7 +587,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                     className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
                     >
                     {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Compass className="w-5 h-5" />}
-                    {isLoading ? 'Analizando...' : (selectedSeeds.length > 0 ? 'Buscar Similares' : 'Generar Recomendaciones')}
+                    {isLoading ? 'Analizando...' : 'Generar Experiencia'}
                 </button>
              </div>
              
@@ -403,18 +599,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
              )}
          </div>
       </div>
-
-      {recommendations.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up">
-              {recommendations.map((rec, idx) => (
-                  <RecommendationCard 
-                      key={idx} 
-                      rec={rec} 
-                      onSelect={onSelectRecommendation} 
-                  />
-              ))}
-          </div>
-      )}
     </div>
   );
 };
