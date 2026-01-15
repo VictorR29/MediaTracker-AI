@@ -7,6 +7,7 @@ interface DiscoveryViewProps {
   library: MediaItem[];
   apiKey: string;
   onSelectRecommendation: (title: string) => void;
+  onToggleImmersive?: (isImmersive: boolean) => void;
 }
 
 // Extended type to handle hydration state
@@ -16,7 +17,7 @@ interface HydratedRecommendation extends RecommendationResult {
   imageLoaded?: boolean;
 }
 
-export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, onSelectRecommendation }) => {
+export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, onSelectRecommendation, onToggleImmersive }) => {
   // Mode State
   const [viewMode, setViewMode] = useState<'filters' | 'immersive'>('filters');
   
@@ -42,6 +43,16 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   
   // Touch Handling Ref
   const touchStartY = useRef<number>(0);
+
+  // --- IMMERSIVE MODE HANDLER ---
+  useEffect(() => {
+      if (onToggleImmersive) {
+          onToggleImmersive(viewMode === 'immersive');
+      }
+      return () => {
+          if (onToggleImmersive) onToggleImmersive(false);
+      }
+  }, [viewMode, onToggleImmersive]);
 
   // --- LOGIC: Seed Selection ---
   const availableSeedItems = useMemo(() => {
@@ -181,21 +192,33 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       }
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const calculateTilt = (clientX: number, clientY: number) => {
       if (!cardRef.current) return;
       const { left, top, width, height } = cardRef.current.getBoundingClientRect();
-      const x = (e.clientX - left) / width;
-      const y = (e.clientY - top) / height;
+      const x = (clientX - left) / width;
+      const y = (clientY - top) / height;
       
       // Calculate tilt (max 15 degrees)
       const tiltX = (0.5 - y) * 20; 
       const tiltY = (x - 0.5) * 20;
 
       setTilt({ x: tiltX, y: tiltY });
+  }
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+      calculateTilt(e.clientX, e.clientY);
   };
 
   const handleMouseLeave = () => {
       setTilt({ x: 0, y: 0 });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+      // Logic for mobile tilt while dragging/holding
+      if (e.touches.length > 0) {
+          const touch = e.touches[0];
+          calculateTilt(touch.clientX, touch.clientY);
+      }
   };
 
   // --- RENDER HELPERS ---
@@ -404,17 +427,22 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                   </div>
               </div>
 
-              {/* Mobile Swipe Trigger Zone (Invisible) */}
+              {/* Mobile Swipe Trigger Zone (Invisible) - Extended to handle Tilt logic */}
               <div 
                  className="absolute inset-0 z-40 md:hidden"
                  onClick={() => !isInfoOpen && setIsInfoOpen(true)} // Tap to open info
-                 // Simple Swipe Logic
+                 
                  onTouchStart={(e) => {
                      touchStartY.current = e.touches[0].clientY;
                  }}
+                 onTouchMove={handleTouchMove} // Calculate tilt on drag
                  onTouchEnd={(e) => {
                      const touchEndY = e.changedTouches[0].clientY;
                      const diff = touchStartY.current - touchEndY;
+                     
+                     // Reset tilt
+                     setTilt({ x: 0, y: 0 });
+
                      if (diff > 50) { // Swipe Up
                          handleNext();
                      } else if (diff < -50) { // Swipe Down
