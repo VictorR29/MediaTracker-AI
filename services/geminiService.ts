@@ -40,12 +40,17 @@ const extractJSON = (text: string, isArray: boolean = false): any => {
   throw new Error(`No valid JSON ${isArray ? 'Array' : 'Object'} found in response.`);
 };
 
-export const searchMediaInfo = async (query: string, apiKey: string): Promise<AIWorkData> => {
+export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeContext?: string): Promise<AIWorkData> => {
   const ai = new GoogleGenAI({ apiKey });
   const modelId = "gemini-2.5-flash"; 
   
+  const typeContextInstruction = mediaTypeContext 
+    ? `IMPORTANT: The user is specifically looking for the "${mediaTypeContext}" version of this title. Ensure the data returned (synopsis, episode count, etc.) corresponds to the ${mediaTypeContext} format, NOT other adaptations (e.g. if searching for Anime, do not return Manga chapters).`
+    : '';
+
   const prompt = `
     Act as a media database expert. Search for information about the entertainment title: "${query}".
+    ${typeContextInstruction}
     
     You MUST return a JSON object containing the following details. 
     If exact numbers aren't found, estimate based on the latest available info.

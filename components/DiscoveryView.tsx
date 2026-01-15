@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
 import { getRecommendations, RecommendationResult } from '../services/geminiService';
@@ -6,7 +7,7 @@ import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, Ale
 interface DiscoveryViewProps {
   library: MediaItem[];
   apiKey: string;
-  onSelectRecommendation: (title: string) => void;
+  onSelectRecommendation: (title: string, type: string) => void;
   onToggleImmersive?: (isImmersive: boolean) => void;
 }
 
@@ -469,7 +470,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                       <div className="flex gap-3">
                           <button 
                             onClick={() => {
-                                onSelectRecommendation(currentCard.title);
+                                onSelectRecommendation(currentCard.title, currentCard.mediaType);
                                 setIsInfoOpen(false);
                             }}
                             className="flex-1 bg-white text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-lg"

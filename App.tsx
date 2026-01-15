@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Loader2, Sparkles, User, PlusCircle, LayoutGrid, Bookmark, Compass, 
@@ -229,7 +230,7 @@ export default function App() {
 
   // --- SEARCH & ENTRY ---
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = async (query: string, forcedType?: string) => {
     if (!query.trim()) return;
     
     setIsSearching(true);
@@ -243,7 +244,7 @@ export default function App() {
             throw new Error("Falta API Key");
         }
         
-        const info = await searchMediaInfo(query, apiKey);
+        const info = await searchMediaInfo(query, apiKey, forcedType);
         
         const newItem: MediaItem = {
             id: Date.now().toString(),
@@ -836,7 +837,7 @@ export default function App() {
 
                {searchMode === 'auto' ? (
                    <>
-                     <SearchBar onSearch={handleSearch} isLoading={isSearching} key={searchKey} />
+                     <SearchBar onSearch={(query) => handleSearch(query)} isLoading={isSearching} key={searchKey} />
                      {searchError && (
                         <div className="max-w-2xl mx-auto mt-4 p-4 bg-red-900/20 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-200 animate-fade-in">
                             <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -898,7 +899,7 @@ export default function App() {
                           username={userProfile?.username}
                           apiKey={userProfile?.apiKey}
                           initialEditMode={searchMode === 'manual'}
-                          onSearch={handleSearch}
+                          onSearch={(query) => handleSearch(query)}
                        />
                    </div>
                )}
@@ -975,7 +976,7 @@ export default function App() {
                     onDelete={() => handleDeleteRequest(currentMedia)}
                     username={userProfile?.username}
                     apiKey={userProfile?.apiKey}
-                    onSearch={handleSearch}
+                    onSearch={(query) => handleSearch(query)}
                  />
              </div>
          )}
@@ -994,8 +995,8 @@ export default function App() {
              <DiscoveryView 
                 library={library}
                 apiKey={userProfile.apiKey}
-                onSelectRecommendation={(title) => {
-                    handleSearch(title);
+                onSelectRecommendation={(title, type) => {
+                    handleSearch(title, type);
                 }}
                 onToggleImmersive={(immersive) => setIsImmersiveMode(immersive)}
              />
