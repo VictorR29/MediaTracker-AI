@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
 import { getRecommendations, RecommendationResult } from '../services/geminiService';
-import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp, Filter, X, Search, Wand2, ArrowLeft, Info, Quote } from 'lucide-react';
+import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp, Filter, X, Search, Wand2, ArrowLeft, Info, Quote, RefreshCw } from 'lucide-react';
 
 interface DiscoveryViewProps {
   library: MediaItem[];
@@ -22,6 +22,9 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
 
   // Recommendations State
   const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
+  // We maintain a separate list of titles shown in this session to exclude them from "Load More" calls
+  const [sessionExcludedTitles, setSessionExcludedTitles] = useState<string[]>([]);
+  
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +98,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
 
   // --- ACTIONS ---
 
-  const handleDiscovery = async () => {
+  const handleDiscovery = async (isLoadMore = false) => {
     if (!apiKey) {
         setError("Configura tu API Key en ajustes para usar la IA.");
         return;
@@ -103,16 +106,26 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
     
     setIsLoading(true);
     setError(null);
-    setRecommendations([]);
+    
+    if (!isLoadMore) {
+        setRecommendations([]);
+        setSessionExcludedTitles([]);
+    }
 
     try {
-      const results = await getRecommendations(likedTitles, topGenres, excludedTitles, selectedType, apiKey);
+      // Combine permanent library exclusions with temporary session exclusions (for "Load More")
+      const allExcluded = [...excludedTitles, ...sessionExcludedTitles];
+      
+      const results = await getRecommendations(likedTitles, topGenres, allExcluded, selectedType, apiKey);
       
       if (results.length === 0) {
-          setError("La IA no devolvió resultados válidos. Intenta de nuevo.");
+          if (!isLoadMore) setError("La IA no devolvió resultados válidos. Intenta de nuevo.");
+          else setError("No se encontraron más resultados únicos.");
           setIsLoading(false);
       } else {
           setRecommendations(results);
+          // Add these new results to session exclusions for next time
+          setSessionExcludedTitles(prev => [...prev, ...results.map(r => r.title)]);
           setCurrentIndex(0);
           setViewMode('immersive');
           setIsLoading(false);
@@ -127,7 +140,8 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   // --- INTERACTION LOGIC ---
 
   const handleNext = () => {
-      if (currentIndex < recommendations.length - 1) {
+      // We allow going one index PAST the last recommendation to show the "End/Load More" card
+      if (currentIndex < recommendations.length) {
           setSwipeDirection('up');
           setTimeout(() => {
               setCurrentIndex(prev => prev + 1);
@@ -195,16 +209,18 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       return selected;
   };
 
+  const isEndCard = currentIndex === recommendations.length;
   const currentCard = recommendations[currentIndex];
   
   // Dynamic Background Gradient based on current card
   const bgStyle = useMemo(() => {
+      if (isEndCard) return { background: '#0f172a' };
       if (!currentCard) return { background: '#0f172a' };
       const colors = getColorData(currentCard.title);
       return {
           background: `radial-gradient(circle at 50% 30%, ${colors.shadow}40 0%, #0f172a 100%)` 
       };
-  }, [currentCard]);
+  }, [currentCard, isEndCard]);
 
   // --- GENERATIVE COVER RENDERER ---
   const renderGenerativeCard = (title: string, type: string) => {
@@ -239,8 +255,45 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       );
   };
 
-  if (viewMode === 'immersive' && currentCard) {
-      const cardColors = getColorData(currentCard.title);
+  const renderEndCard = () => {
+      return (
+          <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-slate-900 to-slate-800"></div>
+              
+              <div className="relative z-10 flex flex-col items-center gap-6">
+                  <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50 shadow-xl shadow-primary/20">
+                      <RefreshCw className="w-10 h-10 text-primary" />
+                  </div>
+                  
+                  <div>
+                      <h2 className="text-2xl font-bold text-white mb-2">¡Todo visto!</h2>
+                      <p className="text-slate-400 text-sm max-w-xs mx-auto">
+                          Has revisado las 6 recomendaciones. ¿Quieres generar otro lote basado en los mismos gustos?
+                      </p>
+                  </div>
+
+                  <div className="flex flex-col gap-3 w-full max-w-xs">
+                      <button 
+                          onClick={() => handleDiscovery(true)}
+                          className="w-full py-4 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
+                      >
+                          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                          Generar otras 6
+                      </button>
+                      <button 
+                          onClick={() => setViewMode('filters')}
+                          className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-700"
+                      >
+                          Volver a Filtros
+                      </button>
+                  </div>
+              </div>
+          </div>
+      );
+  };
+
+  if (viewMode === 'immersive' && (currentCard || isEndCard)) {
+      const cardColors = currentCard ? getColorData(currentCard.title) : { shadow: '#0f172a' };
 
       return (
           <div 
@@ -252,13 +305,15 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
 
               {/* NAVIGATION BAR (Floating Pills) */}
               <div className="absolute top-4 left-0 right-0 z-50 px-4 md:px-6 pt-safe flex justify-between items-center w-full max-w-lg mx-auto pointer-events-none">
-                  {/* Left: Counter Badge */}
-                  <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg animate-fade-in-up">
-                      <Sparkles className="w-3 h-3 text-yellow-400" />
-                      <span className="text-xs font-bold text-white font-mono">
-                          {currentIndex + 1} / {recommendations.length}
-                      </span>
-                  </div>
+                  {/* Left: Counter Badge (Hidden on End Card) */}
+                  {!isEndCard ? (
+                      <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg animate-fade-in-up">
+                          <Sparkles className="w-3 h-3 text-yellow-400" />
+                          <span className="text-xs font-bold text-white font-mono">
+                              {currentIndex + 1} / {recommendations.length}
+                          </span>
+                      </div>
+                  ) : <div></div>}
 
                   {/* Right: Back Button */}
                   <button 
@@ -289,34 +344,40 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                           transform: !swipeDirection 
                             ? `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1)` 
                             : undefined,
-                          boxShadow: `0 25px 50px -12px ${cardColors.shadow}60`
+                          boxShadow: isEndCard ? 'none' : `0 25px 50px -12px ${cardColors.shadow}60`
                       }}
                       onMouseMove={handleMouseMove}
                       onMouseLeave={handleMouseLeave}
-                      onClick={() => setIsInfoOpen(true)}
+                      onClick={() => !isEndCard && setIsInfoOpen(true)}
                    >
-                        {/* CARD CONTENT - Pure Generative */}
-                        <div className="absolute inset-0 rounded-3xl overflow-hidden bg-slate-900 border border-white/10">
-                             {renderGenerativeCard(currentCard.title, currentCard.mediaType)}
+                        {/* CARD CONTENT */}
+                        {isEndCard ? (
+                            renderEndCard()
+                        ) : (
+                            <div className="absolute inset-0 rounded-3xl overflow-hidden bg-slate-900 border border-white/10">
+                                {renderGenerativeCard(currentCard.title, currentCard.mediaType)}
 
-                             {/* Info Hint Overlay */}
-                             <div className="absolute bottom-6 left-0 right-0 text-center transition-opacity duration-300 pointer-events-none" style={{ opacity: isInfoOpen ? 0 : 1 }}>
-                                 <p className="text-xs font-medium text-white/60 flex items-center justify-center gap-2 bg-black/20 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit">
-                                     <Info className="w-3 h-3" /> Toca para detalles
-                                 </p>
-                             </div>
-                        </div>
+                                {/* Info Hint Overlay */}
+                                <div className="absolute bottom-6 left-0 right-0 text-center transition-opacity duration-300 pointer-events-none" style={{ opacity: isInfoOpen ? 0 : 1 }}>
+                                    <p className="text-xs font-medium text-white/60 flex items-center justify-center gap-2 bg-black/20 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit">
+                                        <Info className="w-3 h-3" /> Toca para detalles
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                    </div>
 
-                   {/* NAVIGATION ZONES (Desktop) */}
-                   <div 
-                      className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
-                      onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                   >
-                       <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
-                            <ChevronDown className="w-6 h-6 text-white" />
+                   {/* NAVIGATION ZONES (Desktop) - Hidden on End Card */}
+                   {!isEndCard && (
+                       <div 
+                          className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
+                          onClick={(e) => { e.stopPropagation(); handleNext(); }}
+                       >
+                           <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
+                                <ChevronDown className="w-6 h-6 text-white" />
+                           </div>
                        </div>
-                   </div>
+                   )}
                    {currentIndex > 0 && (
                         <div 
                         className="absolute left-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
@@ -329,72 +390,74 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                    )}
               </div>
 
-              {/* GLASSMORPHISM INFO SHEET */}
-              <div 
-                 className={`absolute bottom-0 left-0 right-0 bg-slate-900/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${
-                     isInfoOpen ? 'translate-y-0' : 'translate-y-full'
-                 }`}
-              >
-                  {/* Handle Bar */}
+              {/* GLASSMORPHISM INFO SHEET - Only if not end card */}
+              {!isEndCard && currentCard && (
                   <div 
-                    className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 cursor-pointer"
-                    onClick={() => setIsInfoOpen(false)}
-                  ></div>
+                     className={`absolute bottom-0 left-0 right-0 bg-slate-900/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${
+                         isInfoOpen ? 'translate-y-0' : 'translate-y-full'
+                     }`}
+                  >
+                      {/* Handle Bar */}
+                      <div 
+                        className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 cursor-pointer"
+                        onClick={() => setIsInfoOpen(false)}
+                      ></div>
 
-                  <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1 pr-4">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1 block">
-                            Recomendación IA
-                        </span>
-                        <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
-                            {currentCard.title}
-                        </h2>
+                      <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1 pr-4">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1 block">
+                                Recomendación IA
+                            </span>
+                            <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+                                {currentCard.title}
+                            </h2>
+                          </div>
+                          <button 
+                             onClick={() => setIsInfoOpen(false)}
+                             className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"
+                          >
+                              <ChevronDown className="w-5 h-5 text-white" />
+                          </button>
                       </div>
-                      <button 
-                         onClick={() => setIsInfoOpen(false)}
-                         className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"
-                      >
-                          <ChevronDown className="w-5 h-5 text-white" />
-                      </button>
-                  </div>
 
-                  <div className="space-y-4 mb-8">
-                       <p className="text-slate-200 text-sm leading-relaxed font-medium">
-                           {currentCard.synopsis}
-                       </p>
-                       
-                       <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 flex gap-3">
-                           <Quote className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5 fill-current opacity-50" />
-                           <p className="text-xs md:text-sm text-indigo-200 font-medium italic">
-                               "{currentCard.reason}"
+                      <div className="space-y-4 mb-8">
+                           <p className="text-slate-200 text-sm leading-relaxed font-medium">
+                               {currentCard.synopsis}
                            </p>
-                       </div>
-                  </div>
+                           
+                           <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 flex gap-3">
+                               <Quote className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5 fill-current opacity-50" />
+                               <p className="text-xs md:text-sm text-indigo-200 font-medium italic">
+                                   "{currentCard.reason}"
+                               </p>
+                           </div>
+                      </div>
 
-                  <div className="flex gap-3">
-                      <button 
-                        onClick={() => {
-                            onSelectRecommendation(currentCard.title);
-                            setIsInfoOpen(false);
-                        }}
-                        className="flex-1 bg-white text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-lg"
-                      >
-                          <Search className="w-5 h-5" />
-                          Buscar y añadir
-                      </button>
-                      <button 
-                         onClick={handleNext}
-                         className="px-6 py-3.5 bg-slate-800 text-white font-bold rounded-xl border border-white/10 hover:bg-slate-700 transition-colors"
-                      >
-                          Siguiente
-                      </button>
+                      <div className="flex gap-3">
+                          <button 
+                            onClick={() => {
+                                onSelectRecommendation(currentCard.title);
+                                setIsInfoOpen(false);
+                            }}
+                            className="flex-1 bg-white text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-lg"
+                          >
+                              <Search className="w-5 h-5" />
+                              Buscar y añadir
+                          </button>
+                          <button 
+                             onClick={handleNext}
+                             className="px-6 py-3.5 bg-slate-800 text-white font-bold rounded-xl border border-white/10 hover:bg-slate-700 transition-colors"
+                          >
+                              Siguiente
+                          </button>
+                      </div>
                   </div>
-              </div>
+              )}
 
-              {/* Mobile Swipe Trigger Zone (Invisible) */}
+              {/* Mobile Swipe Trigger Zone (Invisible) - Extended to handle End Card */}
               <div 
                  className="absolute inset-0 z-40 md:hidden"
-                 onClick={() => !isInfoOpen && setIsInfoOpen(true)}
+                 onClick={() => !isEndCard && !isInfoOpen && setIsInfoOpen(true)}
                  onTouchStart={(e) => {
                      touchStartY.current = e.touches[0].clientY;
                  }}
@@ -406,7 +469,8 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                      setTilt({ x: 0, y: 0 }); // Reset tilt on release
 
                      if (diff > 50) { 
-                         handleNext();
+                         // Prevent swipe up on End Card unless we want something specific
+                         if (!isEndCard) handleNext();
                      } else if (diff < -50) {
                          if (isInfoOpen) setIsInfoOpen(false);
                          else handlePrev();
@@ -573,7 +637,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                      }
                  </div>
                  <button
-                    onClick={handleDiscovery}
+                    onClick={() => handleDiscovery(false)}
                     disabled={isLoading}
                     className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
                     >

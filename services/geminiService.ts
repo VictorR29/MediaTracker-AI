@@ -250,12 +250,12 @@ export const getRecommendations = async (
     - Favorite Titles: ${likedTitles.join(', ')}
     - Top Genres: ${topGenres.join(', ')}
     
-    Task: Recommend 4 UNIQUE titles of type "${targetType}" that the user might like.
+    Task: Recommend 6 UNIQUE titles of type "${targetType}" that the user might like.
     
     Constraints:
     - DO NOT recommend any of these already known titles: ${excludedTitles.join(', ')}
     - The titles must be real and popular enough to be found.
-    - Diversity: Try to include 1 hidden gem and 3 hits.
+    - Diversity: Try to include 1 hidden gem and 5 hits.
     
     Return a JSON Array of objects with this structure:
     [
