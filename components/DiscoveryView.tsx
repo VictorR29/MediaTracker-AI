@@ -248,22 +248,23 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
               {/* Animated Background Overlay */}
               <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px]"></div>
 
-              {/* TOP BAR */}
-              <div className="absolute top-0 left-0 right-0 p-4 md:p-6 z-50 flex justify-between items-start pt-safe">
-                  <div className="flex flex-col">
-                      <h2 className="text-white font-bold text-lg drop-shadow-md flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-yellow-400" /> Descubrimiento
-                      </h2>
-                      <span className="text-xs text-white/60 font-medium">
-                          {currentIndex + 1} de {recommendations.length}
+              {/* NAVIGATION BAR (Floating Pills) */}
+              <div className="absolute top-4 left-0 right-0 z-50 px-4 md:px-6 pt-safe flex justify-between items-center w-full max-w-lg mx-auto pointer-events-none">
+                  {/* Left: Counter Badge */}
+                  <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg animate-fade-in-up">
+                      <Sparkles className="w-3 h-3 text-yellow-400" />
+                      <span className="text-xs font-bold text-white font-mono">
+                          {currentIndex + 1} / {recommendations.length}
                       </span>
                   </div>
+
+                  {/* Right: Back Button */}
                   <button 
                       onClick={() => setViewMode('filters')}
-                      className="bg-black/40 hover:bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold transition-all border border-white/10 flex items-center gap-2"
+                      className="pointer-events-auto bg-black/40 hover:bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold transition-all border border-white/10 flex items-center gap-2 shadow-lg animate-fade-in-up hover:scale-105"
                   >
                       <ArrowLeft className="w-3 h-3" />
-                      Filtros
+                      <span>Filtros</span>
                   </button>
               </div>
 
@@ -391,8 +392,8 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                         }}
                         className="flex-1 bg-white text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-lg"
                       >
-                          <Plus className="w-5 h-5" />
-                          Añadir a Biblioteca
+                          <Search className="w-5 h-5" />
+                          Buscar y añadir
                       </button>
                       <button 
                          onClick={handleNext}
