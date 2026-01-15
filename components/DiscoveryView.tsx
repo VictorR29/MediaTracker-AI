@@ -1,20 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
-import { getRecommendations, RecommendationResult, searchMediaInfo } from '../services/geminiService';
-import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp, Filter, X, Search, Wand2, ArrowLeft, Info } from 'lucide-react';
+import { getRecommendations, RecommendationResult } from '../services/geminiService';
+import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp, Filter, X, Search, Wand2, ArrowLeft, Info, Quote } from 'lucide-react';
 
 interface DiscoveryViewProps {
   library: MediaItem[];
   apiKey: string;
   onSelectRecommendation: (title: string) => void;
   onToggleImmersive?: (isImmersive: boolean) => void;
-}
-
-// Extended type to handle hydration state
-interface HydratedRecommendation extends RecommendationResult {
-  imageUrl?: string;
-  primaryColor?: string;
-  imageLoaded?: boolean;
 }
 
 export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, onSelectRecommendation, onToggleImmersive }) => {
@@ -28,7 +21,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   const [isRefineOpen, setIsRefineOpen] = useState(true);
 
   // Recommendations State
-  const [recommendations, setRecommendations] = useState<HydratedRecommendation[]>([]);
+  const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,9 +112,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
           setError("La IA no devolvió resultados válidos. Intenta de nuevo.");
           setIsLoading(false);
       } else {
-          // Initialize hydrated array
-          const hydrated = results.map(r => ({ ...r }));
-          setRecommendations(hydrated);
+          setRecommendations(results);
           setCurrentIndex(0);
           setViewMode('immersive');
           setIsLoading(false);
@@ -133,38 +124,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
     }
   };
 
-  // --- HYDRATION LOGIC ---
-  // Fetches image for the current and next card to ensure smooth experience without hitting rate limits instantly
-  useEffect(() => {
-      if (viewMode === 'immersive' && recommendations.length > 0) {
-          const indicesToLoad = [currentIndex, currentIndex + 1].filter(i => i < recommendations.length);
-          
-          indicesToLoad.forEach(idx => {
-              const rec = recommendations[idx];
-              if (!rec.imageUrl && !rec.imageLoaded) {
-                  // Mark as loading to prevent double fetch
-                  setRecommendations(prev => {
-                      const copy = [...prev];
-                      copy[idx].imageLoaded = true; // Temporary flag to say "we tried"
-                      return copy;
-                  });
-
-                  // Fetch
-                  searchMediaInfo(rec.title, apiKey).then(info => {
-                      setRecommendations(prev => {
-                          const copy = [...prev];
-                          if (info.coverImage && info.coverImage.startsWith('http')) {
-                              copy[idx].imageUrl = info.coverImage;
-                              copy[idx].primaryColor = info.primaryColor;
-                          }
-                          return copy;
-                      });
-                  });
-              }
-          });
-      }
-  }, [currentIndex, viewMode, recommendations.length, apiKey]); // dependencies refined
-
   // --- INTERACTION LOGIC ---
 
   const handleNext = () => {
@@ -174,10 +133,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
               setCurrentIndex(prev => prev + 1);
               setSwipeDirection(null);
               setIsInfoOpen(false);
-          }, 400); // Wait for animation
-      } else {
-          // Loop back or finish? Let's loop back for endless feel or stay.
-          // For now, bounce effect
+          }, 400); 
       }
   };
 
@@ -198,7 +154,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       const x = (clientX - left) / width;
       const y = (clientY - top) / height;
       
-      // Calculate tilt (max 15 degrees)
       const tiltX = (0.5 - y) * 20; 
       const tiltY = (x - 0.5) * 20;
 
@@ -214,7 +169,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-      // Logic for mobile tilt while dragging/holding
       if (e.touches.length > 0) {
           const touch = e.touches[0];
           calculateTilt(touch.clientX, touch.clientY);
@@ -222,47 +176,72 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   };
 
   // --- RENDER HELPERS ---
+  
+  // Helper to generate deterministic colors from string
+  const getColorData = (title: string) => {
+      const seed = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      
+      const gradients = [
+          { bg: 'from-pink-500 to-rose-600', shadow: '#e11d48' },
+          { bg: 'from-indigo-500 to-violet-600', shadow: '#7c3aed' },
+          { bg: 'from-emerald-500 to-teal-600', shadow: '#0d9488' },
+          { bg: 'from-amber-500 to-orange-600', shadow: '#ea580c' },
+          { bg: 'from-blue-500 to-cyan-600', shadow: '#0891b2' },
+          { bg: 'from-fuchsia-500 to-purple-600', shadow: '#9333ea' },
+          { bg: 'from-red-500 to-orange-600', shadow: '#dc2626' },
+      ];
+      
+      const selected = gradients[seed % gradients.length];
+      return selected;
+  };
+
   const currentCard = recommendations[currentIndex];
   
   // Dynamic Background Gradient based on current card
   const bgStyle = useMemo(() => {
-      const color = currentCard?.primaryColor || '#6366f1';
+      if (!currentCard) return { background: '#0f172a' };
+      const colors = getColorData(currentCard.title);
       return {
-          background: currentCard 
-            ? `radial-gradient(circle at 50% 30%, ${color}40 0%, #0f172a 100%)` 
-            : '#0f172a'
+          background: `radial-gradient(circle at 50% 30%, ${colors.shadow}40 0%, #0f172a 100%)` 
       };
   }, [currentCard]);
 
-  // Card Fallback Style (Gradient + Typography)
-  const getCardFallback = (title: string, type: string) => {
-      // Generate deterministic gradient from title char codes
-      const seed = title.charCodeAt(0) + title.charCodeAt(title.length - 1);
-      const hues = [
-          'from-pink-500 to-rose-500', 
-          'from-indigo-500 to-blue-500', 
-          'from-emerald-500 to-teal-500', 
-          'from-amber-500 to-orange-500', 
-          'from-purple-500 to-violet-500'
-      ];
-      const gradient = hues[seed % hues.length];
+  // --- GENERATIVE COVER RENDERER ---
+  const renderGenerativeCard = (title: string, type: string) => {
+      const colors = getColorData(title);
       
       return (
-          <div className={`w-full h-full bg-gradient-to-br ${gradient} flex flex-col items-center justify-center p-8 text-center`}>
-              <div className="border-4 border-white/20 p-4 rounded-full mb-4 backdrop-blur-sm">
-                  <Sparkles className="w-12 h-12 text-white" />
+          <div className={`w-full h-full bg-gradient-to-br ${colors.bg} flex flex-col items-center justify-center p-8 text-center relative overflow-hidden`}>
+              {/* Texture Overlay */}
+              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+              
+              {/* Decorative Circle */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+
+              {/* Content */}
+              <div className="relative z-10 flex flex-col items-center h-full justify-between py-12">
+                  <div className="border border-white/30 bg-white/10 p-3 rounded-full backdrop-blur-md shadow-lg">
+                      <Sparkles className="w-8 h-8 text-white drop-shadow-md" />
+                  </div>
+                  
+                  <div className="flex-grow flex items-center justify-center w-full">
+                      <h1 className="text-3xl md:text-5xl font-black text-white leading-tight uppercase tracking-tighter drop-shadow-xl break-words w-full" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                          {title}
+                      </h1>
+                  </div>
+
+                  <span className="px-4 py-1.5 bg-black/30 text-white rounded-full text-xs font-bold uppercase tracking-[0.2em] backdrop-blur-md border border-white/10 shadow-lg">
+                      {type}
+                  </span>
               </div>
-              <h1 className="text-3xl md:text-5xl font-black text-white leading-tight uppercase tracking-tighter drop-shadow-lg break-words w-full">
-                  {title}
-              </h1>
-              <span className="mt-4 px-3 py-1 bg-black/20 text-white rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md">
-                  {type}
-              </span>
           </div>
       );
   };
 
   if (viewMode === 'immersive' && currentCard) {
+      const cardColors = getColorData(currentCard.title);
+
       return (
           <div 
              className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden touch-none"
@@ -310,34 +289,20 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                           transform: !swipeDirection 
                             ? `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1)` 
                             : undefined,
-                          boxShadow: `0 25px 50px -12px ${currentCard.primaryColor || '#000'}60`
+                          boxShadow: `0 25px 50px -12px ${cardColors.shadow}60`
                       }}
                       onMouseMove={handleMouseMove}
                       onMouseLeave={handleMouseLeave}
                       onClick={() => setIsInfoOpen(true)}
                    >
-                        {/* CARD CONTENT */}
+                        {/* CARD CONTENT - Pure Generative */}
                         <div className="absolute inset-0 rounded-3xl overflow-hidden bg-slate-900 border border-white/10">
-                             {currentCard.imageUrl ? (
-                                 <>
-                                    <img 
-                                        src={currentCard.imageUrl} 
-                                        alt={currentCard.title} 
-                                        className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                                 </>
-                             ) : (
-                                 getCardFallback(currentCard.title, currentCard.mediaType)
-                             )}
+                             {renderGenerativeCard(currentCard.title, currentCard.mediaType)}
 
-                             {/* Title Overlay (Always Visible) */}
-                             <div className="absolute bottom-0 left-0 right-0 p-6 pb-12 transition-opacity duration-300" style={{ opacity: isInfoOpen ? 0 : 1 }}>
-                                 <h2 className="text-3xl font-black text-white leading-none mb-2 drop-shadow-lg text-shadow-sm line-clamp-2">
-                                     {currentCard.title}
-                                 </h2>
-                                 <p className="text-sm font-medium text-white/80 flex items-center gap-2">
-                                     <Info className="w-4 h-4" /> Toca para saber más
+                             {/* Info Hint Overlay */}
+                             <div className="absolute bottom-6 left-0 right-0 text-center transition-opacity duration-300 pointer-events-none" style={{ opacity: isInfoOpen ? 0 : 1 }}>
+                                 <p className="text-xs font-medium text-white/60 flex items-center justify-center gap-2 bg-black/20 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit">
+                                     <Info className="w-3 h-3" /> Toca para detalles
                                  </p>
                              </div>
                         </div>
@@ -366,7 +331,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
 
               {/* GLASSMORPHISM INFO SHEET */}
               <div 
-                 className={`absolute bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${
+                 className={`absolute bottom-0 left-0 right-0 bg-slate-900/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${
                      isInfoOpen ? 'translate-y-0' : 'translate-y-full'
                  }`}
               >
@@ -394,12 +359,12 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                   </div>
 
                   <div className="space-y-4 mb-8">
-                       <p className="text-slate-300 text-sm leading-relaxed border-l-2 border-primary/50 pl-3">
+                       <p className="text-slate-200 text-sm leading-relaxed font-medium">
                            {currentCard.synopsis}
                        </p>
                        
                        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 flex gap-3">
-                           <Sparkles className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                           <Quote className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5 fill-current opacity-50" />
                            <p className="text-xs md:text-sm text-indigo-200 font-medium italic">
                                "{currentCard.reason}"
                            </p>
@@ -411,7 +376,6 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                         onClick={() => {
                             onSelectRecommendation(currentCard.title);
                             setIsInfoOpen(false);
-                            // Optional: Automatically move next after adding?
                         }}
                         className="flex-1 bg-white text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-lg"
                       >
@@ -427,25 +391,23 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                   </div>
               </div>
 
-              {/* Mobile Swipe Trigger Zone (Invisible) - Extended to handle Tilt logic */}
+              {/* Mobile Swipe Trigger Zone (Invisible) */}
               <div 
                  className="absolute inset-0 z-40 md:hidden"
-                 onClick={() => !isInfoOpen && setIsInfoOpen(true)} // Tap to open info
-                 
+                 onClick={() => !isInfoOpen && setIsInfoOpen(true)}
                  onTouchStart={(e) => {
                      touchStartY.current = e.touches[0].clientY;
                  }}
-                 onTouchMove={handleTouchMove} // Calculate tilt on drag
+                 onTouchMove={handleTouchMove}
                  onTouchEnd={(e) => {
                      const touchEndY = e.changedTouches[0].clientY;
                      const diff = touchStartY.current - touchEndY;
                      
-                     // Reset tilt
-                     setTilt({ x: 0, y: 0 });
+                     setTilt({ x: 0, y: 0 }); // Reset tilt on release
 
-                     if (diff > 50) { // Swipe Up
+                     if (diff > 50) { 
                          handleNext();
-                     } else if (diff < -50) { // Swipe Down
+                     } else if (diff < -50) {
                          if (isInfoOpen) setIsInfoOpen(false);
                          else handlePrev();
                      }
