@@ -530,7 +530,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
       <div className="flex flex-col lg:grid lg:grid-cols-[260px_1fr_280px] xl:grid-cols-[340px_1fr_360px] gap-0">
         
         {/* COL 1: LEFT SIDEBAR (Info de la Obra) */}
-        <div className="p-6 md:p-8 flex flex-col relative border-b lg:border-b-0 lg:border-r border-slate-800 bg-[#0F1119]">
+        <div className="p-6 md:p-8 flex flex-col relative border-b lg:border-b-0 lg:border-r border-slate-800 bg-[#0F1119] min-w-0">
           
           {/* Poster */}
           <div 
@@ -686,7 +686,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
         </div>
 
         {/* COL 2: CENTER (Synopsis, Progress & Characters) */}
-        <div className="p-6 md:p-8 flex flex-col gap-8 bg-[#0B0E14] overflow-y-auto custom-scrollbar">
+        <div className="p-6 md:p-8 flex flex-col gap-8 bg-[#0B0E14] overflow-y-auto overflow-x-hidden custom-scrollbar min-w-0">
           
           {/* CARD: Synopsis */}
           <div className={`${CARD_BG} p-6 md:p-8 rounded-2xl border ${BORDER_COLOR} relative shadow-xl`}>
@@ -823,7 +823,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
         </div>
 
         {/* COL 3: RIGHT SIDEBAR (Analysis) */}
-        <div className="p-6 md:p-8 flex flex-col gap-8 bg-[#0F1119] border-t lg:border-t-0 lg:border-l border-slate-800 overflow-y-auto custom-scrollbar">
+        <div className="p-6 md:p-8 flex flex-col gap-8 bg-[#0F1119] border-t lg:border-t-0 lg:border-l border-slate-800 overflow-y-auto custom-scrollbar min-w-0">
           
           {/* CARD: Rating & Share (Compact) */}
           <div className={`${CARD_BG} p-4 rounded-2xl border ${BORDER_COLOR} shadow-xl`}>

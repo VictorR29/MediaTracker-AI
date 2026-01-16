@@ -1027,7 +1027,7 @@ export default function App() {
                        </div>
                    ) : (
                        /* Result Found / Draft Created View */
-                       <div className="w-full max-w-5xl mx-auto mt-4 animate-fade-in">
+                       <div className="w-full mx-auto mt-4 animate-fade-in">
                            <button 
                                onClick={() => { setCurrentMedia(null); setManualTitle(''); }}
                                className="mb-8 flex items-center gap-2 text-slate-400 hover:text-white transition-colors bg-slate-800/50 hover:bg-slate-800 px-4 py-2 rounded-lg border border-slate-700/50"
