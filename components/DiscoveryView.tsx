@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
 import { getRecommendations, RecommendationResult } from '../services/geminiService';
@@ -321,33 +322,53 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
 
   const renderLoadingCard = () => {
       return (
-          <div className="relative w-full h-full flex items-center justify-center">
-              {/* Back Stack ("Ghost" Cards) */}
-              <div className="absolute inset-0 bg-indigo-500/20 rounded-3xl transform rotate-6 scale-95 border border-white/5 animate-pulse"></div>
-              <div className="absolute inset-0 bg-purple-500/20 rounded-3xl transform -rotate-3 scale-95 border border-white/5 animate-pulse delay-75"></div>
+          <div className="relative w-full h-full flex items-center justify-center perspective-1000">
+              {/* Left Card - Shuffling Animation */}
+              <div 
+                className="absolute w-[85%] md:w-[340px] h-[95%] bg-indigo-500/20 rounded-3xl border border-indigo-500/30 shadow-xl backdrop-blur-sm animate-[shuffle-left_1.5s_infinite_ease-in-out]"
+              ></div>
               
-              {/* Main Shimmer Card */}
-              <div className="relative w-full h-full bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-10">
+              {/* Right Card - Shuffling Animation */}
+              <div 
+                className="absolute w-[85%] md:w-[340px] h-[95%] bg-purple-500/20 rounded-3xl border border-purple-500/30 shadow-xl backdrop-blur-sm animate-[shuffle-right_1.5s_infinite_ease-in-out]"
+              ></div>
+
+              {/* Main Shimmer Card (Center) */}
+              <div 
+                className="absolute w-[90%] md:w-[360px] h-full bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-10 animate-[float_3s_infinite_ease-in-out]"
+              >
                   {/* Shimmer Effect Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 translate-x-[-150%] animate-[shimmer_1.5s_infinite]"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 translate-x-[-150%] animate-[shimmer_1.2s_infinite]"></div>
                   
-                  <div className="h-full flex flex-col items-center justify-between py-16 px-8 relative z-20">
-                      <div className="w-16 h-16 rounded-full bg-white/5 animate-pulse flex items-center justify-center">
-                          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  {/* Decorative Content */}
+                  <div className="h-full flex flex-col items-center justify-center gap-8 relative z-20">
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 flex items-center justify-center animate-pulse border border-white/5">
+                          <Loader2 className="w-10 h-10 text-primary animate-spin" />
                       </div>
                       
-                      <div className="w-full space-y-4">
-                          <div className="h-8 bg-white/10 rounded-full w-3/4 mx-auto animate-pulse"></div>
-                          <div className="h-8 bg-white/10 rounded-full w-1/2 mx-auto animate-pulse"></div>
+                      <div className="space-y-3 text-center opacity-60">
+                          <div className="h-3 bg-white/20 rounded-full w-32 mx-auto animate-pulse"></div>
+                          <div className="h-3 bg-white/10 rounded-full w-24 mx-auto animate-pulse delay-75"></div>
+                          <div className="h-3 bg-white/10 rounded-full w-40 mx-auto animate-pulse delay-150"></div>
                       </div>
-
-                      <div className="h-6 bg-white/10 rounded-full w-24 animate-pulse"></div>
                   </div>
               </div>
               <style>{`
                 @keyframes shimmer {
                     0% { transform: translateX(-150%) skewX(-12deg); }
                     100% { transform: translateX(150%) skewX(-12deg); }
+                }
+                @keyframes shuffle-left {
+                    0%, 100% { transform: rotate(-4deg) translateX(-10px) scale(0.95); opacity: 0.5; }
+                    50% { transform: rotate(-15deg) translateX(-60px) scale(0.9); opacity: 0.8; }
+                }
+                @keyframes shuffle-right {
+                    0%, 100% { transform: rotate(4deg) translateX(10px) scale(0.95); opacity: 0.5; }
+                    50% { transform: rotate(15deg) translateX(60px) scale(0.9); opacity: 0.8; }
+                }
+                @keyframes float {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-10px); }
                 }
               `}</style>
           </div>
