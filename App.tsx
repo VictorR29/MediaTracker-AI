@@ -1,6 +1,6 @@
 /*
  * Project: MediaTracker AI
- * Copyright (C) 2024 [Tu Nombre]
+ * Copyright (C) 2026 Victor Ramones
  * Licensed under the GNU General Public License v3.0
  */
 
