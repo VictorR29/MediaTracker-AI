@@ -1,3 +1,4 @@
+
 /*
  * Project: MediaTracker AI
  * Copyright (C) 2026 Victor Ramones
@@ -584,17 +585,40 @@ export default function App() {
   }, [library]);
 
 
-  // --- INFINITE SCROLL SIMULATION ---
+  // --- INFINITE SCROLL LOGIC ---
+  
+  // 1. Reset pagination when context changes (Filters, View Mode, or View Section)
   useEffect(() => {
-      const observer = new IntersectionObserver((entries) => {
-          if (entries[0].isIntersecting) {
-              setVisibleCount(prev => prev + 24);
+      setVisibleCount(24);
+  }, [filters, view, libraryViewMode]);
+
+  // 2. Robust Infinite Scroll Observer
+  // DEPENDENCIES OPTIMIZED: Only re-attach when loading state changes or list LENGTH changes.
+  useEffect(() => {
+      if (isLoading || view !== 'library') return;
+
+      const currentElement = loadMoreRef.current;
+      if (!currentElement) return;
+
+      const observer = new IntersectionObserver(
+          (entries) => {
+              const first = entries[0];
+              if (first.isIntersecting) {
+                  setVisibleCount((prev) => prev + 24);
+              }
+          },
+          { 
+              threshold: 0.1,
+              rootMargin: '250px' // Load well before reaching the bottom
           }
-      }, { rootMargin: '100px' });
-      
-      if (loadMoreRef.current) observer.observe(loadMoreRef.current);
-      return () => observer.disconnect();
-  }, [filteredLibrary, view]);
+      );
+
+      observer.observe(currentElement);
+
+      return () => {
+          if (currentElement) observer.unobserve(currentElement);
+      };
+  }, [isLoading, view, libraryViewMode, filteredLibrary.length]);
 
 
   // --- SCROLL HANDLERS ---
