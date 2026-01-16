@@ -9,7 +9,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { 
   Loader2, Sparkles, User, PlusCircle, LayoutGrid, Bookmark, Compass, 
   BarChart2, ChevronDown, Settings, Download, ArrowLeft, Trash2, GitMerge, ArrowUp,
-  AlertCircle, PenTool, X
+  AlertCircle, PenTool, X, Wand2, Search as SearchIcon, Globe
 } from 'lucide-react';
 import { useToast } from './context/ToastContext';
 import { MediaItem, UserProfile, AIWorkData, UserTrackingData, normalizeGenre, THEME_COLORS } from './types';
@@ -30,6 +30,14 @@ import { CatalogView } from './components/CatalogView';
 import { ContextualGreeting } from './components/ContextualGreeting';
 import { LoginScreen } from './components/LoginScreen';
 import { Onboarding } from './components/Onboarding';
+
+const TRENDING_SEARCHES = [
+    "Dune: Part Two",
+    "Solo Leveling",
+    "The Bear",
+    "Arcane",
+    "Oppenheimer"
+];
 
 export default function App() {
   const { showToast } = useToast();
@@ -885,114 +893,170 @@ export default function App() {
              </div>
          )}
 
-         {/* VIEW: SEARCH (New Entry) */}
+         {/* VIEW: SEARCH (Redesigned Hero & Loading) */}
          {view === 'search' && (
-            <div className="animate-fade-in">
-               <div className="flex items-center gap-3 mb-6 border-l-4 border-emerald-500 pl-4">
-                   <h2 className="text-2xl font-bold text-white">Añadir Nueva Obra</h2>
-                   <span className="bg-emerald-500/20 text-emerald-500 text-xs font-bold px-2 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1">
-                      <PlusCircle className="w-3 h-3" />
-                      {searchMode === 'auto' ? 'Búsqueda IA' : 'Manual'}
-                   </span>
-               </div>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in px-4 py-8">
+               
+               {isSearching ? (
+                   // GLOBAL LOADING STATE FOR SEARCH
+                   <div className="flex flex-col items-center justify-center h-[50vh] animate-fade-in">
+                        <div className="relative mb-8">
+                            <div className="absolute inset-0 bg-primary blur-3xl opacity-20 animate-pulse rounded-full"></div>
+                            <Globe className="w-20 h-20 text-primary animate-bounce relative z-10" />
+                            <Sparkles className="w-8 h-8 text-yellow-400 absolute -top-4 -right-4 animate-spin-slow z-20" />
+                        </div>
+                        <h3 className="text-2xl md:text-3xl font-black text-white text-center mb-3">Explorando la Red...</h3>
+                        <p className="text-slate-400 text-sm md:text-base text-center max-w-sm animate-pulse">
+                            Nuestra IA está buscando, analizando y estructurando los datos en tiempo real.
+                        </p>
+                   </div>
+               ) : (
+                   !currentMedia ? (
+                       // HERO SECTION
+                       <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
+                           {/* AI Badge */}
+                           <div className="mb-6 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                                <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
+                                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Búsqueda IA Activa</span>
+                           </div>
 
-               {/* Only show inputs if we don't have a result yet */}
-               {!currentMedia ? (
-                   <>
-                       <div className="flex justify-start mb-6">
-                           <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                           {/* Hero Heading */}
+                           <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 text-center tracking-tight drop-shadow-lg">
+                               Añadir Nueva Obra
+                           </h1>
+                           <p className="text-slate-400 text-center max-w-lg mb-10 text-base md:text-lg leading-relaxed">
+                               Nuestra IA explorará internet en tiempo real para encontrar, analizar y organizar automáticamente toda la información de tu próximo anime, serie o película.
+                           </p>
+
+                           {/* Toggle Switch */}
+                           <div className="flex bg-slate-900/80 p-1.5 rounded-xl border border-slate-700/50 mb-10 shadow-lg backdrop-blur-md">
                                <button 
-                                 onClick={() => setSearchMode('auto')}
-                                 className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${searchMode === 'auto' ? 'bg-primary text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                                    onClick={() => setSearchMode('auto')}
+                                    className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${
+                                        searchMode === 'auto' 
+                                        ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105' 
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
                                >
-                                   Automático
+                                   <Wand2 className="w-4 h-4" /> Automático
                                </button>
                                <button 
-                                 onClick={() => setSearchMode('manual')}
-                                 className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${searchMode === 'manual' ? 'bg-primary text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                                    onClick={() => setSearchMode('manual')}
+                                    className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${
+                                        searchMode === 'manual' 
+                                        ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105' 
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
                                >
-                                   Manual
+                                   <PenTool className="w-4 h-4" /> Manual
                                </button>
                            </div>
-                       </div>
 
-                       {searchMode === 'auto' ? (
-                           <>
-                             <SearchBar onSearch={(query) => handleSearch(query)} isLoading={isSearching} key={searchKey} />
-                             {searchError && (
-                                <div className="max-w-2xl mx-auto mt-4 p-4 bg-red-900/20 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-200 animate-fade-in">
-                                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                                    <p>{searchError}</p>
-                                </div>
-                             )}
-                           </>
-                       ) : (
-                           <div className="max-w-xl mx-auto bg-surface p-6 rounded-2xl border border-slate-700 shadow-xl animate-fade-in">
-                               <div className="space-y-4">
-                                   <div>
-                                       <label className="block text-sm font-bold text-slate-400 mb-2">Título</label>
-                                       <input 
-                                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-primary outline-none"
-                                         placeholder="Ej: Solo Leveling"
-                                         value={manualTitle}
-                                         onChange={(e) => setManualTitle(e.target.value)}
-                                       />
-                                   </div>
-                                   <div>
-                                       <label className="block text-sm font-bold text-slate-400 mb-2">Tipo</label>
-                                       <div className="grid grid-cols-3 gap-2">
-                                           {['Anime', 'Serie', 'Pelicula', 'Manhwa', 'Libro', 'Comic'].map(t => (
-                                               <button
-                                                 key={t}
-                                                 onClick={() => setManualType(t)}
-                                                 className={`py-2 rounded-lg text-xs font-bold border transition-colors ${manualType === t ? 'bg-primary border-primary text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
-                                               >
-                                                   {t}
-                                               </button>
-                                           ))}
+                           {searchMode === 'auto' ? (
+                               <div className="w-full relative z-10">
+                                    <SearchBar 
+                                        onSearch={(query) => handleSearch(query)} 
+                                        isLoading={isSearching} 
+                                        key={searchKey} 
+                                    />
+                                    {searchError && (
+                                        <div className="max-w-2xl mx-auto mt-6 p-4 bg-red-900/20 border border-red-500/30 rounded-xl flex items-center justify-center gap-3 text-red-200 animate-fade-in backdrop-blur-sm">
+                                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                            <p>{searchError}</p>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Trending Section */}
+                                    <div className="mt-12 text-center">
+                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Tendencias Ahora</p>
+                                        <div className="flex flex-wrap justify-center gap-3">
+                                            {TRENDING_SEARCHES.map(term => (
+                                                <button
+                                                    key={term}
+                                                    onClick={() => handleSearch(term)}
+                                                    className="px-4 py-2 rounded-full bg-slate-800/50 hover:bg-slate-700 border border-slate-700/50 hover:border-indigo-500/50 text-slate-300 hover:text-white text-sm font-medium transition-all hover:scale-105 active:scale-95"
+                                                >
+                                                    {term}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                               </div>
+                           ) : (
+                               <div className="w-full max-w-xl mx-auto bg-surface/50 backdrop-blur-xl p-8 rounded-3xl border border-slate-700/50 shadow-2xl animate-fade-in-up">
+                                   <div className="space-y-6">
+                                       <div>
+                                           <label className="block text-sm font-bold text-slate-300 mb-2">Título de la Obra</label>
+                                           <div className="relative">
+                                                <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                                                <input 
+                                                    className="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-12 pr-4 py-4 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                    placeholder="Ej: Solo Leveling"
+                                                    value={manualTitle}
+                                                    onChange={(e) => setManualTitle(e.target.value)}
+                                                />
+                                           </div>
                                        </div>
+                                       <div>
+                                           <label className="block text-sm font-bold text-slate-300 mb-3">Tipo de Medio</label>
+                                           <div className="grid grid-cols-3 gap-3">
+                                               {['Anime', 'Serie', 'Pelicula', 'Manhwa', 'Libro', 'Comic'].map(t => (
+                                                   <button
+                                                     key={t}
+                                                     onClick={() => setManualType(t)}
+                                                     className={`py-3 rounded-xl text-xs font-bold border transition-all ${
+                                                         manualType === t 
+                                                         ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105' 
+                                                         : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
+                                                     }`}
+                                                   >
+                                                       {t}
+                                                   </button>
+                                               ))}
+                                           </div>
+                                       </div>
+                                       <button 
+                                         onClick={handleManualEntry}
+                                         className="w-full bg-primary hover:bg-indigo-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2 mt-4"
+                                       >
+                                           <PenTool className="w-5 h-5" /> Crear Borrador Manual
+                                       </button>
                                    </div>
+                               </div>
+                           )}
+                       </div>
+                   ) : (
+                       /* Result Found / Draft Created View */
+                       <div className="w-full max-w-5xl mx-auto mt-4 animate-fade-in">
+                           <button 
+                               onClick={() => { setCurrentMedia(null); setManualTitle(''); }}
+                               className="mb-8 flex items-center gap-2 text-slate-400 hover:text-white transition-colors bg-slate-800/50 hover:bg-slate-800 px-4 py-2 rounded-lg border border-slate-700/50"
+                           >
+                               <ArrowLeft className="w-4 h-4" /> Cancelar / Nueva Búsqueda
+                           </button>
+                           
+                           <div className="animate-fade-in-up">
+                               <div className="flex justify-center mb-8">
                                    <button 
-                                     onClick={handleManualEntry}
-                                     className="w-full bg-primary hover:bg-indigo-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                     onClick={addToLibrary}
+                                     className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-10 rounded-full shadow-[0_10px_30px_-10px_rgba(22,163,74,0.5)] transform hover:scale-105 transition-all flex items-center gap-3 text-lg"
                                    >
-                                       <PenTool className="w-4 h-4" /> Crear Borrador
+                                       <PlusCircle className="w-6 h-6" />
+                                       Guardar en Biblioteca
                                    </button>
                                </div>
+                               <MediaCard 
+                                  item={currentMedia} 
+                                  onUpdate={(updated) => setCurrentMedia(updated)} 
+                                  isNew={true} 
+                                  username={userProfile?.username}
+                                  apiKey={userProfile?.apiKey}
+                                  initialEditMode={searchMode === 'manual'}
+                                  onSearch={(query) => handleSearch(query)}
+                               />
                            </div>
-                       )}
-                   </>
-               ) : (
-                   /* Result Found / Draft Created */
-                   <div className="mt-2 animate-fade-in">
-                       <button 
-                           onClick={() => { setCurrentMedia(null); setManualTitle(''); }}
-                           className="mb-6 flex items-center gap-2 text-slate-400 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg w-fit"
-                       >
-                           <ArrowLeft className="w-4 h-4" /> Cancelar / Nueva Búsqueda
-                       </button>
-                       
-                       <div className="animate-fade-in-up">
-                           <div className="flex justify-center mb-6">
-                               <button 
-                                 onClick={addToLibrary}
-                                 className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-green-600/20 transform hover:scale-105 transition-all flex items-center gap-2"
-                               >
-                                   <PlusCircle className="w-5 h-5" />
-                                   Guardar en Biblioteca
-                               </button>
-                           </div>
-                           <MediaCard 
-                              item={currentMedia} 
-                              onUpdate={(updated) => setCurrentMedia(updated)} 
-                              isNew={true} 
-                              username={userProfile?.username}
-                              apiKey={userProfile?.apiKey}
-                              initialEditMode={searchMode === 'manual'}
-                              onSearch={(query) => handleSearch(query)}
-                           />
                        </div>
-                   </div>
+                   )
                )}
             </div>
          )}
