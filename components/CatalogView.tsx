@@ -8,7 +8,7 @@ interface CatalogViewProps {
   onOpenDetail: (item: MediaItem) => void;
 }
 
-// -- Subcomponent: 3D Flip Poster (Updated Style) --
+// -- Subcomponent: 3D Flip Poster (Updated Style: Clean Front) --
 const CatalogPoster: React.FC<{ 
     item: MediaItem; 
     onDetail: () => void;
@@ -24,41 +24,14 @@ const CatalogPoster: React.FC<{
         ? aiData.coverImage
         : `https://placehold.co/400x600/1e293b/94a3b8?text=${encodeURIComponent(aiData.title)}&font=roboto`;
 
-    let progressPercent = 0;
-    if (aiData.mediaType === 'Pelicula') {
-        progressPercent = trackingData.status === 'Completado' ? 100 : 0;
-    } else {
-        progressPercent = trackingData.totalEpisodesInSeason > 0
-            ? Math.min(100, (trackingData.watchedEpisodes / trackingData.totalEpisodesInSeason) * 100)
-            : 0;
-    }
-
     const dynamicColor = aiData.primaryColor || '#6366f1';
-    const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
-
-    const getStatusColorDot = () => {
-        switch (trackingData.status) {
-            case 'Viendo/Leyendo': return isReadingContent ? 'bg-blue-500' : 'bg-green-500';
-            case 'Completado': return 'bg-slate-500';
-            case 'Sin empezar': return 'bg-yellow-500';
-            case 'En Pausa': return 'bg-orange-500';
-            case 'Planeado / Pendiente': return 'bg-purple-500';
-            case 'Descartado': return 'bg-red-500';
-            default: return 'bg-slate-500';
-        }
-    };
-
-    const getTypeIcon = () => {
-        switch (aiData.mediaType) {
-          case 'Anime': return <Tv className="w-3 h-3" />;
-          case 'Manhwa': case 'Manga': return <BookOpen className="w-3 h-3" />;
-          case 'Comic': return <FileText className="w-3 h-3" />;
-          case 'Libro': return <Book className="w-3 h-3" />;
-          default: return <Clapperboard className="w-3 h-3" />;
-        }
-    };
 
     const handleClick = () => setIsFlipped(!isFlipped);
+
+    const handleDetailClick = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Critical: Stop the card from flipping back
+        onDetail();
+    };
     
     return (
         <div 
@@ -66,98 +39,51 @@ const CatalogPoster: React.FC<{
             onMouseEnter={() => onHoverColor(dynamicColor)}
             onClick={handleClick}
         >
-            <div className={`relative w-full h-full duration-500 transform-style-3d transition-transform ${isFlipped ? 'rotate-y-180' : 'group-hover:scale-105'}`}>
+            <div className={`relative w-full h-full duration-500 transform-style-3d transition-transform ${isFlipped ? 'rotate-y-180' : 'group-hover:scale-[1.03]'}`}>
                 
-                {/* FRONT FACE (Visual Style Matching CompactMediaCard) */}
-                <div className="absolute w-full h-full backface-hidden rounded-2xl overflow-hidden shadow-xl border border-white/5 bg-[#1A1D26] flex flex-col">
-                    
-                    {/* Image Area */}
-                    <div className="relative w-full flex-grow overflow-hidden">
-                        <img 
-                            src={imageSrc} 
-                            alt={aiData.title} 
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                        />
-                        {/* Improved Gradient: Pure black for better legibility, avoiding blue/gray tint */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                        
-                        {/* Badge */}
-                        <div className="absolute top-3 left-3">
-                            <span 
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-white text-[10px] font-bold uppercase tracking-wider shadow-lg"
-                                style={{ backgroundColor: dynamicColor }}
-                            >
-                                {getTypeIcon()}
-                                {aiData.mediaType.toUpperCase()}
-                            </span>
-                        </div>
-
-                        {/* Title & Status */}
-                        <div className="absolute bottom-2 left-0 right-0 p-3 z-10">
-                            <h3 className="text-white font-bold text-sm leading-tight line-clamp-2 drop-shadow-md mb-1.5">
-                                {aiData.title}
-                            </h3>
-                            <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${getStatusColorDot()} shadow-[0_0_8px_currentColor]`} />
-                                <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wide">
-                                    {trackingData.status === 'Viendo/Leyendo' ? (isReadingContent ? 'Leyendo' : 'Viendo') : trackingData.status}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="bg-[#1A1D26] px-3 py-2.5 flex items-center justify-between border-t border-white/5 relative z-20 flex-shrink-0 h-10">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                            {isReadingContent ? 'CPS.' : 'TEMP.'} {trackingData.currentSeason}
-                        </span>
-                        <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                            <Clock className="w-3 h-3" />
-                            <span className="font-mono">{trackingData.watchedEpisodes}/{trackingData.totalEpisodesInSeason || '?'}</span>
-                        </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="h-1 w-full bg-slate-800 flex-shrink-0">
-                        <div 
-                            className="h-full transition-all duration-700" 
-                            style={{ 
-                                width: `${progressPercent}%`,
-                                backgroundColor: dynamicColor
-                            }}
-                        />
-                    </div>
+                {/* FRONT FACE (Clean Cover Only) */}
+                <div 
+                    className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden shadow-2xl border border-white/5 bg-[#1A1D26]"
+                    style={{ boxShadow: isFlipped ? 'none' : `0 10px 30px -10px ${dynamicColor}40` }}
+                >
+                    <img 
+                        src={imageSrc} 
+                        alt={aiData.title} 
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                    />
+                    {/* Subtle inner border for depth */}
+                    <div className="absolute inset-0 border border-white/10 rounded-xl pointer-events-none"></div>
                 </div>
 
                 {/* BACK FACE (Info & Actions) */}
                 <div 
-                    className="absolute w-full h-full backface-hidden rotate-y-180 rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900"
-                    style={{ boxShadow: `inset 0 0 20px ${dynamicColor}20` }}
+                    className="absolute w-full h-full backface-hidden rotate-y-180 rounded-xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900"
+                    style={{ boxShadow: `inset 0 0 0 1px ${dynamicColor}40` }}
                 >
+                    {/* Blurred Background */}
                     <div className="absolute inset-0 z-0">
-                         <img src={imageSrc} className="w-full h-full object-cover blur-sm scale-110 opacity-30" alt="" />
+                         <img src={imageSrc} className="w-full h-full object-cover blur-md scale-125 opacity-20" alt="" />
                          <div className="absolute inset-0 bg-slate-950/80"></div>
                     </div>
 
-                    <div className="relative z-10 h-full p-5 flex flex-col">
-                        <h3 className="text-white font-bold text-base leading-tight mb-3 text-center">{aiData.title}</h3>
+                    <div className="relative z-10 h-full p-5 flex flex-col justify-center items-center text-center">
+                        <h3 className="text-white font-bold text-lg leading-tight mb-3 line-clamp-3 drop-shadow-md">
+                            {aiData.title}
+                        </h3>
                         
-                        <div className="flex-grow overflow-hidden relative">
-                            <p className="text-xs text-slate-300 leading-relaxed line-clamp-[8] font-medium text-justify">
-                                {aiData.synopsis}
-                            </p>
-                            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent"></div>
-                        </div>
+                        <div className="w-10 h-1 bg-white/20 rounded-full mb-4"></div>
 
-                        <div className="mt-4 pt-4 border-t border-white/10">
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); onDetail(); }}
-                                className="w-full py-3 bg-white text-slate-900 text-xs font-bold rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-lg"
-                            >
-                                <Info className="w-4 h-4" /> Ver Detalles Completos
-                            </button>
-                        </div>
+                        <p className="text-xs text-slate-300 leading-relaxed line-clamp-5 font-medium mb-6">
+                            {aiData.synopsis}
+                        </p>
+
+                        <button 
+                            onClick={handleDetailClick}
+                            className="w-full py-3 bg-white hover:bg-slate-200 text-slate-900 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg transform hover:scale-105 active:scale-95"
+                        >
+                            <Info className="w-4 h-4" /> Ver Detalles
+                        </button>
                     </div>
                 </div>
             </div>
