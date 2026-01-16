@@ -1,4 +1,3 @@
-
 /*
  * Project: MediaTracker AI
  * Copyright (C) 2026 Victor Ramones
@@ -77,7 +76,7 @@ export default function App() {
 
   // Pagination / Scroll
   const [visibleCount, setVisibleCount] = useState(24);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
   const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -585,40 +584,29 @@ export default function App() {
   }, [library]);
 
 
-  // --- INFINITE SCROLL LOGIC ---
+  // --- INFINITE SCROLL LOGIC (CALLBACK REF) ---
   
   // 1. Reset pagination when context changes (Filters, View Mode, or View Section)
   useEffect(() => {
       setVisibleCount(24);
   }, [filters, view, libraryViewMode]);
 
-  // 2. Robust Infinite Scroll Observer
-  // DEPENDENCIES OPTIMIZED: Only re-attach when loading state changes or list LENGTH changes.
-  useEffect(() => {
-      if (isLoading || view !== 'library') return;
+  // 2. Robust Infinite Scroll Observer using Callback Ref
+  const lastElementRef = useCallback((node: HTMLDivElement) => {
+      if (isLoading) return; // Prevent observer if global loading is active
+      
+      if (observerRef.current) observerRef.current.disconnect();
 
-      const currentElement = loadMoreRef.current;
-      if (!currentElement) return;
-
-      const observer = new IntersectionObserver(
-          (entries) => {
-              const first = entries[0];
-              if (first.isIntersecting) {
-                  setVisibleCount((prev) => prev + 24);
-              }
-          },
-          { 
-              threshold: 0.1,
-              rootMargin: '250px' // Load well before reaching the bottom
+      observerRef.current = new IntersectionObserver(entries => {
+          if (entries[0].isIntersecting) {
+              setVisibleCount(prev => prev + 24);
           }
-      );
+      }, {
+          rootMargin: '400px' // Load next batch well before reaching bottom
+      });
 
-      observer.observe(currentElement);
-
-      return () => {
-          if (currentElement) observer.unobserve(currentElement);
-      };
-  }, [isLoading, view, libraryViewMode, filteredLibrary.length]);
+      if (node) observerRef.current.observe(node);
+  }, [isLoading]);
 
 
   // --- SCROLL HANDLERS ---
@@ -981,7 +969,7 @@ export default function App() {
                         
                         {/* Infinite Scroll Trigger */}
                         {libraryViewMode === 'grid' && filteredLibrary.length > visibleCount && (
-                            <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
+                            <div ref={lastElementRef} className="h-20 flex items-center justify-center">
                                 <Loader2 className="w-6 h-6 text-primary animate-spin" />
                             </div>
                         )}
@@ -1062,7 +1050,7 @@ export default function App() {
                      </div>
                  )}
                  {upcomingLibrary.length > visibleCount && (
-                    <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
+                    <div ref={lastElementRef} className="h-20 flex items-center justify-center">
                         <Loader2 className="w-6 h-6 text-primary animate-spin" />
                     </div>
                  )}
