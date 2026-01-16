@@ -754,13 +754,24 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                                         }}
                                         className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all text-left group"
                                     >
-                                        <div className="w-8 h-10 bg-slate-800 rounded flex items-center justify-center text-slate-600 text-[8px] font-bold border border-slate-700">
-                                            {item.aiData.mediaType.slice(0,2)}
+                                        <div className="w-8 h-12 bg-slate-800 rounded overflow-hidden flex-shrink-0 border border-slate-700 relative">
+                                            {item.aiData.coverImage ? (
+                                                <img 
+                                                    src={item.aiData.coverImage} 
+                                                    alt={item.aiData.title} 
+                                                    className="w-full h-full object-cover"
+                                                    loading="lazy"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-slate-600 text-[8px] font-bold">
+                                                    {item.aiData.mediaType.slice(0,2)}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="min-w-0">
+                                        <div className="min-w-0 flex-1">
                                             <p className="text-xs font-medium text-slate-300 group-hover:text-white truncate">{item.aiData.title}</p>
                                         </div>
-                                        <Plus className="w-4 h-4 text-slate-600 group-hover:text-primary ml-auto opacity-0 group-hover:opacity-100 transition-all" />
+                                        <Plus className="w-4 h-4 text-slate-600 group-hover:text-primary ml-auto opacity-0 group-hover:opacity-100 transition-all flex-shrink-0" />
                                     </button>
                                 ))}
                             </div>
