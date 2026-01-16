@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, Star, Trash2 } from 'lucide-react';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, Star, Trash2, Clock, MoreVertical } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
@@ -141,193 +141,179 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       if (onDelete) onDelete(item);
   }
 
-  const renderProgressText = () => {
-      if (isMovie) {
-          return trackingData.status === 'Completado' ? <span className="text-green-400 font-bold">Visto</span> : 'Pendiente';
+  // --- Formatting Helpers for New Layout ---
+  
+  const getStatusColorDot = () => {
+      switch (trackingData.status) {
+          case 'Viendo/Leyendo': return isReadingContent ? 'bg-blue-500' : 'bg-green-500';
+          case 'Completado': return 'bg-slate-500';
+          case 'Sin empezar': return 'bg-yellow-500';
+          case 'En Pausa': return 'bg-orange-500';
+          case 'Planeado / Pendiente': return 'bg-purple-500';
+          case 'Descartado': return 'bg-red-500';
+          default: return 'bg-slate-500';
       }
-      
-      const progress = `${trackingData.watchedEpisodes}/${trackingData.totalEpisodesInSeason}`;
-      return (
-         <span className="flex items-center gap-1 font-mono">
-            {isReadingContent ? <BookOpen className="w-3 h-3" /> : <PlayCircle className="w-3 h-3" />}
-            {progress}
-         </span>
-      );
   };
 
-  const renderSeasonText = () => {
+  const getStatusText = () => {
+      if (trackingData.status === 'Viendo/Leyendo') return isReadingContent ? 'Leyendo' : 'Viendo';
+      return trackingData.status;
+  };
+
+  const renderSeasonInfo = () => {
+      if (isMovie) return <span className="opacity-50">Película</span>;
+      if (isBook) return <span>{trackingData.isSaga ? `L. ${trackingData.currentSeason}` : 'Novela'}</span>;
+      if (isReadingContent) return <span>CPS. ACUM.</span>;
+      return <span>T. {trackingData.currentSeason}</span>;
+  };
+
+  const renderProgressInfo = () => {
       if (isMovie) return null;
-      if (isBook) {
-          return trackingData.isSaga ? <span>L. {trackingData.currentSeason}</span> : <span>Novela</span>;
-      }
-      return isReadingContent ? <span>Capítulos Acumulados</span> : <span>T. {trackingData.currentSeason}</span>;
-  };
-
-  const renderStatus = () => {
-    if (trackingData.status === 'Viendo/Leyendo') {
-        return isReadingContent ? 'Leyendo' : 'Viendo';
-    }
-    return trackingData.status;
+      return (
+          <div className="flex items-center gap-1.5">
+              {trackingData.status === 'Completado' ? (
+                  <Check className="w-3 h-3 text-green-400" />
+              ) : (
+                  <Clock className="w-3 h-3 text-slate-500" />
+              )}
+              <span className="font-mono text-slate-300">
+                  {trackingData.watchedEpisodes} <span className="text-slate-600">/</span> {trackingData.totalEpisodesInSeason || '?'}
+              </span>
+          </div>
+      );
   };
 
   return (
     <div 
       ref={cardRef}
       onClick={onClick}
-      className={`group bg-surface rounded-xl overflow-hidden shadow-lg border border-slate-800 hover:border-opacity-50 cursor-pointer transition-transform duration-300 ease-out hover:shadow-2xl relative ${isReturnDue ? 'ring-2 ring-red-500 shadow-red-900/40' : ''} ${
+      className={`group bg-[#1A1D26] rounded-2xl overflow-hidden shadow-lg border border-white/5 cursor-pointer transition-transform duration-300 ease-out hover:scale-[1.02] hover:shadow-2xl relative flex flex-col ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
       }`}
       style={{
-        willChange: 'transform, opacity', // Performance hint for GPU
-        contentVisibility: 'auto', // Browser optimization for layout
-        containIntrinsicSize: '300px 450px' // Hint for content visibility
+        willChange: 'transform, opacity',
+        contentVisibility: 'auto',
+        containIntrinsicSize: '300px 450px'
       }}
     >
+      {/* Return Due Banner */}
       {isReturnDue && (
-          <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-[10px] font-bold px-2 py-1 text-center z-30 flex items-center justify-center gap-1 shadow-md animate-pulse">
-              <Bell className="w-3 h-3 fill-current" /> ¡Hora de Volver!
+          <div className="absolute top-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-bold px-2 py-1 text-center z-40 backdrop-blur-sm">
+              ¡Hora de Volver!
           </div>
       )}
 
-      <div className="relative aspect-[2/3] md:aspect-[3/4] overflow-hidden bg-slate-900">
-        {/* Skeleton */}
-        <div className={`absolute inset-0 bg-slate-800 ${imageLoaded ? 'hidden' : 'animate-pulse'}`} />
-
-        {/* Image - Optimized */}
+      {/* --- IMAGE AREA --- */}
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-900">
+        
+        {/* Image */}
         {imgSrc && (
             <img 
-            src={imgSrc} 
-            alt={aiData.title}
-            onError={handleImageError}
-            onLoad={() => setImageLoaded(true)}
-            loading="lazy"
-            decoding="async"
-            className={`w-full h-full object-cover transition-opacity duration-500 ${
-                imageLoaded ? 'opacity-90 group-hover:opacity-100' : 'opacity-0'
-            }`}
+                src={imgSrc} 
+                alt={aiData.title}
+                onError={handleImageError}
+                onLoad={() => setImageLoaded(true)}
+                loading="lazy"
+                className={`w-full h-full object-cover transition-opacity duration-500 ${
+                    imageLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
             />
         )}
         
-        {/* Type Badge */}
-        <div className="absolute top-2 left-2 z-50">
+        {/* Gradient Overlay for Text Readability - Updated to Pure Black for Sharpness */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+        {/* Top Left Badge (Type) */}
+        <div className="absolute top-3 left-3 z-30">
             <span 
-                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-white text-[10px] md:text-[11px] font-bold uppercase tracking-wider backdrop-blur-md shadow-lg border border-white/20"
-                style={{ backgroundColor: dynamicColor, textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-white text-[10px] font-bold uppercase tracking-wider shadow-lg"
+                style={{ backgroundColor: dynamicColor }}
             >
                 <TypeIcon />
-                {aiData.mediaType}
+                {aiData.mediaType.toUpperCase()}
             </span>
         </div>
 
-        {/* Action Buttons */}
-        <div className="absolute top-2 right-2 z-50 flex flex-col gap-2">
-            {onToggleFavorite && (
+        {/* Top Right Actions (Favorite/Delete) - Hidden by default, show on hover */}
+        <div className="absolute top-3 right-3 z-30 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+             {onToggleFavorite && (
                 <button
                     onClick={handleFavoriteClick}
-                    className="p-1.5 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
-                    title={isFavorite ? "Quitar de Favoritos" : "Marcar como Favorito"}
+                    className="p-2 rounded-full bg-black/50 backdrop-blur-md hover:bg-white text-white hover:text-yellow-500 transition-colors"
                 >
-                    <Star 
-                        className={`w-4 h-4 md:w-5 md:h-5 transition-all ${isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300 hover:text-white'}`} 
-                    />
+                    <Star className={`w-4 h-4 ${isFavorite ? 'fill-current text-yellow-400' : ''}`} />
                 </button>
-            )}
-            
-            {isFavorite && !onToggleFavorite && (
-                <div className="p-1.5 rounded-full bg-black/20 backdrop-blur-sm">
-                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                </div>
-            )}
-
-             {isFavorite && onToggleFavorite && (
-                <div className="absolute top-0 right-0 p-1.5 rounded-full bg-black/20 backdrop-blur-sm pointer-events-none group-hover:opacity-0 transition-opacity">
-                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                </div>
-            )}
-
-            {onDelete && (
+             )}
+             {onDelete && (
                 <button
                     onClick={handleDeleteClick}
-                    className="p-1.5 rounded-full bg-black/40 backdrop-blur-sm hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 text-slate-300 hover:text-white"
-                    title="Eliminar Obra"
+                    className="p-2 rounded-full bg-black/50 backdrop-blur-md hover:bg-red-600 text-white transition-colors"
                 >
-                    <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
+                    <Trash2 className="w-4 h-4" />
                 </button>
-            )}
+             )}
         </div>
         
-        {/* Wishlist Overlay */}
-        {isPlanned && (
-             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white backdrop-blur-[1px] p-4 text-center z-20">
-                  {timeRemaining ? (
-                    <>
-                        <div className="bg-slate-900/80 p-2 md:p-3 rounded-full border border-slate-700 mb-2 shadow-xl">
-                            <Hourglass className="w-5 h-5 md:w-6 md:h-6 text-yellow-400 animate-pulse" />
-                        </div>
-                        <span className="font-bold text-base md:text-lg leading-tight text-white drop-shadow-md">{timeRemaining}</span>
-                        <span className="text-[10px] md:text-xs text-yellow-400 mt-1 font-bold bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-md border border-white/10">{targetDateDisplay}</span>
-                    </>
-                  ) : (
-                    <>
-                         <div className="w-12 h-12 rounded-full border border-white/20 bg-black/40 backdrop-blur-sm flex items-center justify-center mb-2">
-                            <CalendarDays className="w-6 h-6 text-white/80" />
-                        </div>
-                        <span className="font-bold text-base leading-tight text-white drop-shadow-md">Pendiente Fecha</span>
-                        <span className="text-[10px] uppercase tracking-wide text-slate-400 mt-1 font-medium">Esperando Anuncio</span>
-                    </>
-                  )}
-             </div>
+        {/* Always visible Favorite Indicator if active */}
+        {isFavorite && (
+            <div className="absolute top-3 right-3 z-20 group-hover:opacity-0 transition-opacity">
+                <div className="p-1.5 bg-yellow-500/20 rounded-full border border-yellow-500/50 backdrop-blur-sm">
+                    <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                </div>
+            </div>
         )}
 
-        {/* Quick Action */}
+        {/* Quick Action Button (Floating on Image) */}
         {showQuickAction && (
              <button
                 onClick={handleQuickAction}
-                className={`absolute bottom-16 md:bottom-14 right-2 w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90 z-40 md:opacity-0 md:group-hover:opacity-100 opacity-100 ${
-                    isCompleteSeason ? 'bg-green-500 hover:bg-green-600' : 'bg-white/90 hover:bg-white text-slate-900'
+                className={`absolute bottom-20 right-3 z-40 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 duration-300 ${
+                    isCompleteSeason ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white hover:bg-slate-200 text-slate-900'
                 }`}
-                title={isCompleteSeason ? "Completar" : "+1"}
+                title={isCompleteSeason ? "Completar" : "+1 Capítulo"}
              >
-                 {isCompleteSeason ? (
-                     <Check className="w-5 h-5 text-white" />
-                 ) : (
-                     <Plus className="w-5 h-5" style={{ color: dynamicColor }} />
-                 )}
+                 {isCompleteSeason ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
              </button>
         )}
 
-        {/* Title */}
-        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-3 pt-12 z-30">
-           <h3 className="text-white font-bold text-sm leading-tight line-clamp-2 drop-shadow-md">{aiData.title}</h3>
-           <p className="text-slate-400 text-[10px] md:text-xs mt-0.5 truncate">{renderStatus()}</p>
+        {/* Content Info Overlay (Bottom of Image) */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 z-30">
+            <h3 className="text-white font-bold text-base leading-tight line-clamp-2 drop-shadow-md mb-1.5">
+                {aiData.title}
+            </h3>
+            
+            <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${getStatusColorDot()} shadow-[0_0_8px_currentColor]`} />
+                <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wide">
+                    {isPlanned && timeRemaining ? timeRemaining : getStatusText()}
+                </span>
+            </div>
         </div>
       </div>
-      
-      {/* Mini Progress Bar */}
-      <div className="h-1 w-full bg-slate-700">
+
+      {/* --- FOOTER AREA --- */}
+      <div className="bg-[#1A1D26] px-4 py-3 flex items-center justify-between border-t border-white/5 relative z-20">
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {renderSeasonInfo()}
+          </div>
+          
+          <div className="text-xs font-medium">
+              {renderProgressInfo()}
+          </div>
+      </div>
+
+      {/* Progress Bar (Bottom Edge) */}
+      <div className="h-1 w-full bg-slate-800">
          <div 
-           className="h-full transition-all duration-500" 
+           className="h-full transition-all duration-700 ease-out" 
            style={{ 
                width: `${progressPercent}%`,
-               backgroundColor: isPlanned ? (timeRemaining ? '#fbbf24' : '#94a3b8') : (progressPercent === 100 ? '#4ade80' : dynamicColor) 
+               backgroundColor: isPlanned ? '#fbbf24' : (progressPercent === 100 ? '#4ade80' : dynamicColor),
+               boxShadow: `0 0 10px ${dynamicColor}40`
             }}
          />
       </div>
-      
-      <div className="p-3">
-          <div className="flex justify-between items-center text-xs text-slate-400">
-              <div className="flex items-center gap-1 font-medium text-[11px] md:text-xs">
-                  {renderSeasonText()}
-              </div>
-              <div className="font-medium text-[11px] md:text-xs">
-                  {isPlanned ? (
-                      timeRemaining ? <span className="text-yellow-500">Próximo</span> : <span className="text-slate-500">Wishlist</span>
-                  ) : (
-                      renderProgressText()
-                  )}
-              </div>
-          </div>
-      </div>
+
     </div>
   );
 });
