@@ -243,10 +243,18 @@ export const getRecommendations = async (
   topGenres: string[],
   excludedTitles: string[],
   targetType: string,
-  apiKey: string
+  apiKey: string,
+  targetMood?: string
 ): Promise<RecommendationResult[]> => {
   const ai = new GoogleGenAI({ apiKey });
   const modelId = "gemini-2.5-flash";
+
+  const moodInstruction = targetMood 
+    ? `
+    USER MOOD REQUEST: "${targetMood}"
+    INSTRUCTION: Utiliza las obras seleccionadas (Favorite Titles) como base de estilo (si se han seleccionado, sino hazlo en base al perfil general) y el Mood como la atmósfera emocional predominante. Si son contradictorios, prioriza el Mood pero mantén elementos estéticos de las obras.
+    `
+    : '';
 
   const prompt = `
     Act as an expert recommender system for Entertainment Media.
@@ -254,6 +262,7 @@ export const getRecommendations = async (
     User Profile:
     - Favorite Titles: ${likedTitles.join(', ')}
     - Top Genres: ${topGenres.join(', ')}
+    ${moodInstruction}
     
     Task: Recommend 6 UNIQUE titles of type "${targetType}" that the user might like.
     
@@ -268,7 +277,7 @@ export const getRecommendations = async (
         "title": "Title Name",
         "mediaType": "${targetType}",
         "synopsis": "A compelling, descriptive synopsis in Spanish (approx 40-60 words). It should clearly explain the premise and hook of the story, avoiding vague descriptions.",
-        "reason": "A specific, personalized reason in Spanish (approx 25-40 words). Explain WHY this fits the user based on the specific themes, tone, or complexity of their 'Favorite Titles'. Do not use generic phrases like 'Because you like anime'."
+        "reason": "A specific, personalized reason in Spanish (approx 25-40 words). Explain WHY this fits the user based on the specific themes, tone, or complexity of their 'Favorite Titles' ${targetMood ? 'and specifically their requested Mood' : ''}. Do not use generic phrases like 'Because you like anime'."
       }
     ]
   `;

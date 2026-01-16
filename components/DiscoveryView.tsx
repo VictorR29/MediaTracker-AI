@@ -1,8 +1,7 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
 import { getRecommendations, RecommendationResult } from '../services/geminiService';
-import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp, Filter, X, Search, Wand2, ArrowLeft, Info, Quote, RefreshCw } from 'lucide-react';
+import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp, Filter, X, Search, Wand2, ArrowLeft, Info, Quote, RefreshCw, Heart, BrainCircuit } from 'lucide-react';
 
 interface DiscoveryViewProps {
   library: MediaItem[];
@@ -10,6 +9,17 @@ interface DiscoveryViewProps {
   onSelectRecommendation: (title: string, type: string) => void;
   onToggleImmersive?: (isImmersive: boolean) => void;
 }
+
+const MOOD_OPTIONS = [
+    { emoji: "🤯", label: "Quiero algo que me vuele la cabeza" },
+    { emoji: "🍿", label: "Algo ligero para ver sin pensar" },
+    { emoji: "❤️", label: "Busco una historia que me rompa el corazón" },
+    { emoji: "🔥", label: "Necesito adrenalina pura y emoción" },
+    { emoji: "🌌", label: "Algo que me transporte a otro mundo" },
+    { emoji: "🧘", label: "Quiero aprender o reflexionar sobre la vida" },
+    { emoji: "👻", label: "Quiero sentir tensión y un poco de miedo" },
+    { emoji: "🚬", label: "Algo crudo, oscuro y realista" }
+];
 
 export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, onSelectRecommendation, onToggleImmersive }) => {
   // Mode State
@@ -19,7 +29,11 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   const [selectedType, setSelectedType] = useState<string>('Anime');
   const [selectedSeeds, setSelectedSeeds] = useState<string[]>([]);
   const [seedSearchQuery, setSeedSearchQuery] = useState('');
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  
+  // Accordion States
   const [isRefineOpen, setIsRefineOpen] = useState(true);
+  const [isMoodOpen, setIsMoodOpen] = useState(false);
 
   // Recommendations State
   const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
@@ -29,7 +43,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  
   // Immersive View State
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState<'up' | 'down' | null>(null);
@@ -99,6 +113,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   // --- ACTIONS ---
 
   const handleDiscovery = async (isLoadMore = false) => {
+    // If no API key, we can't proceed. We keep the error specific to this context but stay in filters.
     if (!apiKey) {
         setError("Configura tu API Key en ajustes para usar la IA.");
         return;
@@ -106,6 +121,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
     
     setIsLoading(true);
     setError(null);
+    setViewMode('immersive'); // Switch immediately to show the "Shuffling/Loading" state
     
     if (!isLoadMore) {
         setRecommendations([]);
@@ -116,24 +132,22 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       // Combine permanent library exclusions with temporary session exclusions (for "Load More")
       const allExcluded = [...excludedTitles, ...sessionExcludedTitles];
       
-      const results = await getRecommendations(likedTitles, topGenres, allExcluded, selectedType, apiKey);
+      const results = await getRecommendations(likedTitles, topGenres, allExcluded, selectedType, apiKey, selectedMood || undefined);
       
       if (results.length === 0) {
-          if (!isLoadMore) setError("La IA no devolvió resultados válidos. Intenta de nuevo.");
-          else setError("No se encontraron más resultados únicos.");
-          setIsLoading(false);
+          // No results found. We stay in immersive mode but renderRecommendations will show the "Challenge" card.
+          // We don't need to do anything here as recommendations is already empty or cleared.
       } else {
           setRecommendations(results);
           // Add these new results to session exclusions for next time
           setSessionExcludedTitles(prev => [...prev, ...results.map(r => r.title)]);
           setCurrentIndex(0);
-          setViewMode('immersive');
-          setIsLoading(false);
       }
     } catch (err) {
       console.error(err);
-      setError("Error al conectar con Gemini.");
-      setIsLoading(false);
+      setError("No se pudieron generar recomendaciones. Intenta ajustar los filtros.");
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -262,19 +276,24 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       return selected;
   };
 
-  const isEndCard = currentIndex === recommendations.length;
+  const isEndCard = recommendations.length > 0 && currentIndex === recommendations.length;
   const currentCard = recommendations[currentIndex];
+  const cardColors = currentCard ? getColorData(currentCard.title) : { bg: 'from-slate-700 to-slate-800', shadow: '#000000' };
   
   const bgStyle = useMemo(() => {
+      // Dark fallback
+      if (isLoading || recommendations.length === 0) return { background: '#0f172a' };
       if (isEndCard) return { background: '#0f172a' };
       if (!currentCard) return { background: '#0f172a' };
+      
       const colors = getColorData(currentCard.title);
       return {
           background: `radial-gradient(circle at 50% 30%, ${colors.shadow}40 0%, #0f172a 100%)` 
       };
-  }, [currentCard, isEndCard]);
+  }, [currentCard, isEndCard, isLoading, recommendations.length]);
 
-  // --- RENDER CONTENT ---
+  // --- CARD RENDERERS ---
+
   const renderGenerativeCard = (title: string, type: string) => {
       const colors = getColorData(title);
       return (
@@ -300,6 +319,71 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       );
   };
 
+  const renderLoadingCard = () => {
+      return (
+          <div className="relative w-full h-full flex items-center justify-center">
+              {/* Back Stack ("Ghost" Cards) */}
+              <div className="absolute inset-0 bg-indigo-500/20 rounded-3xl transform rotate-6 scale-95 border border-white/5 animate-pulse"></div>
+              <div className="absolute inset-0 bg-purple-500/20 rounded-3xl transform -rotate-3 scale-95 border border-white/5 animate-pulse delay-75"></div>
+              
+              {/* Main Shimmer Card */}
+              <div className="relative w-full h-full bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-10">
+                  {/* Shimmer Effect Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 translate-x-[-150%] animate-[shimmer_1.5s_infinite]"></div>
+                  
+                  <div className="h-full flex flex-col items-center justify-between py-16 px-8 relative z-20">
+                      <div className="w-16 h-16 rounded-full bg-white/5 animate-pulse flex items-center justify-center">
+                          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                      </div>
+                      
+                      <div className="w-full space-y-4">
+                          <div className="h-8 bg-white/10 rounded-full w-3/4 mx-auto animate-pulse"></div>
+                          <div className="h-8 bg-white/10 rounded-full w-1/2 mx-auto animate-pulse"></div>
+                      </div>
+
+                      <div className="h-6 bg-white/10 rounded-full w-24 animate-pulse"></div>
+                  </div>
+              </div>
+              <style>{`
+                @keyframes shimmer {
+                    0% { transform: translateX(-150%) skewX(-12deg); }
+                    100% { transform: translateX(150%) skewX(-12deg); }
+                }
+              `}</style>
+          </div>
+      );
+  };
+
+  const renderNoResultsCard = () => {
+      return (
+          <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl shadow-2xl">
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-red-950/20 to-slate-900"></div>
+              
+              {/* Animated rings */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-red-500/20 rounded-full animate-ping [animation-duration:3s]"></div>
+              
+              <div className="relative z-10 flex flex-col items-center gap-6">
+                  <div className="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                      <BrainCircuit className="w-12 h-12 text-red-400" />
+                  </div>
+                  <div>
+                      <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Incluso para la IA esto es un reto.</h2>
+                      <p className="text-slate-400 text-sm md:text-base max-w-xs mx-auto leading-relaxed">
+                          La combinación de filtros es muy específica o única. ¿Probamos con otro mood?
+                      </p>
+                  </div>
+                  <button 
+                      onClick={() => setViewMode('filters')}
+                      className="mt-4 px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-all shadow-lg flex items-center gap-2 transform hover:scale-105"
+                  >
+                      <ArrowLeft className="w-5 h-5" />
+                      Ajustar Filtros
+                  </button>
+              </div>
+          </div>
+      );
+  };
+
   const renderEndCard = () => {
       return (
           <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl">
@@ -319,7 +403,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                           onClick={() => handleDiscovery(true)}
                           className="w-full py-4 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
                       >
-                          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                          <Sparkles className="w-5 h-5" />
                           Generar otras 6
                       </button>
                       <button 
@@ -334,9 +418,9 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       );
   };
 
-  if (viewMode === 'immersive' && (currentCard || isEndCard)) {
-      const cardColors = currentCard ? getColorData(currentCard.title) : { shadow: '#0f172a' };
+  // --- MAIN RENDER LOGIC ---
 
+  if (viewMode === 'immersive') {
       return (
           <div 
              className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden touch-none"
@@ -344,90 +428,102 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
           >
               <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px]"></div>
 
-              {/* NAVIGATION BAR */}
-              <div className="absolute top-4 left-0 right-0 z-50 px-4 md:px-6 pt-safe flex justify-between items-center w-full max-w-lg mx-auto pointer-events-none">
-                  {!isEndCard ? (
-                      <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg animate-fade-in-up">
-                          <Sparkles className="w-3 h-3 text-yellow-400" />
-                          <span className="text-xs font-bold text-white font-mono">
-                              {currentIndex + 1} / {recommendations.length}
-                          </span>
-                      </div>
-                  ) : <div></div>}
+              {/* NAVIGATION BAR (Only show if we have results and not loading) */}
+              {!isLoading && recommendations.length > 0 && (
+                  <div className="absolute top-4 left-0 right-0 z-50 px-4 md:px-6 pt-safe flex justify-between items-center w-full max-w-lg mx-auto pointer-events-none">
+                      {!isEndCard ? (
+                          <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg animate-fade-in-up">
+                              <Sparkles className="w-3 h-3 text-yellow-400" />
+                              <span className="text-xs font-bold text-white font-mono">
+                                  {currentIndex + 1} / {recommendations.length}
+                              </span>
+                          </div>
+                      ) : <div></div>}
 
-                  <button 
-                      onClick={() => setViewMode('filters')}
-                      className="pointer-events-auto bg-black/40 hover:bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold transition-all border border-white/10 flex items-center gap-2 shadow-lg animate-fade-in-up hover:scale-105"
-                  >
-                      <ArrowLeft className="w-3 h-3" />
-                      <span>Filtros</span>
-                  </button>
-              </div>
+                      <button 
+                          onClick={() => setViewMode('filters')}
+                          className="pointer-events-auto bg-black/40 hover:bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold transition-all border border-white/10 flex items-center gap-2 shadow-lg animate-fade-in-up hover:scale-105"
+                      >
+                          <ArrowLeft className="w-3 h-3" />
+                          <span>Filtros</span>
+                      </button>
+                  </div>
+              )}
 
               {/* CARD CONTAINER */}
               <div className="relative w-full max-w-md h-[70vh] md:h-[600px] perspective-1000 flex items-center justify-center">
                    
-                   {/* Previous Card Ghost (Animation) */}
-                   {swipeDirection === 'up' && (
-                       <div className="absolute inset-0 bg-slate-800 rounded-3xl opacity-0 transform -translate-y-full scale-75 transition-all duration-500 ease-out pointer-events-none"></div>
-                   )}
+                   {/* LOADING STATE */}
+                   {isLoading && renderLoadingCard()}
 
-                   {/* ACTIVE CARD */}
-                   <div 
-                      ref={cardRef}
-                      className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transform-style-3d cursor-pointer ${
-                          swipeDirection === 'up' ? 'transition-all duration-500 -translate-y-[150%] opacity-0 rotate-12' : 
-                          swipeDirection === 'down' ? 'transition-all duration-500 translate-y-[150%] opacity-0 -rotate-12' : 
-                          // No transition class here by default, managed via style for drag performance
-                          'opacity-100' 
-                      }`}
-                      style={{
-                          willChange: 'transform', // GPU hint
-                          boxShadow: isEndCard ? 'none' : `0 25px 50px -12px ${cardColors.shadow}60`
-                      }}
-                      onMouseMove={handleMouseMove}
-                      onMouseLeave={handleMouseLeave}
-                      onClick={() => !isEndCard && setIsInfoOpen(true)}
-                   >
-                        {isEndCard ? (
-                            renderEndCard()
-                        ) : (
-                            <div className="absolute inset-0 rounded-3xl overflow-hidden bg-slate-900 border border-white/10">
-                                {renderGenerativeCard(currentCard.title, currentCard.mediaType)}
-                                <div className="absolute bottom-6 left-0 right-0 text-center transition-opacity duration-300 pointer-events-none" style={{ opacity: isInfoOpen ? 0 : 1 }}>
-                                    <p className="text-xs font-medium text-white/60 flex items-center justify-center gap-2 bg-black/20 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit">
-                                        <Info className="w-3 h-3" /> Toca para detalles
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                   </div>
+                   {/* EMPTY/ERROR STATE (Challenge Card) */}
+                   {!isLoading && recommendations.length === 0 && renderNoResultsCard()}
 
-                   {/* Desktop Navigation Arrows */}
-                   {!isEndCard && (
-                       <div 
-                          className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
-                          onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                       >
-                           <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
-                                <ChevronDown className="w-6 h-6 text-white" />
+                   {/* RESULTS STATE */}
+                   {!isLoading && recommendations.length > 0 && (
+                       <>
+                           {/* Previous Card Ghost (Animation) */}
+                           {swipeDirection === 'up' && (
+                               <div className="absolute inset-0 bg-slate-800 rounded-3xl opacity-0 transform -translate-y-full scale-75 transition-all duration-500 ease-out pointer-events-none"></div>
+                           )}
+
+                           {/* ACTIVE CARD */}
+                           <div 
+                              ref={cardRef}
+                              className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transform-style-3d cursor-pointer ${
+                                  swipeDirection === 'up' ? 'transition-all duration-500 -translate-y-[150%] opacity-0 rotate-12' : 
+                                  swipeDirection === 'down' ? 'transition-all duration-500 translate-y-[150%] opacity-0 -rotate-12' : 
+                                  'opacity-100' 
+                              }`}
+                              style={{
+                                  willChange: 'transform', // GPU hint
+                                  boxShadow: isEndCard ? 'none' : `0 25px 50px -12px ${cardColors.shadow}60`
+                              }}
+                              onMouseMove={handleMouseMove}
+                              onMouseLeave={handleMouseLeave}
+                              onClick={() => !isEndCard && setIsInfoOpen(true)}
+                           >
+                                {isEndCard ? (
+                                    renderEndCard()
+                                ) : (
+                                    <div className="absolute inset-0 rounded-3xl overflow-hidden bg-slate-900 border border-white/10">
+                                        {renderGenerativeCard(currentCard.title, currentCard.mediaType)}
+                                        <div className="absolute bottom-6 left-0 right-0 text-center transition-opacity duration-300 pointer-events-none" style={{ opacity: isInfoOpen ? 0 : 1 }}>
+                                            <p className="text-xs font-medium text-white/60 flex items-center justify-center gap-2 bg-black/20 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit">
+                                                <Info className="w-3 h-3" /> Toca para detalles
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                            </div>
-                       </div>
-                   )}
-                   {currentIndex > 0 && (
-                        <div 
-                        className="absolute left-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
-                        onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-                        >
-                            <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
-                                    <ChevronUp className="w-6 h-6 text-white" />
-                            </div>
-                        </div>
+
+                           {/* Desktop Navigation Arrows */}
+                           {!isEndCard && (
+                               <div 
+                                  className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
+                                  onClick={(e) => { e.stopPropagation(); handleNext(); }}
+                               >
+                                   <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
+                                        <ChevronDown className="w-6 h-6 text-white" />
+                                   </div>
+                               </div>
+                           )}
+                           {currentIndex > 0 && (
+                                <div 
+                                className="absolute left-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
+                                onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+                                >
+                                    <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
+                                            <ChevronUp className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                           )}
+                       </>
                    )}
               </div>
 
-              {/* INFO SHEET */}
-              {!isEndCard && currentCard && (
+              {/* INFO SHEET (Only show if we have active results) */}
+              {!isLoading && !isEndCard && currentCard && (
                   <div 
                      className={`absolute bottom-0 left-0 right-0 bg-slate-900/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${
                          isInfoOpen ? 'translate-y-0' : 'translate-y-full'
@@ -454,6 +550,14 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                               <ChevronDown className="w-5 h-5 text-white" />
                           </button>
                       </div>
+
+                      {/* Mood Indicator in Info Sheet */}
+                      {selectedMood && (
+                          <div className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded border border-primary/30 bg-primary/10 text-primary animate-fade-in">
+                              <Heart className="w-3 h-3 fill-current" />
+                              <span>Inspirado en tu deseo de: {selectedMood}</span>
+                          </div>
+                      )}
 
                       <div className="space-y-4 mb-8">
                            <p className="text-slate-200 text-sm leading-relaxed font-medium">
@@ -492,7 +596,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
               <div 
                  className="absolute inset-0 z-40 md:hidden"
                  style={{ touchAction: 'none' }} // Critical for smooth drag without scrolling
-                 onClick={() => !isEndCard && !isInfoOpen && setIsInfoOpen(true)}
+                 onClick={() => !isLoading && recommendations.length > 0 && !isEndCard && !isInfoOpen && setIsInfoOpen(true)}
                  onTouchStart={handleTouchStart}
                  onTouchMove={handleTouchMove}
                  onTouchEnd={handleTouchEnd}
@@ -560,7 +664,8 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                 })}
              </div>
 
-             <div className="bg-slate-950/60 rounded-xl border border-slate-700/60 overflow-hidden mb-8 transition-all">
+             {/* Refine by Works Panel */}
+             <div className="bg-slate-950/60 rounded-xl border border-slate-700/60 overflow-hidden mb-4 transition-all">
                 <div 
                     className="p-4 bg-slate-900/50 border-b border-slate-700/50 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors"
                     onClick={() => setIsRefineOpen(!isRefineOpen)}
@@ -643,9 +748,70 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                 )}
              </div>
 
+             {/* Refine by Mood Panel (New) */}
+             <div className="bg-slate-950/60 rounded-xl border border-slate-700/60 overflow-hidden mb-8 transition-all">
+                <div 
+                    className="p-4 bg-slate-900/50 border-b border-slate-700/50 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors"
+                    onClick={() => setIsMoodOpen(!isMoodOpen)}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${selectedMood ? 'bg-primary/20 text-primary' : 'bg-slate-800 text-slate-500'}`}>
+                            <Heart className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-bold text-slate-200">
+                                Refinar por Mood
+                            </h4>
+                            <p className="text-xs text-slate-500">
+                                {selectedMood ? selectedMood : "Dinos cómo te sientes hoy para personalizar la experiencia."}
+                            </p>
+                        </div>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isMoodOpen ? 'rotate-180' : ''}`} />
+                </div>
+                
+                {isMoodOpen && (
+                    <div className="p-4 animate-fade-in">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {MOOD_OPTIONS.map((mood) => {
+                                const isSelected = selectedMood === mood.label;
+                                return (
+                                    <button
+                                        key={mood.label}
+                                        onClick={() => setSelectedMood(isSelected ? null : mood.label)}
+                                        className={`flex items-center gap-3 p-3 rounded-xl border backdrop-blur-md transition-all duration-300 text-left group
+                                            ${isSelected 
+                                                ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(var(--color-primary),0.3)]' 
+                                                : 'bg-slate-900/40 border-white/5 hover:border-primary/50 hover:bg-slate-800/60'
+                                            }
+                                        `}
+                                    >
+                                        <span 
+                                            className="text-2xl filter drop-shadow-md transition-transform group-hover:scale-110"
+                                            style={{ textShadow: isSelected ? '0 0 15px rgb(var(--color-primary))' : 'none' }}
+                                        >
+                                            {mood.emoji}
+                                        </span>
+                                        <span className={`text-sm font-medium leading-tight ${isSelected ? 'text-white' : 'text-slate-300 group-hover:text-white'}`}>
+                                            {mood.label}
+                                        </span>
+                                        {isSelected && <div className="ml-auto w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgb(var(--color-primary))]"></div>}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {selectedMood && (
+                            <button onClick={() => setSelectedMood(null)} className="mt-3 text-xs text-slate-500 hover:text-red-400 underline flex items-center gap-1">
+                                <X className="w-3 h-3" /> Quitar filtro de mood
+                            </button>
+                        )}
+                    </div>
+                )}
+             </div>
+
              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                  <div className="text-xs text-slate-400 hidden md:block">
-                     {selectedSeeds.length > 0 
+                     {selectedSeeds.length > 0 || selectedMood
                         ? <span className="text-primary font-medium">Búsqueda personalizada activa</span>
                         : <span>Analizando perfil general</span>
                      }
