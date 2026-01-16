@@ -712,7 +712,7 @@ export default function App() {
       />
 
       {/* Header */}
-      <header className={`bg-surface/80 backdrop-blur-md border-b border-slate-700 fixed top-0 w-full z-50 transition-all duration-500 shadow-md ${isImmersiveMode ? '-translate-y-full' : 'translate-y-0'}`}>
+      <header className={`bg-surface/80 backdrop-blur-md border-b border-slate-700 fixed top-0 w-full z-50 transition-all duration-500 shadow-md ${isImmersiveMode || isSettingsOpen ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
              <div className="hidden md:flex items-center gap-2 cursor-pointer group" onClick={() => setView('library')}>
@@ -1081,7 +1081,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className={`w-full py-3 border-t border-slate-800/50 bg-slate-900/20 backdrop-blur-sm text-center transition-all duration-300 ${isImmersiveMode ? 'translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
+      <footer className={`w-full py-3 border-t border-slate-800/50 bg-slate-900/20 backdrop-blur-sm text-center transition-all duration-300 ${isImmersiveMode || isSettingsOpen ? 'translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
           <p className="text-[10px] text-slate-500 font-medium tracking-wide">
               © 2026 Victor Ramones
           </p>
@@ -1148,7 +1148,7 @@ export default function App() {
       )}
 
       {/* Mobile Bottom Navigation */}
-      <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700 z-50 pb-safe transition-transform duration-300 ${isBottomNavVisible && !isImmersiveMode ? 'translate-y-0' : 'translate-y-full'}`}>
+      <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700 z-50 pb-safe transition-transform duration-300 ${isBottomNavVisible && !isImmersiveMode && !isSettingsOpen ? 'translate-y-0' : 'translate-y-full'}`}>
           <div className="flex justify-around items-center h-16 px-2">
               <button 
                   onClick={() => setView('library')}
@@ -1201,7 +1201,7 @@ export default function App() {
       {/* Scroll to Top Button */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-24 md:bottom-8 left-1/2 md:left-auto md:right-8 -translate-x-1/2 md:translate-x-0 z-40 bg-slate-800/80 backdrop-blur-md border border-slate-600 p-3 rounded-full shadow-xl transition-all duration-300 ${showScrollTop && !isImmersiveMode ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+        className={`fixed bottom-24 md:bottom-8 left-1/2 md:left-auto md:right-8 -translate-x-1/2 md:translate-x-0 z-40 bg-slate-800/80 backdrop-blur-md border border-slate-600 p-3 rounded-full shadow-xl transition-all duration-300 ${showScrollTop && !isImmersiveMode && !isSettingsOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
       >
           <ArrowUp className="w-5 h-5 text-white" />
       </button>
