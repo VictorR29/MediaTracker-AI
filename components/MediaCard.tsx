@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { useToast } from '../context/ToastContext';
 import { generateReviewSummary, updateMediaInfo } from '../services/geminiService';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy, Pencil, Save, RefreshCw, Search, CalendarClock, Radio } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy, Pencil, Save, RefreshCw, Search, CalendarClock, Radio, PlayCircle } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -28,6 +28,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   const [isRefreshingInfo, setIsRefreshingInfo] = useState(false);
   
+  // Dynamic Color State (initialized from item, updated via extraction)
+  const [dynamicColor, setDynamicColor] = useState(item.aiData.primaryColor || '#6366f1');
+
   // Metadata Edit State
   const [isEditingMetadata, setIsEditingMetadata] = useState(initialEditMode);
   const [editTitle, setEditTitle] = useState(item.aiData.title);
@@ -37,12 +40,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const [editTotalContent, setEditTotalContent] = useState(item.aiData.totalContent);
   const [editMediaType, setEditMediaType] = useState(item.aiData.mediaType);
   const [editStatus, setEditStatus] = useState(item.aiData.status);
+  const [editReleaseDate, setEditReleaseDate] = useState(item.aiData.releaseDate || '');
+  const [editEndDate, setEditEndDate] = useState(item.aiData.endDate || '');
 
   // Share Modal State
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareTextContent, setShareTextContent] = useState('');
 
-  const dynamicColor = item.aiData.primaryColor || '#6366f1';
   const isFavorite = tracking.is_favorite || false;
 
   const getPlaceholder = () => 
@@ -60,8 +64,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const isMovie = item.aiData.mediaType === 'Pelicula';
   const isBook = item.aiData.mediaType === 'Libro';
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(item.aiData.mediaType);
-  const isSeriesContent = ['Anime', 'Serie'].includes(item.aiData.mediaType);
-
+  
   // --- Dynamic Congratulatory Message Logic ---
   const completionMessage = useMemo(() => {
      if (tracking.status !== 'Completado') return null;
@@ -90,7 +93,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     } else {
         setImgSrc(getPlaceholder());
     }
-  }, [item.id, item.aiData.coverImage]);
+    if (item.aiData.primaryColor) {
+        setDynamicColor(item.aiData.primaryColor);
+    }
+  }, [item.id, item.aiData.coverImage, item.aiData.primaryColor]);
 
   useEffect(() => {
     const { watchedEpisodes, totalEpisodesInSeason } = tracking;
@@ -136,7 +142,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
         genres: editGenres.split(',').map(g => g.trim()).filter(Boolean),
         totalContent: editTotalContent,
         mediaType: editMediaType as any,
-        status: editStatus
+        status: editStatus,
+        releaseDate: editReleaseDate,
+        endDate: editEndDate
     };
     onUpdate({ ...item, aiData: updatedAI });
     setIsEditingMetadata(false);
@@ -151,6 +159,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
       setEditTotalContent(item.aiData.totalContent);
       setEditMediaType(item.aiData.mediaType);
       setEditStatus(item.aiData.status);
+      setEditReleaseDate(item.aiData.releaseDate || '');
+      setEditEndDate(item.aiData.endDate || '');
       setIsEditingMetadata(false);
   };
 
@@ -177,39 +187,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     } finally {
         setIsRefreshingInfo(false);
     }
-  };
-
-  const handleCompleteSeason = () => {
-    const nextSeason = tracking.currentSeason + 1;
-    let isFinished = false;
-    // Logic simplified for brevity
-    if (tracking.totalSeasons > 0 && tracking.currentSeason >= tracking.totalSeasons) {
-        isFinished = true;
-    } else if (item.aiData.mediaType === 'Pelicula') {
-        isFinished = true;
-    }
-
-    if (isFinished) {
-       const updated = { ...tracking, status: 'Completado' as const };
-       setTracking(updated);
-       onUpdate({ ...item, trackingData: updated, lastInteraction: Date.now() });
-       showToast("¡Obra completada! Felicitaciones 🎉", "success");
-       return;
-    }
-
-    const currentAccumulated = tracking.accumulated_consumption || 0;
-    const newAccumulated = currentAccumulated + tracking.watchedEpisodes;
-
-    const updated = {
-      ...tracking,
-      currentSeason: nextSeason,
-      watchedEpisodes: 0,
-      accumulated_consumption: newAccumulated,
-      status: 'Viendo/Leyendo' as const
-    };
-    setTracking(updated);
-    onUpdate({ ...item, trackingData: updated, lastInteraction: Date.now() });
-    showToast(`Temporada ${tracking.currentSeason} terminada.`, "success");
   };
 
   const handleMovieToggle = () => {
@@ -284,15 +261,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     handleInputChange('favoriteCharacters', current.filter(c => c !== charToRemove));
   };
 
-  const moveCharacter = (index: number, direction: 'left' | 'right') => {
-      const current = getSafeCharacters(tracking.favoriteCharacters);
-      const newIndex = direction === 'left' ? index - 1 : index + 1;
-      if (newIndex < 0 || newIndex >= current.length) return;
-      const newChars = [...current];
-      [newChars[index], newChars[newIndex]] = [newChars[newIndex], newChars[index]];
-      handleInputChange('favoriteCharacters', newChars);
-  };
-
   const handleAddCustomLink = (e: React.FormEvent) => {
       e.preventDefault();
       if (!customLinkUrl.trim()) return;
@@ -318,36 +286,42 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     }
   };
 
-  const extractDominantColor = (imageSrc: string): Promise<string> => {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
-        img.src = imageSrc;
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) { resolve(dynamicColor); return; }
-            canvas.width = 50; canvas.height = 50;
-            ctx.drawImage(img, 0, 0, 50, 50);
-            const imageData = ctx.getImageData(0, 0, 50, 50).data;
-            let r = 0, g = 0, b = 0, count = 0;
-            for (let i = 0; i < imageData.length; i += 4) {
-                const currentR = imageData[i];
-                const currentG = imageData[i + 1];
-                const currentB = imageData[i + 2];
-                const brightness = (currentR + currentG + currentB) / 3;
-                const saturation = Math.max(currentR, currentG, currentB) - Math.min(currentR, currentG, currentB);
-                if (brightness > 20 && brightness < 235 && saturation > 20) {
-                    r += currentR; g += currentG; b += currentB; count++;
-                }
+  const extractDominantColor = (imageSrc: string) => {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = imageSrc;
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        canvas.width = 50; canvas.height = 50;
+        ctx.drawImage(img, 0, 0, 50, 50);
+        const imageData = ctx.getImageData(0, 0, 50, 50).data;
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < imageData.length; i += 4) {
+            const currentR = imageData[i];
+            const currentG = imageData[i + 1];
+            const currentB = imageData[i + 2];
+            const brightness = (currentR + currentG + currentB) / 3;
+            const saturation = Math.max(currentR, currentG, currentB) - Math.min(currentR, currentG, currentB);
+            if (brightness > 20 && brightness < 235 && saturation > 20) {
+                r += currentR; g += currentG; b += currentB; count++;
             }
-            if (count > 0) {
-                r = Math.round(r / count); g = Math.round(g / count); b = Math.round(b / count);
-                resolve("#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1));
-            } else { resolve(dynamicColor); }
-        };
-        img.onerror = () => resolve(dynamicColor);
-    });
+        }
+        if (count > 0) {
+            r = Math.round(r / count); g = Math.round(g / count); b = Math.round(b / count);
+            const newColor = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            setDynamicColor(newColor);
+            
+            // Persist the color if changed
+            if (newColor !== item.aiData.primaryColor) {
+               onUpdate({
+                   ...item,
+                   aiData: { ...item.aiData, primaryColor: newColor }
+               });
+            }
+        }
+    };
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -376,13 +350,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
       if (result) {
         setImgSrc(result);
         setImgHasError(false);
-        try {
-            const newColor = await extractDominantColor(result);
-            onUpdate({ ...item, aiData: { ...item.aiData, coverImage: result, primaryColor: newColor || item.aiData.primaryColor }, lastInteraction: item.lastInteraction });
-            showToast("Imagen actualizada con éxito", "success");
-        } catch (error) {
-            onUpdate({ ...item, aiData: { ...item.aiData, coverImage: result }, lastInteraction: item.lastInteraction });
-        }
+        extractDominantColor(result); // Trigger color update
+        
+        onUpdate({ 
+            ...item, 
+            aiData: { ...item.aiData, coverImage: result }, 
+            lastInteraction: item.lastInteraction 
+        });
+        showToast("Imagen actualizada con éxito", "success");
       }
     };
     reader.readAsDataURL(file);
@@ -442,14 +417,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   };
 
   const RATING_CONFIG: Record<string, { icon: React.ElementType, label: string, shortLabel: string }> = {
-    "God Tier (Épico memorable)": { icon: Crown, label: "God Tier", shortLabel: "God Tier" },
-    "Obra Maestra": { icon: Trophy, label: "Obra Maestra", shortLabel: "Masterpiece" },
-    "Excelente": { icon: Star, label: "Excelente", shortLabel: "Excelente" },
-    "Muy Bueno": { icon: ThumbsUp, label: "Muy Bueno", shortLabel: "Muy Bueno" },
-    "Bueno": { icon: Smile, label: "Bueno", shortLabel: "Bueno" },
-    "Regular": { icon: Meh, label: "Regular", shortLabel: "Regular" },
-    "Malo": { icon: Frown, label: "Malo", shortLabel: "Malo" },
-    "Pérdida de tiempo": { icon: Trash2, label: "Pérdida de tiempo", shortLabel: "Basura" },
+    "God Tier (Épico memorable)": { icon: Crown, label: "God Tier", shortLabel: "GOD TIER" },
+    "Obra Maestra": { icon: Trophy, label: "Obra Maestra", shortLabel: "MASTER" },
+    "Excelente": { icon: Star, label: "Excelente", shortLabel: "EXCELENTE" },
+    "Muy Bueno": { icon: ThumbsUp, label: "Muy Bueno", shortLabel: "MUY BUENO" },
+    "Bueno": { icon: Smile, label: "Bueno", shortLabel: "BUENO" },
+    "Regular": { icon: Meh, label: "Regular", shortLabel: "REGULAR" },
+    "Malo": { icon: Frown, label: "Malo", shortLabel: "MALO" },
+    "Pérdida de tiempo": { icon: Trash2, label: "Pérdida de tiempo", shortLabel: "BASURA" },
   };
 
   const processContentString = (text: string) => {
@@ -483,7 +458,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
         displayLine = displayLine.replace(/\(En emisión\)/gi, '').trim();
     }
 
-    let containerClass = "text-sm text-slate-200";
+    let containerClass = "text-sm text-slate-300";
     let bullet: React.ReactNode = null;
 
     if (isFutureHeader) {
@@ -495,7 +470,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     } else if (isSeasonHeader) {
         containerClass = "font-bold text-white text-sm mb-1 mt-2 border-b border-white/10 pb-1";
     } else if (isSeasonDetail) { 
-        containerClass = `ml-4 text-xs flex items-center gap-2 ${isAiring ? 'text-emerald-300 font-medium' : 'text-slate-300'}`; 
+        containerClass = `ml-4 text-xs flex items-center gap-2 ${isAiring ? 'text-emerald-300 font-medium' : 'text-slate-400'}`; 
         bullet = "•"; 
     } else if (isExtra) {
         containerClass = "font-semibold text-indigo-200 mt-2 text-xs flex flex-wrap gap-1 items-center bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20 w-fit";
@@ -503,15 +478,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
     return (
         <div key={index} className={containerClass}>
-            {bullet && <span className={isFutureHeader ? "text-amber-500" : isAiring ? "text-emerald-400" : "text-slate-500"}>{bullet}</span>}
+            {bullet && <span className={isFutureHeader ? "text-amber-500" : isAiring ? "text-emerald-400" : "text-slate-600"}>{bullet}</span>}
             <span>{displayLine}</span>
             
             {/* Airing Badge */}
             {isAiring && (
                 <span className="inline-flex items-center gap-1.5 ml-2 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-bold text-emerald-400 uppercase tracking-wide">
-                    <span className="relative flex h-2 w-2">
+                    <span className="relative flex h-1.5 w-1.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                     </span>
                     Live
                 </span>
@@ -523,7 +498,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                     className="flex items-center gap-1 px-2 py-0.5 bg-primary/20 hover:bg-primary/40 text-primary text-[10px] rounded border border-primary/30 transition-colors ml-1 cursor-pointer"
                     title={`Buscar "${match[1]}" en la biblioteca`}
                 >
-                    <Search className="w-3 h-3" />
+                    <Search className="w-2.5 h-2.5" />
                     <span className="underline font-medium">{match[1]}</span>
                 </button>
             )}
@@ -531,27 +506,36 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     );
   };
 
+  // --- STYLES: DARK CARD THEME ---
+  const CARD_BG = "bg-[#151921]";
+  const INPUT_BG = "bg-[#0B0E14]";
+  const BORDER_COLOR = "border-white/5";
+  const TEXT_MUTED = "text-slate-400";
+
   return (
     <div 
-      className="bg-surface rounded-2xl shadow-xl overflow-hidden border w-full max-w-5xl mx-auto transition-all duration-500"
+      className="bg-[#0B0E14] text-slate-200 rounded-3xl shadow-2xl overflow-hidden border border-slate-800 w-full max-w-[1600px] mx-auto transition-all duration-500"
       style={{
-        boxShadow: `0 0 40px -10px ${dynamicColor}40`,
-        borderColor: `${dynamicColor}40`
+          boxShadow: `0 25px 50px -12px ${dynamicColor}20`, // Stronger shadow
+          borderColor: `${dynamicColor}40` // Stronger border
       }}
     >
       
-      <div className="md:flex">
-        <div 
-          className="md:w-1/3 p-4 md:p-6 flex flex-col relative overflow-hidden bg-slate-900"
-        >
-          <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(135deg, ${dynamicColor}20 0%, transparent 100%)` }} />
-
+      {/* 
+         LAYOUT GRID: 3 COLUMNS 
+         Mobile: Stack
+         Tablet (lg): 3 Columns (Tighter)
+         Desktop (xl): 3 Columns (Comfortable)
+      */}
+      <div className="flex flex-col lg:grid lg:grid-cols-[260px_1fr_280px] xl:grid-cols-[340px_1fr_360px] gap-0">
+        
+        {/* COL 1: LEFT SIDEBAR (Info de la Obra) */}
+        <div className="p-6 md:p-8 flex flex-col relative border-b lg:border-b-0 lg:border-r border-slate-800 bg-[#0F1119]">
+          
+          {/* Poster */}
           <div 
-            className={`aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-800 shadow-2xl mb-4 relative group cursor-pointer transition-all z-10 ${isDragging ? 'scale-105' : ''}`}
-            style={{ 
-               boxShadow: isDragging ? `0 0 0 4px ${dynamicColor}` : `0 20px 25px -5px rgba(0, 0, 0, 0.5)`,
-               border: `2px solid ${dynamicColor}`
-            }}
+            className={`aspect-[2/3] w-full rounded-2xl overflow-hidden shadow-2xl mb-6 relative group cursor-pointer transition-all z-10 ${isDragging ? 'ring-2 ring-primary' : ''}`}
+            style={{ boxShadow: `0 15px 40px -10px ${dynamicColor}50` }} // Dynamic Glow
             onClick={triggerFileInput}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -560,135 +544,140 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
              {!imgHasError ? (
                  <img src={imgSrc} alt={item.aiData.title} onError={handleImageError} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
              ) : (
-                 <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-900 p-4 text-center">
+                 <div className={`w-full h-full flex flex-col items-center justify-center text-slate-500 ${INPUT_BG} p-4 text-center border ${BORDER_COLOR}`}>
                     <div className="p-4 rounded-full bg-slate-800 mb-2"><TypeIcon className="w-10 h-10" /></div>
-                    <span className="text-xs font-medium uppercase tracking-wider">{item.aiData.title}</span>
+                    <span className="text-sm font-medium uppercase tracking-wider">{item.aiData.title}</span>
                  </div>
              )}
              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white backdrop-blur-sm">
-                <ImagePlus className="w-10 h-10 mb-2" style={{ color: dynamicColor }} />
-                <span className="font-semibold text-sm">Cambiar Imagen</span>
+                <ImagePlus className="w-10 h-10 mb-2 text-white/80" />
+                <span className="font-semibold text-base">Cambiar Imagen</span>
              </div>
              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect}/>
           </div>
 
-          <div className="flex items-start justify-between gap-2 z-10 mb-1">
+          {/* Core Info & Actions */}
+          <div className="flex flex-col gap-3 z-10 mb-6">
             {isEditingMetadata ? (
-                <div className="w-full">
-                    <input className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-lg font-bold text-white mb-2 focus:border-primary outline-none" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Título principal" />
-                    <div className="flex gap-2">
-                        <button onClick={handleSaveMetadata} className="p-1.5 bg-green-600 rounded hover:bg-green-700 transition-colors" title="Guardar"><Save className="w-4 h-4 text-white" /></button>
-                        <button onClick={handleCancelMetadata} className="p-1.5 bg-slate-700 rounded hover:bg-slate-600 transition-colors" title="Cancelar"><X className="w-4 h-4 text-white" /></button>
+                <div className="w-full space-y-3">
+                    <input className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-xl p-4 text-xl font-bold text-white focus:border-[var(--theme-color)] outline-none`} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Título principal" style={{ '--theme-color': dynamicColor } as React.CSSProperties} />
+                    <input className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-xl p-3 text-sm text-slate-300 focus:border-[var(--theme-color)] outline-none`} value={editOriginalTitle} onChange={(e) => setEditOriginalTitle(e.target.value)} placeholder="Título original" style={{ '--theme-color': dynamicColor } as React.CSSProperties} />
+                    <div className="flex gap-2 mt-2">
+                        <button onClick={handleSaveMetadata} className="flex-1 py-3 bg-green-600 rounded-xl hover:bg-green-700 transition-colors text-white font-bold text-sm" title="Guardar">GUARDAR</button>
+                        <button onClick={handleCancelMetadata} className="flex-1 py-3 bg-slate-700 rounded-xl hover:bg-slate-600 transition-colors text-white text-sm" title="Cancelar">CANCELAR</button>
                     </div>
                 </div>
             ) : (
                 <>
-                <div className="flex items-center gap-2">
-                    <h2 className="text-xl md:text-2xl font-bold leading-tight" style={{ color: dynamicColor, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{item.aiData.title}</h2>
-                     <button onClick={() => setIsEditingMetadata(true)} className="opacity-50 hover:opacity-100 transition-opacity p-1" title="Editar información (Metadata)"><Pencil className="w-4 h-4 text-slate-400" /></button>
+                <h2 className="text-3xl font-black leading-tight text-white mb-1 break-words tracking-tight">{item.aiData.title}</h2>
+                {item.aiData.originalTitle && <p className="text-slate-400 text-sm italic mb-4 break-words">{item.aiData.originalTitle}</p>}
+                
+                {/* Status Badges */}
+                <div className="flex flex-wrap gap-2 mb-5">
+                     <span className="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs font-bold uppercase rounded-lg border border-slate-700 shadow-sm">{item.aiData.mediaType}</span>
+                     <span className="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs font-bold uppercase rounded-lg border border-slate-700 shadow-sm">{item.aiData.status}</span>
+                     <button onClick={() => setIsEditingMetadata(true)} className="p-1.5 hover:text-white text-slate-500 transition-colors bg-slate-800/50 rounded-lg hover:bg-slate-700" title="Editar Metadata"><Pencil className="w-4 h-4" /></button>
                 </div>
-                <div className="flex items-center gap-1">
-                    <button onClick={() => handleInputChange('is_favorite', !isFavorite)} className="p-1.5 hover:bg-slate-800 rounded-full transition-colors" title={isFavorite ? "Quitar de Favoritos" : "Marcar como Favorito"}>
-                        <Star className={`w-5 h-5 transition-all ${isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-500 hover:text-white'}`} />
+
+                {/* Primary Actions */}
+                <div className="flex gap-3">
+                    <button 
+                        onClick={() => handleInputChange('is_favorite', !isFavorite)} 
+                        className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg border ${
+                            isFavorite 
+                            ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/50' 
+                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white'
+                        }`}
+                    >
+                        <Star className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                        {isFavorite ? 'FAVORITO' : 'FAVORITO'}
                     </button>
-                    {onDelete && <button onClick={onDelete} className="text-slate-500 hover:text-red-500 transition-colors p-1" title="Eliminar de biblioteca"><Trash2 className="w-5 h-5" /></button>}
+                    {onDelete && (
+                        <button onClick={onDelete} className="p-3 bg-red-900/20 text-red-400 rounded-xl border border-red-900/50 hover:bg-red-900/40 hover:text-red-300 transition-colors">
+                            <Trash2 className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
                 </>
             )}
           </div>
           
-          {item.aiData.franchise_link && !isEditingMetadata && (
-             <div className="z-10 mb-2 animate-fade-in-up">
-                <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800/50 border border-slate-700/50 text-xs font-medium text-slate-300" title="Esta película pertenece a esta franquicia">
-                    <GitMerge className="w-3 h-3 text-indigo-400" />
-                    <span className="opacity-70">Parte de:</span>
-                    <span className="text-white font-semibold truncate max-w-[180px]">{item.aiData.franchise_link}</span>
-                </div>
-             </div>
-          )}
-
-          {isEditingMetadata ? (
-               <input className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-slate-300 mb-2 focus:border-primary outline-none" value={editOriginalTitle} onChange={(e) => setEditOriginalTitle(e.target.value)} placeholder="Título original (opcional)" />
-          ) : ( item.aiData.originalTitle && <p className="text-slate-400 text-sm mb-4 italic z-10">{item.aiData.originalTitle}</p> )}
-          
-          <div className="space-y-3 text-sm text-slate-300 z-10">
+          {/* Detailed Metadata List (Removed mt-auto to fix spacing) */}
+          <div className="space-y-6 text-sm z-10 border-t border-slate-800 pt-6 mt-6">
+             {/* Dates Section */}
              <div>
-                <span className="text-slate-500 font-semibold block text-xs uppercase">Estado Publicación</span>
+                <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase mb-2 tracking-wider`}>Fechas</span>
                 {isEditingMetadata ? (
-                    <input className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-white focus:border-primary outline-none" value={editStatus} onChange={(e) => setEditStatus(e.target.value)} placeholder="Ej: Finalizado, En emisión..." />
-                ) : ( <span className="flex items-center gap-1">{item.aiData.status}</span> )}
-             </div>
-             
-             {isEditingMetadata && (
-                <div>
-                     <span className="text-slate-500 font-semibold block text-xs uppercase">Tipo de Medio</span>
-                     <select className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-white focus:border-primary outline-none" value={editMediaType} onChange={(e) => setEditMediaType(e.target.value as any)}>
-                         {['Anime', 'Serie', 'Pelicula', 'Manhwa', 'Manga', 'Libro', 'Comic', 'Otro'].map(t => <option key={t} value={t}>{t}</option>)}
-                     </select>
-                </div>
-             )}
-
-             {!isEditingMetadata && (item.aiData.releaseDate || item.aiData.endDate) && (
-                <div className="grid grid-cols-2 gap-2">
-                    {item.aiData.releaseDate && <div><span className="text-slate-500 font-semibold block text-xs uppercase">Estreno</span>{item.aiData.releaseDate}</div>}
-                    {item.aiData.endDate && <div><span className="text-slate-500 font-semibold block text-xs uppercase">Finalización</span>{item.aiData.endDate}</div>}
-                </div>
-             )}
-
-             <div>
-                <span className="text-slate-500 font-semibold block text-xs uppercase">Contenido Total</span>
-                {isEditingMetadata ? (
-                     <textarea className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-white focus:border-primary outline-none resize-y min-h-[60px]" value={editTotalContent} onChange={(e) => setEditTotalContent(e.target.value)} placeholder={`Ej: 2 Temporadas:\n- Temporada 1: 12 Caps\n- Temporada 2: 24 Caps`} />
+                    <div className="space-y-2">
+                        <input type="date" className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-lg p-3 text-sm text-white`} value={editReleaseDate} onChange={(e) => setEditReleaseDate(e.target.value)} />
+                        <input type="date" className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-lg p-3 text-sm text-white`} value={editEndDate} onChange={(e) => setEditEndDate(e.target.value)} />
+                    </div>
                 ) : (
-                    <div className="bg-slate-950/30 p-2 rounded-lg border border-slate-700/30 mt-1">
+                    <div className="space-y-1.5 text-sm font-medium">
+                        <div className="flex justify-between">
+                            <span className="text-slate-500">Estreno:</span>
+                            <span className="text-slate-200 font-mono">{item.aiData.releaseDate || 'Desconocido'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-500">Final:</span>
+                            <span className="text-slate-200 font-mono">{item.aiData.endDate || (item.aiData.status === 'En emisión' ? 'En curso' : '-')}</span>
+                        </div>
+                    </div>
+                )}
+             </div>
+
+             {/* Genres */}
+             <div>
+                <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase mb-2 tracking-wider`}>Géneros</span>
+                {isEditingMetadata ? (
+                     <input className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-lg p-3 text-sm text-white focus:border-primary outline-none`} value={editGenres} onChange={(e) => setEditGenres(e.target.value)} />
+                ) : (
+                    <div className="flex flex-wrap gap-2">
+                        {item.aiData.genres.map(g => <span key={g} className="px-3 py-1.5 bg-slate-800/60 rounded-full text-xs font-medium text-slate-300 border border-slate-700/60">{g}</span>)}
+                    </div>
+                )}
+             </div>
+
+             {/* Content Structure */}
+             <div>
+                <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase mb-2 flex items-center gap-1.5 tracking-wider`}>
+                    <Tv className="w-3.5 h-3.5"/> Estructura
+                </span>
+                {isEditingMetadata ? (
+                     <textarea className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-lg p-3 text-sm text-white focus:border-primary outline-none h-24 font-mono`} value={editTotalContent} onChange={(e) => setEditTotalContent(e.target.value)} />
+                ) : (
+                    <div className={`${INPUT_BG} p-4 rounded-xl border ${BORDER_COLOR} max-h-[220px] overflow-y-auto custom-scrollbar`}>
                         {processContentString(item.aiData.totalContent).map((line, i) => renderContentLine(line, i))}
                     </div>
                 )}
              </div>
-             <div>
-                <span className="text-slate-500 font-semibold block text-xs uppercase">Géneros</span>
-                {isEditingMetadata ? (
-                     <input className="w-full bg-slate-800 border border-slate-600 rounded p-1 text-xs text-white focus:border-primary outline-none" value={editGenres} onChange={(e) => setEditGenres(e.target.value)} placeholder="Acción, Comedia, Drama..." />
-                ) : (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                    {item.aiData.genres.map(g => <span key={g} className="px-2 py-0.5 bg-slate-800 rounded text-xs text-slate-300 border border-slate-700">{g}</span>)}
-                    </div>
-                )}
-             </div>
-             
+
+             {/* External Links */}
              {!isEditingMetadata && (
-                <div className="pt-4 border-t border-slate-700/50 space-y-4">
-                   {item.aiData.sourceUrls && item.aiData.sourceUrls.length > 0 && (
-                      <div>
-                        <span className="text-slate-500 font-semibold block text-xs uppercase mb-1 flex items-center gap-1"><LinkIcon className="w-3 h-3"/> Fuentes Info</span>
-                        <ul className="space-y-1">
-                            {item.aiData.sourceUrls.slice(0, 2).map((source, idx) => (
+                <div className="space-y-3 pt-2">
+                   <div className={`${INPUT_BG} rounded-xl p-4 border ${BORDER_COLOR}`}>
+                       <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase mb-3 flex items-center gap-1.5 tracking-wider`}><LinkIcon className="w-3.5 h-3.5"/> Fuentes & Enlaces</span>
+                       <ul className="space-y-3 mb-4">
+                           {item.aiData.sourceUrls?.slice(0, 2).map((source, idx) => (
                             <li key={idx}>
-                                <a href={source.uri} target="_blank" rel="noreferrer" className="text-xs hover:underline truncate block flex items-center gap-1 opacity-70 hover:opacity-100" style={{ color: dynamicColor }}>
-                                <ExternalLink className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{source.title}</span>
+                                <a href={source.uri} target="_blank" rel="noreferrer" className="text-sm hover:text-[var(--theme-color)] truncate block flex items-center gap-2 text-slate-400 transition-colors" style={{ '--theme-color': dynamicColor } as React.CSSProperties}>
+                                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 opacity-50" /> <span className="truncate">{source.title}</span>
                                 </a>
                             </li>
-                            ))}
-                        </ul>
-                      </div>
-                   )}
-
-                   <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
-                       <span className="text-slate-400 font-bold block text-xs uppercase mb-2 flex items-center gap-1"><Globe className="w-3 h-3"/> Mis Enlaces</span>
-                       <ul className="space-y-2 mb-2">
+                           ))}
                            {tracking.customLinks?.map((link) => (
                                <li key={link.id} className="flex items-center justify-between group/link">
-                                   <a href={link.url} target="_blank" rel="noreferrer" className="text-xs text-slate-300 hover:text-white truncate flex items-center gap-1 flex-1">
-                                       <ExternalLink className="w-3 h-3 flex-shrink-0 text-slate-500" />
+                                   <a href={link.url} target="_blank" rel="noreferrer" className="text-sm text-indigo-300 hover:text-indigo-200 truncate flex items-center gap-2 flex-1">
+                                       <Globe className="w-3.5 h-3.5 flex-shrink-0" />
                                        <span className="truncate" title={link.url}>{link.title || 'Enlace'}</span>
                                    </a>
-                                   <button onClick={() => removeCustomLink(link.id)} className="opacity-0 group-hover/link:opacity-100 text-slate-500 hover:text-red-400 transition-all p-1"><X className="w-3 h-3" /></button>
+                                   <button onClick={() => removeCustomLink(link.id)} className="opacity-0 group-hover/link:opacity-100 text-slate-600 hover:text-red-400 transition-all p-1"><X className="w-3.5 h-3.5" /></button>
                                </li>
                            ))}
                        </ul>
-                       <form onSubmit={handleAddCustomLink} className="flex gap-1 relative">
-                            <input type="text" placeholder="Añadir URL..." className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors" value={customLinkUrl} onChange={(e) => setCustomLinkUrl(e.target.value)} />
-                            <button type="submit" disabled={!customLinkUrl.trim()} className="bg-slate-700 hover:bg-slate-600 text-white rounded px-2 flex items-center justify-center disabled:opacity-50"><Plus className="w-3 h-3" /></button>
+                       <form onSubmit={handleAddCustomLink} className="flex gap-2 relative mt-2">
+                            <input type="text" placeholder="URL..." className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[var(--theme-color)] transition-colors`} value={customLinkUrl} onChange={(e) => setCustomLinkUrl(e.target.value)} style={{ '--theme-color': dynamicColor } as React.CSSProperties} />
+                            <button type="submit" disabled={!customLinkUrl.trim()} className="bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-3 flex items-center justify-center disabled:opacity-50 border border-slate-700 transition-colors"><Plus className="w-4 h-4" /></button>
                        </form>
                    </div>
                 </div>
@@ -696,244 +685,197 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
           </div>
         </div>
 
-        <div className="md:w-2/3 p-4 md:p-8 flex flex-col gap-6 bg-gradient-to-br from-surface to-slate-800">
+        {/* COL 2: CENTER (Synopsis, Progress & Characters) */}
+        <div className="p-6 md:p-8 flex flex-col gap-8 bg-[#0B0E14] overflow-y-auto custom-scrollbar">
           
-          <div className="prose prose-invert max-w-none">
-            <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-              <BookOpen className="w-5 h-5" style={{ color: dynamicColor }} />
-              Sinopsis
-            </h3>
-            {isEditingMetadata ? (
-                <textarea className="w-full bg-slate-900/50 border border-slate-600 rounded-lg p-3 text-sm text-slate-200 focus:border-primary outline-none h-32 resize-none" value={editSynopsis} onChange={(e) => setEditSynopsis(e.target.value)} placeholder="Escribe una sinopsis..." />
-            ) : (
-                <>
-                <p className="text-slate-300 text-sm leading-relaxed bg-slate-900/30 p-4 rounded-lg border border-slate-700/50">{item.aiData.synopsis}</p>
-                <div className="mt-2 flex justify-end">
-                    <button onClick={handleRefreshInfo} disabled={!apiKey || isRefreshingInfo} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Regenerar información usando el título actual">
-                        <RefreshCw className={`w-3 h-3 ${isRefreshingInfo ? 'animate-spin' : ''}`} /> {isRefreshingInfo ? 'Actualizando...' : 'Actualizar Info con IA'}
+          {/* CARD: Synopsis */}
+          <div className={`${CARD_BG} p-6 md:p-8 rounded-2xl border ${BORDER_COLOR} relative shadow-xl`}>
+            <div className="flex justify-between items-start mb-4">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-slate-400" /> Sinopsis
+                </h3>
+                {!isEditingMetadata && (
+                    <button onClick={handleRefreshInfo} disabled={!apiKey || isRefreshingInfo} className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 disabled:opacity-50 transition-colors" title="Actualizar con IA">
+                        <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingInfo ? 'animate-spin' : ''}`} /> {isRefreshingInfo ? 'Actualizando...' : 'Actualizar con IA'}
                     </button>
-                </div>
-                </>
+                )}
+            </div>
+            
+            {isEditingMetadata ? (
+                <textarea className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-xl p-5 text-base text-slate-200 focus:border-[var(--theme-color)] outline-none h-64 resize-none leading-relaxed`} value={editSynopsis} onChange={(e) => setEditSynopsis(e.target.value)} placeholder="Escribe una sinopsis..." style={{ '--theme-color': dynamicColor } as React.CSSProperties} />
+            ) : (
+                <p className="text-slate-300 text-base leading-relaxed whitespace-pre-line font-normal">{item.aiData.synopsis}</p>
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Progress Column */}
-            <div className="bg-slate-900/50 p-4 md:p-5 rounded-xl border relative overflow-hidden transition-colors duration-500" style={{ borderColor: `${dynamicColor}40` }}>
-              <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-16 translate-x-16 pointer-events-none opacity-20" style={{ backgroundColor: dynamicColor }}></div>
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5" style={{ color: dynamicColor }} /> Mi Progreso
-              </h3>
+          {/* CARD: Progress (Narrative/State) */}
+          <div 
+            className={`${CARD_BG} p-6 md:p-8 rounded-2xl border ${BORDER_COLOR} shadow-xl`}
+            style={{ borderLeft: `4px solid ${dynamicColor}` }} // Dynamic Accent
+          >
+              <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-slate-400" /> Mi Progreso
+                  </h3>
+                  {completionMessage && (
+                      <span className="text-xs bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-full font-bold border border-yellow-500/20 animate-pulse">{completionMessage.title}</span>
+                  )}
+              </div>
               
-              {/* Congratulatory Message Banner */}
-              {completionMessage && (
-                  <div className="mb-4 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/30 p-3 rounded-lg flex items-start gap-3 animate-fade-in-up">
-                      <div className="p-2 bg-amber-500/20 rounded-full flex-shrink-0"><Medal className="w-5 h-5 text-amber-400" /></div>
+              <div className="space-y-6">
+                  <div>
+                      <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase mb-2 tracking-wider`}>ESTADO</span>
+                      <select value={tracking.status} onChange={(e) => handleInputChange('status', e.target.value)} className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-xl px-4 py-3.5 text-base text-white outline-none focus:border-[var(--theme-color)] appearance-none cursor-pointer font-medium transition-colors`} style={{ '--theme-color': dynamicColor } as React.CSSProperties}>
+                        {['Sin empezar', 'Viendo/Leyendo', 'Completado', 'En Pausa', 'Descartado', 'Planeado / Pendiente'].map(s => (
+                            <option key={s} value={s}>{s === 'Viendo/Leyendo' ? (isReadingContent ? 'Leyendo' : 'Viendo') : s}</option>
+                        ))}
+                      </select>
+                  </div>
+
+                  {isMovie ? (
                       <div>
-                          <p className="text-sm font-bold text-amber-100 mb-0.5">{completionMessage.title}</p>
-                          <p className="text-xs text-amber-200/80 leading-relaxed">{completionMessage.body}</p>
+                          <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase mb-2 tracking-wider`}>ACCIÓN RÁPIDA</span>
+                          <button onClick={handleMovieToggle} className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 transition-all font-bold text-base border ${tracking.status === 'Completado' ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-slate-800 border-slate-600 text-slate-400 hover:bg-slate-700'}`}>
+                                {tracking.status === 'Completado' ? <CheckCircle2 className="w-5 h-5" /> : <PlayCircle className="w-5 h-5" />}
+                                {tracking.status === 'Completado' ? 'COMPLETADO' : 'MARCAR VISTO'}
+                          </button>
+                      </div>
+                  ) : (
+                      <div className="flex gap-4">
+                          <div className="flex-1">
+                              <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase mb-2 tracking-wider`}>VISTOS</span>
+                              <input type="number" min="0" value={tracking.watchedEpisodes} onChange={(e) => handleInputChange('watchedEpisodes', parseInt(e.target.value) || 0)} className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-xl px-2 py-3.5 text-base font-bold text-center text-white outline-none focus:border-[var(--theme-color)] transition-colors`} style={{ '--theme-color': dynamicColor } as React.CSSProperties} />
+                          </div>
+                          <div className="flex-1">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase tracking-wider`}>TOTAL</span>
+                                {!tracking.totalEpisodesInSeason && <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                              </div>
+                              <input type="number" min="1" value={tracking.totalEpisodesInSeason} onChange={(e) => handleInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)} className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-xl px-2 py-3.5 text-base font-bold text-center text-white outline-none focus:border-[var(--theme-color)] transition-colors`} style={{ '--theme-color': dynamicColor } as React.CSSProperties} />
+                          </div>
+                      </div>
+                  )}
+              </div>
+
+              {!isMovie && (
+                  <div className="mt-8">
+                      <div className="flex justify-between text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
+                          <span>Progreso T.{tracking.currentSeason}</span>
+                          <span style={{ color: dynamicColor }}>{Math.round(progressPercent)}%</span>
+                      </div>
+                      <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden shadow-inner">
+                          <div className="h-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(255,255,255,0.2)]" style={{ width: `${progressPercent}%`, backgroundColor: dynamicColor }} />
                       </div>
                   </div>
               )}
-              
-              <div className="space-y-4 relative z-10">
-                {isBook && (
-                    <div className="flex items-center gap-2 mb-2">
-                        <button onClick={() => handleInputChange('isSaga', !tracking.isSaga)} className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${tracking.isSaga ? 'bg-primary' : 'bg-slate-700'}`}>
-                            <div className={`w-3 h-3 bg-white rounded-full absolute top-1 transition-all duration-300 ${tracking.isSaga ? 'left-6' : 'left-1'}`}></div>
-                        </button>
-                        <span className="text-xs text-slate-300">Es una Saga/Serie de Libros</span>
-                    </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Estado</label>
-                  <select value={tracking.status} onChange={(e) => handleInputChange('status', e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none transition-shadow focus:ring-1" style={{ borderColor: `${dynamicColor}50` }}>
-                    {['Sin empezar', 'Viendo/Leyendo', 'Completado', 'En Pausa', 'Descartado', 'Planeado / Pendiente'].map(s => (
-                        <option key={s} value={s}>{s === 'Viendo/Leyendo' ? (isReadingContent ? 'Leyendo' : 'Viendo') : s}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {tracking.status === 'En Pausa' && (
-                    <div className="animate-fade-in-up mt-2 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
-                        <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1"><Bell className="w-3 h-3 text-yellow-500" /> Fecha de Retorno Programada</label>
-                        <input type="date" value={tracking.scheduledReturnDate || ''} onChange={(e) => handleInputChange('scheduledReturnDate', e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:ring-1 focus:border-primary transition-colors" />
-                    </div>
-                )}
-
-                {tracking.status === 'Planeado / Pendiente' && (
-                    <div className="animate-fade-in-up mt-2 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
-                        <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1"><CalendarDays className="w-3 h-3 text-blue-400" /> Fecha de Próximo Estreno/Lanzamiento</label>
-                        <input type="date" value={tracking.nextReleaseDate || ''} onChange={(e) => handleInputChange('nextReleaseDate', e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:ring-1 focus:border-primary transition-colors" />
-                    </div>
-                )}
-
-                {isMovie ? (
-                    <div className="flex flex-col gap-4 mt-2">
-                        <button onClick={handleMovieToggle} className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 transition-all border ${tracking.status === 'Completado' ? 'bg-green-600/20 border-green-500 text-green-400' : 'bg-slate-800 border-slate-600 text-slate-400 hover:bg-slate-700'}`}>
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${tracking.status === 'Completado' ? 'border-green-500 bg-green-500' : 'border-slate-500'}`}>
-                                {tracking.status === 'Completado' && <CheckCircle2 className="w-4 h-4 text-white" />}
-                            </div>
-                            <span className="font-bold">{tracking.status === 'Completado' ? 'Vista / Completada' : 'Marcar como Vista'}</span>
-                        </button>
-                        {tracking.status === 'Completado' && (
-                            <div className="animate-fade-in">
-                                <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Fecha de Visualización</label>
-                                <input type="date" value={tracking.finishedAt || ''} onChange={(e) => handleInputChange('finishedAt', e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:ring-1 focus:border-primary" />
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                  <>
-                    { (isSeriesContent || (isBook && tracking.isSaga)) && (
-                        <div className="flex gap-3">
-                            <div className="flex-1">
-                                <label className="block text-xs font-medium text-slate-400 mb-1">{isBook ? 'Libro Actual' : 'Temp. Actual'}</label>
-                                <input type="number" min="1" value={tracking.currentSeason} onChange={(e) => handleInputChange('currentSeason', parseInt(e.target.value) || 1)} className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center focus:border-opacity-100 outline-none focus:ring-1" style={{ borderColor: `${dynamicColor}30`, '--tw-ring-color': dynamicColor } as React.CSSProperties} />
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-xs font-medium text-slate-400 mb-1">{isBook ? 'Total Libros' : 'Total Temps.'}</label>
-                                <input type="number" min="1" value={tracking.totalSeasons || 1} onChange={(e) => handleInputChange('totalSeasons', parseInt(e.target.value) || 1)} className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-1" style={{ borderColor: `${dynamicColor}30` }} />
-                            </div>
-                        </div>
-                    )}
-                    <div className="flex gap-3">
-                    <div className="flex-1">
-                        <label className="block text-xs font-medium text-slate-400 mb-1">{isBook ? 'Páginas Leídas' : (isReadingContent ? 'Caps. Leídos' : 'Caps. Vistos')}</label>
-                        <input type="number" min="0" value={tracking.watchedEpisodes} onChange={(e) => handleInputChange('watchedEpisodes', parseInt(e.target.value) || 0)} className="w-full border border-slate-600 rounded-lg px-2 py-2 text-sm text-center font-bold text-white bg-slate-700/50 outline-none focus:ring-1" style={{ borderColor: `${dynamicColor}50` }} />
-                    </div>
-                    <div className="flex-1 relative">
-                        <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center justify-between">
-                            <span>Total {isBook ? 'Páginas' : (isReadingContent ? 'Existentes' : 'Temp')}</span>
-                            {!tracking.totalEpisodesInSeason && <span className="text-amber-500" title="Dato faltante"><AlertTriangle className="w-3 h-3 inline"/></span>}
-                        </label>
-                        <div className="relative">
-                            <input type="number" min="1" value={tracking.totalEpisodesInSeason} onChange={(e) => handleInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)} className="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-1" style={{ borderColor: !tracking.totalEpisodesInSeason ? '#f59e0b' : `${dynamicColor}30` }} />
-                            {!tracking.totalEpisodesInSeason && <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none"><AlertTriangle className="w-4 h-4 text-amber-500 animate-pulse" /></div>}
-                        </div>
-                    </div>
-                    </div>
-                    <div className="mt-2">
-                        <div className="flex justify-between text-xs text-slate-400 mb-1">
-                            <span>{isBook ? (tracking.isSaga ? `Progreso Libro ${tracking.currentSeason}` : 'Progreso Lectura') : (isReadingContent ? 'Progreso Lectura' : `Progreso Temporada ${tracking.currentSeason}`)}</span>
-                            <span style={{ color: progressPercent === 100 ? '#4ade80' : dynamicColor, fontWeight: 'bold' }}>{Math.round(progressPercent)}%</span>
-                        </div>
-                        <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                            <div className="h-2.5 rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPercent}%`, backgroundColor: progressPercent === 100 ? '#4ade80' : dynamicColor, boxShadow: `0 0 10px ${dynamicColor}80` }} />
-                        </div>
-                        {progressPercent === 100 && (
-                            <button onClick={handleCompleteSeason} disabled={tracking.status === 'Completado'} className={`mt-3 w-full flex items-center justify-center gap-1 text-xs font-medium text-white py-2 rounded-lg transition-colors shadow-lg ${tracking.status === 'Completado' ? 'bg-slate-700 cursor-default opacity-80' : 'bg-[#16a34a]'}`}>
-                            <CheckCircle2 className="w-3 h-3" />
-                            { tracking.status === 'Completado' ? (isBook && !tracking.isSaga ? "Libro Completado" : "Obra Completada") : (isSeriesContent || (isBook && tracking.isSaga)) ? (isBook ? `Terminar Libro ${tracking.currentSeason}` : `Completar Temporada ${tracking.currentSeason}`) : "Marcar como Completado" }
-                            {tracking.status !== 'Completado' && <ChevronRight className="w-3 h-3 opacity-70" />}
-                            </button>
-                        )}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Analysis Column (Moods + Rating Grid) */}
-            <div className="bg-slate-900/50 p-4 md:p-5 rounded-xl border border-slate-700/50 flex flex-col h-full" style={{ borderColor: `${dynamicColor}40` }}>
-               <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-yellow-500" /> Reflexión
-              </h3>
-              <div className="space-y-4 flex-grow flex flex-col">
-                <div>
-                   <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1"><Users className="w-3 h-3" /> Recomendado por</label>
-                   <input type="text" value={tracking.recommendedBy || ''} onChange={(e) => handleInputChange('recommendedBy', e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1" placeholder="Ej: Laura, r/anime..." style={{ borderColor: `${dynamicColor}30`, '--tw-ring-color': dynamicColor } as React.CSSProperties} />
-                </div>
-
-                <div>
-                   <label className="block text-xs font-medium text-slate-400 mb-2">Resumen Emocional</label>
-                   <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                      {EMOTIONAL_TAGS_OPTIONS.map(opt => {
-                        const currentTags = tracking.emotionalTags || [];
-                        const isActive = currentTags.includes(opt.label);
-                        const isNegative = opt.sentiment === 'negative';
-                        return (
-                          <button
-                            key={opt.label}
-                            onClick={() => toggleTag(opt.label)}
-                            className={`text-[10px] px-2 py-2 rounded-md text-left transition-all border flex items-center gap-2 h-auto min-h-[36px] ${isActive ? 'text-white shadow-[0_0_10px_rgba(0,0,0,0.3)]' : isNegative ? 'bg-red-950/20 text-red-200/70 border-red-900/30 hover:bg-red-900/40 hover:text-red-100' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`}
-                            style={isActive ? { backgroundColor: isNegative ? 'rgba(239, 68, 68, 0.2)' : `${dynamicColor}20`, borderColor: isNegative ? '#ef4444' : dynamicColor, color: isNegative ? '#fca5a5' : 'white', boxShadow: `0 0 8px ${isNegative ? '#ef4444' : dynamicColor}40` } : {}}
-                          >
-                            <span className={`text-sm ${isActive ? 'opacity-100 scale-110' : 'opacity-50 grayscale'} transition-all flex-shrink-0`}>{opt.emoji}</span>
-                            <span className={`text-[10px] font-medium truncate ${isActive ? 'text-white' : 'text-slate-500'}`}>{opt.label}</span>
-                          </button>
-                        );
-                      })}
-                   </div>
-                </div>
-
-                {/* VISUAL RATING GRID */}
-                <div>
-                   <label className="block text-xs font-medium text-slate-400 mb-2">Calificación</label>
-                   <div className="grid grid-cols-4 gap-2">
-                       {RATING_OPTIONS.map(opt => {
-                           const config = RATING_CONFIG[opt];
-                           const Icon = config.icon;
-                           const isSelected = tracking.rating === opt;
-                           const isTrash = opt === "Pérdida de tiempo";
-                           
-                           return (
-                               <button 
-                                   key={opt}
-                                   onClick={() => handleInputChange('rating', opt)}
-                                   className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all aspect-square ${
-                                       isSelected 
-                                       ? (isTrash ? 'bg-red-500/20 border-red-500 text-red-200' : 'bg-primary/20 border-primary text-white shadow-lg') 
-                                       : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700 hover:text-slate-300'
-                                   }`}
-                                   title={config.label}
-                               >
-                                   <Icon className={`w-5 h-5 mb-1 ${isSelected ? 'scale-110' : ''}`} />
-                                   <span className="text-[9px] font-bold text-center leading-tight">{config.shortLabel}</span>
-                               </button>
-                           )
-                       })}
-                   </div>
-                </div>
-
-                <button onClick={handleShare} className="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all">
-                    <Share2 className="w-4 h-4" /> Copiar Reseña IA
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* Row 2: Characters & Comments */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Characters Card */}
-                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
-                    <label className="block text-xs font-medium text-slate-400 mb-2">Personajes Memorables</label>
-                    <div className="flex gap-2 mb-3">
-                        <input type="text" value={characterInput} onChange={handleCharacterInputChange} onKeyDown={handleCharacterKeyDown} placeholder="Nombre (o separa con comas)..." className="flex-grow bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:border-primary" />
-                        <button onClick={addCharacter} className="bg-slate-700 hover:bg-slate-600 text-white rounded-lg px-3 flex items-center justify-center transition-colors"><Plus className="w-4 h-4" /></button>
+          {/* CARD: Characters (Moved from Right to Center) */}
+          <div className={`${CARD_BG} p-6 md:p-8 rounded-2xl border ${BORDER_COLOR} shadow-xl`}>
+               <div className="mb-6">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-slate-400" /> Personajes Destacados</h3>
+                    <div className={`flex items-center gap-3 p-1.5 rounded-xl border ${BORDER_COLOR} ${INPUT_BG} mb-4`}>
+                        <input type="text" value={characterInput} onChange={handleCharacterInputChange} onKeyDown={handleCharacterKeyDown} placeholder="Añadir nombre..." className="bg-transparent px-4 py-2 flex-grow text-sm text-white outline-none placeholder-slate-600" />
+                        <button onClick={addCharacter} className="bg-primary hover:bg-indigo-600 text-white p-2 rounded-lg transition-colors"><Plus className="w-4 h-4" /></button>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {getSafeCharacters(tracking.favoriteCharacters).map((char, idx) => (
-                            <div key={`${char}-${idx}`} className={`group flex items-center gap-1 pl-2 pr-1 py-1 rounded-md text-xs border transition-colors ${idx < 5 ? 'bg-indigo-900/20 border-indigo-500/30 text-indigo-200' : 'bg-slate-800 border-slate-700 text-slate-300'}`}>
-                                <span className="opacity-50 text-[10px] mr-1">#{idx + 1}</span>
-                                <span className="font-medium">{char}</span>
-                                <div className="flex items-center ml-1 border-l border-white/10 pl-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {idx > 0 && <button onClick={() => moveCharacter(idx, 'left')} className="p-0.5 hover:text-white"><ChevronLeft className="w-3 h-3"/></button>}
-                                    {idx < getSafeCharacters(tracking.favoriteCharacters).length - 1 && <button onClick={() => moveCharacter(idx, 'right')} className="p-0.5 hover:text-white"><ChevronRight className="w-3 h-3"/></button>}
-                                    <button onClick={() => removeCharacter(char)} className="p-0.5 hover:text-red-400 text-slate-500 ml-0.5"><X className="w-3 h-3" /></button>
-                                </div>
+                            <div key={`${char}-${idx}`} className="group flex items-center gap-2 pl-3 pr-2 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs font-medium text-slate-300 shadow-sm">
+                                <span className="truncate max-w-[150px]">{char}</span>
+                                <button onClick={() => removeCharacter(char)} className="hover:text-red-400 text-slate-500 transition-colors bg-slate-900/50 rounded-full p-0.5"><X className="w-3 h-3" /></button>
                             </div>
                         ))}
                     </div>
-                </div>
+               </div>
+          </div>
 
-                {/* Comments Card */}
-                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col">
-                    <label className="block text-xs font-medium text-slate-400 mb-2">Comentario Final / Deseos</label>
-                    <textarea className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-sm text-slate-200 focus:border-primary outline-none resize-none flex-grow min-h-[100px]" value={tracking.comment} onChange={(e) => handleInputChange('comment', e.target.value)} placeholder="Pensamientos finales..." />
-                </div>
+        </div>
+
+        {/* COL 3: RIGHT SIDEBAR (Analysis) */}
+        <div className="p-6 md:p-8 flex flex-col gap-8 bg-[#0F1119] border-t lg:border-t-0 lg:border-l border-slate-800 overflow-y-auto custom-scrollbar">
+          
+          {/* CARD: Rating & Share (Compact) */}
+          <div className={`${CARD_BG} p-4 rounded-2xl border ${BORDER_COLOR} shadow-xl`}>
+               <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                <Star className="w-4 h-4 text-slate-400" /> Calificación
+              </h3>
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                   {RATING_OPTIONS.map(opt => {
+                       const config = RATING_CONFIG[opt];
+                       const Icon = config.icon;
+                       const isSelected = tracking.rating === opt;
+                       
+                       return (
+                           <button 
+                               key={opt}
+                               onClick={() => handleInputChange('rating', opt)}
+                               className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border transition-all aspect-square group ${
+                                   isSelected 
+                                   ? 'bg-white/10 border-[var(--theme-color)] text-white shadow-[0_0_10px_rgba(255,255,255,0.1)]' 
+                                   : 'bg-[#1A1D26] border-slate-800 text-slate-500 hover:bg-slate-800 hover:text-slate-300'
+                               }`}
+                               style={isSelected ? { borderColor: dynamicColor, '--theme-color': dynamicColor } as React.CSSProperties : {}}
+                           >
+                               <Icon className={`w-4 h-4 ${isSelected ? 'scale-110 fill-current' : 'group-hover:scale-110 transition-transform'}`} style={isSelected ? { color: dynamicColor } : {}} />
+                               <span className="text-[9px] font-bold text-center leading-tight uppercase tracking-tight">{config.shortLabel}</span>
+                           </button>
+                       )
+                   })}
+               </div>
+               
+               <button onClick={handleShare} className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-purple-600/20 transition-all text-xs">
+                    <Share2 className="w-4 h-4" /> Copiar Reseña IA
+               </button>
+          </div>
+
+          {/* CARD: Reflection (Tags & Recommended By) */}
+          <div className={`${CARD_BG} p-6 md:p-8 rounded-2xl border ${BORDER_COLOR} shadow-xl`}>
+               <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-slate-400" /> Reflexión
+              </h3>
+              
+              <div className="space-y-6">
+                  <div>
+                      <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase mb-2 tracking-wider`}>RECOMENDADO POR</span>
+                      <input type="text" value={tracking.recommendedBy || ''} onChange={(e) => handleInputChange('recommendedBy', e.target.value)} className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[var(--theme-color)] placeholder-slate-700`} placeholder="Ej: Laura, r/anime..." style={{ '--theme-color': dynamicColor } as React.CSSProperties} />
+                  </div>
+
+                  <div>
+                      <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase mb-2 tracking-wider`}>RESUMEN EMOCIONAL</span>
+                      {/* Fixed height container with scroll for tags */}
+                      <div className="max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
+                          <div className="flex flex-wrap gap-2">
+                              {EMOTIONAL_TAGS_OPTIONS.map(opt => {
+                                  const isActive = tracking.emotionalTags?.includes(opt.label);
+                                  const isNegative = opt.sentiment === 'negative';
+                                  return (
+                                      <button
+                                        key={opt.label}
+                                        onClick={() => toggleTag(opt.label)}
+                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border flex items-center gap-2 ${
+                                            isActive 
+                                            ? (isNegative ? 'bg-red-500/20 border-red-500 text-white' : 'bg-white/10 text-white') 
+                                            : 'bg-[#1A1D26] border-slate-800 text-slate-400 hover:bg-slate-800'
+                                        }`}
+                                        style={isActive && !isNegative ? { borderColor: dynamicColor, boxShadow: `0 0 10px ${dynamicColor}30` } : {}}
+                                      >
+                                          <span>{opt.emoji}</span>
+                                          {opt.label}
+                                      </button>
+                                  )
+                              })}
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          {/* CARD: Comments (Moved from Right Bottom) */}
+          <div className={`${CARD_BG} p-6 md:p-8 rounded-2xl border ${BORDER_COLOR} shadow-xl`}>
+               <div>
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><FileText className="w-5 h-5 text-slate-400" /> Comentario Final</h3>
+                    <textarea className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-xl p-4 text-sm text-slate-200 focus:border-[var(--theme-color)] outline-none h-32 resize-none placeholder-slate-600 leading-relaxed`} value={tracking.comment} onChange={(e) => handleInputChange('comment', e.target.value)} placeholder="Tus pensamientos finales..." style={{ '--theme-color': dynamicColor } as React.CSSProperties} />
+               </div>
           </div>
 
         </div>
@@ -945,15 +887,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
               <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
                   <div className="p-6">
                       <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-bold text-white flex items-center gap-2"><Sparkles className="w-5 h-5 text-yellow-400" /> {isGeneratingShare ? 'Generando Reseña IA...' : 'Listo para compartir'}</h3>
-                          <button onClick={() => setShowShareModal(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+                          <h3 className="text-xl font-bold text-white flex items-center gap-2"><Sparkles className="w-6 h-6 text-yellow-400" /> {isGeneratingShare ? 'Generando Reseña IA...' : 'Listo para compartir'}</h3>
+                          <button onClick={() => setShowShareModal(false)} className="text-slate-400 hover:text-white"><X className="w-6 h-6" /></button>
                       </div>
                       {isGeneratingShare ? (
-                          <div className="py-8 flex flex-col items-center justify-center text-slate-400"><Loader2 className="w-8 h-8 animate-spin mb-3 text-primary" /><p className="text-sm">Redactando el tweet perfecto...</p></div>
+                          <div className="py-12 flex flex-col items-center justify-center text-slate-400"><Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" /><p className="text-base font-medium">Redactando el tweet perfecto...</p></div>
                       ) : (
                           <>
-                            <div className="bg-slate-900 rounded-xl p-4 border border-slate-700 mb-4 relative group"><textarea className="w-full bg-transparent border-none text-slate-300 text-sm resize-none focus:ring-0 h-40 custom-scrollbar" value={shareTextContent} onChange={(e) => setShareTextContent(e.target.value)} readOnly={false} /></div>
-                            <button onClick={executeCopy} className="w-full py-3 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2"><Copy className="w-4 h-4" /> Copiar al Portapapeles</button>
+                            <div className="bg-slate-900 rounded-xl p-5 border border-slate-700 mb-6 relative group"><textarea className="w-full bg-transparent border-none text-slate-300 text-sm resize-none focus:ring-0 h-48 custom-scrollbar leading-relaxed" value={shareTextContent} onChange={(e) => setShareTextContent(e.target.value)} readOnly={false} /></div>
+                            <button onClick={executeCopy} className="w-full py-4 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2 text-base"><Copy className="w-5 h-5" /> Copiar al Portapapeles</button>
                           </>
                       )}
                   </div>
