@@ -1,59 +1,63 @@
+
 # MediaTracker AI 🎬📚
 
-![Status](https://img.shields.io/badge/Status-Active-success)
-![Tech](https://img.shields.io/badge/Tech-React%20%7C%20Gemini%20API%20%7C%20Tailwind-blue)
-![PWA](https://img.shields.io/badge/PWA-Ready-purple)
+![Status](https://img.shields.io/badge/Status-Stable-success)
+![License](https://img.shields.io/badge/License-GPL_v3-blue)
+![Tech](https://img.shields.io/badge/Stack-React_19_%7C_Tailwind_%7C_Gemini_AI-indigo)
+![PWA](https://img.shields.io/badge/PWA-Installable-purple)
 
-**MediaTracker AI** es una biblioteca inteligente y privada para el seguimiento de medios de entretenimiento (Anime, Series, Películas, Manhwas, Mangas y Libros). 
+**MediaTracker AI** redefine la gestión de tu biblioteca de entretenimiento personal. No es solo una lista; es una experiencia visual inmersiva y privada para el seguimiento de Anime, Series, Películas, Manhwas y Libros.
 
-A diferencia de los trackers tradicionales, esta aplicación utiliza la **IA de Google Gemini** para enriquecer automáticamente los metadatos, generar recomendaciones semánticas basadas en tus gustos y ofrecer análisis profundos sobre tus hábitos de consumo.
-
----
-
-## ✨ Características Principales
-
-### 🧠 Impulsado por Inteligencia Artificial (Gemini 2.5)
-- **Auto-Metadatos:** Ingresa solo el nombre de la obra y la IA buscará sinopsis, portadas, géneros, estado de publicación y colores temáticos automáticamente.
-- **Recomendaciones Semánticas:** Un motor de descubrimiento que analiza el "ADN" de tus obras favoritas para sugerir títulos similares, explicando el *porqué* de cada recomendación.
-- **Reseñas Sintetizadas:** Genera textos atractivos para compartir en redes sociales basados en tus etiquetas emocionales y calificación.
-
-### 📊 Seguimiento Granular & Estadísticas
-- **Soporte Multi-Formato:** Rastreo especializado para medios visuales (episodios/temporadas) y lectura (capítulos/volúmenes/páginas).
-- **Sistema de Clasificación "God Tier":** Califica desde "Pérdida de tiempo" hasta "God Tier", influyendo en tus estadísticas.
-- **Insights Profundos:** 
-  - Cálculo de tiempo total invertido (Visual vs. Lectura).
-  - Gráficos de distribución por emociones y géneros.
-  - "Obsession Tracker": Identifica tus top 3 obsesiones por tiempo consumido.
-  - Sistema de Rangos gamificado (de "Explorador Novato" a "Maestro del Consumo").
-
-### 🔒 Privacidad & Local-First
-- **Cero Tracking Externo:** Todos los datos se almacenan localmente en tu dispositivo usando **IndexedDB**.
-- **Bloqueo de Seguridad:** Protege tu biblioteca con una contraseña opcional.
-- **Importación/Exportación:** 
-  - *Backup Completo:* Guarda tu perfil, API Key y biblioteca.
-  - *Catálogo Público:* Exporta solo tu lista de obras para compartir con amigos (formato JSON sanitizado).
-
-### 🎨 Experiencia de Usuario (UX)
-- **Diseño Adaptativo:** Interfaz moderna y fluida construida con Tailwind CSS.
-- **Temas Dinámicos:** La interfaz se adapta al color predominante de la portada de la obra que estás viendo.
-- **Saludo Contextual:** La pantalla de inicio te saluda dinámicamente basándose en la última obra con la que interactuaste y la hora del día.
-- **PWA (Progressive Web App):** Instalable en móviles y escritorio, funciona offline (funcionalidad básica).
+Potenciado por **Google Gemini 2.5**, el sistema transforma simples títulos en un ecosistema rico en metadatos, colores dinámicos y recomendaciones emocionales, todo guardado de forma segura en tu dispositivo.
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## ✨ La Experiencia Inmersiva
 
-- **Frontend:** React 19, TypeScript.
-- **Estilos:** Tailwind CSS, Lucide React (Iconos).
-- **IA Integration:** Google GenAI SDK (`@google/genai`).
-- **Almacenamiento:** IndexedDB (Natival browser storage).
-- **Build Tool:** Vite (implícito).
+### 🧠 Descubrimiento IA "Stack"
+Olvídate de las listas estáticas. MediaTracker implementa un sistema de descubrimiento gestual inspirado en interfaces móviles de alta gama:
+- **Navegación por Tarjetas 3D:** Desliza, inclina y explora recomendaciones generadas por IA con físicas realistas y efectos de "barajeo".
+- **Refinamiento por Mood:** ¿Cómo te sientes hoy? Filtra no solo por género, sino por atmósfera emocional (ej. *"🤯 Quiero algo que me vuele la cabeza"* o *"🍿 Algo ligero para desconectar"*).
+- **Fallos Estéticos:** Incluso si la IA no encuentra resultados, la interfaz responde con tarjetas de estado diseñadas para mantener la inmersión.
+
+### 🎨 Diseño Adaptativo & Temas
+La interfaz está viva. Cada vez que abres una obra, la aplicación extrae la paleta de colores dominante de su portada y **adapta toda la UI en tiempo real** (bordes, sombras, gradientes y acentos) para coincidir con la estética del contenido.
+
+### 📊 Biblioteca Inteligente
+- **Auto-Metadatos:** Escribe "Solo Leveling" y la IA completará sinopsis, estado, número de capítulos y portada automáticamente.
+- **Modo Catálogo (Estantería):** Visualiza tu colección en "estanterías" horizontales inteligentes, organizadas por prioridad de visualización y géneros.
+- **Insights Profundos:** Gráficos de distribución de consumo (Visual vs Lectura), ranking de obsesiones y análisis de tu ecosistema de plataformas.
 
 ---
 
-## 🚀 Instalación y Uso Local
+## 🔒 Privacidad: Tu Data es Tuya
 
-Sigue estos pasos para ejecutar el proyecto en tu máquina local:
+En una era de tracking masivo, MediaTracker toma una postura radical:
+- **Local-First:** Todos tus datos viven en **IndexedDB** dentro de tu navegador. Nada se envía a servidores externos de la app.
+- **Conexión Directa:** Tú provees tu propia API Key de Google Gemini. La conexión es directa entre tu cliente y Google.
+- **Importación/Exportación:** Eres dueño de tus datos. Exporta copias de seguridad completas (JSON) o comparte catálogos públicos sanitizados.
+
+---
+
+## 🛠️ Stack Tecnológico
+
+Construido con las últimas tecnologías web para un rendimiento nativo:
+
+- **Core:** React 19 (Hooks modernos & optimización de renderizado).
+- **IA:** Google GenAI SDK (`@google/genai` v1.31+).
+- **Estilos:** Tailwind CSS con utilidades personalizadas para Glassmorphism y animaciones 3D.
+- **Persistencia:** IndexedDB wrapper para almacenamiento robusto en el cliente.
+- **Iconografía:** Lucide React.
+
+---
+
+## 🚀 Cómo Empezar
+
+### Prerrequisitos
+Necesitas una **API Key de Google Gemini** (Gratuita).
+👉 [Consíguela en Google AI Studio](https://aistudio.google.com/app/apikey)
+
+### Instalación Local
 
 1.  **Clonar el repositorio:**
     ```bash
@@ -66,55 +70,27 @@ Sigue estos pasos para ejecutar el proyecto en tu máquina local:
     npm install
     ```
 
-3.  **Ejecutar en desarrollo:**
+3.  **Iniciar servidor de desarrollo:**
     ```bash
     npm run dev
     ```
 
-4.  **Configuración Inicial:**
-    - Al abrir la app, verás una pantalla de **Onboarding**.
-    - Necesitarás una **API Key de Google Gemini** (Gratuita).
-    - Consíguela aquí: [Google AI Studio](https://aistudio.google.com/app/apikey).
-    - La API Key se guarda **exclusivamente en tu navegador**.
+4.  **Configuración:** Al abrir la app, completa el *Onboarding* ingresando tu nombre y tu API Key.
 
----
-
-## 📱 Funcionalidad PWA (Móvil)
-
-Esta aplicación está optimizada para funcionar como una app nativa en iOS y Android.
-
-1. Abre la aplicación en tu navegador móvil (Chrome/Safari).
-2. Selecciona "Agregar a pantalla de inicio".
-3. La app se instalará, eliminará la barra de navegación del navegador y funcionará en pantalla completa.
-
----
-
-## 📂 Estructura del Proyecto
-
-```text
-/src
-  ├── components/      # Componentes UI (Cards, Modals, Stats, etc.)
-  ├── context/         # Contexto global (Toast Notifications)
-  ├── services/        # Lógica de negocio (Gemini Service, Storage DB)
-  ├── types/           # Definiciones TypeScript
-  ├── App.tsx          # Router principal y lógica de vistas
-  └── index.tsx        # Punto de entrada
-```
+### Uso como App Móvil (PWA)
+MediaTracker está optimizada para tacto y gestos.
+1. Abre la web en Safari (iOS) o Chrome (Android).
+2. Toca "Compartir" -> "Agregar a Inicio".
+3. Disfruta de la experiencia a pantalla completa sin barras de navegador.
 
 ---
 
 ## 🤝 Contribución
 
-¡Las contribuciones son bienvenidas! Si tienes ideas para mejorar el algoritmo de recomendación o añadir soporte para nuevos tipos de medios:
-
-1. Haz un Fork del proyecto.
-2. Crea una rama para tu característica (`git checkout -b feature/AmazingFeature`).
-3. Haz Commit de tus cambios (`git commit -m 'Add some AmazingFeature'`).
-4. Haz Push a la rama (`git push origin feature/AmazingFeature`).
-5. Abre un Pull Request.
+Las Pull Requests son bienvenidas. Para cambios mayores, por favor abre primero un issue para discutir lo que te gustaría cambiar.
 
 ---
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT - mira el archivo [LICENSE](LICENSE) para más detalles.
+Este proyecto está licenciado bajo la **GNU General Public License v3.0**. Consulta el archivo `LICENSE` para más detalles.
