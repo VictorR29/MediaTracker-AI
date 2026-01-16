@@ -55,11 +55,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
   const isValidSource = (src?: string) => 
     src && (src.startsWith('http') || src.startsWith('data:'));
 
-  const initialImage = isValidSource(item.aiData.coverImage)
+  const actualImageSource = isValidSource(item.aiData.coverImage)
     ? item.aiData.coverImage!
     : getPlaceholder();
 
-  const [imgSrc, setImgSrc] = useState(initialImage);
+  const [imgSrc, setImgSrc] = useState(actualImageSource);
 
   const isMovie = item.aiData.mediaType === 'Pelicula';
   const isBook = item.aiData.mediaType === 'Libro';
@@ -731,6 +731,37 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                         ))}
                       </select>
                   </div>
+
+                  {/* Date Inputs based on status */}
+                  {tracking.status === 'Planeado / Pendiente' && (
+                      <div className="animate-fade-in">
+                          <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase mb-2 tracking-wider flex items-center gap-1.5`}>
+                              <Calendar className="w-3.5 h-3.5" /> Fecha Prevista
+                          </span>
+                          <input 
+                              type="date" 
+                              value={tracking.nextReleaseDate || ''} 
+                              onChange={(e) => handleInputChange('nextReleaseDate', e.target.value)} 
+                              className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[var(--theme-color)] transition-colors`} 
+                              style={{ '--theme-color': dynamicColor } as React.CSSProperties} 
+                          />
+                      </div>
+                  )}
+
+                  {tracking.status === 'En Pausa' && (
+                      <div className="animate-fade-in">
+                          <span className={`block text-xs font-bold ${TEXT_MUTED} uppercase mb-2 tracking-wider flex items-center gap-1.5`}>
+                              <Calendar className="w-3.5 h-3.5" /> Retomar el
+                          </span>
+                          <input 
+                              type="date" 
+                              value={tracking.scheduledReturnDate || ''} 
+                              onChange={(e) => handleInputChange('scheduledReturnDate', e.target.value)} 
+                              className={`w-full ${INPUT_BG} border ${BORDER_COLOR} rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[var(--theme-color)] transition-colors`} 
+                              style={{ '--theme-color': dynamicColor } as React.CSSProperties} 
+                          />
+                      </div>
+                  )}
 
                   {isMovie ? (
                       <div>
