@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Bell, Hourglass, CalendarDays, Star, Trash2, Clock, MoreVertical } from 'lucide-react';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Trash2, Star } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
@@ -160,26 +160,22 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       return trackingData.status;
   };
 
-  const renderSeasonInfo = () => {
-      if (isMovie) return <span className="opacity-50">Película</span>;
-      if (isBook) return <span>{trackingData.isSaga ? `L. ${trackingData.currentSeason}` : 'Novela'}</span>;
-      if (isReadingContent) return <span>CPS. ACUM.</span>;
-      return <span>T. {trackingData.currentSeason}</span>;
-  };
-
-  const renderProgressInfo = () => {
+  // Helper to render the stats (Season / Progress) inside the overlay
+  const renderOverlayStats = () => {
       if (isMovie) return null;
+      
+      const seasonPrefix = isBook 
+        ? (trackingData.isSaga ? `L.${trackingData.currentSeason}` : 'Novela') 
+        : (isReadingContent ? 'Vol.' : `T.${trackingData.currentSeason}`);
+      
+      const progressText = trackingData.totalEpisodesInSeason > 0
+        ? `${trackingData.watchedEpisodes}/${trackingData.totalEpisodesInSeason}`
+        : `${trackingData.watchedEpisodes}`;
+
       return (
-          <div className="flex items-center gap-1.5">
-              {trackingData.status === 'Completado' ? (
-                  <Check className="w-3 h-3 text-green-400" />
-              ) : (
-                  <Clock className="w-3 h-3 text-slate-500" />
-              )}
-              <span className="font-mono text-slate-300">
-                  {trackingData.watchedEpisodes} <span className="text-slate-600">/</span> {trackingData.totalEpisodesInSeason || '?'}
-              </span>
-          </div>
+          <span className="text-[10px] font-bold text-slate-300 bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/10">
+              {seasonPrefix} <span className="text-slate-500 mx-0.5">|</span> {progressText}
+          </span>
       );
   };
 
@@ -220,14 +216,14 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
             />
         )}
         
-        {/* Gradient Overlay for Text Readability - Updated to Pure Black for Sharpness */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        {/* Gradient Overlay for Text Readability - Stronger at bottom */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent" />
 
         {/* Top Left Badge (Type) */}
         <div className="absolute top-3 left-3 z-30">
             <span 
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-white text-[10px] font-bold uppercase tracking-wider shadow-lg"
-                style={{ backgroundColor: dynamicColor }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-white text-[10px] font-bold uppercase tracking-wider shadow-lg backdrop-blur-sm bg-black/40 border border-white/10"
+                style={{ borderLeftColor: dynamicColor, borderLeftWidth: '3px' }}
             >
                 <TypeIcon />
                 {aiData.mediaType.toUpperCase()}
@@ -276,42 +272,34 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
              </button>
         )}
 
-        {/* Content Info Overlay (Bottom of Image) */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 z-30">
-            <h3 className="text-white font-bold text-base leading-tight line-clamp-2 drop-shadow-md mb-1.5">
+        {/* Content Info Overlay (Merged Footer into Image) */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 z-30 pb-5">
+            <h3 className="text-white font-bold text-sm leading-tight line-clamp-2 drop-shadow-md mb-2">
                 {aiData.title}
             </h3>
             
-            <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${getStatusColorDot()} shadow-[0_0_8px_currentColor]`} />
-                <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wide">
-                    {isPlanned && timeRemaining ? timeRemaining : getStatusText()}
-                </span>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className={`w-1.5 h-1.5 rounded-full ${getStatusColorDot()} shadow-[0_0_8px_currentColor]`} />
+                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wide">
+                        {isPlanned && timeRemaining ? timeRemaining : getStatusText()}
+                    </span>
+                </div>
+                {renderOverlayStats()}
             </div>
         </div>
-      </div>
-
-      {/* --- FOOTER AREA --- */}
-      <div className="bg-[#1A1D26] px-4 py-3 flex items-center justify-between border-t border-white/5 relative z-20">
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              {renderSeasonInfo()}
-          </div>
-          
-          <div className="text-xs font-medium">
-              {renderProgressInfo()}
-          </div>
-      </div>
-
-      {/* Progress Bar (Bottom Edge) */}
-      <div className="h-1 w-full bg-slate-800">
-         <div 
-           className="h-full transition-all duration-700 ease-out" 
-           style={{ 
-               width: `${progressPercent}%`,
-               backgroundColor: isPlanned ? '#fbbf24' : (progressPercent === 100 ? '#4ade80' : dynamicColor),
-               boxShadow: `0 0 10px ${dynamicColor}40`
-            }}
-         />
+        
+        {/* Progress Bar (Attached to bottom edge of image container) */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-30">
+            <div 
+            className="h-full transition-all duration-700 ease-out" 
+            style={{ 
+                width: `${progressPercent}%`,
+                backgroundColor: isPlanned ? '#fbbf24' : (progressPercent === 100 ? '#4ade80' : dynamicColor),
+                boxShadow: `0 0 10px ${dynamicColor}40`
+                }}
+            />
+        </div>
       </div>
 
     </div>
