@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { useToast } from '../context/ToastContext';
 import { generateReviewSummary, updateMediaInfo } from '../services/geminiService';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy, Pencil, Save, RefreshCw, Search } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy, Pencil, Save, RefreshCw, Search, CalendarClock } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -462,6 +462,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     const movieRegex = /(?:Film|Movie|Película|Special|Especial|OVA).*?['"“](.+?)['"”]/i;
     const match = line.match(movieRegex);
     const trimLine = line.trim();
+    
+    // Future/Announced Check
+    const isFutureHeader = /(Anunciada|Confirmada|Coming Soon)/i.test(trimLine);
+    const isFutureDetail = /(Estreno|Release|Lanzamiento):/i.test(trimLine);
+
     const isSeasonHeader = /^\d+\s+(Temporadas|Seasons|Series)/i.test(trimLine) && !trimLine.startsWith('-');
     const isSeasonDetail = trimLine.startsWith('-') || /^(Season|Temporada)/i.test(trimLine);
     const isExtra = /OVA|Película|Movie|Film|Special|Especial/i.test(trimLine) && !isSeasonHeader;
@@ -471,15 +476,26 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     if (displayLine.startsWith('-')) displayLine = displayLine.substring(1).trim(); 
 
     let containerClass = "text-sm text-slate-200";
-    let bullet = "";
+    let bullet: React.ReactNode = null;
 
-    if (isSeasonHeader) containerClass = "font-bold text-white text-sm mb-1 mt-2 border-b border-white/10 pb-1";
-    else if (isSeasonDetail) { containerClass = "ml-4 text-xs text-slate-300 flex items-center gap-2"; bullet = "•"; }
-    else if (isExtra) containerClass = "font-semibold text-indigo-200 mt-2 text-xs flex flex-wrap gap-1 items-center bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20 w-fit";
+    if (isFutureHeader) {
+        containerClass = "font-bold text-amber-400 text-sm mt-3 mb-1 border-b border-amber-500/30 pb-1 flex items-center gap-2";
+        bullet = <CalendarClock className="w-4 h-4 text-amber-500" />;
+    } else if (isFutureDetail) {
+         containerClass = "ml-4 text-xs text-amber-200/70 flex items-center gap-2 font-mono";
+         bullet = "📅";
+    } else if (isSeasonHeader) {
+        containerClass = "font-bold text-white text-sm mb-1 mt-2 border-b border-white/10 pb-1";
+    } else if (isSeasonDetail) { 
+        containerClass = "ml-4 text-xs text-slate-300 flex items-center gap-2"; 
+        bullet = "•"; 
+    } else if (isExtra) {
+        containerClass = "font-semibold text-indigo-200 mt-2 text-xs flex flex-wrap gap-1 items-center bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20 w-fit";
+    }
 
     return (
         <div key={index} className={containerClass}>
-            {bullet && <span className="text-slate-500">{bullet}</span>}
+            {bullet && <span className={isFutureHeader ? "text-amber-500" : "text-slate-500"}>{bullet}</span>}
             <span>{displayLine}</span>
             {match && onSearch && (
                 <button

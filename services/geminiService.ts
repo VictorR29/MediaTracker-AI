@@ -80,7 +80,7 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
       "synopsis": "A concise synopsis in Spanish (max 300 chars)",
       "genres": ["Genre1", "Genre2"],
       "status": "Publication/Broadcast status (e.g., En emisión, Finalizado, En pausa)",
-      "totalContent": "FOR ANIME/SERIES: You MUST use a strict vertical format separating lines with '\\n'. Structure:\nLine 1: '[X] Temporadas'\nLine 2+: '- Temporada 1: [X] Caps' (Indented with dash)\nLast Lines: Any Movies/OVAs/Specials listed separately.\n\nExample:\n'3 Temporadas\n- Temporada 1: 24 Caps\n- Temporada 2: 12 Caps\n1 Película ('Mugen Train')'\n\nFOR OTHERS: Just string like '120 Capítulos' or 'Duración 1h 57m'.",
+      "totalContent": "FOR ANIME/SERIES: Use vertical format '\\n'.\n1. Released Seasons (Count ONLY currently released/airing):\n'[X] Temporadas'\n'- Temporada 1: [X] Caps'\n\n2. Future Seasons (If officially announced):\n'Temporada [X] Anunciada:\n- Estreno: [YYYY-MM-DD or Season Year]'\n\nExample:\n'2 Temporadas\n- Temporada 1: 12 Caps\n- Temporada 2: 12 Caps\nTemporada 3 Anunciada:\n- Estreno: 2025-10'\n\nFOR OTHERS: Just string like '120 Capítulos' or 'Duración 1h 57m'.",
       "coverDescription": "A short English visual description of the official poster (e.g. 'poster of Naruto anime')",
       "coverImage": "Find a DIRECT public URL (https) for the official poster. PREFER URLs from 'upload.wikimedia.org', 'm.media-amazon.com', 'cdn.myanimelist.net' or 'static.wikia.nocookie.net'. The URL MUST end in .jpg, .png or .webp. If uncertain, leave empty.",
       "primaryColor": "Identify the DOMINANT HEX COLOR associated with the work's cover art or branding (e.g. '#FF5733'). It MUST be a 6-digit HEX code.",
@@ -158,22 +158,29 @@ export const updateMediaInfo = async (currentData: AIWorkData, apiKey: string): 
     - Total Content: ${currentData.totalContent}
     - Release Date: ${currentData.releaseDate || 'N/A'}
     - End Date: ${currentData.endDate || 'N/A'}
+    - Current Synopsis: "${currentData.synopsis || ''}"
     
     Task: Search for the absolute latest status, content count (seasons/episodes) and broadcast dates.
     Compare with Current Data.
     
-    Rules for Synopsis:
-    - Do NOT suggest a new synopsis if the current one is still accurate.
-    - ONLY suggest a new synopsis if there is a MAJOR update (e.g. a new season started with a different plot focus) AND the current synopsis is clearly outdated.
+    Specific Rules for Update:
+    1. FUTURE CONTENT CHECK: If the "Current Data" contains "Anunciada", "Futura", or "Estreno" for a season, check today's date vs the release date. 
+       - If the season HAS STARTED: Merge it into the main season count, remove the "Anunciada" label, and list its episodes naturally. Update the total season count in the first line.
+       - If it is STILL in the future: Keep the "Anunciada" format but update the release date/year if new info is available.
     
+    2. SYNOPSIS:
+       - IF the current synopsis is TOO SHORT, VAGUE or placeholder: GENERATE a new one (max 300 chars, Spanish).
+       - IF there is a MAJOR plot update (e.g. new season started): GENERATE a new synopsis.
+       - Otherwise return null.
+
     Return a JSON object:
     {
       "status": "The latest correct status",
-      "totalContent": "The latest episode/chapter/season count. IMPORTANT: Use vertical structure:\nLine 1: 'X Temporadas'\nLine 2+: '- Temporada X: Y Caps'\nThen Extras (Movies/OVAs).",
+      "totalContent": "Vertical format:\nLine 1: 'X Temporadas'\nLine 2+: '- Temporada X: Y Caps'\n...followed by any 'Temporada Z Anunciada:\n- Estreno: Date' if applicable.",
       "releaseDate": "YYYY-MM-DD",
       "endDate": "YYYY-MM-DD (or null if ongoing)",
-      "synopsis": "New string OR null (if no major change needed)",
-      "hasChanges": boolean (true ONLY if status, totalContent, or dates are factually different. False if they are effectively the same)
+      "synopsis": "New string ONLY IF rules above are met, otherwise null",
+      "hasChanges": boolean
     }
   `;
 
@@ -199,7 +206,7 @@ export const updateMediaInfo = async (currentData: AIWorkData, apiKey: string): 
             endDate: result.endDate,
             ...(result.synopsis ? { synopsis: result.synopsis } : {})
         },
-        hasChanges: result.hasChanges
+        hasChanges: result.hasChanges || !!result.synopsis // Ensure we flag change if synopsis was rewritten
     };
 
   } catch (error) {
