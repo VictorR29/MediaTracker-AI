@@ -80,7 +80,7 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
       "synopsis": "A concise synopsis in Spanish (max 300 chars)",
       "genres": ["Genre1", "Genre2"],
       "status": "Publication/Broadcast status (e.g., En emisión, Finalizado, En pausa)",
-      "totalContent": "FOR ANIME/SERIES: Use vertical format '\\n'.\n1. Released Seasons (Count ONLY currently released/airing):\n'[X] Temporadas'\n'- Temporada 1: [X] Caps'\n\n2. Future Seasons (If officially announced):\n'Temporada [X] Anunciada:\n- Estreno: [YYYY-MM-DD or Season Year]'\n\nExample:\n'2 Temporadas\n- Temporada 1: 12 Caps\n- Temporada 2: 12 Caps\nTemporada 3 Anunciada:\n- Estreno: 2025-10'\n\nFOR OTHERS: Just string like '120 Capítulos' or 'Duración 1h 57m'.",
+      "totalContent": "FOR ANIME/SERIES: Use vertical format '\\n'.\n1. Released Seasons (Count ONLY currently released/airing):\n'[X] Temporadas'\n'- Temporada 1: [X] Caps'\n\n2. CURRENTLY AIRING / SIMULCAST RULE:\nIf a season is currently broadcasting (new episodes coming out weekly), format it as:\n'- Temporada [X]: [Released So Far]/[Total Planned] Caps (En emisión)'\nExample: '- Temporada 2: 3/12 Caps (En emisión)' or '- Temporada 1: 5/? Caps (En emisión)'.\n\n3. Future Seasons (If officially announced):\n'Temporada [X] Anunciada:\n- Estreno: [YYYY-MM-DD or Season Year]'\n\nFOR OTHERS: Just string like '120 Capítulos' or 'Duración 1h 57m'.",
       "coverDescription": "A short English visual description of the official poster (e.g. 'poster of Naruto anime')",
       "coverImage": "Find a DIRECT public URL (https) for the official poster. PREFER URLs from 'upload.wikimedia.org', 'm.media-amazon.com', 'cdn.myanimelist.net' or 'static.wikia.nocookie.net'. The URL MUST end in .jpg, .png or .webp. If uncertain, leave empty.",
       "primaryColor": "Identify the DOMINANT HEX COLOR associated with the work's cover art or branding (e.g. '#FF5733'). It MUST be a 6-digit HEX code.",
@@ -168,7 +168,9 @@ export const updateMediaInfo = async (currentData: AIWorkData, apiKey: string): 
        - If the season HAS STARTED: Merge it into the main season count, remove the "Anunciada" label, and list its episodes naturally. Update the total season count in the first line.
        - If it is STILL in the future: Keep the "Anunciada" format but update the release date/year if new info is available.
     
-    2. SYNOPSIS:
+    2. ONGOING CHECK: If a season is currently airing, use the format: '- Temporada X: [Current]/[Total] Caps (En emisión)'. Update the [Current] count if it has increased.
+
+    3. SYNOPSIS:
        - IF the current synopsis is TOO SHORT, VAGUE or placeholder: GENERATE a new one (max 300 chars, Spanish).
        - IF there is a MAJOR plot update (e.g. new season started): GENERATE a new synopsis.
        - Otherwise return null.

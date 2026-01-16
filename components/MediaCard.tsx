@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { useToast } from '../context/ToastContext';
 import { generateReviewSummary, updateMediaInfo } from '../services/geminiService';
-import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy, Pencil, Save, RefreshCw, Search, CalendarClock } from 'lucide-react';
+import { BookOpen, Tv, Clapperboard, CheckCircle2, AlertCircle, Link as LinkIcon, ExternalLink, ImagePlus, ChevronRight, ChevronLeft, Book, FileText, Crown, Trophy, Star, ThumbsUp, Smile, Meh, Frown, Trash2, X, AlertTriangle, Users, Share2, Globe, Plus, Calendar, Bell, Medal, CalendarDays, GitMerge, Loader2, Sparkles, Copy, Pencil, Save, RefreshCw, Search, CalendarClock, Radio } from 'lucide-react';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -466,6 +466,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     // Future/Announced Check
     const isFutureHeader = /(Anunciada|Confirmada|Coming Soon)/i.test(trimLine);
     const isFutureDetail = /(Estreno|Release|Lanzamiento):/i.test(trimLine);
+    
+    // Airing Check
+    const isAiring = /(En emisión|On Air|Simulcast)/i.test(trimLine);
 
     const isSeasonHeader = /^\d+\s+(Temporadas|Seasons|Series)/i.test(trimLine) && !trimLine.startsWith('-');
     const isSeasonDetail = trimLine.startsWith('-') || /^(Season|Temporada)/i.test(trimLine);
@@ -474,6 +477,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     let displayLine = trimLine;
     if (displayLine.endsWith(')')) displayLine = displayLine.slice(0, -1); 
     if (displayLine.startsWith('-')) displayLine = displayLine.substring(1).trim(); 
+
+    // Handle "En emisión" replacement visual
+    if (isAiring) {
+        displayLine = displayLine.replace(/\(En emisión\)/gi, '').trim();
+    }
 
     let containerClass = "text-sm text-slate-200";
     let bullet: React.ReactNode = null;
@@ -487,7 +495,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
     } else if (isSeasonHeader) {
         containerClass = "font-bold text-white text-sm mb-1 mt-2 border-b border-white/10 pb-1";
     } else if (isSeasonDetail) { 
-        containerClass = "ml-4 text-xs text-slate-300 flex items-center gap-2"; 
+        containerClass = `ml-4 text-xs flex items-center gap-2 ${isAiring ? 'text-emerald-300 font-medium' : 'text-slate-300'}`; 
         bullet = "•"; 
     } else if (isExtra) {
         containerClass = "font-semibold text-indigo-200 mt-2 text-xs flex flex-wrap gap-1 items-center bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20 w-fit";
@@ -495,8 +503,20 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
 
     return (
         <div key={index} className={containerClass}>
-            {bullet && <span className={isFutureHeader ? "text-amber-500" : "text-slate-500"}>{bullet}</span>}
+            {bullet && <span className={isFutureHeader ? "text-amber-500" : isAiring ? "text-emerald-400" : "text-slate-500"}>{bullet}</span>}
             <span>{displayLine}</span>
+            
+            {/* Airing Badge */}
+            {isAiring && (
+                <span className="inline-flex items-center gap-1.5 ml-2 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-bold text-emerald-400 uppercase tracking-wide">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    Live
+                </span>
+            )}
+
             {match && onSearch && (
                 <button
                     onClick={() => onSearch(match[1])}
