@@ -1239,7 +1239,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                         <CheckCircle2 className="w-3 h-3" />
                         { 
                             tracking.status === 'Completado' 
-                            ? (isBook ? `Libro ${tracking.currentSeason} Completado` : `Temporada ${tracking.currentSeason} Completada`)
+                            ? (isBook && !tracking.isSaga ? "Libro Completado" : "Obra Completada")
                             : (isSeriesContent || (isBook && tracking.isSaga)) 
                                 ? (isBook ? `Terminar Libro ${tracking.currentSeason}` : `Completar Temporada ${tracking.currentSeason}`)
                                 : "Marcar como Completado"
@@ -1306,88 +1306,3 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                           >
                             <span className={`text-sm ${isActive ? 'opacity-100 scale-110' : 'opacity-50 grayscale'} transition-all flex-shrink-0`}>
                                 {opt.emoji}
-                            </span>
-                            <span className="whitespace-normal leading-tight break-words">{opt.label}</span>
-                          </button>
-                        );
-                      })}
-                   </div>
-                </div>
-
-                <div className="flex-grow flex flex-col justify-end mt-2">
-                  <label className="block text-xs font-medium text-slate-400 mb-2">Calificación</label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {RATING_OPTIONS.map(option => {
-                        const config = RATING_CONFIG[option] || { icon: Star, label: option, shortLabel: option };
-                        const Icon = config.icon;
-                        const isSelected = tracking.rating === option;
-                        
-                        return (
-                          <button
-                            key={option}
-                            onClick={() => handleInputChange('rating', option)}
-                            className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-200 ${
-                                isSelected 
-                                ? 'bg-opacity-20 border-opacity-100 shadow-lg scale-105' 
-                                : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:border-slate-500'
-                            }`}
-                            style={isSelected ? {
-                                backgroundColor: `${dynamicColor}`, 
-                                borderColor: dynamicColor, 
-                                color: 'white'
-                            } : {}}
-                            title={config.label}
-                          >
-                            <Icon className={`w-5 h-5 mb-1 ${isSelected ? 'text-white' : ''}`} style={!isSelected ? { color: dynamicColor } : {}} />
-                            <span className="text-[10px] font-medium leading-none text-center">{config.shortLabel}</span>
-                          </button>
-                        );
-                    })}
-                  </div>
-                </div>
-                
-                {/* Share Button with AI Synthesis Support */}
-                <button 
-                  onClick={handleShare}
-                  disabled={isGeneratingShare}
-                  className="w-full flex items-center justify-center gap-2 py-2 mt-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-colors disabled:opacity-70 disabled:cursor-not-allowed group/share"
-                >
-                  {isGeneratingShare ? (
-                      <>
-                        <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                        <span className="text-primary font-bold">Generando con IA...</span>
-                      </>
-                  ) : (
-                      <>
-                        {apiKey ? <Sparkles className="w-3 h-3 text-indigo-400 group-hover/share:text-indigo-300" /> : <Share2 className="w-3 h-3" />}
-                        {apiKey ? "Copiar Reseña IA" : "Copiar Recomendación"}
-                      </>
-                  )}
-                </button>
-
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-700/50">
-             <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Personajes memorables</label>
-                <div className="space-y-3">
-                    {/* Input Area */}
-                    <div className="flex gap-2">
-                        <div className="relative flex-grow">
-                            <input 
-                                type="text"
-                                value={characterInput}
-                                onChange={handleCharacterInputChange}
-                                onKeyDown={handleCharacterKeyDown}
-                                placeholder="Nombre (o separa con comas)..."
-                                className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-3 pr-10 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 transition-all"
-                                style={{ borderColor: `${dynamicColor}30`, '--tw-ring-color': dynamicColor } as React.CSSProperties}
-                            />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-600 font-mono hidden md:block">↵</span>
-                        </div>
-                        <button 
-                            onClick={addCharacter}
-                            disabled={!characterInput.trim()}
-                            className="bg-slate-700 hover:bg-primary disabled:opacity-50 disabled:cursor-

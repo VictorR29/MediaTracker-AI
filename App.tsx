@@ -134,20 +134,25 @@ export default function App() {
     init();
   }, [showToast, applyTheme]);
 
-  // Track Previous View and Reset Immersive Mode
+  // --- VIEW & SCROLL MANAGEMENT ---
+  // Consolidated effect to handle view transitions and scroll restoration
   useEffect(() => {
-      setIsImmersiveMode(false);
-      prevViewRef.current = view;
-  }, [view]);
-
-  // Restore scroll position when returning to library from details
-  useEffect(() => {
+      // 1. Scroll Restoration Logic
       if (view === 'library' && prevViewRef.current === 'details') {
-           // Use a small timeout to ensure DOM is ready
+           // Small timeout allows React to render the grid before scrolling
            setTimeout(() => {
-               window.scrollTo({ top: scrollPos, behavior: 'auto' });
-           }, 0);
+               window.scrollTo({ top: scrollPos, behavior: 'instant' });
+           }, 50);
+      } else if (view === 'details') {
+          // Ensure details always start at top
+          window.scrollTo(0, 0);
       }
+
+      // 2. Reset Immersive Mode on any view change
+      setIsImmersiveMode(false);
+
+      // 3. Update Ref for next transition (Must be last)
+      prevViewRef.current = view;
   }, [view, scrollPos]);
 
   // --- AUTH HANDLERS ---
@@ -525,7 +530,7 @@ export default function App() {
       setScrollPos(window.scrollY); // Save scroll position
       setCurrentMedia(item);
       setView('details');
-      window.scrollTo(0,0);
+      // No scrollTo(0,0) here, handled by useEffect for consistency
   };
 
   // --- FILTER & SORT LOGIC ---
@@ -603,7 +608,6 @@ export default function App() {
   // --- INFINITE SCROLL LOGIC (CALLBACK REF) ---
   
   // 1. Reset pagination when context changes (Filters or View Mode ONLY)
-  // Changed: Removed 'view' dependency to preserve pagination when returning from Details
   useEffect(() => {
       setVisibleCount(24);
   }, [filters, libraryViewMode]);
