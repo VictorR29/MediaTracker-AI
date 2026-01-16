@@ -51,6 +51,10 @@ export default function App() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isImmersiveMode, setIsImmersiveMode] = useState(false); // New: Controls Bottom Nav visibility
 
+  // Scroll Preservation
+  const [scrollPos, setScrollPos] = useState(0);
+  const prevViewRef = useRef(view);
+
   // Search View State
   const [searchMode, setSearchMode] = useState<'auto' | 'manual'>('auto');
   const [isSearching, setIsSearching] = useState(false);
@@ -130,10 +134,21 @@ export default function App() {
     init();
   }, [showToast, applyTheme]);
 
-  // Reset immersive mode when changing main views
+  // Track Previous View and Reset Immersive Mode
   useEffect(() => {
       setIsImmersiveMode(false);
+      prevViewRef.current = view;
   }, [view]);
+
+  // Restore scroll position when returning to library from details
+  useEffect(() => {
+      if (view === 'library' && prevViewRef.current === 'details') {
+           // Use a small timeout to ensure DOM is ready
+           setTimeout(() => {
+               window.scrollTo({ top: scrollPos, behavior: 'auto' });
+           }, 0);
+      }
+  }, [view, scrollPos]);
 
   // --- AUTH HANDLERS ---
   const handleUnlock = (password: string) => {
@@ -507,6 +522,7 @@ export default function App() {
 
   // --- VIEW HELPERS ---
   const openDetail = (item: MediaItem) => {
+      setScrollPos(window.scrollY); // Save scroll position
       setCurrentMedia(item);
       setView('details');
       window.scrollTo(0,0);
@@ -586,10 +602,11 @@ export default function App() {
 
   // --- INFINITE SCROLL LOGIC (CALLBACK REF) ---
   
-  // 1. Reset pagination when context changes (Filters, View Mode, or View Section)
+  // 1. Reset pagination when context changes (Filters or View Mode ONLY)
+  // Changed: Removed 'view' dependency to preserve pagination when returning from Details
   useEffect(() => {
       setVisibleCount(24);
-  }, [filters, view, libraryViewMode]);
+  }, [filters, libraryViewMode]);
 
   // 2. Robust Infinite Scroll Observer using Callback Ref
   const lastElementRef = useCallback((node: HTMLDivElement) => {

@@ -1229,15 +1229,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                     {progressPercent === 100 && (
                         <button 
                         onClick={handleCompleteSeason}
-                        className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-medium text-white py-2 rounded-lg transition-colors shadow-lg"
-                        style={{ backgroundColor: '#16a34a' }}
+                        disabled={tracking.status === 'Completado'} // Disable if already completed
+                        className={`mt-3 w-full flex items-center justify-center gap-1 text-xs font-medium text-white py-2 rounded-lg transition-colors shadow-lg ${
+                            tracking.status === 'Completado' 
+                                ? 'bg-slate-700 cursor-default opacity-80' // Style for disabled/completed
+                                : 'bg-[#16a34a]'
+                        }`}
                         >
                         <CheckCircle2 className="w-3 h-3" />
-                        { (isSeriesContent || (isBook && tracking.isSaga)) 
-                             ? (isBook ? `Terminar Libro ${tracking.currentSeason}` : `Completar Temporada ${tracking.currentSeason}`)
-                             : "Marcar como Completado"
+                        { 
+                            tracking.status === 'Completado' 
+                            ? (isBook ? `Libro ${tracking.currentSeason} Completado` : `Temporada ${tracking.currentSeason} Completada`)
+                            : (isSeriesContent || (isBook && tracking.isSaga)) 
+                                ? (isBook ? `Terminar Libro ${tracking.currentSeason}` : `Completar Temporada ${tracking.currentSeason}`)
+                                : "Marcar como Completado"
                         }
-                        <ChevronRight className="w-3 h-3 opacity-70" />
+                        {tracking.status !== 'Completado' && <ChevronRight className="w-3 h-3 opacity-70" />}
                         </button>
                     )}
                     </div>
@@ -1383,123 +1390,4 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                         <button 
                             onClick={addCharacter}
                             disabled={!characterInput.trim()}
-                            className="bg-slate-700 hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 rounded-lg transition-colors flex items-center justify-center"
-                            style={{ backgroundColor: characterInput.trim() ? dynamicColor : undefined }}
-                        >
-                            <Plus className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Tags Area */}
-                    <div className="flex flex-wrap gap-2 min-h-[32px]">
-                        {getSafeCharacters(tracking.favoriteCharacters).map((char, idx) => {
-                            const isTop5 = idx < 5;
-                            const total = getSafeCharacters(tracking.favoriteCharacters).length;
-                            return (
-                                <span 
-                                  key={idx} 
-                                  className={`inline-flex items-center gap-1 pl-2 pr-1 py-1 rounded-md border text-xs text-white animate-fade-in shadow-sm transition-all group/tag ${
-                                      isTop5 ? 'font-bold' : 'bg-slate-800 border-slate-700'
-                                  }`}
-                                  style={isTop5 ? { 
-                                      backgroundColor: `${dynamicColor}20`, 
-                                      borderColor: dynamicColor, 
-                                      boxShadow: `0 0 5px ${dynamicColor}20` 
-                                  } : { borderColor: `${dynamicColor}40` }}
-                                >
-                                    <span className={`text-[10px] mr-1 ${isTop5 ? 'opacity-90' : 'opacity-50'}`}>#{idx+1}</span>
-                                    <span className="mr-1">{char}</span>
-                                    
-                                    {/* Controls Container */}
-                                    <div className="flex items-center gap-0.5 border-l border-white/10 pl-1 ml-1 bg-black/10 rounded-r">
-                                         <button 
-                                            onClick={() => moveCharacter(idx, 'left')} 
-                                            disabled={idx === 0}
-                                            className="p-0.5 hover:text-white text-slate-400 disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
-                                            title="Subir Prioridad"
-                                         >
-                                             <ChevronLeft className="w-3 h-3" />
-                                         </button>
-                                         <button 
-                                            onClick={() => moveCharacter(idx, 'right')} 
-                                            disabled={idx === total - 1}
-                                            className="p-0.5 hover:text-white text-slate-400 disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
-                                            title="Bajar Prioridad"
-                                         >
-                                             <ChevronRight className="w-3 h-3" />
-                                         </button>
-                                         <div className="w-px h-3 bg-white/10 mx-0.5"></div>
-                                         <button 
-                                            onClick={() => removeCharacter(char)} 
-                                            className="p-0.5 hover:text-red-400 text-slate-400 transition-colors"
-                                            title="Eliminar"
-                                         >
-                                             <X className="w-3 h-3" />
-                                         </button>
-                                    </div>
-                                </span>
-                            );
-                        })}
-                         {getSafeCharacters(tracking.favoriteCharacters).length === 0 && (
-                            <p className="text-xs text-slate-600 italic py-1">Sin personajes registrados.</p>
-                         )}
-                    </div>
-                </div>
-             </div>
-             <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Comentario Final / Deseos</label>
-                <textarea 
-                  className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none transition-all resize-none h-24 focus:ring-1"
-                  style={{ borderColor: `${dynamicColor}30`, '--tw-ring-color': dynamicColor } as React.CSSProperties}
-                  placeholder="Pensamientos finales..."
-                  value={tracking.comment}
-                  onChange={(e) => handleInputChange('comment', e.target.value)}
-                />
-             </div>
-          </div>
-          
-        </div>
-      </div>
-
-      {/* Share Modal */}
-      {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-surface border border-slate-700 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
-                <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800/50">
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Share2 className="w-5 h-5 text-indigo-400" />
-                        Compartir Reseña
-                    </h3>
-                    <button onClick={() => setShowShareModal(false)} className="text-slate-400 hover:text-white">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-                <div className="p-4">
-                    <p className="text-xs text-slate-400 mb-2">Puedes editar el texto antes de copiarlo.</p>
-                    <textarea 
-                        value={shareTextContent}
-                        onChange={(e) => setShareTextContent(e.target.value)}
-                        className="w-full h-40 bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-primary resize-none mb-4 font-mono"
-                    />
-                    <div className="flex gap-3">
-                        <button 
-                            onClick={() => setShowShareModal(false)}
-                            className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <button 
-                            onClick={executeCopy}
-                            className="flex-1 px-4 py-2.5 bg-primary hover:bg-indigo-600 text-white rounded-lg font-bold shadow-lg flex items-center justify-center gap-2"
-                        >
-                            <Copy className="w-4 h-4" />
-                            Copiar Texto
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-      )}
-    </div>
-  );
-};
+                            className="bg-slate-700 hover:bg-primary disabled:opacity-50 disabled:cursor-
