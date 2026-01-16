@@ -1063,7 +1063,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                     <option value="Completado">Completado</option>
                     <option value="En Pausa">En Pausa</option>
                     <option value="Descartado">Descartado</option>
-                    <option value="Planeado / Pendiente">Planeado / Próximo Estreno</option>
+                    <option value="Planeado / Pendiente">Planeado / Pendiente</option>
                   </select>
                 </div>
 
@@ -1306,3 +1306,156 @@ export const MediaCard: React.FC<MediaCardProps> = ({ item, onUpdate, isNew = fa
                           >
                             <span className={`text-sm ${isActive ? 'opacity-100 scale-110' : 'opacity-50 grayscale'} transition-all flex-shrink-0`}>
                                 {opt.emoji}
+                            </span>
+                            <span className={`text-[10px] font-medium truncate ${isActive ? 'text-white' : 'text-slate-500'}`}>
+                                {opt.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                   </div>
+                </div>
+
+                {/* Rating Dropdown */}
+                <div>
+                   <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
+                      <Star className="w-3 h-3 text-yellow-500" /> Calificación
+                   </label>
+                   <div className="relative">
+                       <select
+                         value={tracking.rating}
+                         onChange={(e) => handleInputChange('rating', e.target.value)}
+                         className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm appearance-none outline-none focus:ring-1 pl-10"
+                         style={{ borderColor: `${dynamicColor}30`, '--tw-ring-color': dynamicColor } as React.CSSProperties}
+                       >
+                           <option value="">Sin calificar</option>
+                           {RATING_OPTIONS.map(opt => (
+                               <option key={opt} value={opt}>{opt}</option>
+                           ))}
+                       </select>
+                       <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                           {tracking.rating ? (
+                               (() => {
+                                   const config = RATING_CONFIG[tracking.rating];
+                                   if (config) {
+                                       const Icon = config.icon;
+                                       return <Icon className="w-4 h-4 text-white" />;
+                                   }
+                                   return <Star className="w-4 h-4 text-slate-500" />;
+                               })()
+                           ) : <Star className="w-4 h-4 text-slate-500" />}
+                       </div>
+                   </div>
+                </div>
+
+                {/* Favorite Characters */}
+                <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Personajes Memorables</label>
+                    <div className="flex gap-2 mb-2">
+                        <input 
+                            type="text"
+                            value={characterInput}
+                            onChange={handleCharacterInputChange}
+                            onKeyDown={handleCharacterKeyDown}
+                            placeholder="Añadir personaje..."
+                            className="flex-grow bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:border-primary"
+                        />
+                        <button 
+                            onClick={addCharacter}
+                            className="bg-slate-700 hover:bg-slate-600 text-white rounded-lg px-3 flex items-center justify-center transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {getSafeCharacters(tracking.favoriteCharacters).map((char, idx) => (
+                            <div 
+                                key={`${char}-${idx}`} 
+                                className="group flex items-center gap-1 px-2 py-1 bg-slate-800 rounded-full text-xs text-slate-300 border border-slate-700 hover:border-slate-500 transition-colors"
+                            >
+                                <span>{char}</span>
+                                {idx > 0 && (
+                                    <button onClick={() => moveCharacter(idx, 'left')} className="opacity-0 group-hover:opacity-50 hover:!opacity-100 px-0.5"><ChevronLeft className="w-3 h-3"/></button>
+                                )}
+                                <button 
+                                    onClick={() => removeCharacter(char)}
+                                    className="ml-1 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Comments */}
+                <div className="flex-grow flex flex-col">
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Comentarios Finales</label>
+                    <textarea 
+                        className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-sm text-slate-200 focus:border-primary outline-none resize-none flex-grow min-h-[80px]"
+                        value={tracking.comment}
+                        onChange={(e) => handleInputChange('comment', e.target.value)}
+                        placeholder="¿Qué te pareció realmente? Notas personales..."
+                    />
+                </div>
+
+                <button 
+                    onClick={handleShare}
+                    className="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all"
+                >
+                    <Share2 className="w-4 h-4" />
+                    Compartir Reseña
+                </button>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+          <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+              <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
+                  <div className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                              <Sparkles className="w-5 h-5 text-yellow-400" />
+                              {isGeneratingShare ? 'Generando Reseña IA...' : 'Listo para compartir'}
+                          </h3>
+                          <button onClick={() => setShowShareModal(false)} className="text-slate-400 hover:text-white">
+                              <X className="w-5 h-5" />
+                          </button>
+                      </div>
+                      
+                      {isGeneratingShare ? (
+                          <div className="py-8 flex flex-col items-center justify-center text-slate-400">
+                              <Loader2 className="w-8 h-8 animate-spin mb-3 text-primary" />
+                              <p className="text-sm">Redactando el tweet perfecto...</p>
+                          </div>
+                      ) : (
+                          <>
+                            <div className="bg-slate-900 rounded-xl p-4 border border-slate-700 mb-4 relative group">
+                                <textarea 
+                                    className="w-full bg-transparent border-none text-slate-300 text-sm resize-none focus:ring-0 h-40 custom-scrollbar"
+                                    value={shareTextContent}
+                                    onChange={(e) => setShareTextContent(e.target.value)}
+                                    readOnly={false}
+                                />
+                            </div>
+                            <button 
+                                onClick={executeCopy}
+                                className="w-full py-3 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Copy className="w-4 h-4" />
+                                Copiar al Portapapeles
+                            </button>
+                          </>
+                      )}
+                  </div>
+              </div>
+          </div>
+      )}
+    </div>
+  );
+};

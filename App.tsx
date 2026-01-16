@@ -1,3 +1,4 @@
+
 /*
  * Project: MediaTracker AI
  * Copyright (C) 2026 Victor Ramones
@@ -229,16 +230,42 @@ export default function App() {
   };
 
   const handleQuickIncrement = async (item: MediaItem) => {
+    const { watchedEpisodes, totalEpisodesInSeason } = item.trackingData;
+
+    // Si ya alcanzamos el total, el botón que se presionó era el de "Completar" (Check)
+    // Por lo tanto, cambiamos el estado a 'Completado' en lugar de sumar.
+    if (totalEpisodesInSeason > 0 && watchedEpisodes >= totalEpisodesInSeason) {
+         const updated = {
+            ...item,
+            trackingData: {
+                ...item.trackingData,
+                status: 'Completado' as const
+            },
+            lastInteraction: Date.now()
+        };
+        await handleUpdateMedia(updated);
+        showToast("¡Obra completada! 🎉", "success");
+        return;
+    }
+
+    // Si no ha alcanzado el límite, sumamos 1 capítulo
+    const newWatched = watchedEpisodes + 1;
     const updated = { 
         ...item, 
         trackingData: { 
             ...item.trackingData, 
-            watchedEpisodes: item.trackingData.watchedEpisodes + 1 
+            watchedEpisodes: newWatched
         },
         lastInteraction: Date.now()
     };
     await handleUpdateMedia(updated);
-    showToast(`Progreso actualizado: ${updated.trackingData.watchedEpisodes}`, "success");
+    
+    // Feedback contextual
+    if (totalEpisodesInSeason > 0 && newWatched >= totalEpisodesInSeason) {
+         showToast(`Has llegado al final. Pulsa de nuevo para completar.`, "success");
+    } else {
+         showToast(`Progreso actualizado: ${newWatched}`, "success");
+    }
   };
 
   const handleToggleFavorite = async (item: MediaItem) => {
