@@ -21,6 +21,15 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 
   // Use dynamic color if available, else fallback to primary variable (approx)
   const dynamicColor = aiData.primaryColor || '#6366f1';
+  
+  // Helper to convert Hex to RGB string for Tailwind opacity modifiers
+  const hexToRgb = (hex: string) => {
+    const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}` : '99 102 241';
+  };
+  const dynamicRgb = hexToRgb(dynamicColor);
 
   const isMovie = aiData.mediaType === 'Pelicula';
   const isBook = aiData.mediaType === 'Libro';
@@ -135,13 +144,15 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   
   const getStatusStyles = () => {
       switch (trackingData.status) {
-          case 'Viendo/Leyendo': return { bg: 'bg-indigo-600', text: 'text-white', label: isReadingContent ? 'LEYENDO' : 'VIENDO' };
-          case 'Completado': return { bg: 'bg-emerald-500', text: 'text-white', label: 'COMPLETADO' };
-          case 'Sin empezar': return { bg: 'bg-amber-500', text: 'text-black', label: 'SIN EMPEZAR' };
-          case 'En Pausa': return { bg: 'bg-orange-500', text: 'text-white', label: 'EN PAUSA' };
-          case 'Planeado / Pendiente': return { bg: 'bg-purple-500', text: 'text-white', label: 'PLANEADO' };
-          case 'Descartado': return { bg: 'bg-red-600', text: 'text-white', label: 'DESCARTADO' };
-          default: return { bg: 'bg-slate-700', text: 'text-slate-300', label: 'DESCONOCIDO' };
+          case 'Viendo/Leyendo': 
+            // Use Dynamic Color for active watching state
+            return { bg: `bg-[rgb(var(--card-rgb))]`, text: 'text-white', label: isReadingContent ? 'LEYENDO' : 'VIENDO', isDynamic: true };
+          case 'Completado': return { bg: 'bg-emerald-500', text: 'text-white', label: 'COMPLETADO', isDynamic: false };
+          case 'Sin empezar': return { bg: 'bg-amber-500', text: 'text-black', label: 'SIN EMPEZAR', isDynamic: false };
+          case 'En Pausa': return { bg: 'bg-orange-500', text: 'text-white', label: 'EN PAUSA', isDynamic: false };
+          case 'Planeado / Pendiente': return { bg: 'bg-purple-500', text: 'text-white', label: 'PLANEADO', isDynamic: false };
+          case 'Descartado': return { bg: 'bg-red-600', text: 'text-white', label: 'DESCARTADO', isDynamic: false };
+          default: return { bg: 'bg-slate-700', text: 'text-slate-300', label: 'DESCONOCIDO', isDynamic: false };
       }
   };
 
@@ -166,14 +177,18 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
     <div 
       ref={cardRef}
       onClick={onClick}
-      className={`group relative rounded-xl overflow-hidden shadow-xl cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/20 flex flex-col bg-[#1A1D26] w-full ${
+      className={`group relative rounded-xl overflow-hidden shadow-xl cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-2xl flex flex-col bg-[#1A1D26] w-full ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
       }`}
       style={{
         willChange: 'transform, opacity',
         aspectRatio: '2/3',
-      }}
+        '--card-rgb': dynamicRgb
+      } as React.CSSProperties}
     >
+      {/* Dynamic Hover Shadow based on Image Color */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-0" style={{ boxShadow: `inset 0 0 40px ${dynamicColor}40` }}></div>
+
       {/* Return Due Banner */}
       {isReturnDue && (
           <div className="absolute top-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-bold px-2 py-1 text-center z-40 backdrop-blur-sm">
@@ -210,7 +225,10 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       
       {/* Type Badge (Top Left) - Shifted down if banner exists */}
       <div className={`absolute left-3 z-30 pointer-events-none transition-all duration-300 ${hasTopBanner ? 'top-8' : 'top-3'}`}>
-          <span className="px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider shadow-lg">
+          <span 
+              className="px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider shadow-lg"
+              style={{ borderColor: `${dynamicColor}40` }}
+          >
               {aiData.mediaType}
           </span>
       </div>
@@ -255,6 +273,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
             className={`absolute bottom-20 right-3 z-40 p-3 rounded-full shadow-xl transition-all transform hover:scale-110 active:scale-95 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 ${
                 isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-slate-900'
             }`}
+            style={!isCompleteSeason ? { color: dynamicColor } : {}}
             title={isCompleteSeason ? "Completar" : "+1 Capítulo"}
         >
             {isCompleteSeason ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
@@ -279,10 +298,11 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
               {/* Progress Bar Line */}
               <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden shadow-inner backdrop-blur-sm">
                   <div 
-                      className={`h-full rounded-full transition-all duration-700 ease-out ${statusStyle.bg}`}
+                      className={`h-full rounded-full transition-all duration-700 ease-out`}
                       style={{ 
                           width: `${progressPercent}%`,
-                          boxShadow: '0 0 10px rgba(255,255,255,0.3)'
+                          backgroundColor: dynamicColor,
+                          boxShadow: `0 0 10px ${dynamicColor}`
                       }} 
                   />
               </div>

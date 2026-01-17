@@ -107,6 +107,16 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
   const dynamicColor = aiData.primaryColor || '#6366f1';
 
+  // Helper to convert Hex to RGB string for Tailwind opacity modifiers
+  const hexToRgb = (hex: string) => {
+    const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}` : '99 102 241';
+  };
+  const dynamicRgb = hexToRgb(dynamicColor);
+
+
   // Handlers
   const handleInputChange = (field: keyof UserTrackingData, value: any) => {
     const updated = {
@@ -274,7 +284,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
     : 0;
 
   return (
-    <div className="bg-surface/50 border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl animate-fade-in-up w-full">
+    <div 
+        className="bg-surface/50 border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl animate-fade-in-up w-full"
+        style={{ '--card-rgb': dynamicRgb } as React.CSSProperties}
+    >
         {/* Adjusted Grid Layout: Reduced side columns on LG to give more space to center */}
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] xl:grid-cols-[320px_1fr_320px] gap-0 lg:gap-8 xl:gap-10 p-6 md:p-8 xl:p-10">
             
@@ -283,13 +296,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 {/* Poster with Interactive Upload */}
                 <div className="flex flex-col gap-3">
                     <div 
-                        className={`relative rounded-2xl overflow-hidden shadow-2xl aspect-[2/3] bg-slate-900 group transition-all duration-300 ${isEditing ? 'cursor-pointer' : ''} ${isDragging ? 'ring-4 ring-indigo-500 scale-[1.02]' : ''}`}
+                        className={`relative rounded-2xl overflow-hidden shadow-2xl aspect-[2/3] bg-slate-900 group transition-all duration-300 ${isEditing ? 'cursor-pointer' : ''} ${isDragging ? 'ring-4 ring-[rgb(var(--card-rgb))] scale-[1.02]' : ''}`}
                         onClick={handleImageClick}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         style={{
-                            border: isEditing ? `2px dashed ${isDragging ? '#6366f1' : '#475569'}` : `1px solid ${dynamicColor}40`,
+                            border: isEditing ? `2px dashed ${isDragging ? dynamicColor : '#475569'}` : `1px solid ${dynamicColor}40`,
                             boxShadow: isEditing ? 'none' : `0 20px 40px -10px ${dynamicColor}40`
                         }}
                     >
@@ -329,7 +342,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                     // Try to extract color from URL if pasted (only works if CORS allows)
                                     if(e.target.value.startsWith('http')) extractColorFromImage(e.target.value).then(c => handleAIDataChange('primaryColor', c));
                                 }}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-indigo-500"
+                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-[rgb(var(--card-rgb))]"
                                 placeholder="https://..."
                             />
                         </div>
@@ -345,7 +358,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                 <input 
                                     value={aiData.title}
                                     onChange={(e) => handleAIDataChange('title', e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-lg font-bold text-white outline-none focus:border-indigo-500"
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-lg font-bold text-white outline-none focus:border-[rgb(var(--card-rgb))]"
                                 />
                             </div>
                             <div>
@@ -353,7 +366,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                 <input 
                                     value={aiData.originalTitle || ''}
                                     onChange={(e) => handleAIDataChange('originalTitle', e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-400 italic outline-none focus:border-indigo-500"
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-400 italic outline-none focus:border-[rgb(var(--card-rgb))]"
                                     placeholder="Ej: Kimetsu no Yaiba"
                                 />
                             </div>
@@ -401,7 +414,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                     type="date" 
                                     value={aiData.releaseDate || ''}
                                     onChange={(e) => handleAIDataChange('releaseDate', e.target.value)}
-                                    className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none focus:border-indigo-500 w-32"
+                                    className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none focus:border-[rgb(var(--card-rgb))] w-32"
                                 />
                             ) : (
                                 <span className="font-mono">{aiData.releaseDate || '----'}</span>
@@ -414,7 +427,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                     type="date" 
                                     value={aiData.endDate || ''}
                                     onChange={(e) => handleAIDataChange('endDate', e.target.value)}
-                                    className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none focus:border-indigo-500 w-32"
+                                    className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none focus:border-[rgb(var(--card-rgb))] w-32"
                                 />
                             ) : (
                                 <span className="font-mono">{aiData.endDate || '----'}</span>
@@ -443,9 +456,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                     onChange={(e) => setNewGenreInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddGenre()}
                                     placeholder="Añadir género..."
-                                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500"
+                                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-[rgb(var(--card-rgb))]"
                                 />
-                                <button onClick={handleAddGenre} className="bg-slate-800 hover:bg-indigo-600 p-1.5 rounded-lg border border-slate-700 text-white transition-colors">
+                                <button onClick={handleAddGenre} className="bg-slate-800 hover:bg-[rgb(var(--card-rgb))] p-1.5 rounded-lg border border-slate-700 text-white transition-colors">
                                     <Plus className="w-4 h-4" />
                                 </button>
                             </div>
@@ -458,7 +471,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                              <textarea 
                                 value={aiData.totalContent || ''}
                                 onChange={(e) => handleAIDataChange('totalContent', e.target.value)}
-                                className="bg-slate-900 border border-slate-700 rounded-2xl p-3 text-xs text-white outline-none focus:border-indigo-500 min-h-[100px]"
+                                className="bg-slate-900 border border-slate-700 rounded-2xl p-3 text-xs text-white outline-none focus:border-[rgb(var(--card-rgb))] min-h-[100px]"
                                 placeholder="Ej: 2 Temporadas&#10;- Temp 1: 12 Caps"
                              />
                         ) : (
@@ -469,11 +482,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs flex items-center gap-2"><Globe className="w-3 h-3 xl:w-4 xl:h-4 text-indigo-400"/> Mis Enlaces & Seguimiento</span>
+                        <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs flex items-center gap-2"><Globe className="w-3 h-3 xl:w-4 xl:h-4 text-[rgb(var(--card-rgb))]"/> Mis Enlaces & Seguimiento</span>
                         <div className="flex flex-col gap-2">
                             {tracking.customLinks && tracking.customLinks.map((link) => (
                                 <div key={link.id} className="flex items-center justify-between group bg-slate-900/50 p-2 rounded-xl border border-slate-800/50">
-                                    <a href={link.url} target="_blank" rel="noreferrer" className="text-indigo-300 hover:text-white truncate flex items-center gap-3 flex-1 text-xs xl:text-sm">
+                                    <a href={link.url} target="_blank" rel="noreferrer" className="text-[rgb(var(--card-rgb))] hover:text-white truncate flex items-center gap-3 flex-1 text-xs xl:text-sm">
                                         <LinkIcon className="w-3 h-3 opacity-50" /> {link.title || 'Enlace'}
                                     </a>
                                     <button onClick={() => handleRemoveCustomLink(link.id)} className="p-1.5 text-slate-600 hover:text-red-500 transition-colors">
@@ -487,9 +500,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                     value={newLinkUrl}
                                     onChange={(e) => setNewLinkUrl(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddCustomLink()}
-                                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-indigo-500" 
+                                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-[rgb(var(--card-rgb))]" 
                                 />
-                                <button onClick={handleAddCustomLink} className="bg-slate-800 hover:bg-indigo-600 p-2 rounded-xl border border-slate-700 text-white transition-colors">
+                                <button onClick={handleAddCustomLink} className="bg-slate-800 hover:bg-[rgb(var(--card-rgb))] p-2 rounded-xl border border-slate-700 text-white transition-colors">
                                     <Plus className="w-4 h-4" />
                                 </button>
                             </div>
@@ -506,7 +519,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                         <h3 className="text-xs xl:text-base font-bold text-slate-400 uppercase tracking-widest flex items-center gap-3">
                             <FileText className="w-4 h-4 xl:w-5 xl:h-5" /> Sinopsis
                         </h3>
-                        <button onClick={handleSmartUpdate} disabled={isUpdatingInfo} className="text-[10px] xl:text-xs text-indigo-400 flex items-center gap-2 font-bold hover:underline">
+                        <button onClick={handleSmartUpdate} disabled={isUpdatingInfo} className="text-[10px] xl:text-xs text-[rgb(var(--card-rgb))] flex items-center gap-2 font-bold hover:underline">
                             <RefreshCw className={`w-3 h-3 xl:w-4 xl:h-4 ${isUpdatingInfo ? 'animate-spin' : ''}`} /> ACTUALIZAR CON IA
                         </button>
                     </div>
@@ -514,7 +527,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                         <textarea 
                             value={aiData.synopsis}
                             onChange={(e) => handleAIDataChange('synopsis', e.target.value)}
-                            className="w-full h-56 bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-300 text-sm xl:text-base outline-none focus:border-indigo-500 leading-relaxed"
+                            className="w-full h-56 bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-300 text-sm xl:text-base outline-none focus:border-[rgb(var(--card-rgb))] leading-relaxed"
                         />
                     ) : (
                         <p className="text-sm xl:text-base text-slate-300 leading-relaxed whitespace-pre-line font-medium">
@@ -525,12 +538,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
                 {/* Progress Tracking */}
                 <div className="bg-slate-900/50 rounded-[2.5rem] p-6 xl:p-8 border border-slate-800 relative overflow-hidden shadow-2xl">
-                    <div className="absolute top-0 left-0 w-2 h-full bg-indigo-500"></div>
+                    <div className="absolute top-0 left-0 w-2 h-full bg-[rgb(var(--card-rgb))]"></div>
                     <div className="flex items-center justify-between mb-6 xl:mb-8">
                         <h3 className="text-xs xl:text-base font-bold text-white uppercase tracking-widest flex items-center gap-3">
-                            <CheckCircle2 className="w-4 h-4 xl:w-5 xl:h-5 text-indigo-500" /> Mi Progreso
+                            <CheckCircle2 className="w-4 h-4 xl:w-5 xl:h-5 text-[rgb(var(--card-rgb))]" /> Mi Progreso
                         </h3>
-                        <div className="bg-indigo-500/10 text-indigo-400 text-[10px] xl:text-xs font-bold px-3 py-1 rounded-full border border-indigo-500/20">
+                        <div className="bg-[rgb(var(--card-rgb)/0.1)] text-[rgb(var(--card-rgb))] text-[10px] xl:text-xs font-bold px-3 py-1 rounded-full border border-[rgb(var(--card-rgb)/0.2)]">
                             ¡Victoria, {username || 'Vikthor'}!
                         </div>
                     </div>
@@ -542,7 +555,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                             <select 
                                 value={tracking.status}
                                 onChange={(e) => handleInputChange('status', e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 xl:px-5 xl:py-4 text-sm xl:text-base font-bold text-white outline-none focus:border-indigo-500 appearance-none shadow-inner"
+                                className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 xl:px-5 xl:py-4 text-sm xl:text-base font-bold text-white outline-none focus:border-[rgb(var(--card-rgb))] appearance-none shadow-inner"
                             >
                                 <option value="Sin empezar">Sin empezar</option>
                                 <option value="Viendo/Leyendo">Viendo/Leyendo</option>
@@ -555,9 +568,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
                         {/* Optional Date Picker for Planned/Upcoming */}
                         {tracking.status === 'Planeado / Pendiente' && (
-                            <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-2xl p-4 animate-fade-in">
+                            <div className="bg-[rgb(var(--card-rgb)/0.2)] border border-[rgb(var(--card-rgb)/0.3)] rounded-2xl p-4 animate-fade-in">
                                 <div className="flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-2 text-indigo-300">
+                                    <div className="flex items-center gap-2 text-[rgb(var(--card-rgb))]">
                                         <CalendarClock className="w-5 h-5" />
                                         <span className="text-xs font-bold uppercase tracking-wide">¿Cuándo se estrena / planeas verla?</span>
                                     </div>
@@ -565,10 +578,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                         type="date"
                                         value={tracking.nextReleaseDate || ''}
                                         onChange={(e) => handleInputChange('nextReleaseDate', e.target.value)}
-                                        className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
+                                        className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[rgb(var(--card-rgb))]"
                                     />
                                 </div>
-                                <p className="text-[10px] text-indigo-400/70 mt-2 pl-1">
+                                <p className="text-[10px] text-[rgb(var(--card-rgb)/0.7)] mt-2 pl-1">
                                     Define una fecha para ver una cuenta regresiva en tu biblioteca.
                                 </p>
                             </div>
@@ -656,8 +669,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                     </div>
                                     <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
                                         <div 
-                                            className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 transition-all duration-700 shadow-[0_0_15px_rgba(79,70,229,0.4)]" 
-                                            style={{ width: `${progressPercent}%` }} 
+                                            className="h-full transition-all duration-700" 
+                                            style={{ 
+                                                width: `${progressPercent}%`,
+                                                background: `linear-gradient(to right, rgb(var(--card-rgb)), rgba(var(--card-rgb), 0.6))`,
+                                                boxShadow: `0 0 15px rgba(var(--card-rgb), 0.4)`
+                                            }} 
                                         />
                                     </div>
                                     
@@ -665,7 +682,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                     {tracking.totalEpisodesInSeason > 0 && tracking.watchedEpisodes >= tracking.totalEpisodesInSeason && (
                                         <button 
                                             onClick={handleNextSeason}
-                                            className="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all animate-fade-in"
+                                            className="mt-4 w-full py-3 hover:opacity-90 text-white rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg transition-all animate-fade-in"
+                                            style={{ backgroundColor: `rgb(var(--card-rgb))`, boxShadow: `0 10px 15px -3px rgba(var(--card-rgb), 0.2)` }}
                                         >
                                             <CheckCircle2 className="w-4 h-4" />
                                             Completar Temporada {tracking.currentSeason}
@@ -702,7 +720,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     <div className="flex gap-2 xl:gap-3">
                         <input 
                             placeholder="Añadir nombre de personaje..." 
-                            className="flex-1 bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-2.5 xl:px-5 xl:py-3 text-sm text-white outline-none focus:border-indigo-500"
+                            className="flex-1 bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-2.5 xl:px-5 xl:py-3 text-sm text-white outline-none focus:border-[rgb(var(--card-rgb))]"
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                     const val = (e.target as HTMLInputElement).value.trim();
@@ -732,7 +750,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                 <button
                                     key={opt}
                                     onClick={() => handleInputChange('rating', opt)}
-                                    className={`flex flex-col items-center gap-1 xl:gap-2 p-2 xl:p-3 rounded-2xl border transition-all ${isSelected ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400 shadow-lg' : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:bg-slate-800'}`}
+                                    className={`flex flex-col items-center gap-1 xl:gap-2 p-2 xl:p-3 rounded-2xl border transition-all ${isSelected ? 'bg-[rgb(var(--card-rgb)/0.2)] border-[rgb(var(--card-rgb))] text-[rgb(var(--card-rgb))] shadow-lg' : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:bg-slate-800'}`}
                                 >
                                     <Star className={`w-3 h-3 xl:w-4 xl:h-4 ${isSelected ? 'fill-current' : ''}`} />
                                     <span className="text-[8px] xl:text-[9px] font-black uppercase tracking-tighter text-center">{label}</span>
@@ -743,7 +761,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     <button 
                         onClick={handleGenerateReview} 
                         disabled={isGeneratingReview}
-                        className="w-full py-3 xl:py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-[10px] xl:text-xs font-black flex items-center justify-center gap-2 xl:gap-3 shadow-xl shadow-indigo-600/25 transition-all uppercase tracking-[0.2em]"
+                        className="w-full py-3 xl:py-4 hover:opacity-90 text-white rounded-2xl text-[10px] xl:text-xs font-black flex items-center justify-center gap-2 xl:gap-3 shadow-xl transition-all uppercase tracking-[0.2em]"
+                        style={{ backgroundColor: `rgb(var(--card-rgb))`, boxShadow: `0 10px 15px -3px rgba(var(--card-rgb), 0.25)` }}
                     >
                         <Wand2 className="w-4 h-4 xl:w-5 xl:h-5" /> Copiar Reseña IA
                     </button>
@@ -761,7 +780,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                             value={tracking.recommendedBy || ''}
                             onChange={(e) => handleInputChange('recommendedBy', e.target.value)}
                             placeholder="Ej: Laura, r/anime..."
-                            className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-2.5 xl:px-5 xl:py-3 text-sm text-slate-300 outline-none focus:border-indigo-500"
+                            className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-2.5 xl:px-5 xl:py-3 text-sm text-slate-300 outline-none focus:border-[rgb(var(--card-rgb))]"
                         />
                     </div>
 
@@ -781,7 +800,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                                 : [...currentTags, tag.label];
                                             handleInputChange('emotionalTags', newTags);
                                         }}
-                                        className={`w-full flex items-center gap-2 xl:gap-3 px-3 py-2.5 xl:px-4 xl:py-3 rounded-2xl text-[10px] xl:text-[11px] font-black border transition-all text-left uppercase tracking-tight ${isActive ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-300 shadow-inner' : 'bg-slate-950/50 border-slate-800 text-slate-500 hover:bg-slate-800'}`}
+                                        className={`w-full flex items-center gap-2 xl:gap-3 px-3 py-2.5 xl:px-4 xl:py-3 rounded-2xl text-[10px] xl:text-[11px] font-black border transition-all text-left uppercase tracking-tight ${isActive ? 'bg-[rgb(var(--card-rgb)/0.1)] border-[rgb(var(--card-rgb)/0.4)] text-[rgb(var(--card-rgb))] shadow-inner' : 'bg-slate-950/50 border-slate-800 text-slate-500 hover:bg-slate-800'}`}
                                     >
                                         <span className="text-xs xl:text-sm">{tag.emoji}</span>
                                         <span className="truncate">{tag.label}</span>
@@ -801,7 +820,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                         value={tracking.comment}
                         onChange={(e) => handleInputChange('comment', e.target.value)}
                         placeholder="Tus pensamientos finales sobre esta experiencia..."
-                        className="w-full flex-1 bg-slate-900/50 border border-slate-800 rounded-3xl p-4 xl:p-5 text-sm text-slate-300 outline-none focus:border-indigo-500 resize-none leading-relaxed min-h-[120px] xl:min-h-[140px]"
+                        className="w-full flex-1 bg-slate-900/50 border border-slate-800 rounded-3xl p-4 xl:p-5 text-sm text-slate-300 outline-none focus:border-[rgb(var(--card-rgb))] resize-none leading-relaxed min-h-[120px] xl:min-h-[140px]"
                     />
                 </div>
             </div>
