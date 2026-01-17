@@ -128,10 +128,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
   return (
     <div className="bg-surface/50 border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl animate-fade-in-up w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-0 lg:gap-10 p-6 md:p-10">
+        {/* Adjusted Grid Layout: Reduced side columns on LG to give more space to center */}
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] xl:grid-cols-[320px_1fr_320px] gap-0 lg:gap-8 xl:gap-10 p-6 md:p-8 xl:p-10">
             
             {/* --- COLUMN 1: LEFT (Identity & Metadata) --- */}
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-6 xl:gap-8">
                 {/* Poster */}
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[2/3] bg-slate-900 border border-slate-800">
                     {aiData.coverImage ? (
@@ -152,13 +153,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-2xl font-bold text-white mb-3"
                         />
                     ) : (
-                        <h1 className="text-3xl font-black text-white leading-tight mb-2">{aiData.title}</h1>
+                        <h1 className="text-2xl xl:text-3xl font-black text-white leading-tight mb-2">{aiData.title}</h1>
                     )}
                     {aiData.originalTitle && <p className="text-sm text-slate-500 italic mb-4">{aiData.originalTitle}</p>}
                     
-                    <div className="flex flex-wrap gap-2 mb-8">
-                        <span className="px-4 py-1.5 bg-slate-800/80 border border-slate-700 rounded text-xs font-bold text-slate-400 uppercase">{aiData.mediaType}</span>
-                        <span className="px-4 py-1.5 bg-slate-800/80 border border-slate-700 rounded text-xs font-bold text-slate-400 uppercase">{aiData.status}</span>
+                    <div className="flex flex-wrap gap-2 mb-6 xl:mb-8">
+                        <span className="px-3 xl:px-4 py-1.5 bg-slate-800/80 border border-slate-700 rounded text-[10px] xl:text-xs font-bold text-slate-400 uppercase">{aiData.mediaType}</span>
+                        <span className="px-3 xl:px-4 py-1.5 bg-slate-800/80 border border-slate-700 rounded text-[10px] xl:text-xs font-bold text-slate-400 uppercase">{aiData.status}</span>
                         {!isEditing && (
                             <button onClick={() => setIsEditing(true)} className="p-1.5 text-slate-500 hover:text-white transition-colors">
                                 <Edit3 className="w-5 h-5" />
@@ -166,72 +167,72 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                         )}
                     </div>
 
-                    <div className="flex gap-3 mb-10">
+                    <div className="flex gap-2 xl:gap-3 mb-8 xl:mb-10">
                         <button 
                             onClick={() => handleInputChange('is_favorite', !tracking.is_favorite)}
-                            className={`flex-1 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 border transition-all ${tracking.is_favorite ? 'bg-yellow-500/10 border-yellow-500/50 text-yellow-500' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                            className={`flex-1 py-3 xl:py-4 rounded-2xl font-bold text-xs xl:text-sm flex items-center justify-center gap-2 border transition-all ${tracking.is_favorite ? 'bg-yellow-500/10 border-yellow-500/50 text-yellow-500' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
                         >
-                            <Star className={`w-5 h-5 ${tracking.is_favorite ? 'fill-current' : ''}`} /> FAVORITO
+                            <Star className={`w-4 h-4 xl:w-5 xl:h-5 ${tracking.is_favorite ? 'fill-current' : ''}`} /> FAVORITO
                         </button>
                         {onDelete && (
-                            <button onClick={onDelete} className="p-4 bg-red-900/10 hover:bg-red-900/20 text-red-500 border border-red-900/30 rounded-2xl transition-colors">
-                                <Trash2 className="w-6 h-6" />
+                            <button onClick={onDelete} className="p-3 xl:p-4 bg-red-900/10 hover:bg-red-900/20 text-red-500 border border-red-900/30 rounded-2xl transition-colors">
+                                <Trash2 className="w-5 h-5 xl:w-6 xl:h-6" />
                             </button>
                         )}
                     </div>
                 </div>
 
                 {/* Metadata Details */}
-                <div className="space-y-6 text-sm border-t border-slate-800 pt-8">
+                <div className="space-y-5 xl:space-y-6 text-sm border-t border-slate-800 pt-6 xl:pt-8">
                     <div className="flex flex-col gap-2">
-                        <span className="text-slate-500 font-bold uppercase tracking-widest text-xs">Fechas</span>
-                        <div className="flex justify-between text-slate-300">
-                            <span className="font-medium">Estreno:</span> <span className="font-mono text-base">{aiData.releaseDate || '----'}</span>
+                        <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs">Fechas</span>
+                        <div className="flex justify-between text-slate-300 text-xs xl:text-sm">
+                            <span className="font-medium">Estreno:</span> <span className="font-mono">{aiData.releaseDate || '----'}</span>
                         </div>
-                        <div className="flex justify-between text-slate-300">
-                            <span className="font-medium">Final:</span> <span className="font-mono text-base">{aiData.endDate || '----'}</span>
+                        <div className="flex justify-between text-slate-300 text-xs xl:text-sm">
+                            <span className="font-medium">Final:</span> <span className="font-mono">{aiData.endDate || '----'}</span>
                         </div>
                     </div>
                     
                     <div className="flex flex-col gap-3">
-                        <span className="text-slate-500 font-bold uppercase tracking-widest text-xs">Géneros</span>
+                        <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs">Géneros</span>
                         <div className="flex flex-wrap gap-2">
                             {aiData.genres.map(g => (
-                                <span key={g} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-sm">{g}</span>
+                                <span key={g} className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-xs">{g}</span>
                             ))}
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <span className="text-slate-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2"><Layout className="w-4 h-4"/> Estructura</span>
+                        <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs flex items-center gap-2"><Layout className="w-3 h-3 xl:w-4 xl:h-4"/> Estructura</span>
                         <div className="bg-slate-900/80 rounded-2xl p-4 border border-slate-800 shadow-inner">
-                            <pre className="whitespace-pre-wrap font-sans text-slate-300 leading-relaxed text-sm">{aiData.totalContent || 'No definida'}</pre>
+                            <pre className="whitespace-pre-wrap font-sans text-slate-300 leading-relaxed text-xs xl:text-sm">{aiData.totalContent || 'No definida'}</pre>
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <span className="text-slate-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2"><Globe className="w-4 h-4 text-indigo-400"/> Mis Enlaces & Seguimiento</span>
+                        <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs flex items-center gap-2"><Globe className="w-3 h-3 xl:w-4 xl:h-4 text-indigo-400"/> Mis Enlaces & Seguimiento</span>
                         <div className="flex flex-col gap-2">
                             {tracking.customLinks && tracking.customLinks.map((link) => (
                                 <div key={link.id} className="flex items-center justify-between group bg-slate-900/50 p-2 rounded-xl border border-slate-800/50">
-                                    <a href={link.url} target="_blank" rel="noreferrer" className="text-indigo-300 hover:text-white truncate flex items-center gap-3 flex-1 text-sm">
-                                        <LinkIcon className="w-4 h-4 opacity-50" /> {link.title || 'Enlace'}
+                                    <a href={link.url} target="_blank" rel="noreferrer" className="text-indigo-300 hover:text-white truncate flex items-center gap-3 flex-1 text-xs xl:text-sm">
+                                        <LinkIcon className="w-3 h-3 opacity-50" /> {link.title || 'Enlace'}
                                     </a>
-                                    <button onClick={() => handleRemoveCustomLink(link.id)} className="p-2 text-slate-600 hover:text-red-500 transition-colors">
-                                        <X className="w-4 h-4" />
+                                    <button onClick={() => handleRemoveCustomLink(link.id)} className="p-1.5 text-slate-600 hover:text-red-500 transition-colors">
+                                        <X className="w-3 h-3" />
                                     </button>
                                 </div>
                             ))}
                             <div className="flex gap-2 mt-2">
                                 <input 
-                                    placeholder="Pegar URL de seguimiento..." 
+                                    placeholder="Pegar URL..." 
                                     value={newLinkUrl}
                                     onChange={(e) => setNewLinkUrl(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddCustomLink()}
-                                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-indigo-500" 
+                                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-indigo-500" 
                                 />
-                                <button onClick={handleAddCustomLink} className="bg-slate-800 hover:bg-indigo-600 p-3 rounded-xl border border-slate-700 text-white transition-colors">
-                                    <Plus className="w-5 h-5" />
+                                <button onClick={handleAddCustomLink} className="bg-slate-800 hover:bg-indigo-600 p-2 rounded-xl border border-slate-700 text-white transition-colors">
+                                    <Plus className="w-4 h-4" />
                                 </button>
                             </div>
                         </div>
@@ -240,50 +241,50 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             </div>
 
             {/* --- COLUMN 2: CENTER (Narrative & Tracking) --- */}
-            <div className="flex flex-col gap-10 pt-10 lg:pt-0">
+            <div className="flex flex-col gap-6 xl:gap-10 pt-10 lg:pt-0">
                 {/* Synopsis */}
-                <div className="bg-slate-900/40 rounded-[2.5rem] p-8 border border-slate-800 shadow-xl">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-base font-bold text-slate-400 uppercase tracking-widest flex items-center gap-3">
-                            <FileText className="w-5 h-5" /> Sinopsis
+                <div className="bg-slate-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-slate-800 shadow-xl">
+                    <div className="flex items-center justify-between mb-4 xl:mb-6">
+                        <h3 className="text-xs xl:text-base font-bold text-slate-400 uppercase tracking-widest flex items-center gap-3">
+                            <FileText className="w-4 h-4 xl:w-5 xl:h-5" /> Sinopsis
                         </h3>
-                        <button onClick={handleSmartUpdate} disabled={isUpdatingInfo} className="text-xs text-indigo-400 flex items-center gap-2 font-bold hover:underline">
-                            <RefreshCw className={`w-4 h-4 ${isUpdatingInfo ? 'animate-spin' : ''}`} /> ACTUALIZAR CON IA
+                        <button onClick={handleSmartUpdate} disabled={isUpdatingInfo} className="text-[10px] xl:text-xs text-indigo-400 flex items-center gap-2 font-bold hover:underline">
+                            <RefreshCw className={`w-3 h-3 xl:w-4 xl:h-4 ${isUpdatingInfo ? 'animate-spin' : ''}`} /> ACTUALIZAR CON IA
                         </button>
                     </div>
                     {isEditing ? (
                         <textarea 
                             value={aiData.synopsis}
                             onChange={(e) => handleAIDataChange('synopsis', e.target.value)}
-                            className="w-full h-56 bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-300 text-base outline-none focus:border-indigo-500"
+                            className="w-full h-56 bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-300 text-sm xl:text-base outline-none focus:border-indigo-500"
                         />
                     ) : (
-                        <p className="text-base text-slate-300 leading-relaxed whitespace-pre-line font-medium">
+                        <p className="text-sm xl:text-base text-slate-300 leading-relaxed whitespace-pre-line font-medium">
                             {aiData.synopsis}
                         </p>
                     )}
                 </div>
 
                 {/* Progress Tracking */}
-                <div className="bg-slate-900/50 rounded-[2.5rem] p-8 border border-slate-800 relative overflow-hidden shadow-2xl">
+                <div className="bg-slate-900/50 rounded-[2.5rem] p-6 xl:p-8 border border-slate-800 relative overflow-hidden shadow-2xl">
                     <div className="absolute top-0 left-0 w-2 h-full bg-indigo-500"></div>
-                    <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-base font-bold text-white uppercase tracking-widest flex items-center gap-3">
-                            <CheckCircle2 className="w-5 h-5 text-indigo-500" /> Mi Progreso
+                    <div className="flex items-center justify-between mb-6 xl:mb-8">
+                        <h3 className="text-xs xl:text-base font-bold text-white uppercase tracking-widest flex items-center gap-3">
+                            <CheckCircle2 className="w-4 h-4 xl:w-5 xl:h-5 text-indigo-500" /> Mi Progreso
                         </h3>
-                        <div className="bg-indigo-500/10 text-indigo-400 text-xs font-bold px-4 py-1.5 rounded-full border border-indigo-500/20">
+                        <div className="bg-indigo-500/10 text-indigo-400 text-[10px] xl:text-xs font-bold px-3 py-1 rounded-full border border-indigo-500/20">
                             ¡Victoria, {username || 'Vikthor'}!
                         </div>
                     </div>
 
-                    <div className="space-y-8">
+                    <div className="space-y-6 xl:space-y-8">
                         {/* Status Select */}
                         <div>
-                            <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Estado de la Obra</span>
+                            <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">Estado de la Obra</span>
                             <select 
                                 value={tracking.status}
                                 onChange={(e) => handleInputChange('status', e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 text-base font-bold text-white outline-none focus:border-indigo-500 appearance-none shadow-inner"
+                                className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 xl:px-5 xl:py-4 text-sm xl:text-base font-bold text-white outline-none focus:border-indigo-500 appearance-none shadow-inner"
                             >
                                 <option value="Sin empezar">Sin empezar</option>
                                 <option value="Viendo/Leyendo">Viendo/Leyendo</option>
@@ -295,10 +296,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
                         {/* Season & Episode Controls */}
                         {!isMovie && (
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-4 xl:space-y-6">
+                                <div className="grid grid-cols-2 gap-4 xl:gap-6">
                                     <div className="flex-1">
-                                        <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+                                        <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">
                                             {isReadingContent ? 'Volumen Actual' : 'Temporada Actual'}
                                         </span>
                                         <div className="relative">
@@ -306,70 +307,70 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                                 onClick={() => handleInputChange('currentSeason', Math.max(1, tracking.currentSeason - 1))}
                                                 className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-white"
                                             >
-                                                <ChevronLeft className="w-5 h-5" />
+                                                <ChevronLeft className="w-4 h-4" />
                                             </button>
                                             <input 
                                                 type="number"
                                                 value={tracking.currentSeason}
                                                 onChange={(e) => handleInputChange('currentSeason', parseInt(e.target.value) || 1)}
-                                                className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 text-center text-lg font-bold text-white outline-none"
+                                                className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
                                             />
                                             <button 
                                                 onClick={() => handleInputChange('currentSeason', tracking.currentSeason + 1)}
                                                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-white"
                                             >
-                                                <ChevronRight className="w-5 h-5" />
+                                                <ChevronRight className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </div>
                                     <div className="flex-1">
-                                        <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Total {isReadingContent ? 'Vols' : 'Temps'}</span>
+                                        <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">Total {isReadingContent ? 'Vols' : 'Temps'}</span>
                                         <input 
                                             type="number"
                                             value={tracking.totalSeasons}
                                             onChange={(e) => handleInputChange('totalSeasons', parseInt(e.target.value) || 1)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 text-center text-lg font-bold text-white outline-none"
+                                            className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-2 gap-4 xl:gap-6">
                                     <div>
-                                        <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Capítulos Vistos</span>
+                                        <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">Capítulos Vistos</span>
                                         <div className="relative">
                                           <button 
                                               onClick={() => handleInputChange('watchedEpisodes', Math.max(0, tracking.watchedEpisodes - 1))}
                                               className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-white"
                                           >
-                                              <Minus className="w-4 h-4" />
+                                              <Minus className="w-3 h-3 xl:w-4 xl:h-4" />
                                           </button>
                                           <input 
                                               type="number"
                                               value={tracking.watchedEpisodes}
                                               onChange={(e) => handleInputChange('watchedEpisodes', parseInt(e.target.value) || 0)}
-                                              className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 text-center text-lg font-bold text-white outline-none"
+                                              className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
                                           />
                                           <button 
                                               onClick={() => handleInputChange('watchedEpisodes', tracking.watchedEpisodes + 1)}
                                               className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-white"
                                           >
-                                              <Plus className="w-4 h-4" />
+                                              <Plus className="w-3 h-3 xl:w-4 xl:h-4" />
                                           </button>
                                         </div>
                                     </div>
                                     <div>
-                                        <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Total Capítulos</span>
+                                        <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">Total Capítulos</span>
                                         <input 
                                             type="number"
                                             value={tracking.totalEpisodesInSeason}
                                             onChange={(e) => handleInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 text-center text-lg font-bold text-white outline-none"
+                                            className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+                                    <div className="flex justify-between text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">
                                         <span>Progreso T.{tracking.currentSeason}</span>
                                         <span>{progressPercent.toFixed(0)}%</span>
                                     </div>
@@ -386,9 +387,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                         {isMovie && (
                             <button 
                                 onClick={() => handleInputChange('status', tracking.status === 'Completado' ? 'Sin empezar' : 'Completado')}
-                                className={`w-full py-5 rounded-[1.25rem] font-black text-base flex items-center justify-center gap-4 transition-all border-2 ${tracking.status === 'Completado' ? 'bg-green-500/10 border-green-500/50 text-green-500 shadow-lg shadow-green-500/10' : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'}`}
+                                className={`w-full py-4 xl:py-5 rounded-[1.25rem] font-black text-sm xl:text-base flex items-center justify-center gap-4 transition-all border-2 ${tracking.status === 'Completado' ? 'bg-green-500/10 border-green-500/50 text-green-500 shadow-lg shadow-green-500/10' : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'}`}
                             >
-                                {tracking.status === 'Completado' ? <CheckCircle2 className="w-6 h-6" /> : <PlayCircle className="w-6 h-6" />}
+                                {tracking.status === 'Completado' ? <CheckCircle2 className="w-5 h-5 xl:w-6 xl:h-6" /> : <PlayCircle className="w-5 h-5 xl:w-6 xl:h-6" />}
                                 {tracking.status === 'Completado' ? 'COMPLETADO' : 'MARCAR COMO VISTO'}
                             </button>
                         )}
@@ -396,21 +397,21 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 </div>
 
                 {/* Personajes Destacados */}
-                <div className="bg-slate-900/40 rounded-[2.5rem] p-8 border border-slate-800">
-                    <h3 className="text-base font-bold text-slate-400 uppercase tracking-widest flex items-center gap-3 mb-6">
-                        <User className="w-5 h-5" /> Personajes Destacados
+                <div className="bg-slate-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-slate-800">
+                    <h3 className="text-xs xl:text-base font-bold text-slate-400 uppercase tracking-widest flex items-center gap-3 mb-4 xl:mb-6">
+                        <User className="w-4 h-4 xl:w-5 xl:h-5" /> Personajes Destacados
                     </h3>
-                    <div className="flex flex-wrap gap-3 mb-6">
+                    <div className="flex flex-wrap gap-2 xl:gap-3 mb-4 xl:mb-6">
                         {tracking.favoriteCharacters.map((char, idx) => (
-                            <span key={idx} className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm font-medium text-slate-300 flex items-center gap-3">
-                                {char} <button onClick={() => handleInputChange('favoriteCharacters', tracking.favoriteCharacters.filter((_, i) => i !== idx))}><X className="w-4 h-4 text-slate-500 hover:text-white" /></button>
+                            <span key={idx} className="px-3 py-1.5 xl:px-4 xl:py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs xl:text-sm font-medium text-slate-300 flex items-center gap-2 xl:gap-3">
+                                {char} <button onClick={() => handleInputChange('favoriteCharacters', tracking.favoriteCharacters.filter((_, i) => i !== idx))}><X className="w-3 h-3 text-slate-500 hover:text-white" /></button>
                             </span>
                         ))}
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex gap-2 xl:gap-3">
                         <input 
                             placeholder="Añadir nombre de personaje..." 
-                            className="flex-1 bg-slate-900/50 border border-slate-800 rounded-2xl px-5 py-3 text-sm text-white outline-none focus:border-indigo-500"
+                            className="flex-1 bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-2.5 xl:px-5 xl:py-3 text-sm text-white outline-none focus:border-indigo-500"
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                     const val = (e.target as HTMLInputElement).value.trim();
@@ -421,18 +422,18 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                 }
                             }}
                         />
-                        <button className="p-3 bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition-all shadow-lg shadow-orange-600/20">
-                            <Plus className="w-6 h-6" />
+                        <button className="p-2.5 xl:p-3 bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition-all shadow-lg shadow-orange-600/20">
+                            <Plus className="w-5 h-5 xl:w-6 xl:h-6" />
                         </button>
                     </div>
                 </div>
             </div>
 
             {/* --- COLUMN 3: RIGHT (Rating & Reflection) --- */}
-            <div className="flex flex-col gap-8 pt-10 lg:pt-0">
+            <div className="flex flex-col gap-6 xl:gap-8 pt-10 lg:pt-0">
                 {/* Rating Grid */}
                 <div className="bg-slate-900/40 rounded-[2.5rem] p-6 border border-slate-800 flex flex-col shadow-xl">
-                    <div className="grid grid-cols-4 gap-3 mb-8">
+                    <div className="grid grid-cols-4 gap-2 xl:gap-3 mb-6 xl:mb-8">
                         {RATING_OPTIONS.map((opt) => {
                             const isSelected = tracking.rating === opt;
                             const label = opt.split(' ')[0];
@@ -440,10 +441,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                 <button
                                     key={opt}
                                     onClick={() => handleInputChange('rating', opt)}
-                                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${isSelected ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400 shadow-lg' : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:bg-slate-800'}`}
+                                    className={`flex flex-col items-center gap-1 xl:gap-2 p-2 xl:p-3 rounded-2xl border transition-all ${isSelected ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400 shadow-lg' : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:bg-slate-800'}`}
                                 >
-                                    <Star className={`w-4 h-4 ${isSelected ? 'fill-current' : ''}`} />
-                                    <span className="text-[9px] font-black uppercase tracking-tighter text-center">{label}</span>
+                                    <Star className={`w-3 h-3 xl:w-4 xl:h-4 ${isSelected ? 'fill-current' : ''}`} />
+                                    <span className="text-[8px] xl:text-[9px] font-black uppercase tracking-tighter text-center">{label}</span>
                                 </button>
                             );
                         })}
@@ -451,32 +452,32 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     <button 
                         onClick={handleGenerateReview} 
                         disabled={isGeneratingReview}
-                        className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-black flex items-center justify-center gap-3 shadow-xl shadow-indigo-600/25 transition-all uppercase tracking-[0.2em]"
+                        className="w-full py-3 xl:py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-[10px] xl:text-xs font-black flex items-center justify-center gap-2 xl:gap-3 shadow-xl shadow-indigo-600/25 transition-all uppercase tracking-[0.2em]"
                     >
-                        <Wand2 className="w-5 h-5" /> Copiar Reseña IA
+                        <Wand2 className="w-4 h-4 xl:w-5 xl:h-5" /> Copiar Reseña IA
                     </button>
                 </div>
 
                 {/* Reflection */}
-                <div className="bg-slate-900/40 rounded-[2.5rem] p-8 border border-slate-800 shadow-xl flex flex-col min-h-0">
-                    <h3 className="text-base font-bold text-white mb-8 flex items-center gap-3">
-                        <MessageSquare className="w-5 h-5 text-slate-400" /> Reflexión
+                <div className="bg-slate-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-slate-800 shadow-xl flex flex-col min-h-0">
+                    <h3 className="text-sm xl:text-base font-bold text-white mb-6 xl:mb-8 flex items-center gap-3">
+                        <MessageSquare className="w-4 h-4 xl:w-5 xl:h-5 text-slate-400" /> Reflexión
                     </h3>
                     
-                    <div className="mb-8">
-                        <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Recomendado por</span>
+                    <div className="mb-6 xl:mb-8">
+                        <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">Recomendado por</span>
                         <input 
                             value={tracking.recommendedBy || ''}
                             onChange={(e) => handleInputChange('recommendedBy', e.target.value)}
                             placeholder="Ej: Laura, r/anime..."
-                            className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl px-5 py-3 text-sm text-slate-300 outline-none focus:border-indigo-500"
+                            className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-2.5 xl:px-5 xl:py-3 text-sm text-slate-300 outline-none focus:border-indigo-500"
                         />
                     </div>
 
                     <div className="flex-1 flex flex-col min-h-0">
-                        <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Resumen Emocional</span>
+                        <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 xl:mb-4">Resumen Emocional</span>
                         {/* Emotional Tags WITH SCROLL */}
-                        <div className="flex-1 overflow-y-auto pr-3 custom-scrollbar space-y-2.5 max-h-[350px]">
+                        <div className="flex-1 overflow-y-auto pr-3 custom-scrollbar space-y-2 xl:space-y-2.5 max-h-[300px] xl:max-h-[350px]">
                             {EMOTIONAL_TAGS_OPTIONS.map(tag => {
                                 const isActive = tracking.emotionalTags.includes(tag.label);
                                 return (
@@ -488,9 +489,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                                 : [...tracking.emotionalTags, tag.label];
                                             handleInputChange('emotionalTags', newTags);
                                         }}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black border transition-all text-left uppercase tracking-tight ${isActive ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-300 shadow-inner' : 'bg-slate-950/50 border-slate-800 text-slate-500 hover:bg-slate-800'}`}
+                                        className={`w-full flex items-center gap-2 xl:gap-3 px-3 py-2.5 xl:px-4 xl:py-3 rounded-2xl text-[10px] xl:text-[11px] font-black border transition-all text-left uppercase tracking-tight ${isActive ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-300 shadow-inner' : 'bg-slate-950/50 border-slate-800 text-slate-500 hover:bg-slate-800'}`}
                                     >
-                                        <span className="text-sm">{tag.emoji}</span>
+                                        <span className="text-xs xl:text-sm">{tag.emoji}</span>
                                         <span className="truncate">{tag.label}</span>
                                     </button>
                                 );
@@ -500,15 +501,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 </div>
 
                 {/* Final Comment */}
-                <div className="bg-slate-900/40 rounded-[2.5rem] p-8 border border-slate-800 flex-1 flex flex-col shadow-xl">
-                    <h3 className="text-base font-bold text-white mb-6 flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-slate-400" /> Comentario Final
+                <div className="bg-slate-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-slate-800 flex-1 flex flex-col shadow-xl">
+                    <h3 className="text-sm xl:text-base font-bold text-white mb-4 xl:mb-6 flex items-center gap-3">
+                        <FileText className="w-4 h-4 xl:w-5 xl:h-5 text-slate-400" /> Comentario Final
                     </h3>
                     <textarea 
                         value={tracking.comment}
                         onChange={(e) => handleInputChange('comment', e.target.value)}
                         placeholder="Tus pensamientos finales sobre esta experiencia..."
-                        className="w-full flex-1 bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-sm text-slate-300 outline-none focus:border-indigo-500 resize-none leading-relaxed min-h-[140px]"
+                        className="w-full flex-1 bg-slate-900/50 border border-slate-800 rounded-3xl p-4 xl:p-5 text-sm text-slate-300 outline-none focus:border-indigo-500 resize-none leading-relaxed min-h-[120px] xl:min-h-[140px]"
                     />
                 </div>
             </div>
