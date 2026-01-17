@@ -147,7 +147,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
     <div 
       ref={cardRef}
       onClick={onClick}
-      className={`group relative rounded-xl overflow-hidden shadow-xl cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/20 flex flex-col bg-[#1A1D26] ${
+      className={`group relative rounded-xl overflow-hidden shadow-xl cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/20 flex flex-col bg-[#1A1D26] w-full ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
       }`}
       style={{
@@ -239,7 +239,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       <div className="absolute bottom-0 left-0 right-0 p-4 z-30 flex flex-col gap-2.5">
           
           {/* Title */}
-          <h3 className="text-white font-black text-sm md:text-base leading-tight line-clamp-2 drop-shadow-lg tracking-tight mb-1">
+          <h3 className="text-white font-black text-base md:text-lg leading-tight line-clamp-2 drop-shadow-lg tracking-tight mb-1">
               {aiData.title}
           </h3>
 

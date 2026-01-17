@@ -883,7 +883,9 @@ export default function App() {
       <main className={`transition-all duration-300 min-h-[calc(100vh-80px)] overflow-x-hidden ${
           isCatalogMode 
             ? 'w-full pt-16 pb-0' // Full width, less top padding (header is floating)
-            : 'max-w-7xl mx-auto px-2 md:px-4 pt-20 md:pt-24 pb-12' // Standard container with reduced mobile padding
+            : view === 'upcoming' 
+              ? 'w-full px-4 md:px-8 pt-20 md:pt-24 pb-12' // Full width for Wishlist
+              : 'max-w-7xl mx-auto px-2 md:px-4 pt-20 md:pt-24 pb-12' // Standard container
       }`}>
          
          {/* Contextual Greeting (Always visible on Library) */}
@@ -1174,7 +1176,7 @@ export default function App() {
                          <p className="text-sm text-slate-600">Marca obras como "Planeado" para verlas aquí.</p>
                      </div>
                  ) : (
-                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-6">
                          {upcomingLibrary.slice(0, visibleCount).map(item => (
                              <CompactMediaCard 
                                  key={item.id} 
