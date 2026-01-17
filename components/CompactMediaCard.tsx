@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MediaItem } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Trash2, Star } from 'lucide-react';
+import { MediaItem, RATING_TO_SCORE } from '../types';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Trash2, Star, Heart } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
@@ -26,6 +26,9 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   const isBook = aiData.mediaType === 'Libro';
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
 
+  // Rating Score
+  const score = RATING_TO_SCORE[trackingData.rating] || 0;
+
   // Return Date Logic
   const isPaused = trackingData.status === 'En Pausa';
   const returnDate = trackingData.scheduledReturnDate;
@@ -43,27 +46,6 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   // Logic for Quick Action Button visibility
   const showQuickAction = !isMovie && !isPlanned && trackingData.status === 'Viendo/Leyendo';
   
-  // Calculate Time Remaining for Upcoming Releases
-  const getCountdown = (dateStr?: string) => {
-    if (!dateStr || !isPlanned) return null;
-    const target = new Date(dateStr);
-    const now = new Date();
-    if (isNaN(target.getTime())) return null; // Invalid date
-    
-    // Set both to midnight to compare just days roughly, or precise time
-    const diffTime = target.getTime() - now.getTime();
-    if (diffTime <= 0) return null; // Already passed
-
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays > 365) return `en ${Math.floor(diffDays/365)} años`;
-    if (diffDays > 30) return `en ${Math.floor(diffDays/30)} meses`;
-    return `en ${diffDays} días`;
-  };
-
-  const targetDateDisplay = trackingData.nextReleaseDate || aiData.releaseDate;
-  const timeRemaining = getCountdown(targetDateDisplay);
-
   // Calculate progress
   let progressPercent = 0;
   if (isMovie) {
@@ -75,17 +57,6 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   }
 
   const isCompleteSeason = !isMovie && trackingData.totalEpisodesInSeason > 0 && trackingData.watchedEpisodes >= trackingData.totalEpisodesInSeason;
-
-  const TypeIcon = () => {
-    switch (aiData.mediaType) {
-      case 'Anime': return <Tv className="w-3 h-3" />;
-      case 'Manhwa': 
-      case 'Manga': return <BookOpen className="w-3 h-3" />;
-      case 'Comic': return <FileText className="w-3 h-3" />;
-      case 'Libro': return <Book className="w-3 h-3" />;
-      default: return <Clapperboard className="w-3 h-3" />;
-    }
-  };
 
   const getPlaceholder = () => 
     `https://placehold.co/300x450/1e293b/94a3b8?text=${encodeURIComponent(aiData.title || 'Sin Imagen')}&font=roboto`;
@@ -143,52 +114,46 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 
   // --- Formatting Helpers for New Layout ---
   
-  const getStatusColorDot = () => {
+  const getStatusStyles = () => {
       switch (trackingData.status) {
-          case 'Viendo/Leyendo': return isReadingContent ? 'bg-blue-500' : 'bg-green-500';
-          case 'Completado': return 'bg-slate-500';
-          case 'Sin empezar': return 'bg-yellow-500';
-          case 'En Pausa': return 'bg-orange-500';
-          case 'Planeado / Pendiente': return 'bg-purple-500';
-          case 'Descartado': return 'bg-red-500';
-          default: return 'bg-slate-500';
+          case 'Viendo/Leyendo': return { bg: 'bg-indigo-600', text: 'text-white', label: isReadingContent ? 'LEYENDO' : 'VIENDO' };
+          case 'Completado': return { bg: 'bg-emerald-500', text: 'text-white', label: 'COMPLETADO' };
+          case 'Sin empezar': return { bg: 'bg-amber-500', text: 'text-black', label: 'SIN EMPEZAR' };
+          case 'En Pausa': return { bg: 'bg-orange-500', text: 'text-white', label: 'EN PAUSA' };
+          case 'Planeado / Pendiente': return { bg: 'bg-purple-500', text: 'text-white', label: 'PLANEADO' };
+          case 'Descartado': return { bg: 'bg-red-600', text: 'text-white', label: 'DESCARTADO' };
+          default: return { bg: 'bg-slate-700', text: 'text-slate-300', label: 'DESCONOCIDO' };
       }
   };
 
-  const getStatusText = () => {
-      if (trackingData.status === 'Viendo/Leyendo') return isReadingContent ? 'Leyendo' : 'Viendo';
-      return trackingData.status;
+  const statusStyle = getStatusStyles();
+
+  // Helper to render the stats (Season / Progress)
+  const getSeasonLabel = () => {
+      if (isMovie) return 'Pelicula';
+      return isBook 
+        ? (trackingData.isSaga ? `L.${trackingData.currentSeason}` : 'Novela') 
+        : (isReadingContent ? `Vol. ${trackingData.currentSeason}` : `T.${trackingData.currentSeason}`);
   };
 
-  // Helper to render the stats (Season / Progress) inside the overlay
-  const renderOverlayStats = () => {
-      if (isMovie) return null;
-      
-      const seasonPrefix = isBook 
-        ? (trackingData.isSaga ? `L.${trackingData.currentSeason}` : 'Novela') 
-        : (isReadingContent ? 'Vol.' : `T.${trackingData.currentSeason}`);
-      
-      const progressText = trackingData.totalEpisodesInSeason > 0
-        ? `${trackingData.watchedEpisodes}/${trackingData.totalEpisodesInSeason}`
-        : `${trackingData.watchedEpisodes}`;
-
-      return (
-          <span className="text-[10px] font-bold text-slate-300 bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/10">
-              {seasonPrefix} <span className="text-slate-500 mx-0.5">|</span> {progressText}
-          </span>
-      );
+  const getProgressLabel = () => {
+      if (isMovie) return trackingData.status === 'Completado' ? '1/1' : '0/1';
+      return trackingData.totalEpisodesInSeason > 0
+        ? `${trackingData.watchedEpisodes} / ${trackingData.totalEpisodesInSeason}`
+        : `${trackingData.watchedEpisodes} / ?`;
   };
 
   return (
     <div 
       ref={cardRef}
       onClick={onClick}
-      className={`group bg-[#1A1D26] rounded-2xl overflow-hidden shadow-lg border border-white/5 cursor-pointer transition-transform duration-300 ease-out hover:scale-[1.02] hover:shadow-2xl relative flex flex-col ${
+      className={`group relative rounded-3xl overflow-hidden shadow-2xl cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-primary/20 flex flex-col bg-[#1A1D26] ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
       }`}
       style={{
         willChange: 'transform, opacity',
         contentVisibility: 'auto',
+        aspectRatio: '2/3',
         containIntrinsicSize: '300px 450px'
       }}
     >
@@ -199,10 +164,8 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
           </div>
       )}
 
-      {/* --- IMAGE AREA --- */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-900">
-        
-        {/* Image */}
+      {/* --- IMAGE BACKGROUND --- */}
+      <div className="absolute inset-0 bg-slate-900">
         {imgSrc && (
             <img 
                 src={imgSrc} 
@@ -215,91 +178,109 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
                 }`}
             />
         )}
-        
-        {/* Gradient Overlay for Text Readability - Stronger at bottom */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent" />
+        {/* Gradient Overlay: Darker at bottom for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-black/10" />
+      </div>
 
-        {/* Top Left Badge (Type) */}
-        <div className="absolute top-3 left-3 z-30">
-            <span 
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-white text-[10px] font-bold uppercase tracking-wider shadow-lg backdrop-blur-sm bg-black/40 border border-white/10"
-                style={{ borderLeftColor: dynamicColor, borderLeftWidth: '3px' }}
-            >
-                <TypeIcon />
-                {aiData.mediaType.toUpperCase()}
-            </span>
-        </div>
+      {/* --- TOP BADGES --- */}
+      
+      {/* Type Badge (Top Left) */}
+      <div className="absolute top-4 left-4 z-30">
+          <span className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider shadow-lg">
+              {aiData.mediaType}
+          </span>
+      </div>
 
-        {/* Top Right Actions (Favorite/Delete) - Hidden by default, show on hover */}
-        <div className="absolute top-3 right-3 z-30 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-             {onToggleFavorite && (
+      {/* Rating Badge (Top Right) */}
+      {score > 0 && (
+          <div className="absolute top-4 right-4 z-30">
+              <div 
+                className="w-9 h-9 rounded-full flex items-center justify-center bg-[#2e1065]/80 backdrop-blur-md border border-purple-500/30 text-white text-xs font-bold shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+              >
+                  {score}
+              </div>
+          </div>
+      )}
+
+      {/* --- HOVER ACTIONS (Favorite / Delete / Quick Add) --- */}
+      <div className="absolute inset-0 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-end p-4 pt-16 gap-2 bg-black/20">
+           {onToggleFavorite && (
+              <button
+                  onClick={handleFavoriteClick}
+                  className="p-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-white hover:text-yellow-500 transition-all border border-white/10 shadow-lg transform hover:scale-110"
+                  title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+              >
+                  <Star className={`w-5 h-5 ${isFavorite ? 'fill-current text-yellow-400' : ''}`} />
+              </button>
+           )}
+           {onDelete && (
+              <button
+                  onClick={handleDeleteClick}
+                  className="p-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-red-600 hover:text-white transition-all border border-white/10 shadow-lg transform hover:scale-110"
+                  title="Eliminar"
+              >
+                  <Trash2 className="w-5 h-5" />
+              </button>
+           )}
+           
+           {/* Quick Action Button (Floating) */}
+           {showQuickAction && (
                 <button
-                    onClick={handleFavoriteClick}
-                    className="p-2 rounded-full bg-black/50 backdrop-blur-md hover:bg-white text-white hover:text-yellow-500 transition-colors"
+                    onClick={handleQuickAction}
+                    className={`mt-auto mb-32 p-3 rounded-full shadow-xl transition-all transform hover:scale-110 active:scale-95 border border-white/20 ${
+                        isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-slate-900'
+                    }`}
+                    title={isCompleteSeason ? "Completar" : "+1 Capítulo"}
                 >
-                    <Star className={`w-4 h-4 ${isFavorite ? 'fill-current text-yellow-400' : ''}`} />
+                    {isCompleteSeason ? <Check className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
                 </button>
-             )}
-             {onDelete && (
-                <button
-                    onClick={handleDeleteClick}
-                    className="p-2 rounded-full bg-black/50 backdrop-blur-md hover:bg-red-600 text-white transition-colors"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
-             )}
-        </div>
-        
-        {/* Always visible Favorite Indicator if active */}
-        {isFavorite && (
-            <div className="absolute top-3 right-3 z-20 group-hover:opacity-0 transition-opacity">
-                <div className="p-1.5 bg-yellow-500/20 rounded-full border border-yellow-500/50 backdrop-blur-sm">
-                    <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                </div>
-            </div>
-        )}
+           )}
+      </div>
 
-        {/* Quick Action Button (Floating on Image) */}
-        {showQuickAction && (
-             <button
-                onClick={handleQuickAction}
-                className={`absolute bottom-20 right-3 z-40 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 duration-300 ${
-                    isCompleteSeason ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-white hover:bg-slate-200 text-slate-900'
-                }`}
-                title={isCompleteSeason ? "Completar" : "+1 Capítulo"}
-             >
-                 {isCompleteSeason ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-             </button>
-        )}
+      {/* --- CONTENT OVERLAY (BOTTOM) --- */}
+      <div className="absolute bottom-0 left-0 right-0 p-5 z-30 flex flex-col gap-3">
+          
+          {/* Title */}
+          <h3 className="text-white font-black text-xl leading-tight line-clamp-2 drop-shadow-lg tracking-tight">
+              {aiData.title}
+          </h3>
 
-        {/* Content Info Overlay (Merged Footer into Image) */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 z-30 pb-5">
-            <h3 className="text-white font-bold text-sm leading-tight line-clamp-2 drop-shadow-md mb-2">
-                {aiData.title}
-            </h3>
-            
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${getStatusColorDot()} shadow-[0_0_8px_currentColor]`} />
-                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wide">
-                        {isPlanned && timeRemaining ? timeRemaining : getStatusText()}
-                    </span>
-                </div>
-                {renderOverlayStats()}
-            </div>
-        </div>
-        
-        {/* Progress Bar (Attached to bottom edge of image container) */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-30">
-            <div 
-            className="h-full transition-all duration-700 ease-out" 
-            style={{ 
-                width: `${progressPercent}%`,
-                backgroundColor: isPlanned ? '#fbbf24' : (progressPercent === 100 ? '#4ade80' : dynamicColor),
-                boxShadow: `0 0 10px ${dynamicColor}40`
-                }}
-            />
-        </div>
+          {/* Status & Progress Bar Row */}
+          <div className="flex items-center gap-3 w-full">
+              {/* Status Pill */}
+              <div className={`flex-shrink-0 px-3 py-1 rounded-full ${statusStyle.bg} shadow-lg shadow-black/20`}>
+                  <span className={`text-[9px] font-black uppercase tracking-widest ${statusStyle.text}`}>
+                      {statusStyle.label}
+                  </span>
+              </div>
+
+              {/* Progress Bar Line */}
+              <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden shadow-inner backdrop-blur-sm">
+                  <div 
+                      className={`h-full rounded-full transition-all duration-700 ease-out ${statusStyle.bg}`}
+                      style={{ 
+                          width: `${progressPercent}%`,
+                          boxShadow: '0 0 10px rgba(255,255,255,0.3)'
+                      }} 
+                  />
+              </div>
+          </div>
+
+          {/* Info Row (Season & Count) */}
+          <div className="flex items-center justify-between mt-1 pl-1">
+              <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: dynamicColor, boxShadow: `0 0 8px ${dynamicColor}` }}></div>
+                  <span className="text-xs font-bold text-slate-300 tracking-wide">
+                      {getSeasonLabel()}
+                  </span>
+              </div>
+              
+              <div className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 backdrop-blur-sm">
+                  <span className="text-xs font-mono font-medium text-slate-300">
+                      {getProgressLabel()}
+                  </span>
+              </div>
+          </div>
       </div>
 
     </div>
