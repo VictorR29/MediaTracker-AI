@@ -597,7 +597,7 @@ export default function App() {
 
     if (filters.genre !== 'All') {
        result = result.filter(i => 
-           i.aiData.genres.some(g => normalizeGenre(g) === filters.genre)
+           (i.aiData.genres || []).some(g => normalizeGenre(g) === filters.genre)
        );
     }
 
@@ -641,7 +641,7 @@ export default function App() {
 
   const availableGenres = useMemo(() => {
       const s = new Set<string>();
-      library.forEach(i => i.aiData.genres.forEach(g => s.add(normalizeGenre(g))));
+      library.forEach(i => (i.aiData?.genres || []).forEach(g => s.add(normalizeGenre(g))));
       return Array.from(s).sort();
   }, [library]);
 
@@ -1053,8 +1053,6 @@ export default function App() {
                                   isNew={true} 
                                   username={userProfile?.username}
                                   apiKey={userProfile?.apiKey}
-                                  initialEditMode={searchMode === 'manual'}
-                                  onSearch={(query) => handleSearch(query)}
                                />
                            </div>
                        </div>
@@ -1063,77 +1061,21 @@ export default function App() {
             </div>
          )}
 
-         {/* VIEW: LIBRARY */}
-         {view === 'library' && (
-             <div className="animate-fade-in">
-                 {/* Wrap filters to keep them contained even in full-width mode */}
-                 <div className={isCatalogMode ? "max-w-7xl mx-auto px-4 pt-4 md:pt-4 z-30 relative" : ""}>
-                    <LibraryFilters 
-                        filters={filters} 
-                        onChange={setFilters} 
-                        availableGenres={availableGenres}
-                        viewMode={libraryViewMode}
-                        onToggleViewMode={() => setLibraryViewMode(prev => prev === 'grid' ? 'catalog' : 'grid')}
-                    />
-                 </div>
-                 
-                 {library.length === 0 ? (
-                     <div className="text-center py-20 opacity-50">
-                         <LayoutGrid className="w-16 h-16 mx-auto mb-4 text-slate-600" />
-                         <p className="text-xl font-bold text-slate-500">Tu biblioteca está vacía</p>
-                         <button onClick={() => setView('search')} className="mt-4 text-primary hover:underline">
-                             Buscar algo para añadir
-                         </button>
-                     </div>
-                 ) : (
-                     <>
-                        {libraryViewMode === 'catalog' ? (
-                            <CatalogView 
-                                library={filteredLibrary} 
-                                onOpenDetail={openDetail} 
-                            />
-                        ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-6">
-                                {filteredLibrary.slice(0, visibleCount).map(item => (
-                                    <CompactMediaCard 
-                                        key={item.id} 
-                                        item={item} 
-                                        onClick={() => openDetail(item)}
-                                        onIncrement={handleQuickIncrement}
-                                        onToggleFavorite={handleToggleFavorite}
-                                        onDelete={handleDeleteRequest}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                        
-                        {/* Infinite Scroll Trigger */}
-                        {libraryViewMode === 'grid' && filteredLibrary.length > visibleCount && (
-                            <div ref={lastElementRef} className="h-20 flex items-center justify-center">
-                                <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                            </div>
-                        )}
-                     </>
-                 )}
-             </div>
-         )}
-
          {/* VIEW: DETAILS */}
          {view === 'details' && currentMedia && (
-             <div className="animate-fade-in max-w-7xl mx-auto px-0 md:px-0">
+             <div className="animate-fade-in">
                  <button 
-                   onClick={() => setView('library')}
-                   className="mb-4 flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+                    onClick={() => { setView('library'); }}
+                    className="mb-6 flex items-center gap-2 text-slate-400 hover:text-white transition-colors bg-slate-800/50 hover:bg-slate-800 px-4 py-2 rounded-lg border border-slate-700/50"
                  >
-                     <ArrowLeft className="w-4 h-4" /> Volver
+                     <ArrowLeft className="w-4 h-4" /> Volver a Biblioteca
                  </button>
                  <MediaCard 
                     item={currentMedia} 
                     onUpdate={handleUpdateMedia} 
-                    onDelete={() => handleDeleteRequest(currentMedia)}
+                    onDelete={() => handleDeleteRequest(currentMedia)} 
                     username={userProfile?.username}
                     apiKey={userProfile?.apiKey}
-                    onSearch={(query) => handleSearch(query)}
                  />
              </div>
          )}
@@ -1143,90 +1085,124 @@ export default function App() {
              <StatsView 
                 library={library} 
                 userProfile={userProfile} 
-                onUpdateProfile={handleUpdateUserProfile}
+                onUpdateProfile={handleUpdateUserProfile} 
              />
          )}
 
          {/* VIEW: DISCOVERY */}
          {view === 'discovery' && userProfile && (
              <DiscoveryView 
-                library={library}
-                apiKey={userProfile.apiKey}
-                onSelectRecommendation={(title, type) => {
-                    handleSearch(title, type);
-                }}
+                library={library} 
+                apiKey={userProfile.apiKey} 
+                onSelectRecommendation={(title, type) => handleSearch(title, type)} 
                 onToggleImmersive={(immersive) => setIsImmersiveMode(immersive)}
              />
          )}
 
-         {/* VIEW: UPCOMING / WISHLIST */}
-         {view === 'upcoming' && (
-             <div className="animate-fade-in">
-                 <div className="flex items-center gap-3 mb-6 border-l-4 border-yellow-500 pl-4">
-                     <h2 className="text-2xl font-bold text-white">Wishlist & Próximos</h2>
-                     <span className="bg-yellow-500/20 text-yellow-500 text-xs font-bold px-2 py-1 rounded-full border border-yellow-500/30">
-                         {upcomingLibrary.length}
-                     </span>
-                 </div>
+         {/* VIEW: LIBRARY / UPCOMING */}
+         {(view === 'library' || view === 'upcoming') && (
+             <>
+                {view === 'library' && (
+                    <LibraryFilters 
+                        filters={filters} 
+                        onChange={setFilters} 
+                        availableGenres={availableGenres}
+                        viewMode={libraryViewMode}
+                        onToggleViewMode={() => setLibraryViewMode(prev => prev === 'grid' ? 'catalog' : 'grid')}
+                    />
+                )}
 
-                 {upcomingLibrary.length === 0 ? (
-                     <div className="text-center py-20 opacity-50 bg-slate-900/50 rounded-2xl border border-slate-800 border-dashed">
-                         <Bookmark className="w-16 h-16 mx-auto mb-4 text-slate-600" />
-                         <p className="text-lg font-bold text-slate-500">No tienes nada planeado.</p>
-                         <p className="text-sm text-slate-600">Marca obras como "Planeado" para verlas aquí.</p>
-                     </div>
-                 ) : (
-                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-6">
-                         {upcomingLibrary.slice(0, visibleCount).map(item => (
-                             <CompactMediaCard 
-                                 key={item.id} 
-                                 item={item} 
-                                 onClick={() => openDetail(item)}
-                                 onIncrement={handleQuickIncrement}
-                                 onToggleFavorite={handleToggleFavorite}
-                                 onDelete={handleDeleteRequest}
-                             />
-                         ))}
-                     </div>
-                 )}
-                 {upcomingLibrary.length > visibleCount && (
-                    <div ref={lastElementRef} className="h-20 flex items-center justify-center">
-                        <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                {view === 'upcoming' && (
+                    <div className="mb-8 border-l-4 border-purple-500 pl-4">
+                        <h2 className="text-2xl font-bold text-white">Lista de Deseos & Pendientes</h2>
+                        <p className="text-slate-400 text-sm">Obras que planeas ver en el futuro.</p>
                     </div>
-                 )}
-             </div>
+                )}
+
+                {isCatalogMode ? (
+                    <CatalogView 
+                        library={filteredLibrary} 
+                        onOpenDetail={openDetail} 
+                    />
+                ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-6">
+                        {(view === 'upcoming' ? upcomingLibrary : filteredLibrary)
+                            .slice(0, visibleCount)
+                            .map((item) => (
+                            <div key={item.id} ref={lastElementRef}>
+                                <CompactMediaCard 
+                                    item={item} 
+                                    onClick={() => openDetail(item)} 
+                                    onIncrement={handleQuickIncrement}
+                                    onToggleFavorite={handleToggleFavorite}
+                                    onDelete={handleDeleteRequest}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Empty States */}
+                {view === 'library' && filteredLibrary.length === 0 && (
+                    <div className="text-center py-20 text-slate-500">
+                        <LayoutGrid className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                        <p className="text-lg">No se encontraron obras con estos filtros.</p>
+                        <button onClick={() => setFilters({ ...filters, query: '', type: 'All', status: 'All', genre: 'All', rating: 'All', onlyFavorites: false })} className="mt-4 text-primary hover:underline">
+                            Limpiar Filtros
+                        </button>
+                    </div>
+                )}
+
+                {view === 'upcoming' && upcomingLibrary.length === 0 && (
+                    <div className="text-center py-20 text-slate-500">
+                        <Bookmark className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                        <p className="text-lg">Tu lista de deseos está vacía.</p>
+                        <p className="text-sm mt-2">Añade obras con estado "Planeado" para verlas aquí.</p>
+                    </div>
+                )}
+             </>
          )}
 
       </main>
 
-      {/* Footer */}
-      <footer className={`w-full py-3 border-t border-slate-800/50 bg-slate-900/20 backdrop-blur-sm text-center transition-all duration-300 ${isImmersiveMode || isSettingsOpen ? 'translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
-          <p className="text-[10px] text-slate-500 font-medium tracking-wide">
-              © 2026 Victor Ramones
-          </p>
-      </footer>
+      {/* Mobile Bottom Navigation (Hidden in Immersive Mode and on Scroll) */}
+      <nav className={`md:hidden fixed bottom-0 w-full bg-surface/90 backdrop-blur-xl border-t border-slate-700/50 pb-safe pt-2 px-6 flex justify-between items-center z-40 transition-transform duration-300 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
+          <button onClick={() => setView('library')} className={`flex flex-col items-center gap-1 p-2 ${view === 'library' || view === 'details' ? 'text-primary' : 'text-slate-500'}`}>
+              <LayoutGrid className="w-6 h-6" />
+              <span className="text-[10px] font-bold">Biblioteca</span>
+          </button>
+          <button onClick={() => setView('search')} className={`flex flex-col items-center gap-1 p-2 ${view === 'search' ? 'text-primary' : 'text-slate-500'}`}>
+              <div className="bg-primary text-white p-3 rounded-full -mt-8 shadow-lg border-4 border-background">
+                  <PlusCircle className="w-6 h-6" />
+              </div>
+          </button>
+          <button onClick={() => setView('discovery')} className={`flex flex-col items-center gap-1 p-2 ${view === 'discovery' ? 'text-primary' : 'text-slate-500'}`}>
+              <Compass className="w-6 h-6" />
+              <span className="text-[10px] font-bold">Descubrir</span>
+          </button>
+      </nav>
 
-      {/* Delete Confirmation Modal */}
+      {/* Confirmation Modal Overlay */}
       {deleteTarget && (
-          <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4 animate-fade-in">
               <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center animate-fade-in-up">
-                  <div className="w-16 h-16 bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Trash2 className="w-8 h-8 text-red-500" />
+                  <div className="w-16 h-16 bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Trash2 className="w-8 h-8" />
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">¿Eliminar obra?</h3>
                   <p className="text-slate-400 mb-6 text-sm">
-                      Se borrará "{deleteTarget.aiData.title}" y todo su progreso. Esta acción no se puede deshacer.
+                      Estás a punto de borrar <strong className="text-white">"{deleteTarget.aiData.title}"</strong>. Esta acción no se puede deshacer.
                   </p>
                   <div className="flex gap-3">
                       <button 
                         onClick={cancelDelete}
-                        className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition-colors"
+                        className="flex-1 py-3 rounded-xl font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
                       >
                           Cancelar
                       </button>
                       <button 
                         onClick={confirmDelete}
-                        className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-600/20 transition-colors"
+                        className="flex-1 py-3 rounded-xl font-bold bg-red-600 text-white hover:bg-red-500 transition-colors shadow-lg shadow-red-900/20"
                       >
                           Eliminar
                       </button>
@@ -1235,94 +1211,43 @@ export default function App() {
           </div>
       )}
 
-      {/* Import Merge Modal */}
+      {/* Pending Import Modal */}
       {pendingImport && (
-          <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-              <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-md w-full animate-fade-in-up">
-                  <div className="flex items-center gap-3 mb-4">
-                      <GitMerge className="w-6 h-6 text-purple-400" />
-                      <h3 className="text-xl font-bold text-white">Importar Catálogo</h3>
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4 animate-fade-in">
+              <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center animate-fade-in-up">
+                  <div className="w-16 h-16 bg-blue-900/30 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <GitMerge className="w-8 h-8" />
                   </div>
-                  <p className="text-slate-300 text-sm mb-6 leading-relaxed">
-                      Se han detectado <strong>{pendingImport.library.length}</strong> obras en el archivo. 
-                      Las obras que ya existan en tu biblioteca se omitirán para evitar duplicados. 
-                      Se importarán como "Sin empezar".
+                  <h3 className="text-xl font-bold text-white mb-2">Importar Catálogo</h3>
+                  <p className="text-slate-400 mb-6 text-sm">
+                      Se han encontrado <strong className="text-white">{pendingImport.library.length}</strong> obras nuevas para añadir a tu biblioteca.
                   </p>
                   <div className="flex gap-3">
                       <button 
                         onClick={() => setPendingImport(null)}
-                        className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition-colors"
+                        className="flex-1 py-3 rounded-xl font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
                       >
                           Cancelar
                       </button>
                       <button 
                         onClick={() => processCatalogImport(pendingImport.library)}
-                        className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-lg shadow-purple-600/20 transition-colors"
+                        className="flex-1 py-3 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/20"
                       >
-                          Confirmar Importación
+                          Importar Todo
                       </button>
                   </div>
               </div>
           </div>
       )}
 
-      {/* Mobile Bottom Navigation */}
-      <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700 z-50 pb-safe transition-transform duration-300 ${isBottomNavVisible && !isImmersiveMode && !isSettingsOpen ? 'translate-y-0' : 'translate-y-full'}`}>
-          <div className="flex justify-around items-center h-16 px-2">
-              <button 
-                  onClick={() => setView('library')}
-                  className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${view === 'library' || view === 'details' ? 'text-primary' : 'text-slate-400'}`}
-              >
-                  <LayoutGrid className="w-5 h-5" />
-                  <span className="text-[10px] font-medium">Colección</span>
-              </button>
-              
-              <button 
-                  onClick={() => setView('upcoming')}
-                  className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${view === 'upcoming' ? 'text-primary' : 'text-slate-400'}`}
-              >
-                  <Bookmark className="w-5 h-5" />
-                  <span className="text-[10px] font-medium">Wishlist</span>
-              </button>
-
-              <button 
-                  onClick={() => {
-                      setView('search');
-                      setCurrentMedia(null);
-                      setSearchKey(prev => prev + 1);
-                  }}
-                  className="flex flex-col items-center justify-center w-full h-full -mt-5"
-              >
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border-4 border-background ${view === 'search' ? 'bg-primary text-white' : 'bg-slate-700 text-slate-300'}`}>
-                      <PlusCircle className="w-6 h-6" />
-                  </div>
-                  <span className={`text-[10px] font-medium mt-1 ${view === 'search' ? 'text-primary' : 'text-slate-400'}`}>Nuevo</span>
-              </button>
-
-              <button 
-                  onClick={() => setView('discovery')}
-                  className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${view === 'discovery' ? 'text-primary' : 'text-slate-400'}`}
-              >
-                  <Compass className="w-5 h-5" />
-                  <span className="text-[10px] font-medium">Explorar</span>
-              </button>
-
-              <button 
-                  onClick={() => setView('stats')}
-                  className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${view === 'stats' ? 'text-primary' : 'text-slate-400'}`}
-              >
-                  <BarChart2 className="w-5 h-5" />
-                  <span className="text-[10px] font-medium">Stats</span>
-              </button>
-          </div>
-      </nav>
-
-      {/* Scroll to Top Button */}
+      {/* Scroll To Top Button */}
       <button
-        onClick={scrollToTop}
-        className={`fixed bottom-24 md:bottom-8 left-1/2 md:left-auto md:right-8 -translate-x-1/2 md:translate-x-0 z-40 bg-slate-800/80 backdrop-blur-md border border-slate-600 p-3 rounded-full shadow-xl transition-all duration-300 ${showScrollTop && !isImmersiveMode && !isSettingsOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+          onClick={scrollToTop}
+          className={`fixed bottom-24 md:bottom-8 right-6 p-3 bg-primary/90 text-white rounded-full shadow-lg transition-all duration-300 z-40 hover:bg-primary ${
+              showScrollTop ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'
+          }`}
       >
-          <ArrowUp className="w-5 h-5 text-white" />
+          <ArrowUp className="w-5 h-5" />
       </button>
 
     </div>

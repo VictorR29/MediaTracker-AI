@@ -206,7 +206,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
         remainingItems.sort((a, b) => (b.lastInteraction || 0) - (a.lastInteraction || 0));
 
         remainingItems.forEach(item => {
-            const genres = item.aiData.genres;
+            const genres = item.aiData?.genres || []; // Safe access with optional chaining
             const primaryGenre = genres.length > 0 ? normalizeGenre(genres[0]) : 'otros';
             if (!genreBuckets[primaryGenre]) genreBuckets[primaryGenre] = [];
             genreBuckets[primaryGenre].push(item);
@@ -223,8 +223,9 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
                 const unmoveableItems: MediaItem[] = [];
                 overflowItems.forEach(item => {
                     let moved = false;
-                    for (let i = 1; i < item.aiData.genres.length; i++) {
-                        const candidateGenre = normalizeGenre(item.aiData.genres[i]);
+                    const genres = item.aiData?.genres || []; // Safe access
+                    for (let i = 1; i < genres.length; i++) {
+                        const candidateGenre = normalizeGenre(genres[i]);
                         const candidateBucket = genreBuckets[candidateGenre] || [];
                         if (candidateBucket.length < SATURATION_LIMIT) {
                             if (!genreBuckets[candidateGenre]) genreBuckets[candidateGenre] = [];

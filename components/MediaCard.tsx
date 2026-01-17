@@ -407,7 +407,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     <div className="flex flex-col gap-3">
                         <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs">Géneros</span>
                         <div className="flex flex-wrap gap-2">
-                            {aiData.genres.map(g => (
+                            {(aiData.genres || []).map(g => (
                                 <span key={g} className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-xs flex items-center gap-1.5">
                                     {g}
                                     {isEditing && (
@@ -642,9 +642,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                         <User className="w-4 h-4 xl:w-5 xl:h-5" /> Personajes Destacados
                     </h3>
                     <div className="flex flex-wrap gap-2 xl:gap-3 mb-4 xl:mb-6">
-                        {tracking.favoriteCharacters.map((char, idx) => (
+                        {(tracking.favoriteCharacters || []).map((char, idx) => (
                             <span key={idx} className="px-3 py-1.5 xl:px-4 xl:py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs xl:text-sm font-medium text-slate-300 flex items-center gap-2 xl:gap-3">
-                                {char} <button onClick={() => handleInputChange('favoriteCharacters', tracking.favoriteCharacters.filter((_, i) => i !== idx))}><X className="w-3 h-3 text-slate-500 hover:text-white" /></button>
+                                {char} <button onClick={() => handleInputChange('favoriteCharacters', (tracking.favoriteCharacters || []).filter((_, i) => i !== idx))}><X className="w-3 h-3 text-slate-500 hover:text-white" /></button>
                             </span>
                         ))}
                     </div>
@@ -656,7 +656,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                 if (e.key === 'Enter') {
                                     const val = (e.target as HTMLInputElement).value.trim();
                                     if (val) {
-                                        handleInputChange('favoriteCharacters', [...tracking.favoriteCharacters, val]);
+                                        handleInputChange('favoriteCharacters', [...(tracking.favoriteCharacters || []), val]);
                                         (e.target as HTMLInputElement).value = '';
                                     }
                                 }
@@ -719,14 +719,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                         {/* Emotional Tags WITH SCROLL */}
                         <div className="flex-1 overflow-y-auto pr-3 custom-scrollbar space-y-2 xl:space-y-2.5 max-h-[300px] xl:max-h-[350px]">
                             {EMOTIONAL_TAGS_OPTIONS.map(tag => {
-                                const isActive = tracking.emotionalTags.includes(tag.label);
+                                const isActive = (tracking.emotionalTags || []).includes(tag.label);
                                 return (
                                     <button
                                         key={tag.label}
                                         onClick={() => {
+                                            const currentTags = tracking.emotionalTags || [];
                                             const newTags = isActive 
-                                                ? tracking.emotionalTags.filter(t => t !== tag.label)
-                                                : [...tracking.emotionalTags, tag.label];
+                                                ? currentTags.filter(t => t !== tag.label)
+                                                : [...currentTags, tag.label];
                                             handleInputChange('emotionalTags', newTags);
                                         }}
                                         className={`w-full flex items-center gap-2 xl:gap-3 px-3 py-2.5 xl:px-4 xl:py-3 rounded-2xl text-[10px] xl:text-[11px] font-black border transition-all text-left uppercase tracking-tight ${isActive ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-300 shadow-inner' : 'bg-slate-950/50 border-slate-800 text-slate-500 hover:bg-slate-800'}`}

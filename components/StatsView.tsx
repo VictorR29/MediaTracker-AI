@@ -138,7 +138,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
     // Genre Distribution (Count based) - Normalized
     const genreCount: Record<string, number> = {};
     library.forEach(item => {
-        const genres = item.aiData.genres || [];
+        const genres = item.aiData?.genres || []; // Safe access
         genres.forEach(g => {
             const normalizedKey = normalizeGenre(g); // Use helper from types to ensure 'Acción' == 'acción'
             genreCount[normalizedKey] = (genreCount[normalizedKey] || 0) + 1;
@@ -173,7 +173,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
             // God Tier Genre Logic
             if (r.startsWith('God Tier')) {
-                const genres = item.aiData.genres || [];
+                const genres = item.aiData?.genres || []; // Safe access
                 genres.forEach(g => {
                     const normalizedKey = normalizeGenre(g);
                     godTierGenres[normalizedKey] = (godTierGenres[normalizedKey] || 0) + 1;
@@ -299,7 +299,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
             // --- Distribution Logic (New with Strict Normalization) ---
             if (itemTime > 0) {
                 // Axis 1: Genres
-                const genres = item.aiData.genres || [];
+                const genres = item.aiData?.genres || []; // Safe access
                 genres.forEach(g => {
                     const normalized = normalizeGenre(g);
                     const label = toTitleCase(normalized); // Enforce consistent casing
