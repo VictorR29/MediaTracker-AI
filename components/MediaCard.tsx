@@ -7,7 +7,7 @@ import {
   Edit3, Save, X, Trash2, ExternalLink, Calendar, 
   Wand2, RefreshCw, MessageSquare, Star, Tv, Link as LinkIcon, 
   Minus, Plus, Heart, BookOpen, FileText, User, Layout, Clock, Globe,
-  Upload, Image as ImageIcon
+  Upload, Image as ImageIcon, CalendarClock
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -531,8 +531,30 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                 <option value="Completado">Completado</option>
                                 <option value="En Pausa">En Pausa</option>
                                 <option value="Descartado">Descartado</option>
+                                <option value="Planeado / Pendiente">Planeado / Pendiente</option>
                             </select>
                         </div>
+
+                        {/* Optional Date Picker for Planned/Upcoming */}
+                        {tracking.status === 'Planeado / Pendiente' && (
+                            <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-2xl p-4 animate-fade-in">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-2 text-indigo-300">
+                                        <CalendarClock className="w-5 h-5" />
+                                        <span className="text-xs font-bold uppercase tracking-wide">¿Cuándo se estrena / planeas verla?</span>
+                                    </div>
+                                    <input 
+                                        type="date"
+                                        value={tracking.nextReleaseDate || ''}
+                                        onChange={(e) => handleInputChange('nextReleaseDate', e.target.value)}
+                                        className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-indigo-400/70 mt-2 pl-1">
+                                    Define una fecha para ver una cuenta regresiva en tu biblioteca.
+                                </p>
+                            </div>
+                        )}
 
                         {/* Season & Episode Controls */}
                         {!isMovie && (

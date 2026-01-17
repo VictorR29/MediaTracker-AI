@@ -29,7 +29,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   // Rating Score
   const score = RATING_TO_SCORE[trackingData.rating] || 0;
 
-  // Return Date Logic
+  // Return Date Logic (For Paused Items)
   const isPaused = trackingData.status === 'En Pausa';
   const returnDate = trackingData.scheduledReturnDate;
   let isReturnDue = false;
@@ -40,8 +40,24 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       }
   }
 
-  // Upcoming / Wishlist Logic
+  // Upcoming / Wishlist Logic (Countdown)
   const isPlanned = trackingData.status === 'Planeado / Pendiente';
+  let countdownText = null;
+  if (isPlanned && trackingData.nextReleaseDate) {
+      const target = new Date(trackingData.nextReleaseDate);
+      const now = new Date();
+      // Reset time to start of day for accurate comparison
+      target.setHours(0,0,0,0);
+      now.setHours(0,0,0,0);
+      
+      const diffTime = target.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 0) countdownText = "Estrenado";
+      else if (diffDays === 0) countdownText = "¡Es Hoy!";
+      else if (diffDays === 1) countdownText = "Mañana";
+      else countdownText = `En ${diffDays} días`;
+  }
   
   // Logic for Quick Action Button visibility
   const showQuickAction = !isMovie && !isPlanned && trackingData.status === 'Viendo/Leyendo';
@@ -159,6 +175,13 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       {isReturnDue && (
           <div className="absolute top-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-bold px-2 py-1 text-center z-40 backdrop-blur-sm">
               ¡Hora de Volver!
+          </div>
+      )}
+
+      {/* Planned Countdown Banner */}
+      {countdownText && (
+          <div className="absolute top-0 left-0 right-0 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-1 text-center z-40 backdrop-blur-sm">
+              {countdownText}
           </div>
       )}
 
