@@ -81,7 +81,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
           observer.disconnect();
         }
       },
-      { rootMargin: '100px' } // Reduced margin to trigger closer to viewport
+      { rootMargin: '200px' } // Load earlier
     );
 
     if (cardRef.current) {
@@ -147,14 +147,12 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
     <div 
       ref={cardRef}
       onClick={onClick}
-      className={`group relative rounded-3xl overflow-hidden shadow-2xl cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-primary/20 flex flex-col bg-[#1A1D26] ${
+      className={`group relative rounded-xl overflow-hidden shadow-xl cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/20 flex flex-col bg-[#1A1D26] ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
       }`}
       style={{
         willChange: 'transform, opacity',
-        contentVisibility: 'auto',
         aspectRatio: '2/3',
-        containIntrinsicSize: '300px 450px'
       }}
     >
       {/* Return Due Banner */}
@@ -178,22 +176,21 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
                 }`}
             />
         )}
-        {/* Gradient Overlay: Darker at bottom for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-black/10" />
+        {/* Gradient Overlay: Enhanced for better text visibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
       </div>
 
       {/* --- TOP BADGES & ACTIONS --- */}
       
       {/* Type Badge (Top Left) */}
       <div className="absolute top-3 left-3 z-30 pointer-events-none">
-          <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-bold text-white uppercase tracking-wider shadow-lg">
+          <span className="px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider shadow-lg">
               {aiData.mediaType}
           </span>
       </div>
 
-      {/* Actions Stack (Top Left - Below Type Badge) 
-          Moved here to avoid overlap with Rating Badge on Top Right */}
-      <div className="absolute top-10 left-3 z-30 flex flex-col gap-2">
+      {/* Actions Stack (Top Left - Below Type Badge) */}
+      <div className="absolute top-11 left-3 z-30 flex flex-col gap-2">
            {onToggleFavorite && (
               <button
                   onClick={handleFavoriteClick}
@@ -218,20 +215,18 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       {score > 0 && (
           <div className="absolute top-3 right-3 z-30 pointer-events-none">
               <div 
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-[#2e1065]/80 backdrop-blur-md border border-purple-500/30 text-white text-xs font-bold shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-[#2e1065]/90 backdrop-blur-md border border-purple-500/30 text-white text-xs font-bold shadow-[0_0_15px_rgba(168,85,247,0.4)]"
               >
                   {score}
               </div>
           </div>
       )}
 
-      {/* Quick Action Button (Floating Bottom Right) 
-          Logic Update: opacity-100 on mobile (default), md:opacity-0 on desktop (unless hover)
-      */}
+      {/* Quick Action Button (Floating Bottom Right) */}
       {showQuickAction && (
         <button
             onClick={handleQuickAction}
-            className={`absolute bottom-20 right-3 z-40 p-2.5 rounded-full shadow-xl transition-all transform hover:scale-110 active:scale-95 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 ${
+            className={`absolute bottom-20 right-3 z-40 p-3 rounded-full shadow-xl transition-all transform hover:scale-110 active:scale-95 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 ${
                 isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-slate-900'
             }`}
             title={isCompleteSeason ? "Completar" : "+1 Capítulo"}
@@ -244,21 +239,19 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       <div className="absolute bottom-0 left-0 right-0 p-4 z-30 flex flex-col gap-2.5">
           
           {/* Title */}
-          <h3 className="text-white font-black text-base md:text-lg leading-tight line-clamp-2 drop-shadow-lg tracking-tight mb-1">
+          <h3 className="text-white font-black text-sm md:text-base leading-tight line-clamp-2 drop-shadow-lg tracking-tight mb-1">
               {aiData.title}
           </h3>
 
           {/* Status & Progress Bar Row */}
           <div className="flex items-center gap-2 md:gap-3 w-full">
               {/* Status Pill */}
-              <div className={`flex-shrink-0 px-2 py-0.5 rounded-full ${statusStyle.bg} shadow-lg shadow-black/20`}>
-                  <span className={`text-[8px] font-black uppercase tracking-widest ${statusStyle.text}`}>
-                      {statusStyle.label}
-                  </span>
+              <div className={`flex-shrink-0 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${statusStyle.bg} ${statusStyle.text} shadow-sm`}>
+                  {statusStyle.label}
               </div>
 
               {/* Progress Bar Line */}
-              <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden shadow-inner backdrop-blur-sm">
+              <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden shadow-inner backdrop-blur-sm">
                   <div 
                       className={`h-full rounded-full transition-all duration-700 ease-out ${statusStyle.bg}`}
                       style={{ 
@@ -270,7 +263,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
           </div>
 
           {/* Info Row (Season & Count) */}
-          <div className="flex items-center justify-between mt-0.5 pl-1">
+          <div className="flex items-center justify-between mt-0.5 pl-0.5">
               <div className="flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: dynamicColor, boxShadow: `0 0 8px ${dynamicColor}` }}></div>
                   <span className="text-[10px] md:text-xs font-bold text-slate-300 tracking-wide truncate max-w-[100px]">
@@ -278,8 +271,8 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
                   </span>
               </div>
               
-              <div className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 backdrop-blur-sm">
-                  <span className="text-[10px] md:text-xs font-mono font-medium text-slate-300">
+              <div className="px-1.5 py-0.5 rounded bg-white/10 border border-white/5 backdrop-blur-sm">
+                  <span className="text-[10px] md:text-xs font-mono font-medium text-slate-200">
                       {getProgressLabel()}
                   </span>
               </div>
