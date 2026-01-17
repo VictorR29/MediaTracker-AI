@@ -96,7 +96,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   
   // Local state for new inputs
   const [newLinkUrl, setNewLinkUrl] = useState('');
-  const [newGenreInput, setNewGenreInput] = useState(''); 
+  const [newGenreInput, setNewGenreInput] = useState('');
+  const [newCharacterInput, setNewCharacterInput] = useState('');
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -205,6 +206,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const handleRemoveGenre = (genreToRemove: string) => {
       const currentGenres = aiData.genres || [];
       handleAIDataChange('genres', currentGenres.filter(g => g !== genreToRemove));
+  };
+
+  const handleAddCharacter = () => {
+      if (!newCharacterInput.trim()) return;
+      const currentList = tracking.favoriteCharacters || [];
+      handleInputChange('favoriteCharacters', [...currentList, newCharacterInput.trim()]);
+      setNewCharacterInput('');
   };
 
   const saveChanges = () => {
@@ -798,18 +806,19 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     <div className="flex gap-2 xl:gap-3">
                         <input 
                             placeholder="Añadir nombre de personaje..." 
+                            value={newCharacterInput}
+                            onChange={(e) => setNewCharacterInput(e.target.value)}
                             className="flex-1 bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-2.5 xl:px-5 xl:py-3 text-sm text-white outline-none focus:border-[rgb(var(--card-rgb))]"
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                    const val = (e.target as HTMLInputElement).value.trim();
-                                    if (val) {
-                                        handleInputChange('favoriteCharacters', [...(tracking.favoriteCharacters || []), val]);
-                                        (e.target as HTMLInputElement).value = '';
-                                    }
+                                    handleAddCharacter();
                                 }
                             }}
                         />
-                        <button className="p-2.5 xl:p-3 bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition-all shadow-lg shadow-orange-600/20">
+                        <button 
+                            onClick={handleAddCharacter}
+                            className="p-2.5 xl:p-3 bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition-all shadow-lg shadow-orange-600/20"
+                        >
                             <Plus className="w-5 h-5 xl:w-6 xl:h-6" />
                         </button>
                     </div>
