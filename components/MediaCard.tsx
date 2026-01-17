@@ -7,7 +7,7 @@ import {
   Edit3, Save, X, Trash2, ExternalLink, Calendar, 
   Wand2, RefreshCw, MessageSquare, Star, Tv, Link as LinkIcon, 
   Minus, Plus, Heart, BookOpen, FileText, User, Layout, Clock, Globe,
-  Upload, Image as ImageIcon, CalendarClock
+  Upload, Image as ImageIcon, CalendarClock, ArrowRightCircle
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -248,6 +248,24 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           showToast("Reseña generada", "success");
       } catch (e) { showToast("Error generando", "error"); }
       finally { setIsGeneratingReview(false); }
+  };
+
+  const handleNextSeason = () => {
+      const episodesToAdd = tracking.totalEpisodesInSeason || tracking.watchedEpisodes;
+      const newHistory = (tracking.accumulated_consumption || 0) + episodesToAdd;
+      
+      const updated = {
+        ...localData,
+        trackingData: { 
+            ...localData.trackingData,
+            watchedEpisodes: 0,
+            currentSeason: tracking.currentSeason + 1,
+            accumulated_consumption: newHistory,
+        }
+      };
+      setLocalData(updated);
+      if (!isEditing) onUpdate(updated);
+      showToast(`¡Temporada ${tracking.currentSeason} completada! Pasando a la siguiente.`, "success");
   };
 
   // Progress Calculations
@@ -642,6 +660,17 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                             style={{ width: `${progressPercent}%` }} 
                                         />
                                     </div>
+                                    
+                                    {/* NEW: Complete Season Button */}
+                                    {tracking.totalEpisodesInSeason > 0 && tracking.watchedEpisodes >= tracking.totalEpisodesInSeason && (
+                                        <button 
+                                            onClick={handleNextSeason}
+                                            className="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all animate-fade-in"
+                                        >
+                                            <CheckCircle2 className="w-4 h-4" />
+                                            Completar Temporada {tracking.currentSeason}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}

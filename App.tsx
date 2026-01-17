@@ -238,25 +238,46 @@ export default function App() {
   };
 
   const handleQuickIncrement = async (item: MediaItem) => {
-    const { watchedEpisodes, totalEpisodesInSeason } = item.trackingData;
+    const { watchedEpisodes, totalEpisodesInSeason, currentSeason, totalSeasons } = item.trackingData;
 
     // Si ya alcanzamos el total, el botón que se presionó era el de "Completar" (Check)
-    // Por lo tanto, cambiamos el estado a 'Completado' en lugar de sumar.
+    // Por lo tanto, evaluamos si pasar a la siguiente temporada o completar la obra.
     if (totalEpisodesInSeason > 0 && watchedEpisodes >= totalEpisodesInSeason) {
-         const updated = {
-            ...item,
-            trackingData: {
-                ...item.trackingData,
-                status: 'Completado' as const
-            },
-            lastInteraction: Date.now()
-        };
-        await handleUpdateMedia(updated);
-        showToast("¡Obra completada! 🎉", "success");
-        return;
+         
+         // Lógica: Si es la última temporada -> Completar Obra. Si no -> Siguiente Temporada.
+         // Si totalSeasons no está definido o es 0, asumimos siguiente temporada para no bloquear.
+         const isLastSeason = totalSeasons > 0 && currentSeason >= totalSeasons;
+
+         if (isLastSeason) {
+             const updated = {
+                ...item,
+                trackingData: {
+                    ...item.trackingData,
+                    status: 'Completado' as const,
+                    accumulated_consumption: (item.trackingData.accumulated_consumption || 0) + totalEpisodesInSeason
+                },
+                lastInteraction: Date.now()
+            };
+            await handleUpdateMedia(updated);
+            showToast("¡Obra completada! 🎉", "success");
+         } else {
+             const updated = {
+                ...item,
+                trackingData: {
+                    ...item.trackingData,
+                    watchedEpisodes: 0,
+                    currentSeason: currentSeason + 1,
+                    accumulated_consumption: (item.trackingData.accumulated_consumption || 0) + totalEpisodesInSeason
+                },
+                lastInteraction: Date.now()
+            };
+            await handleUpdateMedia(updated);
+            showToast(`¡Temporada ${currentSeason} completada! Pasando a T.${currentSeason + 1}`, "success");
+         }
+         return;
     }
 
-    // Si no ha alcanzado el límite, sumamos 1 capítulo
+    // Incremento normal de capítulo
     const newWatched = watchedEpisodes + 1;
     const updated = { 
         ...item, 
@@ -270,7 +291,8 @@ export default function App() {
     
     // Feedback contextual
     if (totalEpisodesInSeason > 0 && newWatched >= totalEpisodesInSeason) {
-         showToast(`Has llegado al final. Pulsa de nuevo para completar.`, "success");
+         const isLast = totalSeasons > 0 && currentSeason >= totalSeasons;
+         showToast(isLast ? "Has llegado al final. Pulsa de nuevo para terminar." : "Temporada finalizada. Pulsa de nuevo para la siguiente.", "success");
     } else {
          showToast(`Progreso actualizado: ${newWatched}`, "success");
     }
