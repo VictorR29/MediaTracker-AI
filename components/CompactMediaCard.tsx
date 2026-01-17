@@ -182,80 +182,83 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-black/10" />
       </div>
 
-      {/* --- TOP BADGES --- */}
+      {/* --- TOP BADGES & ACTIONS --- */}
       
       {/* Type Badge (Top Left) */}
-      <div className="absolute top-4 left-4 z-30">
-          <span className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider shadow-lg">
+      <div className="absolute top-3 left-3 z-30 pointer-events-none">
+          <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-bold text-white uppercase tracking-wider shadow-lg">
               {aiData.mediaType}
           </span>
       </div>
 
+      {/* Actions Stack (Top Left - Below Type Badge) 
+          Moved here to avoid overlap with Rating Badge on Top Right */}
+      <div className="absolute top-10 left-3 z-30 flex flex-col gap-2">
+           {onToggleFavorite && (
+              <button
+                  onClick={handleFavoriteClick}
+                  className={`p-2 rounded-full bg-black/60 backdrop-blur-md hover:bg-white text-white hover:text-yellow-500 transition-all border border-white/10 shadow-lg transform active:scale-95 ${isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                  title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+              >
+                  <Star className={`w-4 h-4 ${isFavorite ? 'fill-current text-yellow-400' : ''}`} />
+              </button>
+           )}
+           {onDelete && (
+              <button
+                  onClick={handleDeleteClick}
+                  className="p-2 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-red-600 hover:text-white transition-all border border-white/10 shadow-lg transform active:scale-95 opacity-0 group-hover:opacity-100"
+                  title="Eliminar"
+              >
+                  <Trash2 className="w-4 h-4" />
+              </button>
+           )}
+      </div>
+
       {/* Rating Badge (Top Right) */}
       {score > 0 && (
-          <div className="absolute top-4 right-4 z-30">
+          <div className="absolute top-3 right-3 z-30 pointer-events-none">
               <div 
-                className="w-9 h-9 rounded-full flex items-center justify-center bg-[#2e1065]/80 backdrop-blur-md border border-purple-500/30 text-white text-xs font-bold shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-[#2e1065]/80 backdrop-blur-md border border-purple-500/30 text-white text-xs font-bold shadow-[0_0_15px_rgba(168,85,247,0.4)]"
               >
                   {score}
               </div>
           </div>
       )}
 
-      {/* --- HOVER ACTIONS (Favorite / Delete / Quick Add) --- */}
-      <div className="absolute inset-0 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-end p-4 pt-16 gap-2 bg-black/20">
-           {onToggleFavorite && (
-              <button
-                  onClick={handleFavoriteClick}
-                  className="p-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-white hover:text-yellow-500 transition-all border border-white/10 shadow-lg transform hover:scale-110"
-                  title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
-              >
-                  <Star className={`w-5 h-5 ${isFavorite ? 'fill-current text-yellow-400' : ''}`} />
-              </button>
-           )}
-           {onDelete && (
-              <button
-                  onClick={handleDeleteClick}
-                  className="p-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-red-600 hover:text-white transition-all border border-white/10 shadow-lg transform hover:scale-110"
-                  title="Eliminar"
-              >
-                  <Trash2 className="w-5 h-5" />
-              </button>
-           )}
-           
-           {/* Quick Action Button (Floating) */}
-           {showQuickAction && (
-                <button
-                    onClick={handleQuickAction}
-                    className={`mt-auto mb-32 p-3 rounded-full shadow-xl transition-all transform hover:scale-110 active:scale-95 border border-white/20 ${
-                        isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-slate-900'
-                    }`}
-                    title={isCompleteSeason ? "Completar" : "+1 Capítulo"}
-                >
-                    {isCompleteSeason ? <Check className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
-                </button>
-           )}
-      </div>
+      {/* Quick Action Button (Floating Bottom Right) 
+          Logic Update: opacity-100 on mobile (default), md:opacity-0 on desktop (unless hover)
+      */}
+      {showQuickAction && (
+        <button
+            onClick={handleQuickAction}
+            className={`absolute bottom-20 right-3 z-40 p-2.5 rounded-full shadow-xl transition-all transform hover:scale-110 active:scale-95 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 ${
+                isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-slate-900'
+            }`}
+            title={isCompleteSeason ? "Completar" : "+1 Capítulo"}
+        >
+            {isCompleteSeason ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+        </button>
+      )}
 
       {/* --- CONTENT OVERLAY (BOTTOM) --- */}
-      <div className="absolute bottom-0 left-0 right-0 p-5 z-30 flex flex-col gap-3">
+      <div className="absolute bottom-0 left-0 right-0 p-4 z-30 flex flex-col gap-2.5">
           
           {/* Title */}
-          <h3 className="text-white font-black text-xl leading-tight line-clamp-2 drop-shadow-lg tracking-tight">
+          <h3 className="text-white font-black text-base md:text-lg leading-tight line-clamp-2 drop-shadow-lg tracking-tight mb-1">
               {aiData.title}
           </h3>
 
           {/* Status & Progress Bar Row */}
-          <div className="flex items-center gap-3 w-full">
+          <div className="flex items-center gap-2 md:gap-3 w-full">
               {/* Status Pill */}
-              <div className={`flex-shrink-0 px-3 py-1 rounded-full ${statusStyle.bg} shadow-lg shadow-black/20`}>
-                  <span className={`text-[9px] font-black uppercase tracking-widest ${statusStyle.text}`}>
+              <div className={`flex-shrink-0 px-2 py-0.5 rounded-full ${statusStyle.bg} shadow-lg shadow-black/20`}>
+                  <span className={`text-[8px] font-black uppercase tracking-widest ${statusStyle.text}`}>
                       {statusStyle.label}
                   </span>
               </div>
 
               {/* Progress Bar Line */}
-              <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden shadow-inner backdrop-blur-sm">
+              <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden shadow-inner backdrop-blur-sm">
                   <div 
                       className={`h-full rounded-full transition-all duration-700 ease-out ${statusStyle.bg}`}
                       style={{ 
@@ -267,16 +270,16 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
           </div>
 
           {/* Info Row (Season & Count) */}
-          <div className="flex items-center justify-between mt-1 pl-1">
-              <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: dynamicColor, boxShadow: `0 0 8px ${dynamicColor}` }}></div>
-                  <span className="text-xs font-bold text-slate-300 tracking-wide">
+          <div className="flex items-center justify-between mt-0.5 pl-1">
+              <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: dynamicColor, boxShadow: `0 0 8px ${dynamicColor}` }}></div>
+                  <span className="text-[10px] md:text-xs font-bold text-slate-300 tracking-wide truncate max-w-[100px]">
                       {getSeasonLabel()}
                   </span>
               </div>
               
-              <div className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 backdrop-blur-sm">
-                  <span className="text-xs font-mono font-medium text-slate-300">
+              <div className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 backdrop-blur-sm">
+                  <span className="text-[10px] md:text-xs font-mono font-medium text-slate-300">
                       {getProgressLabel()}
                   </span>
               </div>
