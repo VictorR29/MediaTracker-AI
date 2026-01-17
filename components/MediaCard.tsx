@@ -1,12 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem, UserTrackingData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS, AIWorkData } from '../types';
 import { updateMediaInfo, generateReviewSummary } from '../services/geminiService';
 import { 
   PlayCircle, CheckCircle2, ChevronLeft, ChevronRight, AlertTriangle, 
   Edit3, Save, X, Trash2, ExternalLink, Calendar, 
   Wand2, RefreshCw, MessageSquare, Star, Tv, Link as LinkIcon, 
-  Minus, Plus, Heart, BookOpen, FileText, User, Layout, Clock, Globe
+  Minus, Plus, Heart, BookOpen, FileText, User, Layout, Clock, Globe,
+  Upload, Image as ImageIcon
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -21,6 +22,61 @@ interface MediaCardProps {
   onSearch?: (query: string) => void;
 }
 
+// Helper to extract dominant color from image
+const extractColorFromImage = (imageSrc: string): Promise<string> => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = imageSrc;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) { resolve('#6366f1'); return; }
+
+            canvas.width = 100;
+            canvas.height = 100;
+            // Draw image to small canvas
+            ctx.drawImage(img, 0, 0, 100, 100);
+            
+            try {
+                const data = ctx.getImageData(10, 10, 80, 80).data; // Crop borders
+                let r = 0, g = 0, b = 0, count = 0;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    const cr = data[i];
+                    const cg = data[i + 1];
+                    const cb = data[i + 2];
+                    
+                    // Filter out whites/blacks/greys to get vibrant colors
+                    const brightness = (cr + cg + cb) / 3;
+                    const saturation = Math.max(cr, cg, cb) - Math.min(cr, cg, cb);
+                    
+                    if (brightness > 20 && brightness < 245 && saturation > 20) {
+                        r += cr;
+                        g += cg;
+                        b += cb;
+                        count++;
+                    }
+                }
+
+                if (count > 0) {
+                    r = Math.round(r / count);
+                    g = Math.round(g / count);
+                    b = Math.round(b / count);
+                    // Convert to Hex
+                    const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+                    resolve(hex);
+                } else {
+                    resolve('#6366f1'); // Fallback
+                }
+            } catch (e) {
+                resolve('#6366f1'); // Fallback on CORS or error
+            }
+        };
+        img.onerror = () => resolve('#6366f1');
+    });
+};
+
 export const MediaCard: React.FC<MediaCardProps> = ({ 
   item, onUpdate, onDelete, isNew = false, username, apiKey, initialEditMode = false, onSearch 
 }) => {
@@ -31,10 +87,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const [localData, setLocalData] = useState<MediaItem>(item);
   const [isUpdatingInfo, setIsUpdatingInfo] = useState(false);
   const [isGeneratingReview, setIsGeneratingReview] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   
   // Local state for new inputs
   const [newLinkUrl, setNewLinkUrl] = useState('');
-  const [newGenreInput, setNewGenreInput] = useState(''); // New state for genre adding
+  const [newGenreInput, setNewGenreInput] = useState(''); 
+
+  // Refs
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setLocalData(item);
@@ -62,6 +122,60 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           ...prev,
           aiData: { ...prev.aiData, [field]: value }
       }));
+  };
+
+  const processImageFile = async (file: File) => {
+      if (!file.type.startsWith('image/')) {
+          showToast("Por favor sube un archivo de imagen válido", "error");
+          return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+          const base64 = e.target?.result as string;
+          if (base64) {
+              handleAIDataChange('coverImage', base64);
+              try {
+                  const extractedColor = await extractColorFromImage(base64);
+                  handleAIDataChange('primaryColor', extractedColor);
+                  showToast("Color extraído: " + extractedColor, "success");
+              } catch (err) {
+                  console.error("Color extraction failed", err);
+              }
+          }
+      };
+      reader.readAsDataURL(file);
+  };
+
+  // Drag & Drop Handlers
+  const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault();
+      if (isEditing) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      if (!isEditing) return;
+
+      const file = e.dataTransfer.files?.[0];
+      if (file) processImageFile(file);
+  };
+
+  const handleImageClick = () => {
+      if (isEditing && fileInputRef.current) {
+          fileInputRef.current.click();
+      }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) processImageFile(file);
   };
 
   const handleAddGenre = () => {
@@ -148,29 +262,55 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             
             {/* --- COLUMN 1: LEFT (Identity & Metadata) --- */}
             <div className="flex flex-col gap-6 xl:gap-8">
-                {/* Poster */}
+                {/* Poster with Interactive Upload */}
                 <div className="flex flex-col gap-3">
-                    <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[2/3] bg-slate-900 border border-slate-800 group">
+                    <div 
+                        className={`relative rounded-2xl overflow-hidden shadow-2xl aspect-[2/3] bg-slate-900 group transition-all duration-300 ${isEditing ? 'cursor-pointer' : ''} ${isDragging ? 'ring-4 ring-indigo-500 scale-[1.02]' : ''}`}
+                        onClick={handleImageClick}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        style={{
+                            border: isEditing ? `2px dashed ${isDragging ? '#6366f1' : '#475569'}` : `1px solid ${dynamicColor}40`,
+                            boxShadow: isEditing ? 'none' : `0 20px 40px -10px ${dynamicColor}40`
+                        }}
+                    >
                         {aiData.coverImage ? (
-                            <img src={aiData.coverImage} alt={aiData.title} className="w-full h-full object-cover transition-opacity" />
+                            <img src={aiData.coverImage} alt={aiData.title} className="w-full h-full object-cover transition-opacity pointer-events-none" />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-700">
-                                <Tv className="w-16 h-16" />
+                            <div className="w-full h-full flex flex-col items-center justify-center text-slate-700 p-4 text-center">
+                                <ImageIcon className="w-16 h-16 mb-2 opacity-50" />
+                                <span className="text-xs font-medium opacity-50">Sin Imagen</span>
                             </div>
                         )}
+                        
                         {/* Overlay for editing image visual cue */}
                         {isEditing && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                <span className="text-white text-xs font-bold bg-black/50 px-3 py-1 rounded-full border border-white/20 backdrop-blur-sm">Editar URL abajo</span>
+                            <div className={`absolute inset-0 bg-black/60 flex flex-col items-center justify-center transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                <Upload className="w-8 h-8 text-white mb-2" />
+                                <span className="text-white text-xs font-bold px-3 py-1 rounded-full border border-white/20 backdrop-blur-sm text-center">
+                                    {isDragging ? 'Suelta la imagen aquí' : 'Click o Arrastra para cambiar'}
+                                </span>
                             </div>
                         )}
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            accept="image/*" 
+                            onChange={handleFileChange}
+                        />
                     </div>
                     {isEditing && (
                         <div>
-                            <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">URL de Portada</label>
+                            <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">URL de Portada (Opcional)</label>
                             <input 
                                 value={aiData.coverImage || ''}
-                                onChange={(e) => handleAIDataChange('coverImage', e.target.value)}
+                                onChange={(e) => {
+                                    handleAIDataChange('coverImage', e.target.value);
+                                    // Try to extract color from URL if pasted (only works if CORS allows)
+                                    if(e.target.value.startsWith('http')) extractColorFromImage(e.target.value).then(c => handleAIDataChange('primaryColor', c));
+                                }}
                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-indigo-500"
                                 placeholder="https://..."
                             />
