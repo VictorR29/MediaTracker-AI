@@ -59,6 +59,9 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       else countdownText = `En ${diffDays} días`;
   }
   
+  // Detect if any top banner is active to shift UI elements
+  const hasTopBanner = isReturnDue || !!countdownText;
+
   // Logic for Quick Action Button visibility
   const showQuickAction = !isMovie && !isPlanned && trackingData.status === 'Viendo/Leyendo';
   
@@ -205,15 +208,15 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 
       {/* --- TOP BADGES & ACTIONS --- */}
       
-      {/* Type Badge (Top Left) */}
-      <div className="absolute top-3 left-3 z-30 pointer-events-none">
+      {/* Type Badge (Top Left) - Shifted down if banner exists */}
+      <div className={`absolute left-3 z-30 pointer-events-none transition-all duration-300 ${hasTopBanner ? 'top-8' : 'top-3'}`}>
           <span className="px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider shadow-lg">
               {aiData.mediaType}
           </span>
       </div>
 
-      {/* Actions Stack (Top Left - Below Type Badge) */}
-      <div className="absolute top-11 left-3 z-30 flex flex-col gap-2">
+      {/* Actions Stack (Top Left - Below Type Badge) - Shifted down if banner exists */}
+      <div className={`absolute left-3 z-30 flex flex-col gap-2 transition-all duration-300 ${hasTopBanner ? 'top-16' : 'top-11'}`}>
            {onToggleFavorite && (
               <button
                   onClick={handleFavoriteClick}
@@ -234,9 +237,9 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
            )}
       </div>
 
-      {/* Rating Badge (Top Right) */}
+      {/* Rating Badge (Top Right) - Shifted down if banner exists */}
       {score > 0 && (
-          <div className="absolute top-3 right-3 z-30 pointer-events-none">
+          <div className={`absolute right-3 z-30 pointer-events-none transition-all duration-300 ${hasTopBanner ? 'top-8' : 'top-3'}`}>
               <div 
                 className="w-8 h-8 rounded-full flex items-center justify-center bg-[#2e1065]/90 backdrop-blur-md border border-purple-500/30 text-white text-xs font-bold shadow-[0_0_15px_rgba(168,85,247,0.4)]"
               >
