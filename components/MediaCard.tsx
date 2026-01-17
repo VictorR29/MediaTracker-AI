@@ -32,8 +32,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const [isUpdatingInfo, setIsUpdatingInfo] = useState(false);
   const [isGeneratingReview, setIsGeneratingReview] = useState(false);
   
-  // Local state for new custom link input
+  // Local state for new inputs
   const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [newGenreInput, setNewGenreInput] = useState(''); // New state for genre adding
 
   useEffect(() => {
     setLocalData(item);
@@ -61,6 +62,20 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           ...prev,
           aiData: { ...prev.aiData, [field]: value }
       }));
+  };
+
+  const handleAddGenre = () => {
+      if (!newGenreInput.trim()) return;
+      const currentGenres = aiData.genres || [];
+      if (!currentGenres.includes(newGenreInput.trim())) {
+          handleAIDataChange('genres', [...currentGenres, newGenreInput.trim()]);
+      }
+      setNewGenreInput('');
+  };
+
+  const handleRemoveGenre = (genreToRemove: string) => {
+      const currentGenres = aiData.genres || [];
+      handleAIDataChange('genres', currentGenres.filter(g => g !== genreToRemove));
   };
 
   const saveChanges = () => {
@@ -134,12 +149,31 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             {/* --- COLUMN 1: LEFT (Identity & Metadata) --- */}
             <div className="flex flex-col gap-6 xl:gap-8">
                 {/* Poster */}
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[2/3] bg-slate-900 border border-slate-800">
-                    {aiData.coverImage ? (
-                        <img src={aiData.coverImage} alt={aiData.title} className="w-full h-full object-cover" />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-700">
-                            <Tv className="w-16 h-16" />
+                <div className="flex flex-col gap-3">
+                    <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[2/3] bg-slate-900 border border-slate-800 group">
+                        {aiData.coverImage ? (
+                            <img src={aiData.coverImage} alt={aiData.title} className="w-full h-full object-cover transition-opacity" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-700">
+                                <Tv className="w-16 h-16" />
+                            </div>
+                        )}
+                        {/* Overlay for editing image visual cue */}
+                        {isEditing && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <span className="text-white text-xs font-bold bg-black/50 px-3 py-1 rounded-full border border-white/20 backdrop-blur-sm">Editar URL abajo</span>
+                            </div>
+                        )}
+                    </div>
+                    {isEditing && (
+                        <div>
+                            <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">URL de Portada</label>
+                            <input 
+                                value={aiData.coverImage || ''}
+                                onChange={(e) => handleAIDataChange('coverImage', e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-indigo-500"
+                                placeholder="https://..."
+                            />
                         </div>
                     )}
                 </div>
@@ -147,21 +181,37 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 {/* Title Block */}
                 <div>
                     {isEditing ? (
-                        <input 
-                            value={aiData.title}
-                            onChange={(e) => handleAIDataChange('title', e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-2xl font-bold text-white mb-3"
-                        />
+                        <div className="space-y-3 mb-4">
+                            <div>
+                                <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Título Principal</label>
+                                <input 
+                                    value={aiData.title}
+                                    onChange={(e) => handleAIDataChange('title', e.target.value)}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-lg font-bold text-white outline-none focus:border-indigo-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Título Original</label>
+                                <input 
+                                    value={aiData.originalTitle || ''}
+                                    onChange={(e) => handleAIDataChange('originalTitle', e.target.value)}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-400 italic outline-none focus:border-indigo-500"
+                                    placeholder="Ej: Kimetsu no Yaiba"
+                                />
+                            </div>
+                        </div>
                     ) : (
-                        <h1 className="text-2xl xl:text-3xl font-black text-white leading-tight mb-2">{aiData.title}</h1>
+                        <>
+                            <h1 className="text-2xl xl:text-3xl font-black text-white leading-tight mb-2">{aiData.title}</h1>
+                            {aiData.originalTitle && <p className="text-sm text-slate-500 italic mb-4">{aiData.originalTitle}</p>}
+                        </>
                     )}
-                    {aiData.originalTitle && <p className="text-sm text-slate-500 italic mb-4">{aiData.originalTitle}</p>}
                     
                     <div className="flex flex-wrap gap-2 mb-6 xl:mb-8">
                         <span className="px-3 xl:px-4 py-1.5 bg-slate-800/80 border border-slate-700 rounded text-[10px] xl:text-xs font-bold text-slate-400 uppercase">{aiData.mediaType}</span>
                         <span className="px-3 xl:px-4 py-1.5 bg-slate-800/80 border border-slate-700 rounded text-[10px] xl:text-xs font-bold text-slate-400 uppercase">{aiData.status}</span>
                         {!isEditing && (
-                            <button onClick={() => setIsEditing(true)} className="p-1.5 text-slate-500 hover:text-white transition-colors">
+                            <button onClick={() => setIsEditing(true)} className="p-1.5 text-slate-500 hover:text-white transition-colors" title="Editar detalles">
                                 <Edit3 className="w-5 h-5" />
                             </button>
                         )}
@@ -186,11 +236,31 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <div className="space-y-5 xl:space-y-6 text-sm border-t border-slate-800 pt-6 xl:pt-8">
                     <div className="flex flex-col gap-2">
                         <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs">Fechas</span>
-                        <div className="flex justify-between text-slate-300 text-xs xl:text-sm">
-                            <span className="font-medium">Estreno:</span> <span className="font-mono">{aiData.releaseDate || '----'}</span>
+                        <div className="flex justify-between items-center text-slate-300 text-xs xl:text-sm">
+                            <span className="font-medium">Estreno:</span> 
+                            {isEditing ? (
+                                <input 
+                                    type="date" 
+                                    value={aiData.releaseDate || ''}
+                                    onChange={(e) => handleAIDataChange('releaseDate', e.target.value)}
+                                    className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none focus:border-indigo-500 w-32"
+                                />
+                            ) : (
+                                <span className="font-mono">{aiData.releaseDate || '----'}</span>
+                            )}
                         </div>
-                        <div className="flex justify-between text-slate-300 text-xs xl:text-sm">
-                            <span className="font-medium">Final:</span> <span className="font-mono">{aiData.endDate || '----'}</span>
+                        <div className="flex justify-between items-center text-slate-300 text-xs xl:text-sm">
+                            <span className="font-medium">Final:</span> 
+                            {isEditing ? (
+                                <input 
+                                    type="date" 
+                                    value={aiData.endDate || ''}
+                                    onChange={(e) => handleAIDataChange('endDate', e.target.value)}
+                                    className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none focus:border-indigo-500 w-32"
+                                />
+                            ) : (
+                                <span className="font-mono">{aiData.endDate || '----'}</span>
+                            )}
                         </div>
                     </div>
                     
@@ -198,16 +268,46 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                         <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs">Géneros</span>
                         <div className="flex flex-wrap gap-2">
                             {aiData.genres.map(g => (
-                                <span key={g} className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-xs">{g}</span>
+                                <span key={g} className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-xs flex items-center gap-1.5">
+                                    {g}
+                                    {isEditing && (
+                                        <button onClick={() => handleRemoveGenre(g)} className="text-slate-500 hover:text-red-400">
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </span>
                             ))}
                         </div>
+                        {isEditing && (
+                            <div className="flex gap-2">
+                                <input 
+                                    value={newGenreInput}
+                                    onChange={(e) => setNewGenreInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAddGenre()}
+                                    placeholder="Añadir género..."
+                                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500"
+                                />
+                                <button onClick={handleAddGenre} className="bg-slate-800 hover:bg-indigo-600 p-1.5 rounded-lg border border-slate-700 text-white transition-colors">
+                                    <Plus className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-3">
                         <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs flex items-center gap-2"><Layout className="w-3 h-3 xl:w-4 xl:h-4"/> Estructura</span>
-                        <div className="bg-slate-900/80 rounded-2xl p-4 border border-slate-800 shadow-inner">
-                            <pre className="whitespace-pre-wrap font-sans text-slate-300 leading-relaxed text-xs xl:text-sm">{aiData.totalContent || 'No definida'}</pre>
-                        </div>
+                        {isEditing ? (
+                             <textarea 
+                                value={aiData.totalContent || ''}
+                                onChange={(e) => handleAIDataChange('totalContent', e.target.value)}
+                                className="bg-slate-900 border border-slate-700 rounded-2xl p-3 text-xs text-white outline-none focus:border-indigo-500 min-h-[100px]"
+                                placeholder="Ej: 2 Temporadas&#10;- Temp 1: 12 Caps"
+                             />
+                        ) : (
+                            <div className="bg-slate-900/80 rounded-2xl p-4 border border-slate-800 shadow-inner">
+                                <pre className="whitespace-pre-wrap font-sans text-slate-300 leading-relaxed text-xs xl:text-sm">{aiData.totalContent || 'No definida'}</pre>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-3">
@@ -256,7 +356,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                         <textarea 
                             value={aiData.synopsis}
                             onChange={(e) => handleAIDataChange('synopsis', e.target.value)}
-                            className="w-full h-56 bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-300 text-sm xl:text-base outline-none focus:border-indigo-500"
+                            className="w-full h-56 bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-300 text-sm xl:text-base outline-none focus:border-indigo-500 leading-relaxed"
                         />
                     ) : (
                         <p className="text-sm xl:text-base text-slate-300 leading-relaxed whitespace-pre-line font-medium">
