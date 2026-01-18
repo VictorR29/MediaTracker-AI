@@ -381,18 +381,20 @@ const App: React.FC = () => {
   };
 
   const handleUpdateItem = async (updated: MediaItem) => {
-      const withTimestamp = { ...updated, lastInteraction: Date.now() };
-      await saveMediaItem(withTimestamp);
+      // FIX: Do NOT update lastInteraction here. 
+      // General edits (tags, reviews) should not move item to top of "Recent".
+      // Only progress updates (handleIncrementProgress) trigger reorder.
+      await saveMediaItem(updated);
       
       // Si el item no estaba en la librería (era nuevo/manual), lo añadimos
       const exists = library.find(i => i.id === updated.id);
       if (!exists) {
-          setLibrary(prev => [withTimestamp, ...prev]);
+          setLibrary(prev => [updated, ...prev]);
       } else {
-          setLibrary(prev => prev.map(item => item.id === updated.id ? withTimestamp : item));
+          setLibrary(prev => prev.map(item => item.id === updated.id ? updated : item));
       }
       
-      if (selectedItem?.id === updated.id) setSelectedItem(withTimestamp);
+      if (selectedItem?.id === updated.id) setSelectedItem(updated);
   };
 
   // Trigger Confirmation Modal
@@ -431,7 +433,7 @@ const App: React.FC = () => {
           const updated = { 
               ...item, 
               trackingData: { ...item.trackingData, watchedEpisodes: newEp }, 
-              lastInteraction: Date.now() 
+              lastInteraction: Date.now() // KEEP THIS: Progress updates SHOULD move item to top
           };
           await saveMediaItem(updated);
           setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
@@ -445,7 +447,7 @@ const App: React.FC = () => {
           const updated = {
               ...item,
               trackingData: { ...item.trackingData, watchedEpisodes: newEp },
-              lastInteraction: Date.now()
+              lastInteraction: Date.now() // KEEP THIS
           };
           await saveMediaItem(updated);
           setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
@@ -470,7 +472,7 @@ const App: React.FC = () => {
                       watchedEpisodes: 0,
                       accumulated_consumption: newHistory
                   },
-                  lastInteraction: Date.now()
+                  lastInteraction: Date.now() // KEEP THIS
               };
               await saveMediaItem(updated);
               setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
@@ -480,7 +482,7 @@ const App: React.FC = () => {
               const updated: MediaItem = {
                   ...item,
                   trackingData: { ...item.trackingData, status: 'Completado' },
-                  lastInteraction: Date.now()
+                  lastInteraction: Date.now() // KEEP THIS
               };
               await saveMediaItem(updated);
               setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
@@ -493,6 +495,7 @@ const App: React.FC = () => {
       const updated = {
           ...item,
           trackingData: { ...item.trackingData, is_favorite: !item.trackingData.is_favorite }
+          // No timestamp update here
       };
       await saveMediaItem(updated);
       setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
@@ -556,6 +559,7 @@ const App: React.FC = () => {
               return progB - progA;
           }
           // Default: Updated/Created
+          // lastInteraction is now only updated on progress, so this sort works as requested.
           return (b.lastInteraction || b.createdAt) - (a.lastInteraction || a.createdAt);
       });
   };
