@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { 
   LayoutGrid, Bookmark, PlusCircle, Compass, BarChart2, 
   Search as SearchIcon, LogOut, Settings, User, PenTool, AlertTriangle, Trash2, ArrowUp,
@@ -317,6 +317,22 @@ const App: React.FC = () => {
           setIsSearching(false);
       }
   };
+
+  // Memoize search result preview item to prevent recreation on render
+  // This prevents MediaCard from resetting local state when App re-renders (e.g. on scroll)
+  const searchResultPreviewItem = useMemo(() => {
+      if (!searchResult) return null;
+      return {
+          id: 'preview',
+          aiData: searchResult,
+          trackingData: {
+            status: 'Sin empezar', currentSeason: 1, totalSeasons: 1, 
+            watchedEpisodes: 0, totalEpisodesInSeason: 0, 
+            emotionalTags: [], favoriteCharacters: [], rating: '', comment: ''
+          },
+          createdAt: Date.now()
+      } as MediaItem;
+  }, [searchResult]);
 
   const handleAddFromSearch = async (data: AIWorkData) => {
       const newItem: MediaItem = {
@@ -786,20 +802,11 @@ const App: React.FC = () => {
                       />
                   </div>
                   
-                  {searchResult ? (
+                  {searchResult && searchResultPreviewItem ? (
                       <div className="mt-8 animate-fade-in-up">
                           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 text-center">Resultado de la Búsqueda</h3>
                           <MediaCard 
-                              item={{
-                                  id: 'preview',
-                                  aiData: searchResult,
-                                  trackingData: {
-                                    status: 'Sin empezar', currentSeason: 1, totalSeasons: 1, 
-                                    watchedEpisodes: 0, totalEpisodesInSeason: 0, 
-                                    emotionalTags: [], favoriteCharacters: [], rating: '', comment: ''
-                                  },
-                                  createdAt: Date.now()
-                              }}
+                              item={searchResultPreviewItem}
                               onUpdate={() => {}} 
                               isNew={true}
                               onDelete={() => setSearchResult(null)}
