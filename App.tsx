@@ -66,9 +66,9 @@ const App: React.FC = () => {
         const profile = await getUserProfile();
         if (profile) {
           setUserProfile(profile);
+          loadLibrary(); // Cargar siempre la librería para el fondo del LoginScreen
           if (!profile.password) {
             setIsAuthenticated(true);
-            loadLibrary();
           }
         }
       } catch (e) {
@@ -110,7 +110,7 @@ const App: React.FC = () => {
   const handleLogin = (password: string) => {
     if (userProfile?.password === password) {
       setIsAuthenticated(true);
-      loadLibrary();
+      // Library already loaded
       return true;
     }
     return false;
