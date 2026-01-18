@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { 
   LayoutGrid, Bookmark, PlusCircle, Compass, BarChart2, 
   Search as SearchIcon, LogOut, Settings, User, PenTool, AlertTriangle, Trash2, ArrowUp
@@ -37,6 +37,10 @@ const App: React.FC = () => {
   const [view, setView] = useState<'library' | 'details' | 'search' | 'discovery' | 'stats' | 'upcoming'>('library');
   const [searchKey, setSearchKey] = useState(0); // Used to reset search view
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
+  
+  // Scroll Preservation Refs
+  const scrollPositionRef = useRef(0);
+  const previousViewRef = useRef<'library' | 'upcoming' | 'search' | 'discovery' | 'stats'>('library');
   
   // UI State
   const [isImmersiveMode, setIsImmersiveMode] = useState(false);
@@ -123,8 +127,44 @@ const App: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // --- SCROLL RESTORATION LOGIC ---
+  useLayoutEffect(() => {
+      // Logic: If we are in library/upcoming and NO item is selected, we are in the list view.
+      if (!selectedItem && (view === 'library' || view === 'upcoming')) {
+          window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' });
+      } 
+      // Logic: If we just entered details view, ensure we are at top
+      else if (view === 'details') {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+  }, [view, selectedItem]);
+
   const scrollToTop = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Helper to open details preserving scroll
+  const handleOpenDetail = (item: MediaItem) => {
+      scrollPositionRef.current = window.scrollY;
+      previousViewRef.current = view as any;
+      setSelectedItem(item);
+      setView('details');
+  };
+
+  // Helper to close details and return to previous view position
+  const handleBackFromDetail = () => {
+      setSelectedItem(null);
+      // Return to the view we came from (usually library or upcoming)
+      setView(previousViewRef.current);
+  };
+
+  // Helper for main navigation clicks (Resets scroll to top)
+  const handleNavClick = (targetView: typeof view) => {
+      scrollPositionRef.current = 0; // Reset stored scroll
+      setSelectedItem(null);
+      setView(targetView);
+      if (targetView === 'search') setSearchKey(k => k + 1);
+      window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   // Handlers
@@ -298,8 +338,7 @@ const App: React.FC = () => {
       setLibrary(prev => [newItem, ...prev]);
       setSearchResult(null);
       showToast("Añadido a la biblioteca", "success");
-      setSelectedItem(newItem);
-      setView('details');
+      handleOpenDetail(newItem); // Use helper to transition
   };
 
   const handleManualAdd = () => {
@@ -330,8 +369,7 @@ const App: React.FC = () => {
           createdAt: Date.now()
       };
       // No lo guardamos en DB todavía, solo lo pasamos a la vista de edición como "nuevo"
-      setSelectedItem(newItem);
-      setView('details');
+      handleOpenDetail(newItem);
   };
 
   const handleUpdateItem = async (updated: MediaItem) => {
@@ -453,8 +491,7 @@ const App: React.FC = () => {
   };
 
   const handleRecommendationSelect = async (title: string, type: string) => {
-      setView('search');
-      setSearchKey(prev => prev + 1); 
+      handleNavClick('search');
       if (!userProfile?.apiKey) return;
       setIsSearching(true);
       try {
@@ -576,11 +613,11 @@ const App: React.FC = () => {
              
              {/* Center: Desktop Navigation (Restored) */}
              <nav className="hidden md:flex items-center gap-1 bg-slate-800/50 p-1 rounded-xl border border-slate-700/50 absolute left-1/2 -translate-x-1/2">
-                 <DesktopNavLink icon={LayoutGrid} label="Biblioteca" active={view === 'library' || view === 'details'} onClick={() => { setView('library'); setSelectedItem(null); }} />
-                 <DesktopNavLink icon={Bookmark} label="Deseos" active={view === 'upcoming'} onClick={() => { setView('upcoming'); setSelectedItem(null); }} />
-                 <DesktopNavLink icon={PlusCircle} label="Añadir" active={view === 'search'} onClick={() => { setView('search'); setSelectedItem(null); setSearchKey(k => k+1); }} />
-                 <DesktopNavLink icon={Compass} label="Descubrir" active={view === 'discovery'} onClick={() => { setView('discovery'); setSelectedItem(null); }} />
-                 <DesktopNavLink icon={BarChart2} label="Stats" active={view === 'stats'} onClick={() => { setView('stats'); setSelectedItem(null); }} />
+                 <DesktopNavLink icon={LayoutGrid} label="Biblioteca" active={view === 'library' || view === 'details'} onClick={() => handleNavClick('library')} />
+                 <DesktopNavLink icon={Bookmark} label="Deseos" active={view === 'upcoming'} onClick={() => handleNavClick('upcoming')} />
+                 <DesktopNavLink icon={PlusCircle} label="Añadir" active={view === 'search'} onClick={() => handleNavClick('search')} />
+                 <DesktopNavLink icon={Compass} label="Descubrir" active={view === 'discovery'} onClick={() => handleNavClick('discovery')} />
+                 <DesktopNavLink icon={BarChart2} label="Stats" active={view === 'stats'} onClick={() => handleNavClick('stats')} />
              </nav>
 
              {/* Right: Actions */}
@@ -620,7 +657,7 @@ const App: React.FC = () => {
                   {libraryViewMode === 'catalog' && view === 'library' ? (
                       <CatalogView 
                           library={displayedLibrary} 
-                          onOpenDetail={(item) => { setSelectedItem(item); setView('details'); }} 
+                          onOpenDetail={handleOpenDetail} 
                       />
                   ) : (
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
@@ -628,7 +665,7 @@ const App: React.FC = () => {
                               <CompactMediaCard 
                                   key={item.id} 
                                   item={item} 
-                                  onClick={() => { setSelectedItem(item); setView('details'); }}
+                                  onClick={() => handleOpenDetail(item)}
                                   onIncrement={handleIncrementProgress}
                                   onToggleFavorite={handleToggleFavorite}
                                   onDelete={requestDelete} 
@@ -652,10 +689,10 @@ const App: React.FC = () => {
           {view === 'details' && selectedItem && (
               <div className="animate-fade-in">
                   <button 
-                    onClick={() => { setSelectedItem(null); setView('library'); }}
+                    onClick={handleBackFromDetail}
                     className="mb-4 flex items-center gap-2 text-slate-400 hover:text-white transition-colors font-medium"
                   >
-                      ← Volver a la biblioteca
+                      ← Volver a {previousViewRef.current === 'upcoming' ? 'Deseos' : 'la biblioteca'}
                   </button>
                   <MediaCard 
                       item={selectedItem} 
@@ -801,29 +838,29 @@ const App: React.FC = () => {
 
       {/* Mobile Bottom Navigation (Hidden in Immersive Mode and on Scroll) */}
       <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700/50 pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-300 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
-          <button onClick={() => { setView('library'); setSelectedItem(null); }} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'library' || view === 'details' ? 'text-primary' : 'text-slate-500'}`}>
+          <button onClick={() => handleNavClick('library')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'library' || view === 'details' ? 'text-primary' : 'text-slate-500'}`}>
               <LayoutGrid className="w-5 h-5" />
               <span className="text-[9px] font-bold">Biblio</span>
           </button>
           
-          <button onClick={() => { setView('upcoming'); setSelectedItem(null); }} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'upcoming' ? 'text-primary' : 'text-slate-500'}`}>
+          <button onClick={() => handleNavClick('upcoming')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'upcoming' ? 'text-primary' : 'text-slate-500'}`}>
               <Bookmark className="w-5 h-5" />
               <span className="text-[9px] font-bold">Deseos</span>
           </button>
 
-          <button onClick={() => { setView('search'); setSelectedItem(null); setSearchKey(prev => prev + 1); }} className="flex flex-col items-center gap-1 p-2 min-w-[60px]">
+          <button onClick={() => handleNavClick('search')} className="flex flex-col items-center gap-1 p-2 min-w-[60px]">
               <div className={`bg-primary text-white p-3 rounded-full -mt-8 shadow-lg border-4 border-slate-950 transition-transform active:scale-95 ${view === 'search' ? 'ring-2 ring-primary/50' : ''}`}>
                   <PlusCircle className="w-6 h-6" />
               </div>
               <span className="text-[9px] font-bold opacity-0">Nuevo</span>
           </button>
 
-          <button onClick={() => { setView('discovery'); setSelectedItem(null); }} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'discovery' ? 'text-primary' : 'text-slate-500'}`}>
+          <button onClick={() => handleNavClick('discovery')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'discovery' ? 'text-primary' : 'text-slate-500'}`}>
               <Compass className="w-5 h-5" />
               <span className="text-[9px] font-bold">Descubrir</span>
           </button>
 
-          <button onClick={() => { setView('stats'); setSelectedItem(null); }} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'stats' ? 'text-primary' : 'text-slate-500'}`}>
+          <button onClick={() => handleNavClick('stats')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'stats' ? 'text-primary' : 'text-slate-500'}`}>
               <BarChart2 className="w-5 h-5" />
               <span className="text-[9px] font-bold">Stats</span>
           </button>
