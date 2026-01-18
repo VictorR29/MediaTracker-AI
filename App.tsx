@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { 
   LayoutGrid, Bookmark, PlusCircle, Compass, BarChart2, 
-  Search as SearchIcon, LogOut, Settings, User, PenTool, AlertTriangle, Trash2, ArrowUp
+  Search as SearchIcon, LogOut, Settings, User, PenTool, AlertTriangle, Trash2, ArrowUp,
+  Tv, Clapperboard, Film, BookOpen, Book, X, FileText
 } from 'lucide-react';
 import { useToast } from './context/ToastContext';
 import { MediaItem, UserProfile, AIWorkData } from './types';
@@ -47,6 +48,7 @@ const App: React.FC = () => {
   const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isManualTypeSelectorOpen, setIsManualTypeSelectorOpen] = useState(false); // NEW STATE
   const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'catalog'>('grid');
   const lastScrollY = useRef(0);
 
@@ -342,14 +344,21 @@ const App: React.FC = () => {
   };
 
   const handleManualAdd = () => {
+      setIsManualTypeSelectorOpen(true);
+  };
+
+  const handleManualTypeSelection = (type: string) => {
+      setIsManualTypeSelectorOpen(false);
+      
+      const isMovie = type === 'Pelicula';
       const newItem: MediaItem = {
           id: Date.now().toString(),
           aiData: {
-              title: 'Nueva Obra',
-              mediaType: 'Otro',
+              title: '', // Start empty to force input
+              mediaType: type as any,
               synopsis: '',
               genres: [],
-              status: 'Desconocido',
+              status: 'Sin empezar',
               totalContent: '',
               coverDescription: '',
               sourceUrls: [],
@@ -357,8 +366,8 @@ const App: React.FC = () => {
           },
           trackingData: {
               status: 'Sin empezar',
-              currentSeason: 1,
-              totalSeasons: 1,
+              currentSeason: isMovie ? 0 : 1,
+              totalSeasons: isMovie ? 0 : 1,
               watchedEpisodes: 0,
               totalEpisodesInSeason: 0,
               emotionalTags: [],
@@ -368,7 +377,7 @@ const App: React.FC = () => {
           },
           createdAt: Date.now()
       };
-      // No lo guardamos en DB todavía, solo lo pasamos a la vista de edición como "nuevo"
+      
       handleOpenDetail(newItem);
   };
 
@@ -592,6 +601,58 @@ const App: React.FC = () => {
       {/* Loading Overlays */}
       <LoadingOverlay isVisible={isRestoring} type="restore" />
       <LoadingOverlay isVisible={isSearching} type="search" />
+
+      {/* Manual Type Selector Modal */}
+      {isManualTypeSelectorOpen && (
+          <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+              <div className="bg-surface border border-slate-700 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
+                  <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                          <PenTool className="w-5 h-5 text-primary" />
+                          Crear Obra Manualmente
+                      </h3>
+                      <button 
+                          onClick={() => setIsManualTypeSelectorOpen(false)}
+                          className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors"
+                      >
+                          <X className="w-5 h-5" />
+                      </button>
+                  </div>
+                  
+                  <div className="p-6">
+                      <p className="text-sm text-slate-400 mb-6 text-center">
+                          Selecciona el tipo de obra para configurar la plantilla correcta.
+                      </p>
+                      
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {[
+                              { id: 'Anime', icon: Tv, color: 'text-indigo-400', border: 'hover:border-indigo-500/50 hover:bg-indigo-500/10' },
+                              { id: 'Serie', icon: Clapperboard, color: 'text-purple-400', border: 'hover:border-purple-500/50 hover:bg-purple-500/10' },
+                              { id: 'Pelicula', icon: Film, color: 'text-pink-400', border: 'hover:border-pink-500/50 hover:bg-pink-500/10' },
+                              { id: 'Libro', icon: Book, color: 'text-emerald-400', border: 'hover:border-emerald-500/50 hover:bg-emerald-500/10' },
+                              { id: 'Manhwa', icon: BookOpen, color: 'text-orange-400', border: 'hover:border-orange-500/50 hover:bg-orange-500/10' },
+                              { id: 'Manga', icon: BookOpen, color: 'text-orange-400', border: 'hover:border-orange-500/50 hover:bg-orange-500/10' },
+                              { id: 'Comic', icon: BookOpen, color: 'text-yellow-400', border: 'hover:border-yellow-500/50 hover:bg-yellow-500/10' },
+                              { id: 'Otro', icon: FileText, color: 'text-slate-400', border: 'hover:border-slate-500/50 hover:bg-slate-500/10' },
+                          ].map((type) => (
+                              <button
+                                  key={type.id}
+                                  onClick={() => handleManualTypeSelection(type.id)}
+                                  className={`flex flex-col items-center justify-center gap-3 p-4 rounded-2xl bg-slate-900 border border-slate-700 transition-all group ${type.border}`}
+                              >
+                                  <div className={`p-3 rounded-full bg-slate-800 group-hover:bg-slate-800/50 transition-colors ${type.color}`}>
+                                      <type.icon className="w-6 h-6" />
+                                  </div>
+                                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300 group-hover:text-white">
+                                      {type.id === 'Pelicula' ? 'Película' : type.id}
+                                  </span>
+                              </button>
+                          ))}
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
 
       {/* Header (Hidden in Immersive) */}
       {!isImmersiveMode && (
