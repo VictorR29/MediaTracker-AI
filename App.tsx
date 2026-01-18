@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutGrid, Bookmark, PlusCircle, Compass, BarChart2, 
-  Search as SearchIcon, LogOut, Settings, User, PenTool, AlertTriangle, Trash2
+  Search as SearchIcon, LogOut, Settings, User, PenTool, AlertTriangle, Trash2, ArrowUp
 } from 'lucide-react';
 import { useToast } from './context/ToastContext';
 import { MediaItem, UserProfile, AIWorkData } from './types';
@@ -41,6 +41,7 @@ const App: React.FC = () => {
   // UI State
   const [isImmersiveMode, setIsImmersiveMode] = useState(false);
   const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'catalog'>('grid');
   const lastScrollY = useRef(0);
@@ -96,22 +97,35 @@ const App: React.FC = () => {
     }
   };
 
-  // Scroll Handling for Bottom Nav visibility
+  // Scroll Handling for Bottom Nav visibility & Scroll Top Button
   useEffect(() => {
     const handleScroll = () => {
         const currentScrollY = window.scrollY;
-        // Solo ocultar si scrolleamos hacia abajo y hemos bajado lo suficiente
+        
+        // Bottom Nav Logic
         if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
             setIsBottomNavVisible(false);
         } else {
             setIsBottomNavVisible(true);
         }
+
+        // Scroll Top Button Logic
+        if (currentScrollY > 300) {
+            setShowScrollTop(true);
+        } else {
+            setShowScrollTop(false);
+        }
+
         lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const scrollToTop = () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Handlers
   const handleLogin = (password: string) => {
@@ -773,6 +787,17 @@ const App: React.FC = () => {
               </div>
           </div>
       )}
+
+      {/* Scroll To Top Button */}
+      <button
+          onClick={scrollToTop}
+          className={`fixed right-4 md:right-8 z-40 bg-primary text-white p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 active:scale-95 flex items-center justify-center ${
+              showScrollTop ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
+          } ${isBottomNavVisible && !isImmersiveMode ? 'bottom-20 md:bottom-8' : 'bottom-4 md:bottom-8'}`}
+          aria-label="Volver arriba"
+      >
+          <ArrowUp className="w-6 h-6" />
+      </button>
 
       {/* Mobile Bottom Navigation (Hidden in Immersive Mode and on Scroll) */}
       <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700/50 pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-300 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
