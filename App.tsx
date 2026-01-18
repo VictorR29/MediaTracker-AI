@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutGrid, Bookmark, PlusCircle, Compass, BarChart2, 
-  Search as SearchIcon, LogOut, Settings, User
+  Search as SearchIcon, LogOut, Settings, User, PenTool
 } from 'lucide-react';
 import { useToast } from './context/ToastContext';
 import { MediaItem, UserProfile, AIWorkData } from './types';
@@ -92,6 +93,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleScroll = () => {
         const currentScrollY = window.scrollY;
+        // Solo ocultar si scrolleamos hacia abajo y hemos bajado lo suficiente
         if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
             setIsBottomNavVisible(false);
         } else {
@@ -130,17 +132,13 @@ const App: React.FC = () => {
               
               const json = JSON.parse(content);
               
-              // 1. Detección de error común: Usuario intenta cargar un Catálogo (Array) como Backup (Objeto)
               if (Array.isArray(json)) {
                   showToast("Esto parece un Catálogo. Usa la opción 'Importar Catálogo' en Ajustes.", "warning");
                   return;
               }
 
-              // 2. Validación de Backup (Debe tener perfil)
-              // Support legacy 'userProfile' key or standard 'profile' key
               const profileData = json.profile || json.userProfile;
 
-              // Relajamos la condición de 'library': si falta, asumimos array vacío.
               if (profileData && (Array.isArray(json.library) || !json.library)) {
                   const libraryItems = Array.isArray(json.library) ? json.library : [];
 
@@ -256,7 +254,38 @@ const App: React.FC = () => {
       setLibrary(prev => [newItem, ...prev]);
       setSearchResult(null);
       showToast("Añadido a la biblioteca", "success");
-      // Go to details to edit immediately
+      setSelectedItem(newItem);
+      setView('details');
+  };
+
+  const handleManualAdd = () => {
+      const newItem: MediaItem = {
+          id: Date.now().toString(),
+          aiData: {
+              title: 'Nueva Obra',
+              mediaType: 'Otro',
+              synopsis: '',
+              genres: [],
+              status: 'Desconocido',
+              totalContent: '',
+              coverDescription: '',
+              sourceUrls: [],
+              primaryColor: '#6366f1'
+          },
+          trackingData: {
+              status: 'Sin empezar',
+              currentSeason: 1,
+              totalSeasons: 1,
+              watchedEpisodes: 0,
+              totalEpisodesInSeason: 0,
+              emotionalTags: [],
+              favoriteCharacters: [],
+              rating: '',
+              comment: ''
+          },
+          createdAt: Date.now()
+      };
+      // No lo guardamos en DB todavía, solo lo pasamos a la vista de edición como "nuevo"
       setSelectedItem(newItem);
       setView('details');
   };
@@ -264,7 +293,15 @@ const App: React.FC = () => {
   const handleUpdateItem = async (updated: MediaItem) => {
       const withTimestamp = { ...updated, lastInteraction: Date.now() };
       await saveMediaItem(withTimestamp);
-      setLibrary(prev => prev.map(item => item.id === updated.id ? withTimestamp : item));
+      
+      // Si el item no estaba en la librería (era nuevo/manual), lo añadimos
+      const exists = library.find(i => i.id === updated.id);
+      if (!exists) {
+          setLibrary(prev => [withTimestamp, ...prev]);
+      } else {
+          setLibrary(prev => prev.map(item => item.id === updated.id ? withTimestamp : item));
+      }
+      
       if (selectedItem?.id === updated.id) setSelectedItem(withTimestamp);
   };
 
@@ -475,22 +512,31 @@ const App: React.FC = () => {
                       onDelete={() => handleDeleteItem(selectedItem)}
                       username={userProfile.username}
                       apiKey={userProfile.apiKey}
+                      isNew={!library.find(i => i.id === selectedItem.id)} // Es nuevo si no está en librería
                   />
               </div>
           )}
 
           {/* VIEW: SEARCH */}
           {view === 'search' && (
-              <div className="max-w-3xl mx-auto animate-fade-in">
-                  <div className="text-center mb-8">
-                      <h2 className="text-3xl font-bold text-white mb-2">Añadir Nueva Obra</h2>
-                      <p className="text-slate-400">Busca anime, series, libros o películas para tu colección.</p>
+              <div className="max-w-2xl mx-auto animate-fade-in pt-4">
+                  <div className="mb-6">
+                      <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                        <PlusCircle className="w-6 h-6 text-primary" />
+                        Añadir Obra
+                      </h2>
+                      <p className="text-slate-400 text-sm mb-4">Busca información automática con IA o crea una entrada vacía.</p>
+                      
+                      <SearchBar 
+                        onSearch={handleSearch} 
+                        isLoading={isSearching} 
+                        placeholder="Ej: Solo Leveling, Inception, Breaking Bad..."
+                      />
                   </div>
                   
-                  <SearchBar onSearch={handleSearch} isLoading={isSearching} />
-                  
-                  {searchResult && (
+                  {searchResult ? (
                       <div className="mt-8 animate-fade-in-up">
+                          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Resultado de la Búsqueda</h3>
                           <MediaCard 
                               item={{
                                   id: 'preview',
@@ -506,11 +552,30 @@ const App: React.FC = () => {
                               isNew={true}
                               onDelete={() => setSearchResult(null)}
                           />
-                          <button 
-                              onClick={() => handleAddFromSearch(searchResult)}
-                              className="w-full mt-4 py-4 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                          <div className="flex gap-3 mt-4">
+                            <button 
+                                onClick={() => setSearchResult(null)}
+                                className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-700"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                onClick={() => handleAddFromSearch(searchResult)}
+                                className="flex-[2] py-4 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                            >
+                                <PlusCircle className="w-5 h-5" /> AÑADIR A BIBLIOTECA
+                            </button>
+                          </div>
+                      </div>
+                  ) : (
+                      <div className="mt-12 text-center border-t border-slate-800 pt-8">
+                          <p className="text-slate-500 mb-4 text-sm font-medium">¿No encuentras lo que buscas o prefieres rellenarlo tú?</p>
+                          <button
+                              onClick={handleManualAdd}
+                              className="px-6 py-3 bg-slate-800/50 hover:bg-slate-800 text-white rounded-xl font-bold transition-all border border-slate-700 hover:border-slate-500 flex items-center justify-center gap-2 mx-auto group"
                           >
-                              <PlusCircle className="w-5 h-5" /> AÑADIR A MI BIBLIOTECA
+                              <PenTool className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+                              Crear Obra Manualmente
                           </button>
                       </div>
                   )}
@@ -539,7 +604,7 @@ const App: React.FC = () => {
       </main>
 
       {/* Mobile Bottom Navigation (Hidden in Immersive Mode and on Scroll) */}
-      <nav className={`md:hidden fixed bottom-0 w-full bg-surface/90 backdrop-blur-xl border-t border-slate-700/50 pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-300 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
+      <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700/50 pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-300 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
           <button onClick={() => { setView('library'); setSelectedItem(null); }} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'library' || view === 'details' ? 'text-primary' : 'text-slate-500'}`}>
               <LayoutGrid className="w-5 h-5" />
               <span className="text-[9px] font-bold">Biblio</span>
