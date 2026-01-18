@@ -131,15 +131,14 @@ const App: React.FC = () => {
 
   // --- SCROLL RESTORATION LOGIC ---
   useLayoutEffect(() => {
-      // Logic: If we are in library/upcoming and NO item is selected, we are in the list view.
-      if (!selectedItem && (view === 'library' || view === 'upcoming')) {
-          window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' });
-      } 
-      // Logic: If we just entered details view, ensure we are at top
-      else if (view === 'details') {
+      // Only trigger scroll adjustments when the VIEW changes.
+      // Ignoring selectedItem updates prevents scroll jumps when interacting with the MediaCard.
+      if (view === 'details') {
           window.scrollTo({ top: 0, behavior: 'instant' });
+      } else if (view === 'library' || view === 'upcoming') {
+          window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' });
       }
-  }, [view, selectedItem]);
+  }, [view]);
 
   const scrollToTop = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
