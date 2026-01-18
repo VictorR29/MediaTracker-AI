@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutGrid, Bookmark, PlusCircle, Compass, BarChart2, 
-  Search as SearchIcon, LogOut, Settings, User, PenTool
+  Search as SearchIcon, LogOut, Settings, User, PenTool, AlertTriangle, Trash2
 } from 'lucide-react';
 import { useToast } from './context/ToastContext';
 import { MediaItem, UserProfile, AIWorkData } from './types';
@@ -51,6 +51,9 @@ const App: React.FC = () => {
 
   // Restore State
   const [isRestoring, setIsRestoring] = useState(false);
+  
+  // Delete Confirmation State
+  const [itemToDelete, setItemToDelete] = useState<MediaItem | null>(null);
 
   // Filters
   const [filters, setFilters] = useState<FilterState>({
@@ -332,15 +335,30 @@ const App: React.FC = () => {
       if (selectedItem?.id === updated.id) setSelectedItem(withTimestamp);
   };
 
-  const handleDeleteItem = async (item: MediaItem) => {
-      if (window.confirm(`¿Eliminar "${item.aiData.title}"?`)) {
-          await deleteMediaItem(item.id);
-          setLibrary(prev => prev.filter(i => i.id !== item.id));
-          if (selectedItem?.id === item.id) {
+  // Trigger Confirmation Modal
+  const requestDelete = (item: MediaItem) => {
+      setItemToDelete(item);
+  };
+
+  // Execute Deletion
+  const confirmDelete = async () => {
+      if (!itemToDelete) return;
+      
+      try {
+          await deleteMediaItem(itemToDelete.id);
+          setLibrary(prev => prev.filter(i => i.id !== itemToDelete.id));
+          
+          // If we deleted the currently viewed item, go back
+          if (selectedItem?.id === itemToDelete.id) {
               setSelectedItem(null);
               setView('library');
           }
-          showToast("Eliminado", "info");
+          
+          showToast("Obra eliminada permanentemente", "info");
+      } catch (e) {
+          showToast("Error al eliminar", "error");
+      } finally {
+          setItemToDelete(null);
       }
   };
 
@@ -544,7 +562,7 @@ const App: React.FC = () => {
                                   onClick={() => { setSelectedItem(item); setView('details'); }}
                                   onIncrement={handleIncrementProgress}
                                   onToggleFavorite={handleToggleFavorite}
-                                  onDelete={handleDeleteItem}
+                                  onDelete={requestDelete} 
                               />
                           ))}
                           {displayedLibrary.length === 0 && (
@@ -573,7 +591,7 @@ const App: React.FC = () => {
                   <MediaCard 
                       item={selectedItem} 
                       onUpdate={handleUpdateItem} 
-                      onDelete={() => handleDeleteItem(selectedItem)}
+                      onDelete={() => requestDelete(selectedItem)}
                       username={userProfile.username}
                       apiKey={userProfile.apiKey}
                       isNew={!library.find(i => i.id === selectedItem.id)} // Es nuevo si no está en librería
@@ -666,6 +684,40 @@ const App: React.FC = () => {
           )}
 
       </main>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {itemToDelete && (
+          <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+              <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-fade-in-up">
+                  <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                      <AlertTriangle className="w-8 h-8 text-red-500" />
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-white mb-2">¿Eliminar Obra?</h3>
+                  <p className="text-sm text-slate-400 mb-6">
+                      Estás a punto de borrar <span className="text-white font-bold">"{itemToDelete.aiData.title}"</span>. 
+                      <br />
+                      Esta acción es irreversible y perderás todo tu progreso.
+                  </p>
+                  
+                  <div className="flex gap-3">
+                      <button 
+                          onClick={() => setItemToDelete(null)}
+                          className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-700"
+                      >
+                          Cancelar
+                      </button>
+                      <button 
+                          onClick={confirmDelete}
+                          className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2"
+                      >
+                          <Trash2 className="w-4 h-4" />
+                          Eliminar
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
 
       {/* Mobile Bottom Navigation (Hidden in Immersive Mode and on Scroll) */}
       <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700/50 pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-300 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
