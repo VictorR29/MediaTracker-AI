@@ -54,7 +54,9 @@ const App: React.FC = () => {
 
   // Search State
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResult, setSearchResult] = useState<AIWorkData | null>(null);
+  // CHANGED: Instead of holding just AIWorkData, we hold the full MediaItem state for the preview.
+  // This allows the MediaCard to update it (e.g. adding cover image) and persist those changes.
+  const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
 
   // Restore State
   const [isRestoring, setIsRestoring] = useState(false);
@@ -307,10 +309,21 @@ const App: React.FC = () => {
           return;
       }
       setIsSearching(true);
-      setSearchResult(null);
+      setPreviewItem(null); // Clear previous results
       try {
           const data = await searchMediaInfo(query, userProfile.apiKey);
-          setSearchResult(data);
+          // Create the full item immediately so edits (images) are tracked
+          const tempItem: MediaItem = {
+              id: 'preview',
+              aiData: data,
+              trackingData: {
+                status: 'Sin empezar', currentSeason: 1, totalSeasons: 1, 
+                watchedEpisodes: 0, totalEpisodesInSeason: 0, 
+                emotionalTags: [], favoriteCharacters: [], rating: '', comment: ''
+              },
+              createdAt: Date.now()
+          };
+          setPreviewItem(tempItem);
       } catch (e) {
           showToast("Error en la búsqueda", "error");
       } finally {
@@ -318,42 +331,17 @@ const App: React.FC = () => {
       }
   };
 
-  // Memoize search result preview item to prevent recreation on render
-  // This prevents MediaCard from resetting local state when App re-renders (e.g. on scroll)
-  const searchResultPreviewItem = useMemo(() => {
-      if (!searchResult) return null;
-      return {
-          id: 'preview',
-          aiData: searchResult,
-          trackingData: {
-            status: 'Sin empezar', currentSeason: 1, totalSeasons: 1, 
-            watchedEpisodes: 0, totalEpisodesInSeason: 0, 
-            emotionalTags: [], favoriteCharacters: [], rating: '', comment: ''
-          },
-          createdAt: Date.now()
-      } as MediaItem;
-  }, [searchResult]);
-
-  const handleAddFromSearch = async (data: AIWorkData) => {
+  const handleAddFromSearch = async (itemToAdd: MediaItem) => {
+      // Use the item passed in (which contains latest edits like image) but generate a new permanent ID
       const newItem: MediaItem = {
+          ...itemToAdd,
           id: Date.now().toString(),
-          aiData: data,
-          trackingData: {
-              status: 'Sin empezar',
-              currentSeason: 1,
-              totalSeasons: 1,
-              watchedEpisodes: 0,
-              totalEpisodesInSeason: 0,
-              emotionalTags: [],
-              favoriteCharacters: [],
-              rating: '',
-              comment: ''
-          },
           createdAt: Date.now()
       };
+      
       await saveMediaItem(newItem);
       setLibrary(prev => [newItem, ...prev]);
-      setSearchResult(null);
+      setPreviewItem(null);
       showToast("Añadido a la biblioteca", "success");
       handleOpenDetail(newItem); // Use helper to transition
   };
@@ -523,7 +511,16 @@ const App: React.FC = () => {
       setIsSearching(true);
       try {
         const data = await searchMediaInfo(title, userProfile.apiKey, type);
-        setSearchResult(data);
+        setPreviewItem({
+            id: 'preview',
+            aiData: data,
+            trackingData: {
+              status: 'Sin empezar', currentSeason: 1, totalSeasons: 1, 
+              watchedEpisodes: 0, totalEpisodesInSeason: 0, 
+              emotionalTags: [], favoriteCharacters: [], rating: '', comment: ''
+            },
+            createdAt: Date.now()
+        });
       } catch (e) {
           showToast("Error buscando recomendación", "error");
       } finally {
@@ -787,8 +784,8 @@ const App: React.FC = () => {
 
           {/* VIEW: SEARCH */}
           {view === 'search' && (
-              <div className={`animate-fade-in pt-4 ${searchResult ? 'w-full' : 'max-w-2xl mx-auto'}`}>
-                  <div className={`mb-6 ${searchResult ? 'max-w-2xl mx-auto' : ''}`}>
+              <div className={`animate-fade-in pt-4 ${previewItem ? 'w-full' : 'max-w-2xl mx-auto'}`}>
+                  <div className={`mb-6 ${previewItem ? 'max-w-2xl mx-auto' : ''}`}>
                       <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
                         <PlusCircle className="w-6 h-6 text-primary" />
                         Añadir Obra
@@ -802,24 +799,24 @@ const App: React.FC = () => {
                       />
                   </div>
                   
-                  {searchResult && searchResultPreviewItem ? (
+                  {previewItem ? (
                       <div className="mt-8 animate-fade-in-up">
                           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 text-center">Resultado de la Búsqueda</h3>
                           <MediaCard 
-                              item={searchResultPreviewItem}
-                              onUpdate={() => {}} 
+                              item={previewItem}
+                              onUpdate={(updated) => setPreviewItem(updated)} 
                               isNew={true}
-                              onDelete={() => setSearchResult(null)}
+                              onDelete={() => setPreviewItem(null)}
                           />
                           <div className="flex gap-3 mt-6 max-w-2xl mx-auto">
                             <button 
-                                onClick={() => setSearchResult(null)}
+                                onClick={() => setPreviewItem(null)}
                                 className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-700"
                             >
                                 Cancelar
                             </button>
                             <button 
-                                onClick={() => handleAddFromSearch(searchResult)}
+                                onClick={() => handleAddFromSearch(previewItem)}
                                 className="flex-[2] py-4 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
                             >
                                 <PlusCircle className="w-5 h-5" /> AÑADIR A BIBLIOTECA
