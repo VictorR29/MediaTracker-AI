@@ -270,13 +270,13 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       {showQuickAction && (
         <button
             onClick={handleQuickAction}
-            className={`absolute bottom-20 right-3 z-40 p-3 rounded-full shadow-xl transition-all transform hover:scale-110 active:scale-95 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 ${
+            className={`absolute bottom-20 right-3 z-40 p-2 md:p-3 rounded-full shadow-xl transition-all transform hover:scale-110 active:scale-95 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 ${
                 isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-slate-900'
             }`}
             style={!isCompleteSeason ? { color: dynamicColor } : {}}
             title={isCompleteSeason ? "Completar" : "+1 Capítulo"}
         >
-            {isCompleteSeason ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+            {isCompleteSeason ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <Plus className="w-4 h-4 md:w-5 md:h-5" />}
         </button>
       )}
 
