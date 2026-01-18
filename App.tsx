@@ -22,6 +22,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { CatalogView } from './components/CatalogView';
 import { SearchBar } from './components/SearchBar';
 import { ContextualGreeting } from './components/ContextualGreeting';
+import { LoadingOverlay } from './components/LoadingOverlay';
 
 const App: React.FC = () => {
   const { showToast } = useToast();
@@ -47,6 +48,9 @@ const App: React.FC = () => {
   // Search State
   const [isSearching, setIsSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<AIWorkData | null>(null);
+
+  // Restore State
+  const [isRestoring, setIsRestoring] = useState(false);
 
   // Filters
   const [filters, setFilters] = useState<FilterState>({
@@ -124,45 +128,58 @@ const App: React.FC = () => {
   };
 
   const handleImportBackup = async (file: File) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-          try {
-              const content = e.target?.result as string;
-              if (!content) return;
-              
-              const json = JSON.parse(content);
-              
-              if (Array.isArray(json)) {
-                  showToast("Esto parece un Catálogo. Usa la opción 'Importar Catálogo' en Ajustes.", "warning");
-                  return;
-              }
+      setIsRestoring(true);
+      // Small delay to allow UI to render the overlay before heavy processing blocks thread
+      setTimeout(() => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const content = e.target?.result as string;
+                if (!content) throw new Error("Archivo vacío");
+                
+                const json = JSON.parse(content);
+                
+                if (Array.isArray(json)) {
+                    showToast("Esto parece un Catálogo. Usa la opción 'Importar Catálogo' en Ajustes.", "warning");
+                    setIsRestoring(false);
+                    return;
+                }
 
-              const profileData = json.profile || json.userProfile;
+                const profileData = json.profile || json.userProfile;
 
-              if (profileData && (Array.isArray(json.library) || !json.library)) {
-                  const libraryItems = Array.isArray(json.library) ? json.library : [];
+                if (profileData && (Array.isArray(json.library) || !json.library)) {
+                    const libraryItems = Array.isArray(json.library) ? json.library : [];
 
-                  await saveUserProfile(profileData);
-                  await clearLibrary();
-                  for (const item of libraryItems) {
-                      await saveMediaItem(item);
-                  }
-                  
-                  setUserProfile(profileData);
-                  setIsAuthenticated(true);
-                  loadLibrary();
-                  showToast("Copia de seguridad restaurada exitosamente", "success");
-              } else {
-                console.error("Formato inválido:", Object.keys(json));
-                if (!profileData) showToast("Archivo inválido: No se encontró el perfil de usuario.", "error");
-                else showToast("Formato de archivo no reconocido.", "error");
-              }
-          } catch (err) {
-              console.error(err);
-              showToast("Error al leer el archivo. Asegúrate de que es un JSON válido.", "error");
-          }
-      };
-      reader.readAsText(file);
+                    await saveUserProfile(profileData);
+                    await clearLibrary();
+                    // Process in chunks or one by one
+                    for (const item of libraryItems) {
+                        await saveMediaItem(item);
+                    }
+                    
+                    setUserProfile(profileData);
+                    setIsAuthenticated(true);
+                    await loadLibrary();
+                    showToast("Copia de seguridad restaurada exitosamente", "success");
+                    setIsSettingsOpen(false); // Close settings if open
+                } else {
+                    console.error("Formato inválido:", Object.keys(json));
+                    if (!profileData) showToast("Archivo inválido: No se encontró el perfil de usuario.", "error");
+                    else showToast("Formato de archivo no reconocido.", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Error al leer el archivo. Asegúrate de que es un JSON válido.", "error");
+            } finally {
+                setIsRestoring(false);
+            }
+        };
+        reader.onerror = () => {
+             showToast("Error al leer el archivo", "error");
+             setIsRestoring(false);
+        };
+        reader.readAsText(file);
+      }, 100);
   };
 
   const handleExportBackup = () => {
@@ -181,29 +198,34 @@ const App: React.FC = () => {
   };
   
   const handleImportCatalog = async (file: File) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const json = JSON.parse(e.target?.result as string);
-            if (Array.isArray(json)) {
-                let count = 0;
-                for (const item of json) {
-                    const exists = library.find(l => l.id === item.id);
-                    if (!exists) {
-                        await saveMediaItem(item);
-                        count++;
+    setIsRestoring(true); // Re-use restoring overlay style
+    setTimeout(() => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const json = JSON.parse(e.target?.result as string);
+                if (Array.isArray(json)) {
+                    let count = 0;
+                    for (const item of json) {
+                        const exists = library.find(l => l.id === item.id);
+                        if (!exists) {
+                            await saveMediaItem(item);
+                            count++;
+                        }
                     }
+                    await loadLibrary();
+                    showToast(`Importadas ${count} obras nuevas`, "success");
+                } else {
+                showToast("Formato inválido. Se esperaba una lista (Array) de obras.", "error");
                 }
-                loadLibrary();
-                showToast(`Importadas ${count} obras nuevas`, "success");
-            } else {
-              showToast("Formato inválido. Se esperaba una lista (Array) de obras.", "error");
+            } catch (err) {
+                showToast("Error al importar catálogo", "error");
+            } finally {
+                setIsRestoring(false);
             }
-        } catch (err) {
-            showToast("Error al importar catálogo", "error");
-        }
-    };
-    reader.readAsText(file);
+        };
+        reader.readAsText(file);
+    }, 100);
   };
 
   const handleExportCatalog = () => {
@@ -228,9 +250,14 @@ const App: React.FC = () => {
       }
       setIsSearching(true);
       setSearchResult(null);
-      const data = await searchMediaInfo(query, userProfile.apiKey);
-      setSearchResult(data);
-      setIsSearching(false);
+      try {
+          const data = await searchMediaInfo(query, userProfile.apiKey);
+          setSearchResult(data);
+      } catch (e) {
+          showToast("Error en la búsqueda", "error");
+      } finally {
+          setIsSearching(false);
+      }
   };
 
   const handleAddFromSearch = async (data: AIWorkData) => {
@@ -343,9 +370,14 @@ const App: React.FC = () => {
       setSearchKey(prev => prev + 1); 
       if (!userProfile?.apiKey) return;
       setIsSearching(true);
-      const data = await searchMediaInfo(title, userProfile.apiKey, type);
-      setSearchResult(data);
-      setIsSearching(false);
+      try {
+        const data = await searchMediaInfo(title, userProfile.apiKey, type);
+        setSearchResult(data);
+      } catch (e) {
+          showToast("Error buscando recomendación", "error");
+      } finally {
+        setIsSearching(false);
+      }
   };
 
   // Filter Logic
@@ -402,7 +434,12 @@ const App: React.FC = () => {
   if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Cargando...</div>;
 
   if (!userProfile) {
-    return <Onboarding onComplete={handleOnboardingComplete} onImport={handleImportBackup} />;
+    return (
+        <>
+            <Onboarding onComplete={handleOnboardingComplete} onImport={handleImportBackup} />
+            <LoadingOverlay isVisible={isRestoring} type="restore" />
+        </>
+    );
   }
 
   if (!isAuthenticated) {
@@ -428,6 +465,10 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
       
+      {/* Loading Overlays */}
+      <LoadingOverlay isVisible={isRestoring} type="restore" />
+      <LoadingOverlay isVisible={isSearching} type="search" />
+
       {/* Header (Hidden in Immersive) */}
       {!isImmersiveMode && (
           <header className="fixed top-0 w-full bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 z-40 px-4 md:px-8 py-3 flex items-center justify-between">
