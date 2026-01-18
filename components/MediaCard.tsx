@@ -869,10 +869,18 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     <button 
                         onClick={handleGenerateReview} 
                         disabled={isGeneratingReview}
-                        className="w-full py-3 xl:py-4 hover:opacity-90 text-white rounded-2xl text-[10px] xl:text-xs font-black flex items-center justify-center gap-2 xl:gap-3 shadow-xl transition-all uppercase tracking-[0.2em]"
+                        className={`w-full py-3 xl:py-4 hover:opacity-90 text-white rounded-2xl text-[10px] xl:text-xs font-black flex items-center justify-center gap-2 xl:gap-3 shadow-xl transition-all uppercase tracking-[0.2em] ${isGeneratingReview ? 'opacity-80 cursor-wait' : ''}`}
                         style={{ backgroundColor: `rgb(var(--card-rgb))`, boxShadow: `0 10px 15px -3px rgba(var(--card-rgb), 0.25)` }}
                     >
-                        <Wand2 className="w-4 h-4 xl:w-5 xl:h-5" /> Copiar Reseña IA
+                        {isGeneratingReview ? (
+                            <>
+                                <RefreshCw className="w-4 h-4 xl:w-5 xl:h-5 animate-spin" /> GENERANDO...
+                            </>
+                        ) : (
+                            <>
+                                <Wand2 className="w-4 h-4 xl:w-5 xl:h-5" /> CREAR RESEÑA CON IA
+                            </>
+                        )}
                     </button>
                 </div>
 
