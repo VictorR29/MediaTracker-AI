@@ -414,12 +414,25 @@ const App: React.FC = () => {
     />;
   }
 
+  // Helper for Desktop Nav Link
+  const DesktopNavLink = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, active: boolean, onClick: () => void }) => (
+      <button 
+          onClick={onClick}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-bold ${active ? 'bg-white/10 text-white shadow-sm border border-white/5' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+      >
+          <Icon className={`w-4 h-4 ${active ? 'text-primary' : ''}`} />
+          {label}
+      </button>
+  );
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
       
       {/* Header (Hidden in Immersive) */}
       {!isImmersiveMode && (
           <header className="fixed top-0 w-full bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 z-40 px-4 md:px-8 py-3 flex items-center justify-between">
+             
+             {/* Left: User Identity */}
              <div className="flex items-center gap-3">
                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5">
                      <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden">
@@ -430,9 +443,19 @@ const App: React.FC = () => {
                         )}
                      </div>
                  </div>
-                 <h1 className="font-bold text-white text-lg hidden md:block">{userProfile.username}'s Library</h1>
+                 <h1 className="font-bold text-white text-lg hidden lg:block">{userProfile.username}'s Library</h1>
              </div>
              
+             {/* Center: Desktop Navigation (Restored) */}
+             <nav className="hidden md:flex items-center gap-1 bg-slate-800/50 p-1 rounded-xl border border-slate-700/50 absolute left-1/2 -translate-x-1/2">
+                 <DesktopNavLink icon={LayoutGrid} label="Biblioteca" active={view === 'library' || view === 'details'} onClick={() => { setView('library'); setSelectedItem(null); }} />
+                 <DesktopNavLink icon={Bookmark} label="Deseos" active={view === 'upcoming'} onClick={() => { setView('upcoming'); setSelectedItem(null); }} />
+                 <DesktopNavLink icon={PlusCircle} label="Añadir" active={view === 'search'} onClick={() => { setView('search'); setSelectedItem(null); setSearchKey(k => k+1); }} />
+                 <DesktopNavLink icon={Compass} label="Descubrir" active={view === 'discovery'} onClick={() => { setView('discovery'); setSelectedItem(null); }} />
+                 <DesktopNavLink icon={BarChart2} label="Stats" active={view === 'stats'} onClick={() => { setView('stats'); setSelectedItem(null); }} />
+             </nav>
+
+             {/* Right: Actions */}
              <div className="flex items-center gap-2 md:gap-4">
                  <button 
                     onClick={() => setIsSettingsOpen(true)}
