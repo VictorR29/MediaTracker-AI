@@ -277,18 +277,24 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       const episodesToAdd = tracking.totalEpisodesInSeason || tracking.watchedEpisodes;
       const newHistory = (tracking.accumulated_consumption || 0) + episodesToAdd;
       
-      const updated = {
-        ...localData,
-        trackingData: { 
-            ...localData.trackingData,
-            watchedEpisodes: 0,
-            currentSeason: tracking.currentSeason + 1,
-            accumulated_consumption: newHistory,
-        }
-      };
-      setLocalData(updated);
-      if (!isEditing) onUpdate(updated);
-      showToast(`¡Temporada ${tracking.currentSeason} completada! Pasando a la siguiente.`, "success");
+      // Check if last season
+      if (tracking.currentSeason >= tracking.totalSeasons && tracking.totalSeasons > 0) {
+          handleInputChange('status', 'Completado');
+          showToast("¡Obra completada!", "success");
+      } else {
+          const updated = {
+            ...localData,
+            trackingData: { 
+                ...localData.trackingData,
+                watchedEpisodes: 0,
+                currentSeason: tracking.currentSeason + 1,
+                accumulated_consumption: newHistory,
+            }
+          };
+          setLocalData(updated);
+          if (!isEditing) onUpdate(updated);
+          showToast(`¡Temporada ${tracking.currentSeason} completada! Pasando a la siguiente.`, "success");
+      }
   };
 
   // --- Character Sort Handlers ---
@@ -544,7 +550,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                     value={newLinkUrl}
                                     onChange={(e) => setNewLinkUrl(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddCustomLink()}
-                                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-[rgb(var(--card-rgb))]" 
+                                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-[rgb(var(--card-rgb))]" 
                                 />
                                 <button onClick={handleAddCustomLink} className="bg-slate-800 hover:bg-[rgb(var(--card-rgb))] p-2 rounded-xl border border-slate-700 text-white transition-colors">
                                     <Plus className="w-4 h-4" />
@@ -648,12 +654,18 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                             </button>
                                             <input 
                                                 type="number"
+                                                min={1}
+                                                max={tracking.totalSeasons}
                                                 value={tracking.currentSeason}
-                                                onChange={(e) => handleInputChange('currentSeason', parseInt(e.target.value) || 1)}
+                                                onChange={(e) => {
+                                                    let val = parseInt(e.target.value) || 1;
+                                                    if (tracking.totalSeasons > 0 && val > tracking.totalSeasons) val = tracking.totalSeasons;
+                                                    handleInputChange('currentSeason', val);
+                                                }}
                                                 className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
                                             />
                                             <button 
-                                                onClick={() => handleInputChange('currentSeason', tracking.currentSeason + 1)}
+                                                onClick={() => handleInputChange('currentSeason', tracking.totalSeasons > 0 ? Math.min(tracking.totalSeasons, tracking.currentSeason + 1) : tracking.currentSeason + 1)}
                                                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-white"
                                             >
                                                 <ChevronRight className="w-4 h-4" />
@@ -683,12 +695,18 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                           </button>
                                           <input 
                                               type="number"
+                                              min={0}
+                                              max={tracking.totalEpisodesInSeason}
                                               value={tracking.watchedEpisodes}
-                                              onChange={(e) => handleInputChange('watchedEpisodes', parseInt(e.target.value) || 0)}
+                                              onChange={(e) => {
+                                                  let val = parseInt(e.target.value) || 0;
+                                                  if (tracking.totalEpisodesInSeason > 0 && val > tracking.totalEpisodesInSeason) val = tracking.totalEpisodesInSeason;
+                                                  handleInputChange('watchedEpisodes', val);
+                                              }}
                                               className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
                                           />
                                           <button 
-                                              onClick={() => handleInputChange('watchedEpisodes', tracking.watchedEpisodes + 1)}
+                                              onClick={() => handleInputChange('watchedEpisodes', tracking.totalEpisodesInSeason > 0 ? Math.min(tracking.totalEpisodesInSeason, tracking.watchedEpisodes + 1) : tracking.watchedEpisodes + 1)}
                                               className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-white"
                                           >
                                               <Plus className="w-3 h-3 xl:w-4 xl:h-4" />
@@ -722,7 +740,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                         />
                                     </div>
                                     
-                                    {/* NEW: Complete Season Button */}
+                                    {/* NEW: Complete Season/Series Button */}
                                     {tracking.totalEpisodesInSeason > 0 && tracking.watchedEpisodes >= tracking.totalEpisodesInSeason && (
                                         <button 
                                             onClick={handleNextSeason}
@@ -730,7 +748,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                                             style={{ backgroundColor: `rgb(var(--card-rgb))`, boxShadow: `0 10px 15px -3px rgba(var(--card-rgb), 0.2)` }}
                                         >
                                             <CheckCircle2 className="w-4 h-4" />
-                                            Completar Temporada {tracking.currentSeason}
+                                            {tracking.currentSeason < tracking.totalSeasons ? `Completar Temporada ${tracking.currentSeason}` : 'Completar Obra'}
                                         </button>
                                     )}
                                 </div>

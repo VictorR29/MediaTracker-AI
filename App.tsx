@@ -363,15 +363,70 @@ const App: React.FC = () => {
   };
 
   const handleIncrementProgress = async (item: MediaItem) => {
-      const newEp = item.trackingData.watchedEpisodes + 1;
-      const updated = {
-          ...item,
-          trackingData: { ...item.trackingData, watchedEpisodes: newEp },
-          lastInteraction: Date.now()
-      };
-      await saveMediaItem(updated);
-      setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
-      showToast(`+1 Capítulo a ${item.aiData.title}`, "success");
+      const { watchedEpisodes, totalEpisodesInSeason, currentSeason, totalSeasons, accumulated_consumption } = item.trackingData;
+      
+      // Logic when no limit is set (infinite series)
+      if (totalEpisodesInSeason === 0) {
+          const newEp = watchedEpisodes + 1;
+          const updated = { 
+              ...item, 
+              trackingData: { ...item.trackingData, watchedEpisodes: newEp }, 
+              lastInteraction: Date.now() 
+          };
+          await saveMediaItem(updated);
+          setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
+          showToast(`+1 Capítulo a ${item.aiData.title}`, "success");
+          return;
+      }
+
+      // Logic: Increment episode if not full
+      if (watchedEpisodes < totalEpisodesInSeason) {
+          const newEp = watchedEpisodes + 1;
+          const updated = {
+              ...item,
+              trackingData: { ...item.trackingData, watchedEpisodes: newEp },
+              lastInteraction: Date.now()
+          };
+          await saveMediaItem(updated);
+          setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
+          
+          if (newEp === totalEpisodesInSeason) {
+             const isLastSeason = currentSeason >= totalSeasons && totalSeasons > 0;
+             showToast(isLastSeason ? "¡Final alcanzado! Pulsa de nuevo para completar." : "Temporada terminada. Pulsa de nuevo para la siguiente.", "info");
+          } else {
+             showToast(`+1 Capítulo a ${item.aiData.title}`, "success");
+          }
+      } 
+      // Logic: Transition (Next Season or Complete) if full
+      else {
+          if (currentSeason < totalSeasons && totalSeasons > 0) {
+              // Move to next season
+              const newHistory = (accumulated_consumption || 0) + watchedEpisodes;
+              const updated = {
+                  ...item,
+                  trackingData: { 
+                      ...item.trackingData, 
+                      currentSeason: currentSeason + 1,
+                      watchedEpisodes: 0,
+                      accumulated_consumption: newHistory
+                  },
+                  lastInteraction: Date.now()
+              };
+              await saveMediaItem(updated);
+              setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
+              showToast(`Comenzando Temporada ${currentSeason + 1}`, "success");
+          } else {
+              // Complete Series
+              const updated: MediaItem = {
+                  ...item,
+                  trackingData: { ...item.trackingData, status: 'Completado' },
+                  lastInteraction: Date.now()
+              };
+              await saveMediaItem(updated);
+              setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
+              showToast(`¡${item.aiData.title} Completado!`, "success");
+          }
+      }
   };
 
   const handleToggleFavorite = async (item: MediaItem) => {

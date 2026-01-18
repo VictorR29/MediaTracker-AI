@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
-import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Trash2, Star, Heart } from 'lucide-react';
+import { Tv, BookOpen, Clapperboard, PlayCircle, Book, FileText, Plus, Check, Trash2, Star, Heart, FastForward } from 'lucide-react';
 
 interface CompactMediaCardProps {
   item: MediaItem;
@@ -85,6 +85,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   }
 
   const isCompleteSeason = !isMovie && trackingData.totalEpisodesInSeason > 0 && trackingData.watchedEpisodes >= trackingData.totalEpisodesInSeason;
+  const isLastSeason = trackingData.currentSeason >= trackingData.totalSeasons;
 
   const getPlaceholder = () => 
     `https://placehold.co/300x450/1e293b/94a3b8?text=${encodeURIComponent(aiData.title || 'Sin Imagen')}&font=roboto`;
@@ -274,9 +275,12 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
                 isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-slate-900'
             }`}
             style={!isCompleteSeason ? { color: dynamicColor } : {}}
-            title={isCompleteSeason ? "Completar" : "+1 Capítulo"}
+            title={isCompleteSeason ? (isLastSeason ? "Completar Obra" : "Siguiente Temporada") : "+1 Capítulo"}
         >
-            {isCompleteSeason ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <Plus className="w-4 h-4 md:w-5 md:h-5" />}
+            {isCompleteSeason 
+                ? (isLastSeason ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <FastForward className="w-4 h-4 md:w-5 md:h-5" />)
+                : <Plus className="w-4 h-4 md:w-5 md:h-5" />
+            }
         </button>
       )}
 
