@@ -542,8 +542,8 @@ const App: React.FC = () => {
 
           {/* VIEW: SEARCH */}
           {view === 'search' && (
-              <div className="max-w-2xl mx-auto animate-fade-in pt-4">
-                  <div className="mb-6">
+              <div className={`animate-fade-in pt-4 ${searchResult ? 'w-full' : 'max-w-2xl mx-auto'}`}>
+                  <div className={`mb-6 ${searchResult ? 'max-w-2xl mx-auto' : ''}`}>
                       <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
                         <PlusCircle className="w-6 h-6 text-primary" />
                         Añadir Obra
@@ -559,7 +559,7 @@ const App: React.FC = () => {
                   
                   {searchResult ? (
                       <div className="mt-8 animate-fade-in-up">
-                          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Resultado de la Búsqueda</h3>
+                          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 text-center">Resultado de la Búsqueda</h3>
                           <MediaCard 
                               item={{
                                   id: 'preview',
@@ -575,7 +575,7 @@ const App: React.FC = () => {
                               isNew={true}
                               onDelete={() => setSearchResult(null)}
                           />
-                          <div className="flex gap-3 mt-4">
+                          <div className="flex gap-3 mt-6 max-w-2xl mx-auto">
                             <button 
                                 onClick={() => setSearchResult(null)}
                                 className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-700"
