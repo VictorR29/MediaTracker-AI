@@ -125,8 +125,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
   // Handlers
   const handleInputChange = (field: keyof UserTrackingData, value: any) => {
+    // Detect if the change is related to progress to update the timestamp
+    // This ensures the item moves to the top of the "Recent" list just like the +1 button
+    const isProgressUpdate = field === 'watchedEpisodes' || field === 'currentSeason' || field === 'status';
+    
     const updated = {
       ...localData,
+      lastInteraction: isProgressUpdate ? Date.now() : localData.lastInteraction,
       trackingData: { ...localData.trackingData, [field]: value }
     };
     setLocalData(updated);
@@ -289,7 +294,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 watchedEpisodes: 0,
                 currentSeason: tracking.currentSeason + 1,
                 accumulated_consumption: newHistory,
-            }
+            },
+            lastInteraction: Date.now() // Update timestamp for recency
           };
           setLocalData(updated);
           if (!isEditing) onUpdate(updated);
