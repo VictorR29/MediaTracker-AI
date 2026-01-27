@@ -12,10 +12,10 @@ const extractJSON = (text: string, isArray: boolean = false): any => {
   const closeChar = isArray ? ']' : '}';
 
   // 1. Try identifying markdown code blocks first
-  const codeBlockRegex = isArray 
-    ? /```(?:json)?\s*(\[[\s\S]*?\])\s*```/ 
+  const codeBlockRegex = isArray
+    ? /```(?:json)?\s*(\[[\s\S]*?\])\s*```/
     : /```(?:json)?\s*(\{[\s\S]*?\})\s*```/;
-  
+
   const markdownMatch = text.match(codeBlockRegex);
   if (markdownMatch) {
     try {
@@ -29,7 +29,7 @@ const extractJSON = (text: string, isArray: boolean = false): any => {
   const firstOpen = text.indexOf(openChar);
   if (firstOpen !== -1) {
     let currentClose = text.lastIndexOf(closeChar);
-    
+
     while (currentClose > firstOpen) {
       const candidate = text.substring(firstOpen, currentClose + 1);
       try {
@@ -46,9 +46,9 @@ const extractJSON = (text: string, isArray: boolean = false): any => {
 
 export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeContext?: string): Promise<AIWorkData> => {
   const ai = new GoogleGenAI({ apiKey });
-  const modelId = "gemini-2.5-flash"; 
-  
-  const typeContextInstruction = mediaTypeContext 
+  const modelId = "gemini-2.5-flash";
+
+  const typeContextInstruction = mediaTypeContext
     ? `IMPORTANT: The user is specifically looking for the "${mediaTypeContext}" version of this title. Ensure the data returned (synopsis, episode count, etc.) corresponds to the ${mediaTypeContext} format, NOT other adaptations (e.g. if searching for Anime, do not return Manga chapters).`
     : '';
 
@@ -102,7 +102,7 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
     });
 
     const text = response.text || "";
-    
+
     // Extract Sources from Grounding
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
       ?.map((chunk: any) => chunk.web)
@@ -110,7 +110,7 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
       .map((web: any) => ({ title: web.title, uri: web.uri }));
 
     const jsonPart = extractJSON(text);
-    
+
     return {
       title: jsonPart.title || query,
       originalTitle: jsonPart.originalTitle,
@@ -201,14 +201,14 @@ export const updateMediaInfo = async (currentData: AIWorkData, apiKey: string): 
     const result = extractJSON(text);
 
     return {
-        updatedData: {
-            status: result.status,
-            totalContent: result.totalContent,
-            releaseDate: result.releaseDate,
-            endDate: result.endDate,
-            ...(result.synopsis ? { synopsis: result.synopsis } : {})
-        },
-        hasChanges: result.hasChanges || !!result.synopsis // Ensure we flag change if synopsis was rewritten
+      updatedData: {
+        status: result.status,
+        totalContent: result.totalContent,
+        releaseDate: result.releaseDate,
+        endDate: result.endDate,
+        ...(result.synopsis ? { synopsis: result.synopsis } : {})
+      },
+      hasChanges: result.hasChanges || !!result.synopsis // Ensure we flag change if synopsis was rewritten
     };
 
   } catch (error) {
@@ -220,27 +220,27 @@ export const updateMediaInfo = async (currentData: AIWorkData, apiKey: string): 
 export const generateReviewSummary = async (title: string, rating: string, tags: string[], comment: string, apiKey: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey });
   const modelId = "gemini-2.5-flash";
-  
+
   const prompt = `
-    Genera una reseña corta, entusiasta y atractiva para redes sociales (Twitter/Instagram) sobre "${title}".
+    Genera una reseña corta, entusiasta y atractiva para redes sociales (Twitter/Instagram/TikTok) sobre "${title}".
     
     Datos del usuario:
     - Calificación: ${rating}
     - Sentimientos: ${tags.join(', ')}
     - Comentario personal: "${comment}"
     
-    La reseña debe ser en primera persona, natural, usar emojis y hashtags relevantes. Max 280 caracteres si es posible, pero prioriza el contenido.
+    La reseña debe ser en primera persona, natural, usar emojis y hashtags relevantes. Max 300 caracteres si es posible, pero prioriza el contenido.
   `;
 
   try {
     const response = await ai.models.generateContent({
-        model: modelId,
-        contents: prompt
+      model: modelId,
+      contents: prompt
     });
     return response.text || "Reseña generada.";
   } catch (e) {
-      console.error(e);
-      return `¡Acabo de ver ${title}! ${rating}. ${tags.join(' ')}.`;
+    console.error(e);
+    return `¡Acabo de ver ${title}! ${rating}. ${tags.join(' ')}.`;
   }
 };
 
@@ -262,7 +262,7 @@ export const getRecommendations = async (
   const ai = new GoogleGenAI({ apiKey });
   const modelId = "gemini-2.5-flash";
 
-  const moodInstruction = targetMood 
+  const moodInstruction = targetMood
     ? `
     USER MOOD REQUEST: "${targetMood}"
     INSTRUCTION: Utiliza las obras seleccionadas (Favorite Titles) como base de estilo (si se han seleccionado, sino hazlo en base al perfil general) y el Mood como la atmósfera emocional predominante. Si son contradictorios, prioriza el Mood pero mantén elementos estéticos de las obras.
