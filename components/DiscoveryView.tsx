@@ -5,10 +5,10 @@ import { getRecommendations, RecommendationResult } from '../services/geminiServ
 import { Sparkles, Compass, Tv, BookOpen, Clapperboard, Film, Loader2, Plus, AlertCircle, ChevronDown, ChevronUp, Filter, X, Search, Wand2, ArrowLeft, Info, Quote, RefreshCw, Heart, BrainCircuit } from 'lucide-react';
 
 interface DiscoveryViewProps {
-  library: MediaItem[];
-  apiKey: string;
-  onSelectRecommendation: (title: string, type: string) => void;
-  onToggleImmersive?: (isImmersive: boolean) => void;
+    library: MediaItem[];
+    apiKey: string;
+    onSelectRecommendation: (title: string, type: string) => void;
+    onToggleImmersive?: (isImmersive: boolean) => void;
 }
 
 const MOOD_OPTIONS = [
@@ -23,337 +23,337 @@ const MOOD_OPTIONS = [
 ];
 
 export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, onSelectRecommendation, onToggleImmersive }) => {
-  // Mode State
-  const [viewMode, setViewMode] = useState<'filters' | 'immersive'>('filters');
-  
-  // Filter State
-  const [selectedType, setSelectedType] = useState<string>('Anime');
-  const [selectedSeeds, setSelectedSeeds] = useState<string[]>([]);
-  const [seedSearchQuery, setSeedSearchQuery] = useState('');
-  const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  
-  // Accordion States
-  const [isRefineOpen, setIsRefineOpen] = useState(true);
-  const [isMoodOpen, setIsMoodOpen] = useState(false);
+    // Mode State
+    const [viewMode, setViewMode] = useState<'filters' | 'immersive'>('filters');
 
-  // Recommendations State
-  const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
-  // We maintain a separate list of titles shown in this session to exclude them from "Load More" calls
-  const [sessionExcludedTitles, setSessionExcludedTitles] = useState<string[]>([]);
-  
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Immersive View State
-  const [isInfoOpen, setIsInfoOpen] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState<'up' | 'down' | null>(null);
+    // Filter State
+    const [selectedType, setSelectedType] = useState<string>('Anime');
+    const [selectedSeeds, setSelectedSeeds] = useState<string[]>([]);
+    const [seedSearchQuery, setSeedSearchQuery] = useState('');
+    const [selectedMood, setSelectedMood] = useState<string | null>(null);
 
-  // 3D Tilt Ref (State removed for performance)
-  const cardRef = useRef<HTMLDivElement>(null);
-  
-  // Touch Handling Ref
-  const touchStartY = useRef<number>(0);
+    // Accordion States
+    const [isRefineOpen, setIsRefineOpen] = useState(true);
+    const [isMoodOpen, setIsMoodOpen] = useState(false);
 
-  // --- IMMERSIVE MODE HANDLER ---
-  useEffect(() => {
-      if (onToggleImmersive) {
-          onToggleImmersive(viewMode === 'immersive');
-      }
-      return () => {
-          if (onToggleImmersive) onToggleImmersive(false);
-      }
-  }, [viewMode, onToggleImmersive]);
+    // Recommendations State
+    const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
+    // We maintain a separate list of titles shown in this session to exclude them from "Load More" calls
+    const [sessionExcludedTitles, setSessionExcludedTitles] = useState<string[]>([]);
 
-  // --- LOGIC: Seed Selection ---
-  const availableSeedItems = useMemo(() => {
-    const targetTypes = selectedType === 'Manhwa' 
-        ? ['Manhwa', 'Manga', 'Comic'] 
-        : [selectedType];
-    return library.filter(item => targetTypes.includes(item.aiData.mediaType));
-  }, [library, selectedType]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-  const filteredSeedCandidates = useMemo(() => {
-      if (!seedSearchQuery.trim()) return availableSeedItems;
-      return availableSeedItems.filter(item => 
-          item.aiData.title.toLowerCase().includes(seedSearchQuery.toLowerCase())
-      );
-  }, [availableSeedItems, seedSearchQuery]);
+    // Immersive View State
+    const [isInfoOpen, setIsInfoOpen] = useState(false);
+    const [swipeDirection, setSwipeDirection] = useState<'up' | 'down' | null>(null);
 
-  const { topGenres, likedTitles, excludedTitles } = useMemo(() => {
-    const genreCounts: Record<string, number> = {};
-    const liked: string[] = [];
-    const excluded: string[] = [];
+    // 3D Tilt Ref (State removed for performance)
+    const cardRef = useRef<HTMLDivElement>(null);
 
-    library.forEach(item => excluded.push(item.aiData.title));
+    // Touch Handling Ref
+    const touchStartY = useRef<number>(0);
 
-    if (selectedSeeds.length > 0) {
-        const seedItems = library.filter(item => selectedSeeds.includes(item.id));
-        seedItems.forEach(item => {
-            liked.push(item.aiData.title);
-            item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
-        });
-    } else {
-        const targetTypes = selectedType === 'Manhwa' ? ['Manhwa', 'Manga', 'Comic'] : [selectedType];
-        library.forEach(item => {
-            if (targetTypes.includes(item.aiData.mediaType)) {
-                const rating = item.trackingData.rating;
-                const score = RATING_TO_SCORE[rating] || 0;
-                if ((score >= 7 || (score === 0 && item.trackingData.status === 'Completado'))) {
-                    liked.push(item.aiData.title);
-                    item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
+    // --- IMMERSIVE MODE HANDLER ---
+    useEffect(() => {
+        if (onToggleImmersive) {
+            onToggleImmersive(viewMode === 'immersive');
+        }
+        return () => {
+            if (onToggleImmersive) onToggleImmersive(false);
+        }
+    }, [viewMode, onToggleImmersive]);
+
+    // --- LOGIC: Seed Selection ---
+    const availableSeedItems = useMemo(() => {
+        const targetTypes = selectedType === 'Manhwa'
+            ? ['Manhwa', 'Manga', 'Comic']
+            : [selectedType];
+        return library.filter(item => targetTypes.includes(item.aiData.mediaType));
+    }, [library, selectedType]);
+
+    const filteredSeedCandidates = useMemo(() => {
+        if (!seedSearchQuery.trim()) return availableSeedItems;
+        return availableSeedItems.filter(item =>
+            item.aiData.title.toLowerCase().includes(seedSearchQuery.toLowerCase())
+        );
+    }, [availableSeedItems, seedSearchQuery]);
+
+    const { topGenres, likedTitles, excludedTitles } = useMemo(() => {
+        const genreCounts: Record<string, number> = {};
+        const liked: string[] = [];
+        const excluded: string[] = [];
+
+        library.forEach(item => excluded.push(item.aiData.title));
+
+        if (selectedSeeds.length > 0) {
+            const seedItems = library.filter(item => selectedSeeds.includes(item.id));
+            seedItems.forEach(item => {
+                liked.push(item.aiData.title);
+                item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
+            });
+        } else {
+            const targetTypes = selectedType === 'Manhwa' ? ['Manhwa', 'Manga', 'Comic'] : [selectedType];
+            library.forEach(item => {
+                if (targetTypes.includes(item.aiData.mediaType)) {
+                    const rating = item.trackingData.rating;
+                    const score = RATING_TO_SCORE[rating] || 0;
+                    if ((score >= 7 || (score === 0 && item.trackingData.status === 'Completado'))) {
+                        liked.push(item.aiData.title);
+                        item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
+                    }
                 }
+            });
+        }
+
+        const sortedGenres = Object.entries(genreCounts).sort(([, a], [, b]) => b - a).map(([g]) => g).slice(0, 5);
+        return { topGenres: sortedGenres, likedTitles: liked, excludedTitles: excluded };
+    }, [library, selectedType, selectedSeeds]);
+
+    // --- ACTIONS ---
+
+    const handleDiscovery = async (isLoadMore = false) => {
+        // If no API key, we can't proceed. We keep the error specific to this context but stay in filters.
+        if (!apiKey) {
+            setError("Configura tu API Key en ajustes para usar la IA.");
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+        setViewMode('immersive'); // Switch immediately to show the "Shuffling/Loading" state
+
+        if (!isLoadMore) {
+            setRecommendations([]);
+            setSessionExcludedTitles([]);
+        }
+
+        try {
+            // Combine permanent library exclusions with temporary session exclusions (for "Load More")
+            const allExcluded = [...excludedTitles, ...sessionExcludedTitles];
+
+            const results = await getRecommendations(likedTitles, topGenres, allExcluded, selectedType, apiKey, selectedMood || undefined);
+
+            if (results.length === 0) {
+                // No results found. We stay in immersive mode but renderRecommendations will show the "Challenge" card.
+                // We don't need to do anything here as recommendations is already empty or cleared.
+            } else {
+                setRecommendations(results);
+                // Add these new results to session exclusions for next time
+                setSessionExcludedTitles(prev => [...prev, ...results.map(r => r.title)]);
+                setCurrentIndex(0);
             }
-        });
-    }
+        } catch (err) {
+            console.error(err);
+            setError("No se pudieron generar recomendaciones. Intenta ajustar los filtros.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-    const sortedGenres = Object.entries(genreCounts).sort(([, a], [, b]) => b - a).map(([g]) => g).slice(0, 5);
-    return { topGenres: sortedGenres, likedTitles: liked, excludedTitles: excluded };
-  }, [library, selectedType, selectedSeeds]);
+    // --- INTERACTION LOGIC ---
 
-  // --- ACTIONS ---
+    // Direct DOM manipulation to avoid Re-renders on every pixel move (60fps target)
+    const applyTilt = (clientX: number, clientY: number, isActive: boolean) => {
+        if (!cardRef.current) return;
 
-  const handleDiscovery = async (isLoadMore = false) => {
-    // If no API key, we can't proceed. We keep the error specific to this context but stay in filters.
-    if (!apiKey) {
-        setError("Configura tu API Key en ajustes para usar la IA.");
-        return;
-    }
-    
-    setIsLoading(true);
-    setError(null);
-    setViewMode('immersive'); // Switch immediately to show the "Shuffling/Loading" state
-    
-    if (!isLoadMore) {
-        setRecommendations([]);
-        setSessionExcludedTitles([]);
-    }
+        if (!isActive) {
+            cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+            return;
+        }
 
-    try {
-      // Combine permanent library exclusions with temporary session exclusions (for "Load More")
-      const allExcluded = [...excludedTitles, ...sessionExcludedTitles];
-      
-      const results = await getRecommendations(likedTitles, topGenres, allExcluded, selectedType, apiKey, selectedMood || undefined);
-      
-      if (results.length === 0) {
-          // No results found. We stay in immersive mode but renderRecommendations will show the "Challenge" card.
-          // We don't need to do anything here as recommendations is already empty or cleared.
-      } else {
-          setRecommendations(results);
-          // Add these new results to session exclusions for next time
-          setSessionExcludedTitles(prev => [...prev, ...results.map(r => r.title)]);
-          setCurrentIndex(0);
-      }
-    } catch (err) {
-      console.error(err);
-      setError("No se pudieron generar recomendaciones. Intenta ajustar los filtros.");
-    } finally {
-        setIsLoading(false);
-    }
-  };
+        const { left, top, width, height } = cardRef.current.getBoundingClientRect();
+        const x = (clientX - left) / width;
+        const y = (clientY - top) / height;
 
-  // --- INTERACTION LOGIC ---
+        const tiltX = (0.5 - y) * 20;
+        const tiltY = (x - 0.5) * 20;
 
-  // Direct DOM manipulation to avoid Re-renders on every pixel move (60fps target)
-  const applyTilt = (clientX: number, clientY: number, isActive: boolean) => {
-      if (!cardRef.current) return;
-      
-      if (!isActive) {
-          cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
-          return;
-      }
+        cardRef.current.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.02)`;
+    };
 
-      const { left, top, width, height } = cardRef.current.getBoundingClientRect();
-      const x = (clientX - left) / width;
-      const y = (clientY - top) / height;
-      
-      const tiltX = (0.5 - y) * 20; 
-      const tiltY = (x - 0.5) * 20;
+    const handleNext = () => {
+        // Reset transform before animating out via class
+        if (cardRef.current) {
+            cardRef.current.style.transform = '';
+            cardRef.current.style.transition = '';
+        }
 
-      cardRef.current.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.02)`;
-  };
+        if (currentIndex < recommendations.length) {
+            setSwipeDirection('up');
+            setTimeout(() => {
+                setCurrentIndex(prev => prev + 1);
+                setSwipeDirection(null);
+                setIsInfoOpen(false);
+            }, 400);
+        }
+    };
 
-  const handleNext = () => {
-      // Reset transform before animating out via class
-      if (cardRef.current) {
-          cardRef.current.style.transform = ''; 
-          cardRef.current.style.transition = '';
-      }
+    const handlePrev = () => {
+        if (cardRef.current) {
+            cardRef.current.style.transform = '';
+            cardRef.current.style.transition = '';
+        }
 
-      if (currentIndex < recommendations.length) {
-          setSwipeDirection('up');
-          setTimeout(() => {
-              setCurrentIndex(prev => prev + 1);
-              setSwipeDirection(null);
-              setIsInfoOpen(false);
-          }, 400); 
-      }
-  };
+        if (currentIndex > 0) {
+            setSwipeDirection('down');
+            setTimeout(() => {
+                setCurrentIndex(prev => prev - 1);
+                setSwipeDirection(null);
+                setIsInfoOpen(false);
+            }, 400);
+        }
+    };
 
-  const handlePrev = () => {
-      if (cardRef.current) {
-          cardRef.current.style.transform = '';
-          cardRef.current.style.transition = '';
-      }
+    // Event Handlers
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        // Small optimization: only apply if no swipe in progress
+        if (!swipeDirection) {
+            if (cardRef.current) cardRef.current.style.transition = 'transform 0.1s ease-out'; // Fast follow
+            applyTilt(e.clientX, e.clientY, true);
+        }
+    };
 
-      if (currentIndex > 0) {
-          setSwipeDirection('down');
-          setTimeout(() => {
-              setCurrentIndex(prev => prev - 1);
-              setSwipeDirection(null);
-              setIsInfoOpen(false);
-          }, 400);
-      }
-  };
+    const handleMouseLeave = () => {
+        if (cardRef.current) cardRef.current.style.transition = 'transform 0.5s ease-out'; // Smooth return
+        applyTilt(0, 0, false);
+    };
 
-  // Event Handlers
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-      // Small optimization: only apply if no swipe in progress
-      if (!swipeDirection) {
-          if (cardRef.current) cardRef.current.style.transition = 'transform 0.1s ease-out'; // Fast follow
-          applyTilt(e.clientX, e.clientY, true);
-      }
-  };
+    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        touchStartY.current = e.touches[0].clientY;
+        // Disable transition for 1:1 finger tracking
+        if (cardRef.current) cardRef.current.style.transition = 'none';
+    };
 
-  const handleMouseLeave = () => {
-      if (cardRef.current) cardRef.current.style.transition = 'transform 0.5s ease-out'; // Smooth return
-      applyTilt(0, 0, false);
-  };
+    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (e.touches.length > 0 && !swipeDirection) {
+            applyTilt(e.touches[0].clientX, e.touches[0].clientY, true);
+        }
+    };
 
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-      touchStartY.current = e.touches[0].clientY;
-      // Disable transition for 1:1 finger tracking
-      if (cardRef.current) cardRef.current.style.transition = 'none';
-  };
+    const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+        // Re-enable transition for snap back
+        if (cardRef.current) cardRef.current.style.transition = 'transform 0.5s ease-out';
 
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-      if (e.touches.length > 0 && !swipeDirection) {
-          applyTilt(e.touches[0].clientX, e.touches[0].clientY, true);
-      }
-  };
+        const touchEndY = e.changedTouches[0].clientY;
+        const diff = touchStartY.current - touchEndY;
 
-  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-      // Re-enable transition for snap back
-      if (cardRef.current) cardRef.current.style.transition = 'transform 0.5s ease-out';
-      
-      const touchEndY = e.changedTouches[0].clientY;
-      const diff = touchStartY.current - touchEndY;
-      
-      // Reset tilt visual
-      applyTilt(0, 0, false);
+        // Reset tilt visual
+        applyTilt(0, 0, false);
 
-      if (diff > 50) { 
-          if (!isEndCard) handleNext();
-      } else if (diff < -50) {
-          if (isInfoOpen) setIsInfoOpen(false);
-          else handlePrev();
-      }
-  };
+        if (diff > 50) {
+            if (!isEndCard) handleNext();
+        } else if (diff < -50) {
+            if (isInfoOpen) setIsInfoOpen(false);
+            else handlePrev();
+        }
+    };
 
-  // Ensure styles are cleaned up when swipe direction changes via state
-  useEffect(() => {
-      if (swipeDirection && cardRef.current) {
-          cardRef.current.style.transform = '';
-          cardRef.current.style.transition = '';
-      }
-  }, [swipeDirection]);
+    // Ensure styles are cleaned up when swipe direction changes via state
+    useEffect(() => {
+        if (swipeDirection && cardRef.current) {
+            cardRef.current.style.transform = '';
+            cardRef.current.style.transition = '';
+        }
+    }, [swipeDirection]);
 
-  // --- RENDER HELPERS ---
-  
-  const getColorData = (title: string) => {
-      const seed = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      
-      const gradients = [
-          { bg: 'from-pink-500 to-rose-600', shadow: '#e11d48' },
-          { bg: 'from-indigo-500 to-violet-600', shadow: '#7c3aed' },
-          { bg: 'from-emerald-500 to-teal-600', shadow: '#0d9488' },
-          { bg: 'from-amber-500 to-orange-600', shadow: '#ea580c' },
-          { bg: 'from-blue-500 to-cyan-600', shadow: '#0891b2' },
-          { bg: 'from-fuchsia-500 to-purple-600', shadow: '#9333ea' },
-          { bg: 'from-red-500 to-orange-600', shadow: '#dc2626' },
-      ];
-      
-      const selected = gradients[seed % gradients.length];
-      return selected;
-  };
+    // --- RENDER HELPERS ---
 
-  const isEndCard = recommendations.length > 0 && currentIndex === recommendations.length;
-  const currentCard = recommendations[currentIndex];
-  const cardColors = currentCard ? getColorData(currentCard.title) : { bg: 'from-slate-700 to-slate-800', shadow: '#000000' };
-  
-  const bgStyle = useMemo(() => {
-      // Dark fallback
-      if (isLoading || recommendations.length === 0) return { background: '#0f172a' };
-      if (isEndCard) return { background: '#0f172a' };
-      if (!currentCard) return { background: '#0f172a' };
-      
-      const colors = getColorData(currentCard.title);
-      return {
-          background: `radial-gradient(circle at 50% 30%, ${colors.shadow}40 0%, #0f172a 100%)` 
-      };
-  }, [currentCard, isEndCard, isLoading, recommendations.length]);
+    const getColorData = (title: string) => {
+        const seed = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
 
-  // --- CARD RENDERERS ---
+        const gradients = [
+            { bg: 'from-pink-500 to-rose-600', shadow: '#e11d48' },
+            { bg: 'from-indigo-500 to-violet-600', shadow: '#7c3aed' },
+            { bg: 'from-emerald-500 to-teal-600', shadow: '#0d9488' },
+            { bg: 'from-amber-500 to-orange-600', shadow: '#ea580c' },
+            { bg: 'from-blue-500 to-cyan-600', shadow: '#0891b2' },
+            { bg: 'from-fuchsia-500 to-purple-600', shadow: '#9333ea' },
+            { bg: 'from-red-500 to-orange-600', shadow: '#dc2626' },
+        ];
 
-  const renderGenerativeCard = (title: string, type: string) => {
-      const colors = getColorData(title);
-      return (
-          <div className={`w-full h-full bg-gradient-to-br ${colors.bg} flex flex-col items-center justify-center p-8 text-center relative overflow-hidden`}>
-              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+        const selected = gradients[seed % gradients.length];
+        return selected;
+    };
 
-              <div className="relative z-10 flex flex-col items-center h-full justify-between py-12">
-                  <div className="border border-white/30 bg-white/10 p-3 rounded-full backdrop-blur-md shadow-lg">
-                      <Sparkles className="w-8 h-8 text-white drop-shadow-md" />
-                  </div>
-                  <div className="flex-grow flex items-center justify-center w-full">
-                      <h1 className="text-3xl md:text-5xl font-black text-white leading-tight uppercase tracking-tighter drop-shadow-xl break-words w-full" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-                          {title}
-                      </h1>
-                  </div>
-                  <span className="px-4 py-1.5 bg-black/30 text-white rounded-full text-xs font-bold uppercase tracking-[0.2em] backdrop-blur-md border border-white/10 shadow-lg">
-                      {type}
-                  </span>
-              </div>
-          </div>
-      );
-  };
+    const isEndCard = recommendations.length > 0 && currentIndex === recommendations.length;
+    const currentCard = recommendations[currentIndex];
+    const cardColors = currentCard ? getColorData(currentCard.title) : { bg: 'from-slate-700 to-slate-800', shadow: '#000000' };
 
-  const renderLoadingCard = () => {
-      return (
-          <div className="relative w-full h-full flex items-center justify-center perspective-1000">
-              {/* Left Card - Shuffling Animation */}
-              <div 
-                className="absolute w-[85%] md:w-[340px] h-[95%] bg-indigo-500/20 rounded-3xl border border-indigo-500/30 shadow-xl backdrop-blur-sm animate-[shuffle-left_1.5s_infinite_ease-in-out]"
-              ></div>
-              
-              {/* Right Card - Shuffling Animation */}
-              <div 
-                className="absolute w-[85%] md:w-[340px] h-[95%] bg-purple-500/20 rounded-3xl border border-purple-500/30 shadow-xl backdrop-blur-sm animate-[shuffle-right_1.5s_infinite_ease-in-out]"
-              ></div>
+    const bgStyle = useMemo(() => {
+        // Dark fallback
+        if (isLoading || recommendations.length === 0) return { background: '#0f172a' };
+        if (isEndCard) return { background: '#0f172a' };
+        if (!currentCard) return { background: '#0f172a' };
 
-              {/* Main Shimmer Card (Center) */}
-              <div 
-                className="absolute w-[90%] md:w-[360px] h-full bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-10 animate-[float_3s_infinite_ease-in-out]"
-              >
-                  {/* Shimmer Effect Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 translate-x-[-150%] animate-[shimmer_1.2s_infinite]"></div>
-                  
-                  {/* Decorative Content */}
-                  <div className="h-full flex flex-col items-center justify-center gap-8 relative z-20">
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 flex items-center justify-center animate-pulse border border-white/5">
-                          <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                      </div>
-                      
-                      <div className="space-y-3 text-center opacity-60">
-                          <div className="h-3 bg-white/20 rounded-full w-32 mx-auto animate-pulse"></div>
-                          <div className="h-3 bg-white/10 rounded-full w-24 mx-auto animate-pulse delay-75"></div>
-                          <div className="h-3 bg-white/10 rounded-full w-40 mx-auto animate-pulse delay-150"></div>
-                      </div>
-                  </div>
-              </div>
-              <style>{`
+        const colors = getColorData(currentCard.title);
+        return {
+            background: `radial-gradient(circle at 50% 30%, ${colors.shadow}40 0%, #0f172a 100%)`
+        };
+    }, [currentCard, isEndCard, isLoading, recommendations.length]);
+
+    // --- CARD RENDERERS ---
+
+    const renderGenerativeCard = (title: string, type: string) => {
+        const colors = getColorData(title);
+        return (
+            <div className={`w-full h-full bg-gradient-to-br ${colors.bg} flex flex-col items-center justify-center p-8 text-center relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+
+                <div className="relative z-10 flex flex-col items-center h-full justify-between py-12">
+                    <div className="border border-white/30 bg-white/10 p-3 rounded-full backdrop-blur-md shadow-lg">
+                        <Sparkles className="w-8 h-8 text-white drop-shadow-md" />
+                    </div>
+                    <div className="flex-grow flex items-center justify-center w-full">
+                        <h1 className="text-3xl md:text-5xl font-black text-white leading-tight uppercase tracking-tighter drop-shadow-xl break-words w-full" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                            {title}
+                        </h1>
+                    </div>
+                    <span className="px-4 py-1.5 bg-black/30 text-white rounded-full text-xs font-bold uppercase tracking-[0.2em] backdrop-blur-md border border-white/10 shadow-lg">
+                        {type}
+                    </span>
+                </div>
+            </div>
+        );
+    };
+
+    const renderLoadingCard = () => {
+        return (
+            <div className="relative w-full h-full flex items-center justify-center perspective-1000">
+                {/* Left Card - Shuffling Animation */}
+                <div
+                    className="absolute w-[85%] md:w-[340px] h-[95%] bg-indigo-500/20 rounded-3xl border border-indigo-500/30 shadow-xl backdrop-blur-sm animate-[shuffle-left_1.5s_infinite_ease-in-out]"
+                ></div>
+
+                {/* Right Card - Shuffling Animation */}
+                <div
+                    className="absolute w-[85%] md:w-[340px] h-[95%] bg-purple-500/20 rounded-3xl border border-purple-500/30 shadow-xl backdrop-blur-sm animate-[shuffle-right_1.5s_infinite_ease-in-out]"
+                ></div>
+
+                {/* Main Shimmer Card (Center) */}
+                <div
+                    className="absolute w-[90%] md:w-[360px] h-full bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-10 animate-[float_3s_infinite_ease-in-out]"
+                >
+                    {/* Shimmer Effect Gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 translate-x-[-150%] animate-[shimmer_1.2s_infinite]"></div>
+
+                    {/* Decorative Content */}
+                    <div className="h-full flex flex-col items-center justify-center gap-8 relative z-20">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 flex items-center justify-center animate-pulse border border-white/5">
+                            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                        </div>
+
+                        <div className="space-y-3 text-center opacity-60">
+                            <div className="h-3 bg-white/20 rounded-full w-32 mx-auto animate-pulse"></div>
+                            <div className="h-3 bg-white/10 rounded-full w-24 mx-auto animate-pulse delay-75"></div>
+                            <div className="h-3 bg-white/10 rounded-full w-40 mx-auto animate-pulse delay-150"></div>
+                        </div>
+                    </div>
+                </div>
+                <style>{`
                 @keyframes shimmer {
                     0% { transform: translateX(-150%) skewX(-12deg); }
                     100% { transform: translateX(150%) skewX(-12deg); }
@@ -371,139 +371,121 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                     50% { transform: translateY(-10px); }
                 }
               `}</style>
-          </div>
-      );
-  };
+            </div>
+        );
+    };
 
-  const renderNoResultsCard = () => {
-      return (
-          <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl shadow-2xl">
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-red-950/20 to-slate-900"></div>
-              
-              {/* Animated rings */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-red-500/20 rounded-full animate-ping [animation-duration:3s]"></div>
-              
-              <div className="relative z-10 flex flex-col items-center gap-6">
-                  <div className="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
-                      <BrainCircuit className="w-12 h-12 text-red-400" />
-                  </div>
-                  <div>
-                      <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Incluso para la IA esto es un reto.</h2>
-                      <p className="text-slate-400 text-sm md:text-base max-w-xs mx-auto leading-relaxed">
-                          La combinación de filtros es muy específica o única. ¿Probamos con otro mood?
-                      </p>
-                  </div>
-                  <button 
-                      onClick={() => setViewMode('filters')}
-                      className="mt-4 px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-all shadow-lg flex items-center gap-2 transform hover:scale-105"
-                  >
-                      <ArrowLeft className="w-5 h-5" />
-                      Ajustar Filtros
-                  </button>
-              </div>
-          </div>
-      );
-  };
+    const renderNoResultsCard = () => {
+        return (
+            <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl shadow-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-red-950/20 to-slate-900"></div>
 
-  const renderEndCard = () => {
-      return (
-          <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-slate-900 to-slate-800"></div>
-              <div className="relative z-10 flex flex-col items-center gap-6">
-                  <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50 shadow-xl shadow-primary/20">
-                      <RefreshCw className="w-10 h-10 text-primary" />
-                  </div>
-                  <div>
-                      <h2 className="text-2xl font-bold text-white mb-2">¡Todo visto!</h2>
-                      <p className="text-slate-400 text-sm max-w-xs mx-auto">
-                          Has revisado las 6 recomendaciones. ¿Quieres generar otro lote basado en los mismos gustos?
-                      </p>
-                  </div>
-                  <div className="flex flex-col gap-3 w-full max-w-xs">
-                      <button 
-                          onClick={() => handleDiscovery(true)}
-                          className="w-full py-4 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
-                      >
-                          <Sparkles className="w-5 h-5" />
-                          Generar otras 6
-                      </button>
-                      <button 
-                          onClick={() => setViewMode('filters')}
-                          className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-700"
-                      >
-                          Volver a Filtros
-                      </button>
-                  </div>
-              </div>
-          </div>
-      );
-  };
+                {/* Animated rings */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-red-500/20 rounded-full animate-ping [animation-duration:3s]"></div>
 
-  // --- MAIN RENDER LOGIC ---
+                <div className="relative z-10 flex flex-col items-center gap-6">
+                    <div className="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                        <BrainCircuit className="w-12 h-12 text-red-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Incluso para la IA esto es un reto.</h2>
+                        <p className="text-slate-400 text-sm md:text-base max-w-xs mx-auto leading-relaxed">
+                            La combinación de filtros es muy específica o única. ¿Probamos con otro mood?
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setViewMode('filters')}
+                        className="mt-4 px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-all shadow-lg flex items-center gap-2 transform hover:scale-105"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                        Ajustar Filtros
+                    </button>
+                </div>
+            </div>
+        );
+    };
 
-  if (viewMode === 'immersive') {
-      return (
-          <div 
-             className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden touch-none"
-             style={bgStyle}
-          >
-              <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px]"></div>
+    const renderEndCard = () => {
+        return (
+            <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-slate-900 to-slate-800"></div>
+                <div className="relative z-10 flex flex-col items-center gap-6">
+                    <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50 shadow-xl shadow-primary/20">
+                        <RefreshCw className="w-10 h-10 text-primary" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-white mb-2">¡Todo visto!</h2>
+                        <p className="text-slate-400 text-sm max-w-xs mx-auto">
+                            Has revisado las 6 recomendaciones. ¿Quieres generar otro lote basado en los mismos gustos?
+                        </p>
+                    </div>
+                    <div className="flex flex-col gap-3 w-full max-w-xs">
+                        <button
+                            onClick={() => handleDiscovery(true)}
+                            className="w-full py-4 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
+                        >
+                            <Sparkles className="w-5 h-5" />
+                            Generar otras 6
+                        </button>
+                        <button
+                            onClick={() => setViewMode('filters')}
+                            className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-700"
+                        >
+                            Volver a Filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
-              {/* NAVIGATION BAR (Only show if we have results and not loading) */}
-              {!isLoading && recommendations.length > 0 && (
-                  <div className="absolute top-4 left-0 right-0 z-50 px-4 md:px-6 pt-safe flex justify-between items-center w-full max-w-lg mx-auto pointer-events-none">
-                      {!isEndCard ? (
-                          <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg animate-fade-in-up">
-                              <Sparkles className="w-3 h-3 text-yellow-400" />
-                              <span className="text-xs font-bold text-white font-mono">
-                                  {currentIndex + 1} / {recommendations.length}
-                              </span>
-                          </div>
-                      ) : <div></div>}
+    // --- MAIN RENDER LOGIC ---
 
-                      <button 
-                          onClick={() => setViewMode('filters')}
-                          className="pointer-events-auto bg-black/40 hover:bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold transition-all border border-white/10 flex items-center gap-2 shadow-lg animate-fade-in-up hover:scale-105"
-                      >
-                          <ArrowLeft className="w-3 h-3" />
-                          <span>Filtros</span>
-                      </button>
-                  </div>
-              )}
+    if (viewMode === 'immersive') {
+        return (
+            <div
+                className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden touch-none"
+                style={bgStyle}
+            >
+                <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px]"></div>
 
-              {/* CARD CONTAINER */}
-              <div className="relative w-full max-w-md h-[70vh] md:h-[600px] perspective-1000 flex items-center justify-center">
-                   
-                   {/* LOADING STATE */}
-                   {isLoading && renderLoadingCard()}
 
-                   {/* EMPTY/ERROR STATE (Challenge Card) */}
-                   {!isLoading && recommendations.length === 0 && renderNoResultsCard()}
 
-                   {/* RESULTS STATE */}
-                   {!isLoading && recommendations.length > 0 && (
-                       <>
-                           {/* Previous Card Ghost (Animation) */}
-                           {swipeDirection === 'up' && (
-                               <div className="absolute inset-0 bg-slate-800 rounded-3xl opacity-0 transform -translate-y-full scale-75 transition-all duration-500 ease-out pointer-events-none"></div>
-                           )}
+                {/* CARD CONTAINER */}
+                <div className="relative w-full max-w-md h-[70vh] md:h-[600px] perspective-1000 flex items-center justify-center z-50">
 
-                           {/* ACTIVE CARD */}
-                           <div 
-                              ref={cardRef}
-                              className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transform-style-3d cursor-pointer ${
-                                  swipeDirection === 'up' ? 'transition-all duration-500 -translate-y-[150%] opacity-0 rotate-12' : 
-                                  swipeDirection === 'down' ? 'transition-all duration-500 translate-y-[150%] opacity-0 -rotate-12' : 
-                                  'opacity-100' 
-                              }`}
-                              style={{
-                                  willChange: 'transform', // GPU hint
-                                  boxShadow: isEndCard ? 'none' : `0 25px 50px -12px ${cardColors.shadow}60`
-                              }}
-                              onMouseMove={handleMouseMove}
-                              onMouseLeave={handleMouseLeave}
-                              onClick={() => !isEndCard && setIsInfoOpen(true)}
-                           >
+                    {/* LOADING STATE */}
+                    {isLoading && renderLoadingCard()}
+
+                    {/* EMPTY/ERROR STATE (Challenge Card) */}
+                    {!isLoading && recommendations.length === 0 && renderNoResultsCard()}
+
+                    {/* RESULTS STATE */}
+                    {!isLoading && recommendations.length > 0 && (
+                        <>
+                            {/* Previous Card Ghost (Animation) */}
+                            {swipeDirection === 'up' && (
+                                <div className="absolute inset-0 bg-slate-800 rounded-3xl opacity-0 transform -translate-y-full scale-75 transition-all duration-500 ease-out pointer-events-none"></div>
+                            )}
+
+                            {/* ACTIVE CARD */}
+                            <div
+                                ref={cardRef}
+                                className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transform-style-3d cursor-pointer ${swipeDirection === 'up' ? 'transition-all duration-500 -translate-y-[150%] opacity-0 rotate-12' :
+                                    swipeDirection === 'down' ? 'transition-all duration-500 translate-y-[150%] opacity-0 -rotate-12' :
+                                        'opacity-100'
+                                    }`}
+                                style={{
+                                    willChange: 'transform', // GPU hint
+                                    boxShadow: isEndCard ? 'none' : `0 25px 50px -12px ${cardColors.shadow}60`
+                                }}
+                                onMouseMove={handleMouseMove}
+                                onMouseLeave={handleMouseLeave}
+                                onClick={() => !isEndCard && setIsInfoOpen(true)}
+                                onTouchStart={handleTouchStart}
+                                onTouchMove={handleTouchMove}
+                                onTouchEnd={handleTouchEnd}
+                            >
                                 {isEndCard ? (
                                     renderEndCard()
                                 ) : (
@@ -516,356 +498,376 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
                                         </div>
                                     </div>
                                 )}
-                           </div>
+                            </div>
 
-                           {/* Desktop Navigation Arrows */}
-                           {!isEndCard && (
-                               <div 
-                                  className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
-                                  onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                               >
-                                   <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
-                                        <ChevronDown className="w-6 h-6 text-white" />
-                                   </div>
-                               </div>
-                           )}
-                           {currentIndex > 0 && (
-                                <div 
-                                className="absolute left-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
-                                onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+                            {/* Desktop Navigation Arrows */}
+                            {!isEndCard && (
+                                <div
+                                    className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
+                                    onClick={(e) => { e.stopPropagation(); handleNext(); }}
                                 >
                                     <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
-                                            <ChevronUp className="w-6 h-6 text-white" />
+                                        <ChevronDown className="w-6 h-6 text-white" />
                                     </div>
                                 </div>
-                           )}
-                       </>
-                   )}
-              </div>
+                            )}
+                            {currentIndex > 0 && (
+                                <div
+                                    className="absolute left-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
+                                    onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+                                >
+                                    <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
+                                        <ChevronUp className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
 
-              {/* INFO SHEET (Only show if we have active results) */}
-              {!isLoading && !isEndCard && currentCard && (
-                  <div 
-                     className={`absolute bottom-0 left-0 right-0 bg-slate-900/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${
-                         isInfoOpen ? 'translate-y-0' : 'translate-y-full'
-                     }`}
-                  >
-                      <div 
-                        className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 cursor-pointer"
-                        onClick={() => setIsInfoOpen(false)}
-                      ></div>
+                {/* NAVIGATION BAR (Moved for z-index stacking) */}
+                {!isLoading && recommendations.length > 0 && (
+                    <div className="absolute top-4 left-0 right-0 z-50 px-4 md:px-6 pt-safe flex justify-between items-center w-full max-w-lg mx-auto pointer-events-none">
+                        {!isEndCard ? (
+                            <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg animate-fade-in-up">
+                                <Sparkles className="w-3 h-3 text-yellow-400" />
+                                <span className="text-xs font-bold text-white font-mono">
+                                    {currentIndex + 1} / {recommendations.length}
+                                </span>
+                            </div>
+                        ) : <div></div>}
 
-                      <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1 pr-4">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1 block">
-                                Recomendación IA
-                            </span>
-                            <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
-                                {currentCard.title}
-                            </h2>
-                          </div>
-                          <button 
-                             onClick={() => setIsInfoOpen(false)}
-                             className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"
-                          >
-                              <ChevronDown className="w-5 h-5 text-white" />
-                          </button>
-                      </div>
+                        <button
+                            onClick={() => setViewMode('filters')}
+                            className="pointer-events-auto bg-black/40 hover:bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold transition-all border border-white/10 flex items-center gap-2 shadow-lg animate-fade-in-up hover:scale-105"
+                        >
+                            <ArrowLeft className="w-3 h-3" />
+                            <span>Filtros</span>
+                        </button>
+                    </div>
+                )}
 
-                      {/* Mood Indicator in Info Sheet */}
-                      {selectedMood && (
-                          <div className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded border border-primary/30 bg-primary/10 text-primary animate-fade-in">
-                              <Heart className="w-3 h-3 fill-current" />
-                              <span>Inspirado en tu deseo de: {selectedMood}</span>
-                          </div>
-                      )}
+                {/* INFO SHEET (Only show if we have active results) */}
+                {!isLoading && !isEndCard && currentCard && (
+                    <div
+                        className={`absolute bottom-0 left-0 right-0 bg-slate-900/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${isInfoOpen ? 'translate-y-0' : 'translate-y-full'
+                            }`}
+                    >
+                        <div
+                            className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 cursor-pointer"
+                            onClick={() => setIsInfoOpen(false)}
+                        ></div>
 
-                      <div className="space-y-4 mb-8">
-                           <p className="text-slate-200 text-sm leading-relaxed font-medium">
-                               {currentCard.synopsis}
-                           </p>
-                           <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 flex gap-3">
-                               <Quote className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5 fill-current opacity-50" />
-                               <p className="text-xs md:text-sm text-indigo-200 font-medium italic">
-                                   "{currentCard.reason}"
-                               </p>
-                           </div>
-                      </div>
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1 pr-4">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1 block">
+                                    Recomendación IA
+                                </span>
+                                <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+                                    {currentCard.title}
+                                </h2>
+                            </div>
+                            <button
+                                onClick={() => setIsInfoOpen(false)}
+                                className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"
+                            >
+                                <ChevronDown className="w-5 h-5 text-white" />
+                            </button>
+                        </div>
 
-                      <div className="flex gap-3">
-                          <button 
-                            onClick={() => {
-                                onSelectRecommendation(currentCard.title, currentCard.mediaType);
-                                setIsInfoOpen(false);
-                            }}
-                            className="flex-1 bg-white text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-lg"
-                          >
-                              <Search className="w-5 h-5" />
-                              Buscar y añadir
-                          </button>
-                          <button 
-                             onClick={handleNext}
-                             className="px-6 py-3.5 bg-slate-800 text-white font-bold rounded-xl border border-white/10 hover:bg-slate-700 transition-colors"
-                          >
-                              Siguiente
-                          </button>
-                      </div>
-                  </div>
-              )}
+                        {/* Mood Indicator in Info Sheet */}
+                        {selectedMood && (
+                            <div className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded border border-primary/30 bg-primary/10 text-primary animate-fade-in">
+                                <Heart className="w-3 h-3 fill-current" />
+                                <span>Inspirado en tu deseo de: {selectedMood}</span>
+                            </div>
+                        )}
 
-              {/* Mobile Swipe Trigger Zone (Invisible Overlay) */}
-              <div 
-                 className="absolute inset-0 z-40 md:hidden"
-                 style={{ touchAction: 'none' }} // Critical for smooth drag without scrolling
-                 onClick={() => !isLoading && recommendations.length > 0 && !isEndCard && !isInfoOpen && setIsInfoOpen(true)}
-                 onTouchStart={handleTouchStart}
-                 onTouchMove={handleTouchMove}
-                 onTouchEnd={handleTouchEnd}
-              />
-              <style>{`
+                        <div className="space-y-4 mb-8">
+                            <p className="text-slate-200 text-sm leading-relaxed font-medium">
+                                {currentCard.synopsis}
+                            </p>
+                            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 flex gap-3">
+                                <Quote className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5 fill-current opacity-50" />
+                                <p className="text-xs md:text-sm text-indigo-200 font-medium italic">
+                                    "{currentCard.reason}"
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    onSelectRecommendation(currentCard.title, currentCard.mediaType);
+                                    setIsInfoOpen(false);
+                                }}
+                                className="flex-1 bg-white text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-lg"
+                            >
+                                <Search className="w-5 h-5" />
+                                Buscar y añadir
+                            </button>
+                            <button
+                                onClick={handleNext}
+                                className="px-6 py-3.5 bg-slate-800 text-white font-bold rounded-xl border border-white/10 hover:bg-slate-700 transition-colors"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Mobile Swipe Trigger Zone (Invisible Overlay) */}
+                <div
+                    className="absolute inset-0 z-40 md:hidden"
+                    style={{ touchAction: 'none' }} // Critical for smooth drag without scrolling
+                    onClick={() => !isLoading && recommendations.length > 0 && !isEndCard && !isInfoOpen && setIsInfoOpen(true)}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                />
+                <style>{`
                 .perspective-1000 { perspective: 1000px; }
                 .transform-style-3d { transform-style: preserve-3d; }
                 .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
               `}</style>
-          </div>
-      );
-  }
+            </div>
+        );
+    }
 
-  // --- STANDARD FILTERS VIEW ---
+    // --- STANDARD FILTERS VIEW ---
 
-  const MEDIA_TYPES = [
-    { label: 'Anime', value: 'Anime', icon: Tv, color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/50' },
-    { label: 'Series', value: 'Serie', icon: Clapperboard, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/50' },
-    { label: 'Películas', value: 'Pelicula', icon: Film, color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/50' },
-    { label: 'Libros', value: 'Libro', icon: BookOpen, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/50' },
-    { label: 'Manhwa/Manga', value: 'Manhwa', icon: BookOpen, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/50' },
-  ];
+    const MEDIA_TYPES = [
+        { label: 'Anime', value: 'Anime', icon: Tv, color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/50' },
+        { label: 'Series', value: 'Serie', icon: Clapperboard, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/50' },
+        { label: 'Películas', value: 'Pelicula', icon: Film, color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/50' },
+        { label: 'Libros', value: 'Libro', icon: BookOpen, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/50' },
+        { label: 'Manhwa/Manga', value: 'Manhwa', icon: BookOpen, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/50' },
+    ];
 
-  return (
-    <div className="animate-fade-in pb-12">
-      <div className="flex items-center gap-3 mb-6 border-l-4 border-primary pl-4">
-         <h2 className="text-2xl font-bold text-white">Descubrimiento IA</h2>
-         <Sparkles className="w-5 h-5 text-primary animate-pulse" />
-      </div>
+    return (
+        <div className="animate-fade-in pb-12">
+            <div className="flex items-center gap-3 mb-6 border-l-4 border-primary pl-4">
+                <h2 className="text-2xl font-bold text-white">Descubrimiento IA</h2>
+                <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+            </div>
 
-      <div className="bg-gradient-to-br from-surface to-slate-900 border border-slate-700 rounded-2xl p-4 md:p-8 mb-8 shadow-xl relative overflow-hidden">
-         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+            <div className="bg-gradient-to-br from-surface to-slate-900 border border-slate-700 rounded-2xl p-4 md:p-8 mb-8 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
-         <div className="relative z-10 max-w-5xl">
-             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                 <div>
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Wand2 className="w-5 h-5 text-indigo-400" />
-                        Motor de Recomendación
-                    </h3>
-                    <p className="text-slate-400 text-sm mt-1">
-                        Selecciona una categoría y deja que la IA analice tus gustos.
-                    </p>
-                 </div>
-             </div>
+                <div className="relative z-10 max-w-5xl">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Wand2 className="w-5 h-5 text-indigo-400" />
+                                Motor de Recomendación
+                            </h3>
+                            <p className="text-slate-400 text-sm mt-1">
+                                Selecciona una categoría y deja que la IA analice tus gustos.
+                            </p>
+                        </div>
+                    </div>
 
-             <div className="flex flex-wrap gap-2 md:gap-3 mb-8">
-                {MEDIA_TYPES.map(type => {
-                    const Icon = type.icon;
-                    const isSelected = selectedType === type.value;
-                    return (
-                        <button
-                          key={type.value}
-                          onClick={() => setSelectedType(type.value)}
-                          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all duration-300 ${
-                              isSelected 
-                              ? `${type.bg} shadow-lg shadow-${type.color.split('-')[1]}-500/10 ring-1 ring-${type.color.split('-')[1]}-500` 
-                              : 'bg-slate-800 border-slate-700 hover:border-slate-600 text-slate-400 hover:bg-slate-750'
-                          }`}
+                    <div className="flex flex-wrap gap-2 md:gap-3 mb-8">
+                        {MEDIA_TYPES.map(type => {
+                            const Icon = type.icon;
+                            const isSelected = selectedType === type.value;
+                            return (
+                                <button
+                                    key={type.value}
+                                    onClick={() => setSelectedType(type.value)}
+                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all duration-300 ${isSelected
+                                        ? `${type.bg} shadow-lg shadow-${type.color.split('-')[1]}-500/10 ring-1 ring-${type.color.split('-')[1]}-500`
+                                        : 'bg-slate-800 border-slate-700 hover:border-slate-600 text-slate-400 hover:bg-slate-750'
+                                        }`}
+                                >
+                                    <Icon className={`w-4 h-4 ${isSelected ? type.color : ''}`} />
+                                    <span className={`text-sm font-medium ${isSelected ? 'text-white' : ''}`}>{type.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Refine by Works Panel */}
+                    <div className="bg-slate-950/60 rounded-xl border border-slate-700/60 overflow-hidden mb-4 transition-all">
+                        <div
+                            className="p-4 bg-slate-900/50 border-b border-slate-700/50 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors"
+                            onClick={() => setIsRefineOpen(!isRefineOpen)}
                         >
-                            <Icon className={`w-4 h-4 ${isSelected ? type.color : ''}`} />
-                            <span className={`text-sm font-medium ${isSelected ? 'text-white' : ''}`}>{type.label}</span>
-                        </button>
-                    );
-                })}
-             </div>
-
-             {/* Refine by Works Panel */}
-             <div className="bg-slate-950/60 rounded-xl border border-slate-700/60 overflow-hidden mb-4 transition-all">
-                <div 
-                    className="p-4 bg-slate-900/50 border-b border-slate-700/50 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors"
-                    onClick={() => setIsRefineOpen(!isRefineOpen)}
-                >
-                    <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${selectedSeeds.length > 0 ? 'bg-primary/20 text-primary' : 'bg-slate-800 text-slate-500'}`}>
-                            <Filter className="w-4 h-4" />
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-bold text-slate-200">
-                                Refinar por Obras Específicas
-                            </h4>
-                            <p className="text-xs text-slate-500">
-                                {selectedSeeds.length > 0 
-                                    ? `${selectedSeeds.length} obras seleccionadas.`
-                                    : "Opcional: Selecciona obras para encontrar similares."}
-                            </p>
-                        </div>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isRefineOpen ? 'rotate-180' : ''}`} />
-                </div>
-                
-                {isRefineOpen && (
-                    <div className="p-4 space-y-4 animate-fade-in">
-                        {selectedSeeds.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                {selectedSeeds.map(seedId => {
-                                    const item = library.find(i => i.id === seedId);
-                                    if (!item) return null;
-                                    return (
-                                        <div key={seedId} className="inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-primary/20 border border-primary/40 rounded-full text-xs font-bold text-white shadow-sm">
-                                            <span className="truncate max-w-[150px]">{item.aiData.title}</span>
-                                            <button onClick={() => setSelectedSeeds(prev => prev.filter(id => id !== seedId))} className="p-0.5 hover:bg-primary/40 rounded-full">
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        </div>
-                                    );
-                                })}
-                                <button onClick={() => setSelectedSeeds([])} className="text-xs text-slate-500 hover:text-red-400 underline ml-2">Limpiar</button>
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${selectedSeeds.length > 0 ? 'bg-primary/20 text-primary' : 'bg-slate-800 text-slate-500'}`}>
+                                    <Filter className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-200">
+                                        Refinar por Obras Específicas
+                                    </h4>
+                                    <p className="text-xs text-slate-500">
+                                        {selectedSeeds.length > 0
+                                            ? `${selectedSeeds.length} obras seleccionadas.`
+                                            : "Opcional: Selecciona obras para encontrar similares."}
+                                    </p>
+                                </div>
                             </div>
-                        )}
-
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                            <input 
-                                type="text"
-                                placeholder={`Buscar ${selectedType} en tu biblioteca...`}
-                                value={seedSearchQuery}
-                                onChange={(e) => setSeedSearchQuery(e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-primary transition-all placeholder-slate-600"
-                            />
+                            <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isRefineOpen ? 'rotate-180' : ''}`} />
                         </div>
 
-                        <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                                {filteredSeedCandidates
-                                    .filter(item => !selectedSeeds.includes(item.id))
-                                    .slice(0, 20)
-                                    .map(item => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => {
-                                            if (!selectedSeeds.includes(item.id)) setSelectedSeeds(prev => [...prev, item.id]);
-                                            setSeedSearchQuery('');
-                                        }}
-                                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all text-left group"
-                                    >
-                                        <div className="w-8 h-12 bg-slate-800 rounded overflow-hidden flex-shrink-0 border border-slate-700 relative">
-                                            {item.aiData.coverImage ? (
-                                                <img 
-                                                    src={item.aiData.coverImage} 
-                                                    alt={item.aiData.title} 
-                                                    className="w-full h-full object-cover"
-                                                    loading="lazy"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-slate-600 text-[8px] font-bold">
-                                                    {item.aiData.mediaType.slice(0,2)}
+                        {isRefineOpen && (
+                            <div className="p-4 space-y-4 animate-fade-in">
+                                {selectedSeeds.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {selectedSeeds.map(seedId => {
+                                            const item = library.find(i => i.id === seedId);
+                                            if (!item) return null;
+                                            return (
+                                                <div key={seedId} className="inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-primary/20 border border-primary/40 rounded-full text-xs font-bold text-white shadow-sm">
+                                                    <span className="truncate max-w-[150px]">{item.aiData.title}</span>
+                                                    <button onClick={() => setSelectedSeeds(prev => prev.filter(id => id !== seedId))} className="p-0.5 hover:bg-primary/40 rounded-full">
+                                                        <X className="w-3 h-3" />
+                                                    </button>
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-xs font-medium text-slate-300 group-hover:text-white truncate">{item.aiData.title}</p>
-                                        </div>
-                                        <Plus className="w-4 h-4 text-slate-600 group-hover:text-primary ml-auto opacity-0 group-hover:opacity-100 transition-all flex-shrink-0" />
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
-             </div>
+                                            );
+                                        })}
+                                        <button onClick={() => setSelectedSeeds([])} className="text-xs text-slate-500 hover:text-red-400 underline ml-2">Limpiar</button>
+                                    </div>
+                                )}
 
-             {/* Refine by Mood Panel (New) */}
-             <div className="bg-slate-950/60 rounded-xl border border-slate-700/60 overflow-hidden mb-8 transition-all">
-                <div 
-                    className="p-4 bg-slate-900/50 border-b border-slate-700/50 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors"
-                    onClick={() => setIsMoodOpen(!isMoodOpen)}
-                >
-                    <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${selectedMood ? 'bg-primary/20 text-primary' : 'bg-slate-800 text-slate-500'}`}>
-                            <Heart className="w-4 h-4" />
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-bold text-slate-200">
-                                Refinar por Mood
-                            </h4>
-                            <p className="text-xs text-slate-500">
-                                {selectedMood ? selectedMood : "Dinos cómo te sientes hoy para personalizar la experiencia."}
-                            </p>
-                        </div>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isMoodOpen ? 'rotate-180' : ''}`} />
-                </div>
-                
-                {isMoodOpen && (
-                    <div className="p-4 animate-fade-in">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {MOOD_OPTIONS.map((mood) => {
-                                const isSelected = selectedMood === mood.label;
-                                return (
-                                    <button
-                                        key={mood.label}
-                                        onClick={() => setSelectedMood(isSelected ? null : mood.label)}
-                                        className={`flex items-center gap-3 p-3 rounded-xl border backdrop-blur-md transition-all duration-300 text-left group
-                                            ${isSelected 
-                                                ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(var(--color-primary),0.3)]' 
-                                                : 'bg-slate-900/40 border-white/5 hover:border-primary/50 hover:bg-slate-800/60'
-                                            }
-                                        `}
-                                    >
-                                        <span 
-                                            className="text-2xl filter drop-shadow-md transition-transform group-hover:scale-110"
-                                            style={{ textShadow: isSelected ? '0 0 15px rgb(var(--color-primary))' : 'none' }}
-                                        >
-                                            {mood.emoji}
-                                        </span>
-                                        <span className={`text-sm font-medium leading-tight ${isSelected ? 'text-white' : 'text-slate-300 group-hover:text-white'}`}>
-                                            {mood.label}
-                                        </span>
-                                        {isSelected && <div className="ml-auto w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgb(var(--color-primary))]"></div>}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        {selectedMood && (
-                            <button onClick={() => setSelectedMood(null)} className="mt-3 text-xs text-slate-500 hover:text-red-400 underline flex items-center gap-1">
-                                <X className="w-3 h-3" /> Quitar filtro de mood
-                            </button>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                    <input
+                                        type="text"
+                                        placeholder={`Buscar ${selectedType} en tu biblioteca...`}
+                                        value={seedSearchQuery}
+                                        onChange={(e) => setSeedSearchQuery(e.target.value)}
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-primary transition-all placeholder-slate-600"
+                                    />
+                                </div>
+
+                                <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                        {filteredSeedCandidates
+                                            .filter(item => !selectedSeeds.includes(item.id))
+                                            .slice(0, 20)
+                                            .map(item => (
+                                                <button
+                                                    key={item.id}
+                                                    onClick={() => {
+                                                        if (!selectedSeeds.includes(item.id)) setSelectedSeeds(prev => [...prev, item.id]);
+                                                        setSeedSearchQuery('');
+                                                    }}
+                                                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all text-left group"
+                                                >
+                                                    <div className="w-8 h-12 bg-slate-800 rounded overflow-hidden flex-shrink-0 border border-slate-700 relative">
+                                                        {item.aiData.coverImage ? (
+                                                            <img
+                                                                src={item.aiData.coverImage}
+                                                                alt={item.aiData.title}
+                                                                className="w-full h-full object-cover"
+                                                                loading="lazy"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-slate-600 text-[8px] font-bold">
+                                                                {item.aiData.mediaType.slice(0, 2)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs font-medium text-slate-300 group-hover:text-white truncate">{item.aiData.title}</p>
+                                                    </div>
+                                                    <Plus className="w-4 h-4 text-slate-600 group-hover:text-primary ml-auto opacity-0 group-hover:opacity-100 transition-all flex-shrink-0" />
+                                                </button>
+                                            ))}
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
-                )}
-             </div>
 
-             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                 <div className="text-xs text-slate-400 hidden md:block">
-                     {selectedSeeds.length > 0 || selectedMood
-                        ? <span className="text-primary font-medium">Búsqueda personalizada activa</span>
-                        : <span>Analizando perfil general</span>
-                     }
-                 </div>
-                 <button
-                    onClick={() => handleDiscovery(false)}
-                    disabled={isLoading}
-                    className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
-                    >
-                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Compass className="w-5 h-5" />}
-                    {isLoading ? 'Analizando...' : 'Generar Experiencia'}
-                </button>
-             </div>
-             
-             {error && (
-                <div className="mt-4 flex items-center gap-2 text-red-400 text-sm bg-red-900/20 px-4 py-2 rounded-lg border border-red-500/30 animate-fade-in">
-                    <AlertCircle className="w-4 h-4" />
-                    {error}
+                    {/* Refine by Mood Panel (New) */}
+                    <div className="bg-slate-950/60 rounded-xl border border-slate-700/60 overflow-hidden mb-8 transition-all">
+                        <div
+                            className="p-4 bg-slate-900/50 border-b border-slate-700/50 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors"
+                            onClick={() => setIsMoodOpen(!isMoodOpen)}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${selectedMood ? 'bg-primary/20 text-primary' : 'bg-slate-800 text-slate-500'}`}>
+                                    <Heart className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-200">
+                                        Refinar por Mood
+                                    </h4>
+                                    <p className="text-xs text-slate-500">
+                                        {selectedMood ? selectedMood : "Dinos cómo te sientes hoy para personalizar la experiencia."}
+                                    </p>
+                                </div>
+                            </div>
+                            <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isMoodOpen ? 'rotate-180' : ''}`} />
+                        </div>
+
+                        {isMoodOpen && (
+                            <div className="p-4 animate-fade-in">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {MOOD_OPTIONS.map((mood) => {
+                                        const isSelected = selectedMood === mood.label;
+                                        return (
+                                            <button
+                                                key={mood.label}
+                                                onClick={() => setSelectedMood(isSelected ? null : mood.label)}
+                                                className={`flex items-center gap-3 p-3 rounded-xl border backdrop-blur-md transition-all duration-300 text-left group
+                                            ${isSelected
+                                                        ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(var(--color-primary),0.3)]'
+                                                        : 'bg-slate-900/40 border-white/5 hover:border-primary/50 hover:bg-slate-800/60'
+                                                    }
+                                        `}
+                                            >
+                                                <span
+                                                    className="text-2xl filter drop-shadow-md transition-transform group-hover:scale-110"
+                                                    style={{ textShadow: isSelected ? '0 0 15px rgb(var(--color-primary))' : 'none' }}
+                                                >
+                                                    {mood.emoji}
+                                                </span>
+                                                <span className={`text-sm font-medium leading-tight ${isSelected ? 'text-white' : 'text-slate-300 group-hover:text-white'}`}>
+                                                    {mood.label}
+                                                </span>
+                                                {isSelected && <div className="ml-auto w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgb(var(--color-primary))]"></div>}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                {selectedMood && (
+                                    <button onClick={() => setSelectedMood(null)} className="mt-3 text-xs text-slate-500 hover:text-red-400 underline flex items-center gap-1">
+                                        <X className="w-3 h-3" /> Quitar filtro de mood
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="text-xs text-slate-400 hidden md:block">
+                            {selectedSeeds.length > 0 || selectedMood
+                                ? <span className="text-primary font-medium">Búsqueda personalizada activa</span>
+                                : <span>Analizando perfil general</span>
+                            }
+                        </div>
+                        <button
+                            onClick={() => handleDiscovery(false)}
+                            disabled={isLoading}
+                            className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                        >
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Compass className="w-5 h-5" />}
+                            {isLoading ? 'Analizando...' : 'Generar Experiencia'}
+                        </button>
+                    </div>
+
+                    {error && (
+                        <div className="mt-4 flex items-center gap-2 text-red-400 text-sm bg-red-900/20 px-4 py-2 rounded-lg border border-red-500/30 animate-fade-in">
+                            <AlertCircle className="w-4 h-4" />
+                            {error}
+                        </div>
+                    )}
                 </div>
-             )}
-         </div>
-      </div>
-    </div>
-  );
+            </div>
+        </div>
+    );
 };
