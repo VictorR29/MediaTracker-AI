@@ -6,6 +6,7 @@ import {
     Tv, Clapperboard, Film, BookOpen, Book, X, FileText
 } from 'lucide-react';
 import { useToast } from './context/ToastContext';
+import { hashPassword, verifyPassword } from './utils/password';
 import { MediaItem, UserProfile, AIWorkData } from './types';
 import {
     saveUserProfile, getUserProfile, saveMediaItem, getLibrary, deleteMediaItem, clearLibrary
@@ -172,21 +173,37 @@ const App: React.FC = () => {
     };
 
     // Handlers
-    const handleLogin = (password: string) => {
-        if (userProfile?.password === password) {
-            setIsAuthenticated(true);
-            // Library already loaded
-            return true;
-        }
-        return false;
-    };
+  const handleLogin = async (password: string) => {
+    if (!userProfile?.password) {
+      // No password set — auto-auth
+      setIsAuthenticated(true);
+      return true;
+    }
+    const { valid, needsRehash } = await verifyPassword(password, userProfile.password);
+    if (valid) {
+      // If legacy plaintext password, re-hash it transparently
+      if (needsRehash) {
+        const hashedPassword = await hashPassword(password);
+        const updatedProfile = { ...userProfile, password: hashedPassword };
+        await saveUserProfile(updatedProfile);
+        setUserProfile(updatedProfile);
+      }
+      setIsAuthenticated(true);
+      return true;
+    }
+    return false;
+  };
 
-    const handleOnboardingComplete = async (profile: UserProfile) => {
-        await saveUserProfile(profile);
-        setUserProfile(profile);
-        setIsAuthenticated(true);
-        setLibrary([]);
-    };
+  const handleOnboardingComplete = async (profile: UserProfile) => {
+    // Hash the password before storing
+    const profileToSave = profile.password
+      ? { ...profile, password: await hashPassword(profile.password) }
+      : profile;
+    await saveUserProfile(profileToSave);
+    setUserProfile(profileToSave);
+    setIsAuthenticated(true);
+    setLibrary([]);
+  };
 
     const handleImportBackup = async (file: File) => {
         setIsRestoring(true);

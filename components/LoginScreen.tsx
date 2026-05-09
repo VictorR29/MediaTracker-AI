@@ -3,7 +3,7 @@ import { Lock, ArrowRight, User, Sparkles, Unlock } from 'lucide-react';
 import { MediaItem, EMOTIONAL_TAGS_OPTIONS } from '../types';
 
 interface LoginScreenProps {
-  onUnlock: (password: string) => boolean;
+  onUnlock: (password: string) => Promise<boolean>;
   username?: string;
   avatarUrl?: string;
   library?: MediaItem[];
@@ -142,12 +142,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
       cta: "Ingresa tu llave"
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isVerifying, setIsVerifying] = useState(false);
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = onUnlock(password);
-    if (!success) {
+    setIsVerifying(true);
+    try {
+      const success = await onUnlock(password);
+      if (!success) {
+        setError(true);
+        setPassword('');
+      }
+    } catch {
       setError(true);
       setPassword('');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -229,9 +238,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
                 className={`p-3 rounded-xl transition-all duration-300 transform ${
                     password ? 'bg-indigo-500 text-white shadow-lg scale-100' : 'bg-white/5 text-slate-500 scale-90 cursor-default'
                 }`}
-                disabled={!password}
+                disabled={!password || isVerifying}
             >
-                {password ? <Unlock className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
+                {isVerifying ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : password ? <Unlock className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
             </button>
           </div>
           
