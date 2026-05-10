@@ -1,973 +1,216 @@
-
-import React, { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
 import {
-    LayoutGrid, Bookmark, PlusCircle, Compass, BarChart2,
-    Search as SearchIcon, LogOut, Settings, User, PenTool, AlertTriangle, Trash2, ArrowUp,
-    Tv, Clapperboard, Film, BookOpen, Book, X, FileText
+  LayoutGrid, Bookmark, PlusCircle, Compass, BarChart2,
+  Search as SearchIcon, LogOut, Settings, User, ArrowUp
 } from 'lucide-react';
 import { useToast } from './context/ToastContext';
-import { hashPassword, verifyPassword } from './utils/password';
-import { MediaItem, UserProfile, AIWorkData } from './types';
-import {
-    saveUserProfile, getUserProfile, saveMediaItem, getLibrary, deleteMediaItem, clearLibrary
-} from './services/storage';
+import { MediaItem } from './types';
+import { saveMediaItem } from './services/storage';
 import { searchMediaInfo } from './services/geminiService';
 
-import { LoginScreen } from './components/LoginScreen';
-import { Onboarding } from './components/Onboarding';
-import { LibraryFilters, FilterState } from './components/LibraryFilters';
-import { MediaCard } from './components/MediaCard';
-import { CompactMediaCard } from './components/CompactMediaCard';
-import { StatsView } from './components/StatsView';
-import { DiscoveryView } from './components/DiscoveryView';
+import { useAuthStore } from './stores/useAuthStore';
+import { useLibraryStore } from './stores/useLibraryStore';
+import { useUIStore } from './stores/useUIStore';
+import { incrementProgress, toggleFavorite } from './stores/useActions';
+import { useDeleteConfirm } from './hooks/useDeleteConfirm';
+import { useDataHandlers } from './hooks/useDataHandlers';
+
+import { AppRouter } from './components/AppRouter';
 import { SettingsModal } from './components/SettingsModal';
-import { CatalogView } from './components/CatalogView';
-import { SearchBar } from './components/SearchBar';
-import { ContextualGreeting } from './components/ContextualGreeting';
 import { LoadingOverlay } from './components/LoadingOverlay';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
-const App: React.FC = () => {
-    const { showToast } = useToast();
+// ─── Inner App (needs router context) ───────────────────────────────
 
-    // App State
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [library, setLibrary] = useState<MediaItem[]>([]);
-    const [loading, setLoading] = useState(true);
+const AppInner: React.FC = () => {
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    // Navigation State
-    const [view, setView] = useState<'library' | 'details' | 'search' | 'discovery' | 'stats' | 'upcoming'>('library');
-    const [searchKey, setSearchKey] = useState(0); // Used to reset search view
-    const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
+  // Stores
+  const { userProfile, isAuthenticated, init: initAuth } = useAuthStore();
+  const { library, loadLibrary, updateItem, addItem, isRestoring } = useLibraryStore();
+  const {
+    isImmersiveMode, isBottomNavVisible, showScrollTop,
+    isSettingsOpen, setSettingsOpen, setImmersiveMode,
+    setBottomNavVisible, setShowScrollTop, lastScrollY, setLastScrollY
+  } = useUIStore();
 
-    // Scroll Preservation Refs
-    const scrollPositionRef = useRef(0);
-    const previousViewRef = useRef<'library' | 'upcoming' | 'search' | 'discovery' | 'stats'>('library');
+  // Custom hooks
+  const { DeleteModal, requestDelete } = useDeleteConfirm(() => {
+    if (location.pathname.startsWith('/item/')) navigate('/');
+  });
+  const dataHandlers = useDataHandlers();
 
-    // UI State
-    const [isImmersiveMode, setIsImmersiveMode] = useState(false);
-    const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
-    const [showScrollTop, setShowScrollTop] = useState(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [isManualTypeSelectorOpen, setIsManualTypeSelectorOpen] = useState(false); // NEW STATE
-    const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'catalog'>('grid');
-    const lastScrollY = useRef(0);
+  // Local state (search-only, doesn't belong in a store)
+  const [isSearching, setIsSearching] = useState(false);
 
-    // Search State
-    const [isSearching, setIsSearching] = useState(false);
-    // CHANGED: Instead of holding just AIWorkData, we hold the full MediaItem state for the preview.
-    // This allows the MediaCard to update it (e.g. adding cover image) and persist those changes.
-    const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
+  // Init auth + library on mount
+  useEffect(() => {
+    initAuth().then(() => loadLibrary());
+  }, []);
 
-    // Restore State
-    const [isRestoring, setIsRestoring] = useState(false);
-
-    // Delete Confirmation State
-    const [itemToDelete, setItemToDelete] = useState<MediaItem | null>(null);
-
-    // Filters
-    const [filters, setFilters] = useState<FilterState>({
-        query: '',
-        type: 'All',
-        status: 'All',
-        rating: 'All',
-        genre: 'All',
-        sortBy: 'updated',
-        onlyFavorites: false
-    });
-
-    // Load Initial Data
-    useEffect(() => {
-        const init = async () => {
-            try {
-                const profile = await getUserProfile();
-                if (profile) {
-                    setUserProfile(profile);
-                    loadLibrary(); // Cargar siempre la librería para el fondo del LoginScreen
-                    if (!profile.password) {
-                        setIsAuthenticated(true);
-                    }
-                }
-            } catch (e) {
-                console.error("Failed to init", e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        init();
-    }, []);
-
-    const loadLibrary = async () => {
-        try {
-            const items = await getLibrary();
-            setLibrary(items);
-        } catch (e) {
-            showToast("Error cargando biblioteca", "error");
-        }
+  // Scroll handling for bottom nav + scroll-top
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setBottomNavVisible(!(currentScrollY > lastScrollY && currentScrollY > 100));
+      setShowScrollTop(currentScrollY > 300);
+      setLastScrollY(currentScrollY);
     };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-    // Scroll Handling for Bottom Nav visibility & Scroll Top Button
-    useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
+  // ─── Navigation helpers ─────────────────────────────────────────
 
-            // Bottom Nav Logic
-            if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
-                setIsBottomNavVisible(false);
-            } else {
-                setIsBottomNavVisible(true);
-            }
+  const handleOpenDetail = useCallback((item: MediaItem) => {
+    navigate(`/item/${item.id}`);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [navigate]);
 
-            // Scroll Top Button Logic
-            if (currentScrollY > 300) {
-                setShowScrollTop(true);
-            } else {
-                setShowScrollTop(false);
-            }
-
-            lastScrollY.current = currentScrollY;
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    // --- SCROLL RESTORATION LOGIC ---
-    useLayoutEffect(() => {
-        // Only trigger scroll adjustments when the VIEW changes.
-        // Ignoring selectedItem updates prevents scroll jumps when interacting with the MediaCard.
-        if (view === 'details') {
-            window.scrollTo({ top: 0, behavior: 'instant' });
-        } else if (view === 'library' || view === 'upcoming') {
-            window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' });
-        }
-    }, [view]);
-
-    const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    // Helper to open details preserving scroll
-    // Helper to open details preserving scroll
-    const handleOpenDetail = useCallback((item: MediaItem) => {
-        scrollPositionRef.current = window.scrollY;
-        previousViewRef.current = view as any;
-        setSelectedItem(item);
-        setView('details');
-    }, [view]);
-
-    // Helper to close details and return to previous view position
-    const handleBackFromDetail = () => {
-        setSelectedItem(null);
-        // Return to the view we came from (usually library or upcoming)
-        setView(previousViewRef.current);
-    };
-
-    // Helper for main navigation clicks (Resets scroll to top)
-    const handleNavClick = (targetView: typeof view) => {
-        scrollPositionRef.current = 0; // Reset stored scroll
-        setSelectedItem(null);
-        setView(targetView);
-        if (targetView === 'search') setSearchKey(k => k + 1);
-        window.scrollTo({ top: 0, behavior: 'instant' });
-    };
-
-    // Handlers
-  const handleLogin = async (password: string) => {
-    if (!userProfile?.password) {
-      // No password set — auto-auth
-      setIsAuthenticated(true);
-      return true;
-    }
-    const { valid, needsRehash } = await verifyPassword(password, userProfile.password);
-    if (valid) {
-      // If legacy plaintext password, re-hash it transparently
-      if (needsRehash) {
-        const hashedPassword = await hashPassword(password);
-        const updatedProfile = { ...userProfile, password: hashedPassword };
-        await saveUserProfile(updatedProfile);
-        setUserProfile(updatedProfile);
-      }
-      setIsAuthenticated(true);
-      return true;
-    }
-    return false;
+  const handleNavClick = (targetPath: string) => {
+    navigate(targetPath);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
-  const handleOnboardingComplete = async (profile: UserProfile) => {
-    // Hash the password before storing
-    const profileToSave = profile.password
-      ? { ...profile, password: await hashPassword(profile.password) }
-      : profile;
-    await saveUserProfile(profileToSave);
-    setUserProfile(profileToSave);
-    setIsAuthenticated(true);
-    setLibrary([]);
+  // ─── CRUD / Actions ────────────────────────────────────────────
+
+  const handleUpdateItem = async (updated: MediaItem) => {
+    await saveMediaItem(updated);
+    const exists = library.find(i => i.id === updated.id);
+    if (!exists) addItem(updated); else updateItem(updated);
   };
 
-    const handleImportBackup = async (file: File) => {
-        setIsRestoring(true);
-        // Small delay to allow UI to render the overlay before heavy processing blocks thread
-        setTimeout(() => {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const content = e.target?.result as string;
-                    if (!content) throw new Error("Archivo vacío");
+  const handleIncrementProgress = useCallback((item: MediaItem) => {
+    return incrementProgress(item, showToast, showToast);
+  }, [showToast]);
 
-                    const json = JSON.parse(content);
+  const handleToggleFavorite = useCallback((item: MediaItem) => {
+    return toggleFavorite(item);
+  }, []);
 
-                    if (Array.isArray(json)) {
-                        showToast("Esto parece un Catálogo. Usa la opción 'Importar Catálogo' en Ajustes.", "warning");
-                        setIsRestoring(false);
-                        return;
-                    }
-
-                    const profileData = json.profile || json.userProfile;
-
-                    if (profileData && (Array.isArray(json.library) || !json.library)) {
-                        const libraryItems = Array.isArray(json.library) ? json.library : [];
-
-                        await saveUserProfile(profileData);
-                        await clearLibrary();
-                        // Process in chunks or one by one
-                        for (const item of libraryItems) {
-                            await saveMediaItem(item);
-                        }
-
-                        setUserProfile(profileData);
-                        setIsAuthenticated(true);
-                        await loadLibrary();
-                        showToast("Copia de seguridad restaurada exitosamente", "success");
-                        setIsSettingsOpen(false); // Close settings if open
-                    } else {
-                        console.error("Formato inválido:", Object.keys(json));
-                        if (!profileData) showToast("Archivo inválido: No se encontró el perfil de usuario.", "error");
-                        else showToast("Formato de archivo no reconocido.", "error");
-                    }
-                } catch (err) {
-                    console.error(err);
-                    showToast("Error al leer el archivo. Asegúrate de que es un JSON válido.", "error");
-                } finally {
-                    setIsRestoring(false);
-                }
-            };
-            reader.onerror = () => {
-                showToast("Error al leer el archivo", "error");
-                setIsRestoring(false);
-            };
-            reader.readAsText(file);
-        }, 100);
-    };
-
-    const handleExportBackup = () => {
-        const data = {
-            profile: userProfile,
-            library: library,
-            exportedAt: new Date().toISOString(),
-            version: 1
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `mediatracker_backup_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-    };
-
-    const handleImportCatalog = async (file: File) => {
-        setIsRestoring(true); // Re-use restoring overlay style
-        setTimeout(() => {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const json = JSON.parse(e.target?.result as string);
-                    if (Array.isArray(json)) {
-                        let count = 0;
-                        for (const item of json) {
-                            const exists = library.find(l => l.id === item.id);
-                            if (!exists) {
-                                await saveMediaItem(item);
-                                count++;
-                            }
-                        }
-                        await loadLibrary();
-                        showToast(`Importadas ${count} obras nuevas`, "success");
-                    } else {
-                        showToast("Formato inválido. Se esperaba una lista (Array) de obras.", "error");
-                    }
-                } catch (err) {
-                    showToast("Error al importar catálogo", "error");
-                } finally {
-                    setIsRestoring(false);
-                }
-            };
-            reader.readAsText(file);
-        }, 100);
-    };
-
-    const handleExportCatalog = () => {
-        const blob = new Blob([JSON.stringify(library, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `mediatracker_catalog_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-    };
-
-    const handleClearLibrary = async () => {
-        await clearLibrary();
-        setLibrary([]);
-    };
-
-    // CRUD Operations
-    const handleSearch = async (query: string) => {
-        if (!userProfile?.apiKey) {
-            showToast("Configura tu API Key primero", "error");
-            return;
-        }
-        setIsSearching(true);
-        setPreviewItem(null); // Clear previous results
-        try {
-            const data = await searchMediaInfo(query, userProfile.apiKey);
-            // Create the full item immediately so edits (images) are tracked
-            const tempItem: MediaItem = {
-                id: 'preview',
-                aiData: data,
-                trackingData: {
-                    status: 'Sin empezar', currentSeason: 1, totalSeasons: 1,
-                    watchedEpisodes: 0, totalEpisodesInSeason: 0,
-                    emotionalTags: [], favoriteCharacters: [], rating: '', comment: ''
-                },
-                createdAt: Date.now()
-            };
-            setPreviewItem(tempItem);
-        } catch (e) {
-            showToast("Error en la búsqueda", "error");
-        } finally {
-            setIsSearching(false);
-        }
-    };
-
-    const handleAddFromSearch = async (itemToAdd: MediaItem) => {
-        // Use the item passed in (which contains latest edits like image) but generate a new permanent ID
-        const newItem: MediaItem = {
-            ...itemToAdd,
-            id: Date.now().toString(),
-            createdAt: Date.now()
-        };
-
-        await saveMediaItem(newItem);
-        setLibrary(prev => [newItem, ...prev]);
-        setPreviewItem(null);
-        showToast("Añadido a la biblioteca", "success");
-        handleOpenDetail(newItem); // Use helper to transition
-    };
-
-    const handleManualAdd = () => {
-        setIsManualTypeSelectorOpen(true);
-    };
-
-    const handleManualTypeSelection = (type: string) => {
-        setIsManualTypeSelectorOpen(false);
-
-        const isMovie = type === 'Pelicula';
-        const newItem: MediaItem = {
-            id: Date.now().toString(),
-            aiData: {
-                title: '', // Start empty to force input
-                mediaType: type as any,
-                synopsis: '',
-                genres: [],
-                status: 'Sin empezar',
-                totalContent: '',
-                coverDescription: '',
-                sourceUrls: [],
-                primaryColor: '#6366f1'
-            },
-            trackingData: {
-                status: 'Sin empezar',
-                currentSeason: isMovie ? 0 : 1,
-                totalSeasons: isMovie ? 0 : 1,
-                watchedEpisodes: 0,
-                totalEpisodesInSeason: 0,
-                emotionalTags: [],
-                favoriteCharacters: [],
-                rating: '',
-                comment: ''
-            },
-            createdAt: Date.now()
-        };
-
-        handleOpenDetail(newItem);
-    };
-
-    const handleUpdateItem = async (updated: MediaItem) => {
-        // FIX: Do NOT update lastInteraction here. 
-        // General edits (tags, reviews) should not move item to top of "Recent".
-        // Only progress updates (handleIncrementProgress) trigger reorder.
-        await saveMediaItem(updated);
-
-        // Si el item no estaba en la librería (era nuevo/manual), lo añadimos
-        const exists = library.find(i => i.id === updated.id);
-        if (!exists) {
-            setLibrary(prev => [updated, ...prev]);
-        } else {
-            setLibrary(prev => prev.map(item => item.id === updated.id ? updated : item));
-        }
-
-        if (selectedItem?.id === updated.id) setSelectedItem(updated);
-    };
-
-    // Trigger Confirmation Modal
-    const requestDelete = useCallback((item: MediaItem) => {
-        setItemToDelete(item);
-    }, []);
-
-    // Execute Deletion
-    const confirmDelete = async () => {
-        if (!itemToDelete) return;
-
-        try {
-            await deleteMediaItem(itemToDelete.id);
-            setLibrary(prev => prev.filter(i => i.id !== itemToDelete.id));
-
-            // If we deleted the currently viewed item, go back
-            if (selectedItem?.id === itemToDelete.id) {
-                setSelectedItem(null);
-                setView('library');
-            }
-
-            showToast("Obra eliminada permanentemente", "info");
-        } catch (e) {
-            showToast("Error al eliminar", "error");
-        } finally {
-            setItemToDelete(null);
-        }
-    };
-
-    const handleIncrementProgress = useCallback(async (item: MediaItem) => {
-        const { watchedEpisodes, totalEpisodesInSeason, currentSeason, totalSeasons, accumulated_consumption } = item.trackingData;
-
-        // Logic when no limit is set (infinite series)
-        if (totalEpisodesInSeason === 0) {
-            const newEp = watchedEpisodes + 1;
-            const updated = {
-                ...item,
-                trackingData: { ...item.trackingData, watchedEpisodes: newEp },
-                lastInteraction: Date.now() // KEEP THIS: Progress updates SHOULD move item to top
-            };
-            await saveMediaItem(updated);
-            setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
-            showToast(`+1 Capítulo a ${item.aiData.title}`, "success");
-            return;
-        }
-
-        // Logic: Increment episode if not full
-        if (watchedEpisodes < totalEpisodesInSeason) {
-            const newEp = watchedEpisodes + 1;
-            const updated = {
-                ...item,
-                trackingData: { ...item.trackingData, watchedEpisodes: newEp },
-                lastInteraction: Date.now() // KEEP THIS
-            };
-            await saveMediaItem(updated);
-            setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
-
-            if (newEp === totalEpisodesInSeason) {
-                const isLastSeason = currentSeason >= totalSeasons && totalSeasons > 0;
-                showToast(isLastSeason ? "¡Final alcanzado! Pulsa de nuevo para completar." : "Temporada terminada. Pulsa de nuevo para la siguiente.", "info");
-            } else {
-                showToast(`+1 Capítulo a ${item.aiData.title}`, "success");
-            }
-        }
-        // Logic: Transition (Next Season or Complete) if full
-        else {
-            if (currentSeason < totalSeasons && totalSeasons > 0) {
-                // Move to next season
-                const newHistory = (accumulated_consumption || 0) + watchedEpisodes;
-                const updated = {
-                    ...item,
-                    trackingData: {
-                        ...item.trackingData,
-                        currentSeason: currentSeason + 1,
-                        watchedEpisodes: 0,
-                        accumulated_consumption: newHistory
-                    },
-                    lastInteraction: Date.now() // KEEP THIS
-                };
-                await saveMediaItem(updated);
-                setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
-                showToast(`Comenzando Temporada ${currentSeason + 1}`, "success");
-            } else {
-                // Complete Series
-                const updated: MediaItem = {
-                    ...item,
-                    trackingData: { ...item.trackingData, status: 'Completado' },
-                    lastInteraction: Date.now() // KEEP THIS
-                };
-                await saveMediaItem(updated);
-                setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
-                showToast(`¡${item.aiData.title} Completado!`, "success");
-            }
-        }
-    }, [showToast]);
-
-    const handleToggleFavorite = useCallback(async (item: MediaItem) => {
-        const updated = {
-            ...item,
-            trackingData: { ...item.trackingData, is_favorite: !item.trackingData.is_favorite }
-            // No timestamp update here
-        };
-        await saveMediaItem(updated);
-        setLibrary(prev => prev.map(i => i.id === item.id ? updated : i));
-    }, []);
-
-    const handleRecommendationSelect = async (title: string, type: string) => {
-        handleNavClick('search');
-        if (!userProfile?.apiKey) return;
-        setIsSearching(true);
-        try {
-            const data = await searchMediaInfo(title, userProfile.apiKey, type);
-            setPreviewItem({
-                id: 'preview',
-                aiData: data,
-                trackingData: {
-                    status: 'Sin empezar', currentSeason: 1, totalSeasons: 1,
-                    watchedEpisodes: 0, totalEpisodesInSeason: 0,
-                    emotionalTags: [], favoriteCharacters: [], rating: '', comment: ''
-                },
-                createdAt: Date.now()
-            });
-        } catch (e) {
-            showToast("Error buscando recomendación", "error");
-        } finally {
-            setIsSearching(false);
-        }
-    };
-
-    // Filter Logic
-    // Filter Logic (Memoized)
-    const displayedLibrary = useMemo(() => {
-        let filtered = [...library];
-
-        if (view === 'upcoming') {
-            return filtered.filter(item =>
-                item.trackingData.status === 'Planeado / Pendiente' ||
-                (item.trackingData.status === 'En Pausa' && item.trackingData.scheduledReturnDate)
-            ).sort((a, b) => {
-                const dateA = a.trackingData.nextReleaseDate || a.trackingData.scheduledReturnDate || '9999';
-                const dateB = b.trackingData.nextReleaseDate || b.trackingData.scheduledReturnDate || '9999';
-                return dateA.localeCompare(dateB);
-            });
-        }
-
-        if (filters.query) {
-            const q = filters.query.toLowerCase();
-            filtered = filtered.filter(i => i.aiData.title.toLowerCase().includes(q));
-        }
-        if (filters.type !== 'All') {
-            filtered = filtered.filter(i => i.aiData.mediaType === filters.type);
-        }
-        if (filters.status !== 'All') {
-            filtered = filtered.filter(i => i.trackingData.status === filters.status);
-        }
-        if (filters.rating !== 'All') {
-            filtered = filtered.filter(i => i.trackingData.rating === filters.rating);
-        }
-        if (filters.genre !== 'All') {
-            filtered = filtered.filter(i => (i.aiData.genres || []).some(g => g.toLowerCase() === filters.genre.toLowerCase()));
-        }
-        if (filters.onlyFavorites) {
-            filtered = filtered.filter(i => i.trackingData.is_favorite);
-        }
-
-        // Sort
-        return filtered.sort((a, b) => {
-            if (filters.sortBy === 'title') return a.aiData.title.localeCompare(b.aiData.title);
-            if (filters.sortBy === 'progress') {
-                const progA = a.trackingData.totalEpisodesInSeason ? (a.trackingData.watchedEpisodes / a.trackingData.totalEpisodesInSeason) : 0;
-                const progB = b.trackingData.totalEpisodesInSeason ? (b.trackingData.watchedEpisodes / b.trackingData.totalEpisodesInSeason) : 0;
-                return progB - progA;
-            }
-            // Default: Updated/Created
-            // lastInteraction is now only updated on progress, so this sort works as requested.
-            return (b.lastInteraction || b.createdAt) - (a.lastInteraction || a.createdAt);
-        });
-    }, [library, view, filters]);
-    const availableGenres = Array.from(new Set(library.flatMap(i => i.aiData.genres || []).map(g => g.toLowerCase())));
-
-    if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Cargando...</div>;
-
-    if (!userProfile) {
-        return (
-            <>
-                <Onboarding onComplete={handleOnboardingComplete} onImport={handleImportBackup} />
-                <LoadingOverlay isVisible={isRestoring} type="restore" />
-            </>
-        );
+  const handleRecommendationSelect = async (title: string, type: string) => {
+    navigate('/add');
+    if (!userProfile?.apiKey) return;
+    setIsSearching(true);
+    try {
+      const data = await searchMediaInfo(title, userProfile.apiKey, type);
+      navigate('/add', { state: { searchQuery: title, searchType: type, searchData: data } });
+    } catch (e) {
+      showToast("Error buscando recomendación", "error");
+    } finally {
+      setIsSearching(false);
     }
+  };
 
-    if (!isAuthenticated) {
-        return <LoginScreen
-            onUnlock={handleLogin}
-            username={userProfile.username}
-            avatarUrl={userProfile.avatarUrl}
-            library={library}
-        />;
-    }
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  const currentPath = location.pathname;
 
-    // Helper for Desktop Nav Link
-    const DesktopNavLink = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, active: boolean, onClick: () => void }) => (
-        <button
-            onClick={onClick}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-bold ${active ? 'bg-white/10 text-white shadow-sm border border-white/5' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-        >
-            <Icon className={`w-4 h-4 ${active ? 'text-primary' : ''}`} />
-            {label}
+  // Desktop Nav Link
+  const DesktopNavLink = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, active: boolean, onClick: () => void }) => (
+    <button onClick={onClick}
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-bold ${active ? 'bg-white/10 text-white shadow-sm border border-white/5' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+      <Icon className={`w-4 h-4 ${active ? 'text-primary' : ''}`} />{label}
+    </button>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
+      <LoadingOverlay isVisible={isRestoring} type="restore" />
+      <LoadingOverlay isVisible={isSearching} type="search" />
+
+      {/* Header */}
+      {!isImmersiveMode && (
+        <header className="fixed top-0 w-full bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 z-40 px-4 md:px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5">
+              <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden">
+                {userProfile?.avatarUrl ? <img src={userProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center"><User className="w-5 h-5" /></div>}
+              </div>
+            </div>
+            <h1 className="font-bold text-white text-lg hidden lg:block">{userProfile?.username}'s Library</h1>
+          </div>
+          <nav className="hidden md:flex items-center gap-1 bg-slate-800/50 p-1 rounded-xl border border-slate-700/50 absolute left-1/2 -translate-x-1/2">
+            <DesktopNavLink icon={LayoutGrid} label="Biblioteca" active={currentPath === '/' || currentPath.startsWith('/item/')} onClick={() => handleNavClick('/')} />
+            <DesktopNavLink icon={Bookmark} label="Deseos" active={currentPath === '/wishlist'} onClick={() => handleNavClick('/wishlist')} />
+            <DesktopNavLink icon={PlusCircle} label="Añadir" active={currentPath === '/add'} onClick={() => handleNavClick('/add')} />
+            <DesktopNavLink icon={Compass} label="Descubrir" active={currentPath === '/discover'} onClick={() => handleNavClick('/discover')} />
+            <DesktopNavLink icon={BarChart2} label="Stats" active={currentPath === '/stats'} onClick={() => handleNavClick('/stats')} />
+          </nav>
+          <div className="flex items-center gap-2 md:gap-4">
+            <button onClick={() => setSettingsOpen(true)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"><Settings className="w-5 h-5" /></button>
+            <button onClick={() => useAuthStore.getState().logout()} className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"><LogOut className="w-5 h-5" /></button>
+          </div>
+        </header>
+      )}
+
+      {/* Main */}
+      <main className={`pt-20 pb-24 md:pt-24 px-4 md:px-8 max-w-7xl mx-auto min-h-screen transition-all ${isImmersiveMode ? 'pt-0 px-0 max-w-none' : ''}`}>
+        <AppRouter
+          onOpenDetail={handleOpenDetail}
+          onIncrementProgress={handleIncrementProgress}
+          onToggleFavorite={handleToggleFavorite}
+          onRequestDelete={requestDelete}
+          onUpdateItem={handleUpdateItem}
+          onRecommendationSelect={handleRecommendationSelect}
+          onImportBackup={dataHandlers.handleImportBackup}
+          isRestoring={isRestoring}
+          onToggleImmersive={setImmersiveMode}
+        />
+      </main>
+
+      <DeleteModal />
+
+      {/* Scroll To Top */}
+      <button onClick={scrollToTop}
+        className={`fixed right-4 md:right-8 z-40 bg-primary text-white p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 active:scale-95 flex items-center justify-center ${showScrollTop ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'} ${isBottomNavVisible && !isImmersiveMode ? 'bottom-20 md:bottom-8' : 'bottom-4 md:bottom-8'}`}
+        aria-label="Volver arriba">
+        <ArrowUp className="w-6 h-6" />
+      </button>
+
+      {/* Mobile Bottom Nav */}
+      <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700/50 pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-300 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
+        <button onClick={() => handleNavClick('/')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/' || currentPath.startsWith('/item/') ? 'text-primary' : 'text-slate-500'}`}><LayoutGrid className="w-5 h-5" /><span className="text-[9px] font-bold">Biblio</span></button>
+        <button onClick={() => handleNavClick('/wishlist')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/wishlist' ? 'text-primary' : 'text-slate-500'}`}><Bookmark className="w-5 h-5" /><span className="text-[9px] font-bold">Deseos</span></button>
+        <button onClick={() => handleNavClick('/add')} className="flex flex-col items-center gap-1 p-2 min-w-[60px]">
+          <div className={`bg-primary text-white p-3 rounded-full -mt-8 shadow-lg border-4 border-slate-950 transition-transform active:scale-95 ${currentPath === '/add' ? 'ring-2 ring-primary/50' : ''}`}><PlusCircle className="w-6 h-6" /></div>
+          <span className="text-[9px] font-bold opacity-0">Nuevo</span>
         </button>
-    );
+        <button onClick={() => handleNavClick('/discover')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/discover' ? 'text-primary' : 'text-slate-500'}`}><Compass className="w-5 h-5" /><span className="text-[9px] font-bold">Descubrir</span></button>
+        <button onClick={() => handleNavClick('/stats')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/stats' ? 'text-primary' : 'text-slate-500'}`}><BarChart2 className="w-5 h-5" /><span className="text-[9px] font-bold">Stats</span></button>
+      </nav>
 
-    return (
-        <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
-
-            {/* Loading Overlays */}
-            <LoadingOverlay isVisible={isRestoring} type="restore" />
-            <LoadingOverlay isVisible={isSearching} type="search" />
-
-            {/* Manual Type Selector Modal */}
-            {isManualTypeSelectorOpen && (
-                <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-surface border border-slate-700 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
-                        <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                <PenTool className="w-5 h-5 text-primary" />
-                                Crear Obra Manualmente
-                            </h3>
-                            <button
-                                onClick={() => setIsManualTypeSelectorOpen(false)}
-                                className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="p-6">
-                            <p className="text-sm text-slate-400 mb-6 text-center">
-                                Selecciona el tipo de obra para configurar la plantilla correcta.
-                            </p>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                {[
-                                    { id: 'Anime', icon: Tv, color: 'text-indigo-400', border: 'hover:border-indigo-500/50 hover:bg-indigo-500/10' },
-                                    { id: 'Serie', icon: Clapperboard, color: 'text-purple-400', border: 'hover:border-purple-500/50 hover:bg-purple-500/10' },
-                                    { id: 'Pelicula', icon: Film, color: 'text-pink-400', border: 'hover:border-pink-500/50 hover:bg-pink-500/10' },
-                                    { id: 'Libro', icon: Book, color: 'text-emerald-400', border: 'hover:border-emerald-500/50 hover:bg-emerald-500/10' },
-                                    { id: 'Manhwa', icon: BookOpen, color: 'text-orange-400', border: 'hover:border-orange-500/50 hover:bg-orange-500/10' },
-                                    { id: 'Manga', icon: BookOpen, color: 'text-orange-400', border: 'hover:border-orange-500/50 hover:bg-orange-500/10' },
-                                    { id: 'Comic', icon: BookOpen, color: 'text-yellow-400', border: 'hover:border-yellow-500/50 hover:bg-yellow-500/10' },
-                                    { id: 'Otro', icon: FileText, color: 'text-slate-400', border: 'hover:border-slate-500/50 hover:bg-slate-500/10' },
-                                ].map((type) => (
-                                    <button
-                                        key={type.id}
-                                        onClick={() => handleManualTypeSelection(type.id)}
-                                        className={`flex flex-col items-center justify-center gap-3 p-4 rounded-2xl bg-slate-900 border border-slate-700 transition-all group ${type.border}`}
-                                    >
-                                        <div className={`p-3 rounded-full bg-slate-800 group-hover:bg-slate-800/50 transition-colors ${type.color}`}>
-                                            <type.icon className="w-6 h-6" />
-                                        </div>
-                                        <span className="text-xs font-bold uppercase tracking-wider text-slate-300 group-hover:text-white">
-                                            {type.id === 'Pelicula' ? 'Película' : type.id}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Header (Hidden in Immersive) */}
-            {!isImmersiveMode && (
-                <header className="fixed top-0 w-full bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 z-40 px-4 md:px-8 py-3 flex items-center justify-between">
-
-                    {/* Left: User Identity */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5">
-                            <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden">
-                                {userProfile.avatarUrl ? (
-                                    <img src={userProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center"><User className="w-5 h-5" /></div>
-                                )}
-                            </div>
-                        </div>
-                        <h1 className="font-bold text-white text-lg hidden lg:block">{userProfile.username}'s Library</h1>
-                    </div>
-
-                    {/* Center: Desktop Navigation (Restored) */}
-                    <nav className="hidden md:flex items-center gap-1 bg-slate-800/50 p-1 rounded-xl border border-slate-700/50 absolute left-1/2 -translate-x-1/2">
-                        <DesktopNavLink icon={LayoutGrid} label="Biblioteca" active={view === 'library' || view === 'details'} onClick={() => handleNavClick('library')} />
-                        <DesktopNavLink icon={Bookmark} label="Deseos" active={view === 'upcoming'} onClick={() => handleNavClick('upcoming')} />
-                        <DesktopNavLink icon={PlusCircle} label="Añadir" active={view === 'search'} onClick={() => handleNavClick('search')} />
-                        <DesktopNavLink icon={Compass} label="Descubrir" active={view === 'discovery'} onClick={() => handleNavClick('discovery')} />
-                        <DesktopNavLink icon={BarChart2} label="Stats" active={view === 'stats'} onClick={() => handleNavClick('stats')} />
-                    </nav>
-
-                    {/* Right: Actions */}
-                    <div className="flex items-center gap-2 md:gap-4">
-                        <button
-                            onClick={() => setIsSettingsOpen(true)}
-                            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-                        >
-                            <Settings className="w-5 h-5" />
-                        </button>
-                        <button
-                            onClick={() => setIsAuthenticated(false)}
-                            className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
-                        >
-                            <LogOut className="w-5 h-5" />
-                        </button>
-                    </div>
-                </header>
-            )}
-
-            {/* Main Content Area */}
-            <main className={`pt-20 pb-24 md:pt-24 px-4 md:px-8 max-w-7xl mx-auto min-h-screen transition-all ${isImmersiveMode ? 'pt-0 px-0 max-w-none' : ''}`}>
-
-                {/* VIEW: LIBRARY / UPCOMING */}
-                {(view === 'library' || view === 'upcoming') && !selectedItem && (
-                    <div className="animate-fade-in">
-                        <ContextualGreeting userProfile={userProfile} library={library} view={view} />
-
-                        <LibraryFilters
-                            filters={filters}
-                            onChange={setFilters}
-                            availableGenres={availableGenres}
-                            viewMode={libraryViewMode}
-                            onToggleViewMode={() => setLibraryViewMode(prev => prev === 'grid' ? 'catalog' : 'grid')}
-                        />
-
-                        {libraryViewMode === 'catalog' && view === 'library' ? (
-                            <CatalogView
-                                library={displayedLibrary}
-                                onOpenDetail={handleOpenDetail}
-                            />
-                        ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                                {displayedLibrary.map(item => (
-                                    <CompactMediaCard
-                                        key={item.id}
-                                        item={item}
-                                        onClick={handleOpenDetail}
-                                        onIncrement={handleIncrementProgress}
-                                        onToggleFavorite={handleToggleFavorite}
-                                        onDelete={requestDelete}
-                                    />
-                                ))}
-                                {displayedLibrary.length === 0 && (
-                                    <div className="col-span-full text-center py-20 text-slate-500 flex flex-col items-center">
-                                        <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mb-4 border border-slate-800">
-                                            <SearchIcon className="w-8 h-8 opacity-20" />
-                                        </div>
-                                        <p>No se encontraron obras</p>
-                                        {view === 'upcoming' && <p className="text-sm mt-1">Añade obras a "Planeado" para verlas aquí.</p>}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* VIEW: DETAILS */}
-                {view === 'details' && selectedItem && (
-                    <div className="animate-fade-in">
-                        <button
-                            onClick={handleBackFromDetail}
-                            className="mb-4 flex items-center gap-2 text-slate-400 hover:text-white transition-colors font-medium"
-                        >
-                            ← Volver a {previousViewRef.current === 'upcoming' ? 'Deseos' : 'la biblioteca'}
-                        </button>
-                        <MediaCard
-                            item={selectedItem}
-                            onUpdate={handleUpdateItem}
-                            onDelete={() => requestDelete(selectedItem)}
-                            username={userProfile.username}
-                            apiKey={userProfile.apiKey}
-                            isNew={!library.find(i => i.id === selectedItem.id)} // Es nuevo si no está en librería
-                        />
-                    </div>
-                )}
-
-                {/* VIEW: SEARCH */}
-                {view === 'search' && (
-                    <div className={`animate-fade-in pt-4 ${previewItem ? 'w-full' : 'max-w-2xl mx-auto'}`}>
-                        <div className={`mb-6 ${previewItem ? 'max-w-2xl mx-auto' : ''}`}>
-                            <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                                <PlusCircle className="w-6 h-6 text-primary" />
-                                Añadir Obra
-                            </h2>
-                            <p className="text-slate-400 text-sm mb-4">Busca información automática con IA o crea una entrada vacía.</p>
-
-                            <SearchBar
-                                onSearch={handleSearch}
-                                isLoading={isSearching}
-                                placeholder="Ej: Solo Leveling, Inception, Breaking Bad..."
-                            />
-                        </div>
-
-                        {previewItem ? (
-                            <div className="mt-8 animate-fade-in-up">
-                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 text-center">Resultado de la Búsqueda</h3>
-                                <MediaCard
-                                    item={previewItem}
-                                    onUpdate={(updated) => setPreviewItem(updated)}
-                                    isNew={true}
-                                    onDelete={() => setPreviewItem(null)}
-                                />
-                                <div className="flex gap-3 mt-6 max-w-2xl mx-auto">
-                                    <button
-                                        onClick={() => setPreviewItem(null)}
-                                        className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-700"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        onClick={() => handleAddFromSearch(previewItem)}
-                                        className="flex-[2] py-4 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <PlusCircle className="w-5 h-5" /> AÑADIR A BIBLIOTECA
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="mt-12 text-center border-t border-slate-800 pt-8">
-                                <p className="text-slate-500 mb-4 text-sm font-medium">¿No encuentras lo que buscas o prefieres rellenarlo tú?</p>
-                                <button
-                                    onClick={handleManualAdd}
-                                    className="px-6 py-3 bg-slate-800/50 hover:bg-slate-800 text-white rounded-xl font-bold transition-all border border-slate-700 hover:border-slate-500 flex items-center justify-center gap-2 mx-auto group"
-                                >
-                                    <PenTool className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
-                                    Crear Obra Manualmente
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* VIEW: DISCOVERY */}
-                {view === 'discovery' && (
-                    <DiscoveryView
-                        library={library}
-                        apiKey={userProfile.apiKey}
-                        onSelectRecommendation={handleRecommendationSelect}
-                        onToggleImmersive={setIsImmersiveMode}
-                    />
-                )}
-
-                {/* VIEW: STATS */}
-                {view === 'stats' && (
-                    <StatsView
-                        library={library}
-                        userProfile={userProfile}
-                        onUpdateProfile={(p) => { setUserProfile(p); saveUserProfile(p); }}
-                    />
-                )}
-
-            </main>
-
-            {/* DELETE CONFIRMATION MODAL */}
-            {itemToDelete && (
-                <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-fade-in-up">
-                        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
-                            <AlertTriangle className="w-8 h-8 text-red-500" />
-                        </div>
-
-                        <h3 className="text-xl font-bold text-white mb-2">¿Eliminar Obra?</h3>
-                        <p className="text-sm text-slate-400 mb-6">
-                            Estás a punto de borrar <span className="text-white font-bold">"{itemToDelete.aiData.title}"</span>.
-                            <br />
-                            Esta acción es irreversible y perderás todo tu progreso.
-                        </p>
-
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setItemToDelete(null)}
-                                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-700"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={confirmDelete}
-                                className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Eliminar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Scroll To Top Button */}
-            <button
-                onClick={scrollToTop}
-                className={`fixed right-4 md:right-8 z-40 bg-primary text-white p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 active:scale-95 flex items-center justify-center ${showScrollTop ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
-                    } ${isBottomNavVisible && !isImmersiveMode ? 'bottom-20 md:bottom-8' : 'bottom-4 md:bottom-8'}`}
-                aria-label="Volver arriba"
-            >
-                <ArrowUp className="w-6 h-6" />
-            </button>
-
-            {/* Mobile Bottom Navigation (Hidden in Immersive Mode and on Scroll) */}
-            <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700/50 pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-300 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
-                <button onClick={() => handleNavClick('library')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'library' || view === 'details' ? 'text-primary' : 'text-slate-500'}`}>
-                    <LayoutGrid className="w-5 h-5" />
-                    <span className="text-[9px] font-bold">Biblio</span>
-                </button>
-
-                <button onClick={() => handleNavClick('upcoming')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'upcoming' ? 'text-primary' : 'text-slate-500'}`}>
-                    <Bookmark className="w-5 h-5" />
-                    <span className="text-[9px] font-bold">Deseos</span>
-                </button>
-
-                <button onClick={() => handleNavClick('search')} className="flex flex-col items-center gap-1 p-2 min-w-[60px]">
-                    <div className={`bg-primary text-white p-3 rounded-full -mt-8 shadow-lg border-4 border-slate-950 transition-transform active:scale-95 ${view === 'search' ? 'ring-2 ring-primary/50' : ''}`}>
-                        <PlusCircle className="w-6 h-6" />
-                    </div>
-                    <span className="text-[9px] font-bold opacity-0">Nuevo</span>
-                </button>
-
-                <button onClick={() => handleNavClick('discovery')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'discovery' ? 'text-primary' : 'text-slate-500'}`}>
-                    <Compass className="w-5 h-5" />
-                    <span className="text-[9px] font-bold">Descubrir</span>
-                </button>
-
-                <button onClick={() => handleNavClick('stats')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${view === 'stats' ? 'text-primary' : 'text-slate-500'}`}>
-                    <BarChart2 className="w-5 h-5" />
-                    <span className="text-[9px] font-bold">Stats</span>
-                </button>
-            </nav>
-
-            <SettingsModal
-                isOpen={isSettingsOpen}
-                onClose={() => setIsSettingsOpen(false)}
-                userProfile={userProfile}
-                onUpdateProfile={async (p) => {
-                    await saveUserProfile(p);
-                    setUserProfile(p);
-                }}
-                onImportBackup={handleImportBackup}
-                onExportBackup={handleExportBackup}
-                onImportCatalog={handleImportCatalog}
-                onExportCatalog={handleExportCatalog}
-                onClearLibrary={handleClearLibrary}
-                library={library}
-                onLibraryUpdate={setLibrary}
-            />
-        </div>
-    );
+      {/* Settings */}
+      {userProfile && (
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          userProfile={userProfile}
+          onUpdateProfile={async (p) => { await useAuthStore.getState().updateProfile(p); }}
+          onImportBackup={dataHandlers.handleImportBackup}
+          onExportBackup={dataHandlers.handleExportBackup}
+          onImportCatalog={dataHandlers.handleImportCatalog}
+          onExportCatalog={dataHandlers.handleExportCatalog}
+          onClearLibrary={dataHandlers.handleClearLibrary}
+          library={library}
+          onLibraryUpdate={(newLib) => useLibraryStore.setState({ library: newLib })}
+        />
+      )}
+    </div>
+  );
 };
+
+// ─── Root App with providers ───────────────────────────────────────
+
+const App: React.FC = () => (
+  <ErrorBoundary>
+    <BrowserRouter>
+      <AppInner />
+    </BrowserRouter>
+  </ErrorBoundary>
+);
 
 export default App;
