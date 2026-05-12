@@ -15,7 +15,7 @@ export interface ImmersiveViewProps {
   onGoBack: () => void;
 }
 
-export const ImmersiveView: React.FC<ImmersiveViewProps> = ({
+const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
   recommendations,
   currentIndex,
   onSetCurrentIndex,
@@ -277,8 +277,10 @@ export const ImmersiveView: React.FC<ImmersiveViewProps> = ({
       <style>{`
         .perspective-1000 { perspective: 1000px; }
         .transform-style-3d { transform-style: preserve-3d; }
-        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
-      `}</style>
-    </div>
-  );
+.pt-safe { padding-top: env(safe-area-inset-top, 20px); }
+        `}</style>
+      </div>
+    );
 };
+
+export const ImmersiveView = React.memo(ImmersiveViewInner);

@@ -63,7 +63,7 @@ function getDistributionData(
   return { chartData, totalTime: visibleTotal };
 }
 
-export const ConsumptionDistribution: React.FC<ConsumptionDistributionProps> = ({ stats }) => {
+const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ stats }) => {
   const [distributionAxis, setDistributionAxis] = useState<'genre' | 'emotion' | 'platform'>('genre');
   const [highlightedSlice, setHighlightedSlice] = useState<string | null>(null);
 
@@ -256,6 +256,8 @@ export const ConsumptionDistribution: React.FC<ConsumptionDistributionProps> = (
           </div>
         )
       )}
-    </div>
-  );
+      </div>
+    );
 };
+
+export const ConsumptionDistribution = React.memo(ConsumptionDistributionInner);

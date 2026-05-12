@@ -32,7 +32,7 @@ interface IdentityColumnProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
-export const IdentityColumn: React.FC<IdentityColumnProps> = ({
+const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
   aiData, trackingData: tracking, isEditing, isDragging, dynamicColor, dynamicRgb,
   onAIDataChange, onInputChange, onImageDrop, onImageClick, onFileChange,
   onRemoveGenre, onAddGenre, onRemoveCustomLink, onAddCustomLink,
@@ -257,5 +257,7 @@ export const IdentityColumn: React.FC<IdentityColumnProps> = ({
         </div>
       </div>
     </div>
-  );
+    );
 };
+
+export const IdentityColumn = React.memo(IdentityColumnInner);

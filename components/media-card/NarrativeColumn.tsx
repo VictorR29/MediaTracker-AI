@@ -28,7 +28,7 @@ interface NarrativeColumnProps {
   onRemoveCharacter: (index: number) => void;
 }
 
-export const NarrativeColumn: React.FC<NarrativeColumnProps> = ({
+const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
   aiData, trackingData: tracking, isEditing, dynamicColor, dynamicRgb,
   username, onInputChange, onAIDataChange,
   onSmartUpdate, isUpdatingInfo, onNextSeason,
@@ -310,9 +310,11 @@ export const NarrativeColumn: React.FC<NarrativeColumnProps> = ({
           </button>
         </div>
         <p className="text-[10px] text-slate-500 mt-2 italic pl-2">
-          Arrastra los nombres para cambiar su posición. Los 5 primeros aparecerán destacados.
+Arrastra los nombres para cambiar su posición. Los 5 primeros aparecerán destacados.
         </p>
       </div>
-    </div>
-  );
+      </div>
+    );
 };
+
+export const NarrativeColumn = React.memo(NarrativeColumnInner);

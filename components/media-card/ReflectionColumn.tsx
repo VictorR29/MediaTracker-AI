@@ -16,7 +16,7 @@ interface ReflectionColumnProps {
   localData: any;
 }
 
-export const ReflectionColumn: React.FC<ReflectionColumnProps> = ({
+const ReflectionColumnInner: React.FC<ReflectionColumnProps> = ({
   aiData, trackingData: tracking, isEditing, dynamicColor, dynamicRgb,
   onInputChange, onAIDataChange, onGenerateReview, isGeneratingReview,
   onUpdate, localData,
@@ -116,6 +116,8 @@ export const ReflectionColumn: React.FC<ReflectionColumnProps> = ({
           className="w-full flex-1 bg-slate-900/50 border border-slate-800 rounded-3xl p-4 xl:p-5 text-sm text-slate-300 outline-none focus:border-[rgb(var(--card-rgb))] resize-none leading-relaxed min-h-[120px] xl:min-h-[140px]"
         />
       </div>
-    </div>
-  );
+      </div>
+    );
 };
+
+export const ReflectionColumn = React.memo(ReflectionColumnInner);

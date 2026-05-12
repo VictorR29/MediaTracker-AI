@@ -23,7 +23,7 @@ export interface FilterViewProps {
   onGenerate: () => void;
 }
 
-export const FilterView: React.FC<FilterViewProps> = ({
+const FilterViewInner: React.FC<FilterViewProps> = ({
   library,
   selectedType,
   onSelectType,
@@ -274,9 +274,11 @@ export const FilterView: React.FC<FilterViewProps> = ({
               <AlertCircle className="w-4 h-4" />
               {error}
             </div>
-          )}
-        </div>
+)}
       </div>
-    </div>
-  );
+      </div>
+      </div>
+    );
 };
+
+export const FilterView = React.memo(FilterViewInner);
