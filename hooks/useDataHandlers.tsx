@@ -1,9 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { saveMediaItem, clearLibrary as clearLib, saveUserProfile } from '../services/storage';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useLibraryStore } from '../stores/useLibraryStore';
 import { useToast } from '../context/ToastContext';
 import { UserProfile, MediaItem } from '../types';
+import {
+  parseBackupFile,
+  parseCatalogFile,
+  createBackupBlob,
+  createCatalogBlob,
+  downloadBlob,
+} from '../services/backup';
 
 export const useDataHandlers = () => {
   const { showToast } = useToast();
@@ -20,28 +27,26 @@ export const useDataHandlers = () => {
         try {
           const content = e.target?.result as string;
           if (!content) throw new Error("Archivo vacío");
-          const json = JSON.parse(content);
 
-          if (Array.isArray(json)) {
+          // Check if it's a catalog (array) first
+          if (parseCatalogFile(content)) {
             showToast("Esto parece un Catálogo. Usa la opción 'Importar Catálogo' en Ajustes.", "warning");
             setRestoring(false);
             return;
           }
 
-          const profileData = json.profile || json.userProfile;
-          if (profileData && (Array.isArray(json.library) || !json.library)) {
-            const libraryItems = Array.isArray(json.library) ? json.library : [];
-            await saveUserProfile(profileData);
+          const parsed = parseBackupFile(content);
+          if (parsed) {
+            await saveUserProfile(parsed.profile);
             await clearLib();
-            for (const item of libraryItems) {
-              await saveMediaItem(item as MediaItem);
+            for (const item of parsed.library) {
+              await saveMediaItem(item);
             }
-            await useAuthStore.getState().updateProfile(profileData as UserProfile);
+            await useAuthStore.getState().updateProfile(parsed.profile as UserProfile);
             await loadLibrary();
             showToast("Copia de seguridad restaurada exitosamente", "success");
           } else {
-            if (!profileData) showToast("Archivo inválido: No se encontró el perfil de usuario.", "error");
-            else showToast("Formato de archivo no reconocido.", "error");
+            showToast("Formato de archivo no reconocido. Asegúrate de que es un backup válido.", "error");
           }
         } catch (err) {
           showToast("Error al leer el archivo. Asegúrate de que es un JSON válido.", "error");
@@ -55,13 +60,8 @@ export const useDataHandlers = () => {
   }, [showToast, setRestoring, loadLibrary]);
 
   const handleExportBackup = useCallback(() => {
-    const data = { profile: userProfile, library, exportedAt: new Date().toISOString(), version: 1 };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `mediatracker_backup_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
+    const blob = createBackupBlob(userProfile, library);
+    downloadBlob(blob, `mediatracker_backup_${new Date().toISOString().split('T')[0]}.json`);
   }, [userProfile, library]);
 
   const handleImportCatalog = useCallback(async (file: File) => {
@@ -70,10 +70,11 @@ export const useDataHandlers = () => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const json = JSON.parse(e.target?.result as string);
-          if (Array.isArray(json)) {
+          const content = e.target?.result as string;
+          const parsed = parseCatalogFile(content);
+          if (parsed) {
             const existingIds = new Set(library.map(i => i.id));
-            const count = await useLibraryStore.getState().importItems(json as MediaItem[], existingIds);
+            const count = await useLibraryStore.getState().importItems(parsed, existingIds);
             showToast(`Importadas ${count} obras nuevas`, "success");
           } else {
             showToast("Formato inválido. Se esperaba una lista (Array) de obras.", "error");
@@ -89,12 +90,8 @@ export const useDataHandlers = () => {
   }, [showToast, setRestoring, library]);
 
   const handleExportCatalog = useCallback(() => {
-    const blob = new Blob([JSON.stringify(library, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `mediatracker_catalog_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
+    const blob = createCatalogBlob(library);
+    downloadBlob(blob, `mediatracker_catalog_${new Date().toISOString().split('T')[0]}.json`);
   }, [library]);
 
   const handleClearLibrary = useCallback(async () => {

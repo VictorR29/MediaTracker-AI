@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem, UserTrackingData, AIWorkData } from '../types';
 import { updateMediaInfo, generateReviewSummary } from '../services/geminiService';
+import { computeNextSeason, createCustomLink, processImageToBase64, reorderCharacters } from '../services/mediaItemOperations';
 import { useToast } from '../context/ToastContext';
 import { IdentityColumn, NarrativeColumn, ReflectionColumn, EditActionBar } from './media-card';
 import { extractColorFromImage, hexToRgb } from './media-card/colorUtils';
@@ -69,25 +70,19 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   };
 
   const processImageFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      showToast("Por favor sube un archivo de imagen válido", "error");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const base64 = e.target?.result as string;
-      if (base64) {
-        handleAIDataChange('coverImage', base64);
-        try {
-          const extractedColor = await extractColorFromImage(base64);
-          handleAIDataChange('primaryColor', extractedColor);
-          showToast("Color extraído: " + extractedColor, "success");
-        } catch (err) {
-          console.error("Color extraction failed", err);
-        }
+    try {
+      const base64 = await processImageToBase64(file);
+      handleAIDataChange('coverImage', base64);
+      try {
+        const extractedColor = await extractColorFromImage(base64);
+        handleAIDataChange('primaryColor', extractedColor);
+        showToast("Color extraído: " + extractedColor, "success");
+      } catch (err) {
+        console.error("Color extraction failed", err);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      showToast("Por favor sube un archivo de imagen válido", "error");
+    }
   };
 
   // Drag & Drop Handlers
@@ -158,11 +153,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const handleAddCustomLink = () => {
     if (!newLinkUrl.trim()) return;
     const currentLinks = tracking.customLinks || [];
-    const newLink = {
-      id: Date.now().toString(),
-      url: newLinkUrl.startsWith('http') ? newLinkUrl : `https://${newLinkUrl}`,
-      title: new URL(newLinkUrl.startsWith('http') ? newLinkUrl : `https://${newLinkUrl}`).hostname.replace('www.', '')
-    };
+    const newLink = createCustomLink(newLinkUrl);
     handleInputChange('customLinks', [...currentLinks, newLink]);
     setNewLinkUrl('');
     showToast("Enlace añadido", "success");
@@ -200,25 +191,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   };
 
   const handleNextSeason = () => {
-    const episodesToAdd = tracking.totalEpisodesInSeason || tracking.watchedEpisodes;
-    const newHistory = (tracking.accumulated_consumption || 0) + episodesToAdd;
-    if (tracking.currentSeason >= tracking.totalSeasons && tracking.totalSeasons > 0) {
+    const { updatedItem, message, isCompleted } = computeNextSeason(localData);
+    if (isCompleted) {
       handleInputChange('status', 'Completado');
-      showToast("¡Obra completada!", "success");
+      showToast(message, "success");
     } else {
-      const updated = {
-        ...localData,
-        trackingData: {
-          ...localData.trackingData,
-          watchedEpisodes: 0,
-          currentSeason: tracking.currentSeason + 1,
-          accumulated_consumption: newHistory,
-        },
-        lastInteraction: Date.now()
-      };
-      setLocalData(updated);
-      if (!isEditing) onUpdate(updated);
-      showToast(`¡Temporada ${tracking.currentSeason} completada! Pasando a la siguiente.`, "success");
+      setLocalData(updatedItem);
+      if (!isEditing) onUpdate(updatedItem);
+      showToast(message, "success");
     }
   };
 
@@ -235,14 +215,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
   const handleCharDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const currentList = [...(tracking.favoriteCharacters || [])];
     const dragIndex = dragItem.current;
     const hoverIndex = dragOverItem.current;
     if (dragIndex !== null && hoverIndex !== null && dragIndex !== hoverIndex) {
-      const draggedItemContent = currentList[dragIndex];
-      currentList.splice(dragIndex, 1);
-      currentList.splice(hoverIndex, 0, draggedItemContent);
-      handleInputChange('favoriteCharacters', currentList);
+      const reordered = reorderCharacters(tracking.favoriteCharacters || [], dragIndex, hoverIndex);
+      handleInputChange('favoriteCharacters', reordered);
     }
     dragItem.current = null;
     dragOverItem.current = null;

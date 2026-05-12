@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { MediaItem, RATING_TO_SCORE } from '../types';
+import { MediaItem } from '../types';
 import { getRecommendations, RecommendationResult } from '../services/geminiService';
+import { computeTasteProfile } from '../services/tasteProfile';
 import { FilterView } from './discovery/FilterView';
 import { ImmersiveView } from './discovery/ImmersiveView';
 
@@ -43,36 +44,10 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   }, [viewMode, onToggleImmersive]);
 
   // --- LOGIC: Taste Profile Computation ---
-  const { topGenres, likedTitles, excludedTitles } = useMemo(() => {
-    const genreCounts: Record<string, number> = {};
-    const liked: string[] = [];
-    const excluded: string[] = [];
-
-    library.forEach(item => excluded.push(item.aiData.title));
-
-    if (selectedSeeds.length > 0) {
-      const seedItems = library.filter(item => selectedSeeds.includes(item.id));
-      seedItems.forEach(item => {
-        liked.push(item.aiData.title);
-        item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
-      });
-    } else {
-      const targetTypes = selectedType === 'Manhwa' ? ['Manhwa', 'Manga', 'Comic'] : [selectedType];
-      library.forEach(item => {
-        if (targetTypes.includes(item.aiData.mediaType)) {
-          const rating = item.trackingData.rating;
-          const score = RATING_TO_SCORE[rating] || 0;
-          if ((score >= 7 || (score === 0 && item.trackingData.status === 'Completado'))) {
-            liked.push(item.aiData.title);
-            item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
-          }
-        }
-      });
-    }
-
-    const sortedGenres = Object.entries(genreCounts).sort(([, a], [, b]) => b - a).map(([g]) => g).slice(0, 5);
-    return { topGenres: sortedGenres, likedTitles: liked, excludedTitles: excluded };
-  }, [library, selectedType, selectedSeeds]);
+  const { topGenres, likedTitles, excludedTitles } = useMemo(
+    () => computeTasteProfile(library, selectedType, selectedSeeds),
+    [library, selectedType, selectedSeeds]
+  );
 
   // --- ACTIONS ---
 
