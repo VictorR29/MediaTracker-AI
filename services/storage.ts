@@ -6,7 +6,14 @@ const DB_VERSION = 1;
 const STORE_LIBRARY = 'library';
 const STORE_SETTINGS = 'settings';
 
+let dbInstance: IDBDatabase | null = null;
+
 export const initDB = (): Promise<IDBDatabase> => {
+  // Return existing connection if still open
+  if (dbInstance && !dbInstance.closed) {
+    return Promise.resolve(dbInstance);
+  }
+
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
@@ -16,7 +23,10 @@ export const initDB = (): Promise<IDBDatabase> => {
     };
 
     request.onsuccess = (event) => {
-      resolve(request.result);
+      dbInstance = request.result;
+      // Clean up reference if the connection closes unexpectedly
+      dbInstance.onclose = () => { dbInstance = null; };
+      resolve(dbInstance);
     };
 
     request.onupgradeneeded = (event) => {
@@ -29,6 +39,13 @@ export const initDB = (): Promise<IDBDatabase> => {
       }
     };
   });
+};
+
+export const closeDB = (): void => {
+  if (dbInstance && !dbInstance.closed) {
+    dbInstance.close();
+    dbInstance = null;
+  }
 };
 
 export const saveUserProfile = async (profile: UserProfile): Promise<void> => {

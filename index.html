@@ -1,116 +1,36 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#0f172a" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="MediaTracker" />
-    <!-- CHANGE: Removed leading slash to make it relative -->
-    <link rel="manifest" href="./manifest.json" />
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/6366f1/ffffff.png?text=MT&font=roboto" />
-    
-    <title>MediaTracker AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              background: '#0f172a', // slate-900
-              surface: '#1e293b', // slate-800
-              primary: 'rgb(var(--color-primary) / <alpha-value>)',
-              secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
-            },
-            animation: {
-              'fade-in': 'fadeIn 0.5s ease-out',
-              'fade-in-up': 'fadeInUp 0.5s ease-out',
-              'slide-in-right': 'slideInRight 0.3s ease-out',
-            },
-            keyframes: {
-              fadeIn: {
-                '0%': { opacity: '0' },
-                '100%': { opacity: '1' },
-              },
-              fadeInUp: {
-                '0%': { opacity: '0', transform: 'translateY(20px)' },
-                '100%': { opacity: '1', transform: 'translateY(0)' },
-              },
-              slideInRight: {
-                '0%': { opacity: '0', transform: 'translateX(100%)' },
-                '100%': { opacity: '1', transform: 'translateX(0)' },
-              }
-            }
-          }
-        }
-      }
-    </script>
-    <style>
-      :root {
-        /* Default Indigo-like theme */
-        --color-primary: 99 102 241; /* #6366f1 */
-        --color-secondary: 168 85 247; /* #a855f7 */
-      }
-      
-      body, html {
-        background-color: #0f172a;
-        color: #f1f5f9;
-        overflow-x: hidden; /* Critical for eliminating side scroll */
-        width: 100%;
-        max-width: 100vw;
-        position: relative;
-        -webkit-tap-highlight-color: transparent;
-      }
-      /* Custom scrollbar for webkit */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #0f172a; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #334155; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #475569; 
-      }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.1/",
-    "react": "https://aistudiocdn.com/react@^19.2.1",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
-    "uuid": "https://aistudiocdn.com/uuid@^13.0.0"
-  }
-}
-</script>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MediaTracker" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <title>MediaTracker AI</title>
 </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(registration => {
-              console.log('SW registered: ', registration);
-            })
-            .catch(registrationError => {
-              console.log('SW registration failed: ', registrationError);
-            });
+<body>
+  <div id="root"></div>
+  <script type="module" src="./index.tsx"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(registration => {
+            console.log('SW registered: ', registration);
+          })
+          .catch(registrationError => {
+            console.log('SW registration failed: ', registrationError);
+          });
 
-            // Reload page if controller changes (new SW activated)
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload();
-            });
+        // Reload page if controller changes (new SW activated)
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload();
         });
-      }
-    </script>
-  </body>
+      });
+    }
+  </script>
+</body>
 </html>

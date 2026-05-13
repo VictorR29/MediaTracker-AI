@@ -3,6 +3,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { UserProfile, MediaItem, RATING_TO_SCORE } from '../types';
 import { useToast } from '../context/ToastContext';
 import { saveMediaItem, deleteMediaItem } from '../services/storage';
+import { hashPassword } from '../utils/password';
 import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -111,13 +112,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       showToast("Perfil actualizado correctamente", "success");
   };
 
-  const handleSaveSecurity = () => {
-     const updatedProfile = { ...userProfile, apiKey };
-     if (newPassword.trim()) {
-         updatedProfile.password = newPassword.trim();
-     }
-     onUpdateProfile(updatedProfile);
-     showToast("Configuración de seguridad actualizada", "success");
+  const handleSaveSecurity = async () => {
+    const updatedProfile = { ...userProfile, apiKey };
+    if (newPassword.trim()) {
+      updatedProfile.password = await hashPassword(newPassword.trim());
+    }
+    onUpdateProfile(updatedProfile);
+    showToast("Configuración de seguridad actualizada", "success");
   };
 
   const requestRemovePassword = () => {
