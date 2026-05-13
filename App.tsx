@@ -34,8 +34,9 @@ const AppInner: React.FC = () => {
   const {
     isImmersiveMode, isBottomNavVisible, showScrollTop,
     isSettingsOpen, setSettingsOpen, setImmersiveMode,
-    setBottomNavVisible, setShowScrollTop, lastScrollY, setLastScrollY
+    setBottomNavVisible, setShowScrollTop
   } = useUIStore();
+  const lastScrollYRef = useRef(0);
 
   // Custom hooks
   const { DeleteModal, requestDelete } = useDeleteConfirm(() => {
@@ -51,13 +52,13 @@ const AppInner: React.FC = () => {
     initAuth().then(() => loadLibrary());
   }, []);
 
-  // Scroll handling for bottom nav + scroll-top
+  // Scroll handling for bottom nav + scroll-top (ref-based to avoid re-render per pixel)
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      setBottomNavVisible(!(currentScrollY > lastScrollY && currentScrollY > 100));
+      setBottomNavVisible(!(currentScrollY > lastScrollYRef.current && currentScrollY > 100));
       setShowScrollTop(currentScrollY > 300);
-      setLastScrollY(currentScrollY);
+      lastScrollYRef.current = currentScrollY;
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -116,6 +117,25 @@ const AppInner: React.FC = () => {
     </button>
   );
 
+  // Not authenticated → full-screen lock, no app chrome
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-950">
+        <AppRouter
+          onOpenDetail={handleOpenDetail}
+          onIncrementProgress={handleIncrementProgress}
+          onToggleFavorite={handleToggleFavorite}
+          onRequestDelete={requestDelete}
+          onUpdateItem={handleUpdateItem}
+          onRecommendationSelect={handleRecommendationSelect}
+          onImportBackup={dataHandlers.handleImportBackup}
+          isRestoring={isRestoring}
+          onToggleImmersive={setImmersiveMode}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
       <LoadingOverlay isVisible={isRestoring} type="restore" />
@@ -128,7 +148,7 @@ const AppInner: React.FC = () => {
             <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5">
               <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden">
                 {userProfile?.avatarUrl ? <img src={userProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center"><User className="w-5 h-5" /></div>}
+                : <div className="w-full h-full flex items-center justify-center"><User className="w-5 h-5" /></div>}
               </div>
             </div>
             <h1 className="font-bold text-white text-lg hidden lg:block">{userProfile?.username}'s Library</h1>

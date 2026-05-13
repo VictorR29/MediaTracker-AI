@@ -10,7 +10,6 @@ describe('useUIStore', () => {
     expect(state.isSettingsOpen).toBe(false);
     expect(state.isManualTypeSelectorOpen).toBe(false);
     expect(state.libraryViewMode).toBe('grid');
-    expect(state.lastScrollY).toBe(0);
   });
 
   it('setImmersiveMode updates state', () => {
@@ -30,5 +29,21 @@ describe('useUIStore', () => {
 
     useUIStore.getState().toggleLibraryViewMode();
     expect(useUIStore.getState().libraryViewMode).toBe('grid');
+  });
+
+  it('setBottomNavVisible updates state', () => {
+    useUIStore.getState().setBottomNavVisible(false);
+    expect(useUIStore.getState().isBottomNavVisible).toBe(false);
+
+    useUIStore.getState().setBottomNavVisible(true);
+    expect(useUIStore.getState().isBottomNavVisible).toBe(true);
+  });
+
+  it('setShowScrollTop updates state', () => {
+    useUIStore.getState().setShowScrollTop(true);
+    expect(useUIStore.getState().showScrollTop).toBe(true);
+
+    useUIStore.getState().setShowScrollTop(false);
+    expect(useUIStore.getState().showScrollTop).toBe(false);
   });
 });

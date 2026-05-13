@@ -7,14 +7,12 @@ interface UIState {
   isSettingsOpen: boolean;
   isManualTypeSelectorOpen: boolean;
   libraryViewMode: 'grid' | 'catalog';
-  lastScrollY: number;
   setImmersiveMode: (v: boolean) => void;
   setBottomNavVisible: (v: boolean) => void;
   setShowScrollTop: (v: boolean) => void;
   setSettingsOpen: (v: boolean) => void;
   setManualTypeSelectorOpen: (v: boolean) => void;
   toggleLibraryViewMode: () => void;
-  setLastScrollY: (v: number) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -24,7 +22,6 @@ export const useUIStore = create<UIState>((set) => ({
   isSettingsOpen: false,
   isManualTypeSelectorOpen: false,
   libraryViewMode: 'grid',
-  lastScrollY: 0,
 
   setImmersiveMode: (v) => set({ isImmersiveMode: v }),
   setBottomNavVisible: (v) => set({ isBottomNavVisible: v }),
@@ -34,5 +31,4 @@ export const useUIStore = create<UIState>((set) => ({
   toggleLibraryViewMode: () => set(state => ({
     libraryViewMode: state.libraryViewMode === 'grid' ? 'catalog' : 'grid'
   })),
-  setLastScrollY: (v) => set({ lastScrollY: v }),
 }));
