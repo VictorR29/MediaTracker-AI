@@ -230,25 +230,23 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
   // Note: Added imports to the top of the file.
 
   return (
-    <div key={view} className="w-full max-w-5xl mx-auto mb-6 animate-fade-in px-4 md:px-0">
-        <div 
-            className="relative overflow-hidden rounded-xl p-6 border border-white/10 shadow-lg group hover:shadow-2xl transition-all duration-500"
-            style={{ 
-                background: `linear-gradient(135deg, ${userProfile.accentColor ? '#' + userProfile.accentColor.split(' ')[0] : '#6366f1'} 0%, #0f172a 100%)` 
-            }}
-        >
-             {/* Abstract Shapes */}
-             <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-white/10 rounded-full blur-3xl pointer-events-none group-hover:bg-white/20 transition-all duration-700 animate-pulse"></div>
-             <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/30 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
+    <div key={view} className="w-full max-w-5xl mx-auto mb-6 px-4 md:px-0">
+      <div
+        className="relative overflow-hidden rounded-xl p-6 border border-white/10"
+        style={{
+          background: `linear-gradient(135deg, ${userProfile.accentColor ? '#' + userProfile.accentColor.split(' ')[0] : '#6366f1'} 0%, #0f172a 100%)`
+        }}
+      >
+        {/* Decorative accent — solid, no blur/pulse */}
 
-             <div className="relative z-10 flex items-start md:items-center gap-4">
-                 <div className="p-3 bg-white/20 backdrop-blur-md rounded-full shadow-inner flex-shrink-0 animate-fade-in-up">
-                     <Icon className="w-6 h-6 text-white" />
-                 </div>
-                 <div className="animate-fade-in">
-                     <p className="text-white text-lg md:text-xl font-bold leading-tight drop-shadow-md">
-                        {greeting.text}
-                     </p>
+        <div className="relative z-10 flex items-start md:items-center gap-4">
+          <div className="p-3 bg-white/20 rounded-full flex-shrink-0">
+            <Icon className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <p className="text-white text-lg md:text-xl font-bold leading-tight">
+              {greeting.text}
+            </p>
                      {greeting.subtext && (
                         <p className="text-white/80 text-sm md:text-base mt-1 font-medium leading-relaxed">
                             {greeting.subtext}

@@ -165,9 +165,8 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
     <div
       ref={cardRef}
       onClick={() => onClick(item)}
-      className={`group relative rounded-xl overflow-hidden shadow-xl cursor-pointer flex flex-col bg-[#1A1D26] w-full
-        hover:shadow-2xl
-        md:hover:scale-[1.02] md:transition-transform md:duration-300 md:ease-out
+      className={`group relative rounded-xl overflow-hidden cursor-pointer flex flex-col bg-[#1A1D26] w-full
+        md:hover:scale-[1.02] md:transition-transform md:duration-200
         ${isVisible ? 'opacity-100' : 'opacity-0'}`}
       style={{
         aspectRatio: '2/3',
@@ -199,7 +198,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
             onError={handleImageError}
             onLoad={() => setImageLoaded(true)}
             loading="lazy"
-            className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
@@ -210,7 +209,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       {/* Type Badge */}
       <div className={`absolute left-3 z-30 pointer-events-none ${hasTopBanner ? 'top-8' : 'top-3'}`}>
         <span
-          className="px-2.5 py-1 rounded-md bg-black/70 border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider shadow-lg"
+          className="px-2.5 py-1 rounded-md bg-black/70 border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider"
           style={{ borderColor: `${dynamicColor}40` }}
         >
           {aiData.mediaType}
@@ -222,7 +221,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
         {onToggleFavorite && (
           <button
             onClick={handleFavoriteClick}
-            className={`p-2 rounded-full bg-black/70 hover:bg-white text-white hover:text-yellow-500 transition-colors border border-white/10 shadow-lg active:scale-95 ${isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+            className={`p-2 rounded-full bg-black/70 hover:bg-white text-white hover:text-yellow-500 border border-white/10 active:scale-95 ${isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
             title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
           >
             <Star className={`w-4 h-4 ${isFavorite ? 'fill-current text-yellow-400' : ''}`} />
@@ -231,7 +230,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
         {onDelete && (
           <button
             onClick={handleDeleteClick}
-            className="p-2 rounded-full bg-black/70 text-white hover:bg-red-600 hover:text-white transition-colors border border-white/10 shadow-lg active:scale-95 opacity-0 group-hover:opacity-100"
+            className="p-2 rounded-full bg-black/70 text-white hover:bg-red-600 hover:text-white border border-white/10 active:scale-95 opacity-0 group-hover:opacity-100"
             title="Eliminar"
           >
             <Trash2 className="w-4 h-4" />
@@ -242,7 +241,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       {/* Rating Badge */}
       {score > 0 && (
         <div className={`absolute right-3 z-30 pointer-events-none ${hasTopBanner ? 'top-8' : 'top-3'}`}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#2e1065]/90 border border-purple-500/30 text-white text-xs font-bold shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#2e1065]/90 border border-purple-500/30 text-white text-xs font-bold">
             {score}
           </div>
         </div>
@@ -252,7 +251,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       {showQuickAction && (
         <button
           onClick={handleQuickAction}
-          className={`absolute bottom-20 right-3 z-40 p-2 md:p-3 rounded-full shadow-xl transition-colors transform active:scale-95 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 ${isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-slate-900'}`}
+          className={`absolute bottom-20 right-3 z-40 p-2 md:p-3 rounded-full transform active:scale-95 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 ${isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-slate-900'}`}
           style={!isCompleteSeason ? { color: dynamicColor } : {}}
           title={isCompleteSeason ? (isLastSeason ? "Completar Obra" : "Siguiente Temporada") : "+1 Capítulo"}
         >
@@ -264,30 +263,28 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 
       {/* --- CONTENT OVERLAY (BOTTOM) --- */}
       <div className="absolute bottom-0 left-0 right-0 p-4 z-30 flex flex-col gap-2.5">
-        <h3 className="text-white font-black text-base md:text-lg leading-tight line-clamp-2 drop-shadow-lg tracking-tight mb-1">
+        <h3 className="text-white font-black text-base md:text-lg leading-tight line-clamp-2 tracking-tight mb-1">
           {aiData.title}
         </h3>
 
         <div className="flex items-center gap-2 md:gap-3 w-full">
-          <div className={`flex-shrink-0 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${statusStyle.bg} ${statusStyle.text} shadow-sm`}>
+          <div className={`flex-shrink-0 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${statusStyle.bg} ${statusStyle.text}`}>
             {statusStyle.label}
           </div>
-          <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden shadow-inner">
+          <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full"
-              style={{
-                width: `${progressPercent}%`,
-                backgroundColor: dynamicColor,
-                boxShadow: `0 0 10px ${dynamicColor}`,
-                transition: 'width 0.3s ease-out',
-              }}
+            style={{
+              width: `${progressPercent}%`,
+              backgroundColor: dynamicColor,
+            }}
             />
           </div>
         </div>
 
         <div className="flex items-center justify-between mt-0.5 pl-0.5">
           <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: dynamicColor, boxShadow: `0 0 8px ${dynamicColor}` }} />
+                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: dynamicColor }} />
             <span className="text-[10px] md:text-xs font-bold text-slate-300 tracking-wide truncate max-w-[100px]">
               {seasonLabel}
             </span>

@@ -112,7 +112,7 @@ const AppInner: React.FC = () => {
   // Desktop Nav Link
   const DesktopNavLink = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, active: boolean, onClick: () => void }) => (
     <button onClick={onClick}
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-bold ${active ? 'bg-white/10 text-white shadow-sm border border-white/5' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold ${active ? 'bg-white/10 text-white border border-white/5' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
       <Icon className={`w-4 h-4 ${active ? 'text-primary' : ''}`} />{label}
     </button>
   );
@@ -143,7 +143,7 @@ const AppInner: React.FC = () => {
 
       {/* Header */}
       {!isImmersiveMode && (
-        <header className="fixed top-0 w-full bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 z-40 px-4 md:px-8 py-3 flex items-center justify-between">
+        <header className="fixed top-0 w-full bg-slate-900/95 border-b border-slate-800 z-40 px-4 md:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5">
               <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden">
@@ -168,7 +168,7 @@ const AppInner: React.FC = () => {
       )}
 
       {/* Main */}
-      <main className={`pt-20 pb-24 md:pt-24 px-4 md:px-8 max-w-7xl mx-auto min-h-screen transition-all ${isImmersiveMode ? 'pt-0 px-0 max-w-none' : ''}`}>
+      <main className={`pt-20 pb-24 md:pt-24 px-4 md:px-8 max-w-7xl mx-auto min-h-screen ${isImmersiveMode ? 'pt-0 px-0 max-w-none' : ''}`}>
         <AppRouter
           onOpenDetail={handleOpenDetail}
           onIncrementProgress={handleIncrementProgress}
@@ -186,13 +186,13 @@ const AppInner: React.FC = () => {
 
       {/* Scroll To Top */}
       <button onClick={scrollToTop}
-        className={`fixed right-4 md:right-8 z-40 bg-primary text-white p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 active:scale-95 flex items-center justify-center ${showScrollTop ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'} ${isBottomNavVisible && !isImmersiveMode ? 'bottom-20 md:bottom-8' : 'bottom-4 md:bottom-8'}`}
+        className={`fixed right-4 md:right-8 z-40 bg-primary text-white p-3 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-110 active:scale-95 flex items-center justify-center ${showScrollTop ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'} ${isBottomNavVisible && !isImmersiveMode ? 'bottom-20 md:bottom-8' : 'bottom-4 md:bottom-8'}`}
         aria-label="Volver arriba">
         <ArrowUp className="w-6 h-6" />
       </button>
 
       {/* Mobile Bottom Nav */}
-      <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-slate-700/50 pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-300 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
+      <nav className={`md:hidden fixed bottom-0 w-full bg-surface/95 border-t border-slate-700/50 pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-200 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
         <button onClick={() => handleNavClick('/')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/' || currentPath.startsWith('/item/') ? 'text-primary' : 'text-slate-500'}`}><LayoutGrid className="w-5 h-5" /><span className="text-[9px] font-bold">Biblio</span></button>
         <button onClick={() => handleNavClick('/wishlist')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/wishlist' ? 'text-primary' : 'text-slate-500'}`}><Bookmark className="w-5 h-5" /><span className="text-[9px] font-bold">Deseos</span></button>
         <button onClick={() => handleNavClick('/add')} className="flex flex-col items-center gap-1 p-2 min-w-[60px]">

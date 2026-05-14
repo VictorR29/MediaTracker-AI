@@ -34,7 +34,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const availableGenres = useMemo(() => getAvailableGenres(), [library, getAvailableGenres]);
 
   return (
-    <div className="animate-fade-in">
+    <div>
       <ContextualGreeting userProfile={userProfile!} library={library} view={view} />
 
       <LibraryFilters
