@@ -45,11 +45,11 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
         <div className="mb-6 space-y-4 relative z-20">
             <div className="flex gap-2">
                 <div className="relative flex-grow">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 -tranzinc-y-1/2 w-4 h-4 text-zinc-400" />
                     <input
                     type="text"
                     placeholder="Filtrar por título..."
-                    className="w-full bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder-slate-500 shadow-sm hover:bg-slate-800"
+                    className="w-full bg-zinc-800/50 backdrop-blur-md border border-zinc-700 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder-zinc-500 shadow-sm hover:bg-zinc-800"
                     value={filters.query}
                     onChange={(e) => handleChange('query', e.target.value)}
                     />
@@ -61,7 +61,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                     className={`flex items-center justify-center w-12 h-12 md:w-auto md:px-5 border rounded-xl transition-all shadow-sm ${
                         filters.onlyFavorites 
                         ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500' 
-                        : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white'
+                        : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-white'
                     }`}
                     title="Ver solo Favoritos"
                 >
@@ -75,7 +75,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                     className={`flex items-center justify-center w-12 h-12 border rounded-xl transition-all shadow-sm ${
                         viewMode === 'catalog'
                         ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' 
-                        : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white'
+                        : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-white'
                     }`}
                     title={viewMode === 'catalog' ? "Volver a Lista" : "Modo Catálogo"}
                 >
@@ -85,7 +85,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                 {/* Mobile Filter Trigger Button */}
                 <button 
                     onClick={() => setIsMobileModalOpen(true)}
-                    className="md:hidden flex items-center justify-center w-12 h-12 bg-slate-800/50 border border-slate-700 rounded-xl text-slate-300 relative shadow-sm"
+                    className="md:hidden flex items-center justify-center w-12 h-12 bg-zinc-800/50 border border-zinc-700 rounded-xl text-zinc-300 relative shadow-sm"
                 >
                     <Filter className="w-5 h-5" />
                     {activeFiltersCount > 0 && (
@@ -100,9 +100,9 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
             <div className="hidden md:grid grid-cols-5 gap-3">
                 {/* Type */}
                 <div className="space-y-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider pl-1">Tipo</label>
+                <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider pl-1">Tipo</label>
                 <select
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none focus:border-primary transition-colors cursor-pointer appearance-none shadow-sm hover:bg-slate-800"
+                    className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-zinc-300 outline-none focus:border-primary transition-colors cursor-pointer appearance-none shadow-sm hover:bg-zinc-800"
                     value={filters.type}
                     onChange={(e) => handleChange('type', e.target.value)}
                 >
@@ -119,9 +119,9 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
 
                 {/* Status */}
                 <div className="space-y-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider pl-1">Estado</label>
+                <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider pl-1">Estado</label>
                 <select
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none focus:border-primary transition-colors cursor-pointer appearance-none shadow-sm hover:bg-slate-800"
+                    className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-zinc-300 outline-none focus:border-primary transition-colors cursor-pointer appearance-none shadow-sm hover:bg-zinc-800"
                     value={filters.status}
                     onChange={(e) => handleChange('status', e.target.value)}
                 >
@@ -137,11 +137,11 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
 
                 {/* Genre */}
                 <div className="space-y-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider pl-1 flex items-center gap-1">
+                <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider pl-1 flex items-center gap-1">
                     <Tags className="w-3 h-3"/> Género
                 </label>
                 <select
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none focus:border-primary transition-colors cursor-pointer appearance-none shadow-sm hover:bg-slate-800"
+                    className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-zinc-300 outline-none focus:border-primary transition-colors cursor-pointer appearance-none shadow-sm hover:bg-zinc-800"
                     value={filters.genre}
                     onChange={(e) => handleChange('genre', e.target.value)}
                 >
@@ -154,9 +154,9 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
 
                 {/* Rating */}
                 <div className="space-y-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider pl-1">Calificación</label>
+                <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider pl-1">Calificación</label>
                 <select
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none focus:border-primary transition-colors cursor-pointer appearance-none shadow-sm hover:bg-slate-800"
+                    className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-zinc-300 outline-none focus:border-primary transition-colors cursor-pointer appearance-none shadow-sm hover:bg-zinc-800"
                     value={filters.rating}
                     onChange={(e) => handleChange('rating', e.target.value)}
                 >
@@ -169,11 +169,11 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
 
                 {/* Sort */}
                 <div className="space-y-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider pl-1 flex items-center gap-1">
+                <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider pl-1 flex items-center gap-1">
                     <ArrowUpDown className="w-3 h-3"/> Ordenar
                 </label>
                 <select
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none focus:border-primary transition-colors cursor-pointer appearance-none shadow-sm hover:bg-slate-800"
+                    className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-zinc-300 outline-none focus:border-primary transition-colors cursor-pointer appearance-none shadow-sm hover:bg-zinc-800"
                     value={filters.sortBy}
                     onChange={(e) => handleChange('sortBy', e.target.value as any)}
                 >
@@ -188,11 +188,11 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
         {/* Mobile Filter Modal (Full Screen Drawer) */}
         {isMobileModalOpen && (
             <div className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm flex flex-col md:hidden animate-fade-in">
-                <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-surface">
+                <div className="flex items-center justify-between p-4 border-b border-zinc-700 bg-surface">
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
                         <Filter className="w-5 h-5 text-primary" /> Filtros
                     </h3>
-                    <button onClick={() => setIsMobileModalOpen(false)} className="p-2 text-slate-400 hover:text-white">
+                    <button onClick={() => setIsMobileModalOpen(false)} className="p-2 text-zinc-400 hover:text-white">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
@@ -200,7 +200,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                 <div className="flex-grow overflow-y-auto p-4 space-y-6">
                      {/* Mobile Inputs Stack */}
                      <div className="space-y-2">
-                        <label className="text-xs text-slate-500 font-bold uppercase tracking-wider">Tipo de Medio</label>
+                        <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Tipo de Medio</label>
                         <div className="grid grid-cols-2 gap-2">
                              {['All', 'Anime', 'Serie', 'Pelicula', 'Manhwa', 'Manga', 'Libro', 'Comic'].map(opt => (
                                  <button
@@ -209,7 +209,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                                     className={`px-3 py-3 rounded-lg text-sm font-medium border transition-colors ${
                                         filters.type === opt 
                                         ? 'bg-primary/20 border-primary text-white' 
-                                        : 'bg-slate-800 border-slate-700 text-slate-400'
+                                        : 'bg-zinc-800 border-zinc-700 text-zinc-400'
                                     }`}
                                  >
                                      {opt === 'All' ? 'Todos' : (opt === 'Pelicula' ? 'Película' : opt)}
@@ -219,9 +219,9 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                      </div>
 
                      <div className="space-y-2">
-                        <label className="text-xs text-slate-500 font-bold uppercase tracking-wider">Estado</label>
+                        <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Estado</label>
                         <select
-                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-primary"
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white outline-none focus:border-primary"
                             value={filters.status}
                             onChange={(e) => handleChange('status', e.target.value)}
                         >
@@ -236,9 +236,9 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                      </div>
 
                      <div className="space-y-2">
-                        <label className="text-xs text-slate-500 font-bold uppercase tracking-wider">Género</label>
+                        <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Género</label>
                         <select
-                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-primary"
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white outline-none focus:border-primary"
                             value={filters.genre}
                             onChange={(e) => handleChange('genre', e.target.value)}
                         >
@@ -250,8 +250,8 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                      </div>
 
                      <div className="space-y-2">
-                        <label className="text-xs text-slate-500 font-bold uppercase tracking-wider">Ordenar por</label>
-                         <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
+                        <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Ordenar por</label>
+                         <div className="flex bg-zinc-800 rounded-lg p-1 border border-zinc-700">
                              {[
                                  { label: 'Recientes', value: 'updated' },
                                  { label: 'A-Z', value: 'title' },
@@ -262,8 +262,8 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                                     onClick={() => handleChange('sortBy', opt.value as any)}
                                     className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${
                                         filters.sortBy === opt.value 
-                                        ? 'bg-slate-600 text-white shadow' 
-                                        : 'text-slate-400'
+                                        ? 'bg-zinc-600 text-white shadow' 
+                                        : 'text-zinc-400'
                                     }`}
                                  >
                                      {opt.label}
@@ -273,7 +273,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                      </div>
                 </div>
 
-                <div className="p-4 bg-surface border-t border-slate-700">
+                <div className="p-4 bg-surface border-t border-zinc-700">
                     <button 
                         onClick={() => setIsMobileModalOpen(false)}
                         className="w-full flex items-center justify-center gap-2 bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg"

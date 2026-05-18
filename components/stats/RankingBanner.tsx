@@ -12,7 +12,7 @@ export const RankingBanner: React.FC<RankingBannerProps> = ({ stats }) => {
 
     // Rank Definitions
     let rankTitle = "Explorador Novato";
-    let rankColor = "text-slate-400";
+    let rankColor = "text-zinc-400";
     let RankIcon = Scroll;
 
     if (points > 1500) {
@@ -93,28 +93,28 @@ export const RankingBanner: React.FC<RankingBannerProps> = ({ stats }) => {
 
   return (
     <div
-      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-6 md:p-8 text-center relative overflow-hidden transition-all duration-500 hover:border-slate-500"
+      className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-6 md:p-8 text-center relative overflow-hidden transition-all duration-500 hover:border-zinc-500"
     >
       {/* Decorative Elements */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 opacity-50 pointer-events-none"></div>
-      <div className="absolute top-2 left-2 text-slate-700 opacity-20 pointer-events-none"><rankingSystem.RankIcon className="w-12 h-12 md:w-16 md:h-16" /></div>
-      <div className="absolute bottom-2 right-2 text-slate-700 opacity-20 pointer-events-none"><rankingSystem.RankIcon className="w-12 h-12 md:w-16 md:h-16" /></div>
+      <div className="absolute top-2 left-2 text-zinc-700 opacity-20 pointer-events-none"><rankingSystem.RankIcon className="w-12 h-12 md:w-16 md:h-16" /></div>
+      <div className="absolute bottom-2 right-2 text-zinc-700 opacity-20 pointer-events-none"><rankingSystem.RankIcon className="w-12 h-12 md:w-16 md:h-16" /></div>
 
       <div className="relative z-10 max-w-2xl mx-auto">
-        <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700 shadow-xl mb-4 ${rankingSystem.rankColor}`}>
+        <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 shadow-xl mb-4 ${rankingSystem.rankColor}`}>
           <rankingSystem.RankIcon className="w-4 h-4" />
           <span className="text-xs font-bold uppercase tracking-widest">{rankingSystem.rankTitle}</span>
         </div>
-        <h2 className="text-xl md:text-2xl font-bold text-slate-200 mb-3 leading-tight italic break-words">
+        <h2 className="text-xl md:text-2xl font-bold text-zinc-200 mb-3 leading-tight italic break-words">
           "{rankingSystem.message}"
         </h2>
-        <div className="w-full bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden max-w-xs mx-auto">
+        <div className="w-full bg-zinc-800 h-1.5 rounded-full mt-4 overflow-hidden max-w-xs mx-auto">
           <div
             className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
             style={{ width: `${Math.min(100, (stats.totalConsumptionUnits % 250) / 2.5)}%` }}
           />
         </div>
-        <p className="text-slate-500 text-[10px] mt-2 font-mono">
+        <p className="text-zinc-500 text-[10px] mt-2 font-mono">
           Unidades Consumidas: {stats.totalConsumptionUnits}
         </p>
       </div>

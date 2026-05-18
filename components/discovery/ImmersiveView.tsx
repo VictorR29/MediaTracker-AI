@@ -33,7 +33,7 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
 
   const isEndCard = recommendations.length > 0 && currentIndex === recommendations.length;
   const currentCard = recommendations[currentIndex];
-  const cardColors = currentCard ? getColorData(currentCard.title) : { bg: 'from-slate-700 to-slate-800', shadow: '#000000' };
+  const cardColors = currentCard ? getColorData(currentCard.title) : { bg: 'from-zinc-700 to-zinc-800', shadow: '#000000' };
 
   // 3D Tilt — Direct DOM manipulation for 60fps
   const applyTilt = (clientX: number, clientY: number, isActive: boolean) => {
@@ -151,7 +151,7 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
       className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden touch-none"
       style={bgStyle}
     >
-      <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px]"></div>
+      <div className="absolute inset-0 bg-zinc-950/20 backdrop-blur-[2px]"></div>
 
       {/* CARD CONTAINER */}
       <div className="relative w-full max-w-md h-[70vh] md:h-[600px] perspective-1000 flex items-center justify-center z-50">
@@ -167,14 +167,14 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
           <>
             {/* Previous Card Ghost (Animation) */}
             {swipeDirection === 'up' && (
-              <div className="absolute inset-0 bg-slate-800 rounded-3xl opacity-0 transform -translate-y-full scale-75 transition-all duration-500 ease-out pointer-events-none"></div>
+              <div className="absolute inset-0 bg-zinc-800 rounded-3xl opacity-0 transform -tranzinc-y-full scale-75 transition-all duration-500 ease-out pointer-events-none"></div>
             )}
 
             {/* ACTIVE CARD */}
             <div
               ref={cardRef}
-              className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transform-style-3d cursor-pointer ${swipeDirection === 'up' ? 'transition-all duration-500 -translate-y-[150%] opacity-0 rotate-12' :
-                swipeDirection === 'down' ? 'transition-all duration-500 translate-y-[150%] opacity-0 -rotate-12' :
+              className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transform-style-3d cursor-pointer ${swipeDirection === 'up' ? 'transition-all duration-500 -tranzinc-y-[150%] opacity-0 rotate-12' :
+                swipeDirection === 'down' ? 'transition-all duration-500 tranzinc-y-[150%] opacity-0 -rotate-12' :
                   'opacity-100'
                 }`}
               style={{
@@ -191,7 +191,7 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
               {isEndCard ? (
                 <EndCard onLoadMore={onLoadMore} onGoBack={onGoBack} />
               ) : (
-                <div className="absolute inset-0 rounded-3xl overflow-hidden bg-slate-900 border border-white/10">
+                <div className="absolute inset-0 rounded-3xl overflow-hidden bg-zinc-900 border border-white/10">
                   <GenerativeCard title={currentCard.title} type={currentCard.mediaType} />
                   <div className="absolute bottom-6 left-0 right-0 text-center transition-opacity duration-300 pointer-events-none" style={{ opacity: isInfoOpen ? 0 : 1 }}>
                     <p className="text-xs font-medium text-white/60 flex items-center justify-center gap-2 bg-black/20 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit">
@@ -206,7 +206,7 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
             {/* Desktop Navigation Arrows */}
             {!isEndCard && (
               <div
-                className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
+                className="absolute right-[-60px] top-1/2 -tranzinc-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
                 onClick={(e) => { e.stopPropagation(); handleNext(); }}
               >
                 <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
@@ -216,7 +216,7 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
             )}
             {currentIndex > 0 && (
               <div
-                className="absolute left-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
+                className="absolute left-[-60px] top-1/2 -tranzinc-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
                 onClick={(e) => { e.stopPropagation(); handlePrev(); }}
               >
                 <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">

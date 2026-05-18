@@ -15,7 +15,7 @@ const StatsView = lazy(() => import('./StatsView').then(m => ({ default: m.Stats
 
 const RouteSuspense: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <Suspense fallback={
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
     </div>
   }>
@@ -51,7 +51,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
   const updateProfile = useAuthStore(s => s.updateProfile);
 
   if (loading) {
-    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Cargando...</div>;
+    return <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-white">Cargando...</div>;
   }
 
   if (!userProfile) {

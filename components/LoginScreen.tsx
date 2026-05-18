@@ -161,13 +161,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-zinc-900 flex items-center justify-center relative overflow-hidden">
       
       {/* Dynamic Background Cover with Blur and Overlay */}
       {emotionalContext?.bgImage ? (
           <div className="absolute inset-0 z-0 overflow-hidden">
-             {/* Dark Overlay - Semitransparent slate-950 to ensure readability */}
-             <div className="absolute inset-0 bg-slate-950/70 z-10"></div>
+             {/* Dark Overlay - Semitransparent zinc-950 to ensure readability */}
+             <div className="absolute inset-0 bg-zinc-950/70 z-10"></div>
              
              {/* The Image - Full Cover, Blurred */}
              <img 
@@ -178,26 +178,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
           </div>
       ) : (
           /* Standard Fallback Background (Gradient) */
-          <div className="absolute inset-0 z-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
+          <div className="absolute inset-0 z-0 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900"></div>
       )}
 
-      <div className={`w-full max-w-md z-10 p-6 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <div className={`w-full max-w-md z-10 p-6 transition-all duration-1000 ${mounted ? 'opacity-100 tranzinc-y-0' : 'opacity-0 tranzinc-y-10'}`}>
         
         {/* Profile Section */}
         <div className="text-center mb-10 flex flex-col items-center">
            <div className="relative mb-6 group">
                 <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-[0_0_30px_rgba(99,102,241,0.5)]">
-                    <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden relative">
+                    <div className="w-full h-full rounded-full bg-zinc-900 overflow-hidden relative">
                         {avatarUrl ? (
                             <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-slate-800">
-                                <User className="w-12 h-12 text-slate-500" />
+                            <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                                <User className="w-12 h-12 text-zinc-500" />
                             </div>
                         )}
                     </div>
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-slate-900 rounded-full p-2 border border-slate-700 shadow-lg">
+                <div className="absolute -bottom-2 -right-2 bg-zinc-900 rounded-full p-2 border border-zinc-700 shadow-lg">
                     <Lock className="w-5 h-5 text-white" />
                 </div>
            </div>
@@ -209,7 +209,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
                {displayMessage.subtitle}
            </p>
            
-           <div className="mt-4 flex items-center gap-2 text-sm text-slate-300 bg-slate-900/60 backdrop-blur-md px-5 py-2 rounded-full border border-white/10 shadow-lg">
+           <div className="mt-4 flex items-center gap-2 text-sm text-zinc-300 bg-zinc-900/60 backdrop-blur-md px-5 py-2 rounded-full border border-white/10 shadow-lg">
               <Sparkles className="w-4 h-4 text-yellow-400 animate-spin-slow" />
               <span className="font-semibold tracking-wide">{displayMessage.cta}</span>
            </div>
@@ -225,7 +225,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
             <input 
                 type="password" 
                 autoFocus
-                className="bg-transparent border-none text-white px-4 py-3 flex-grow outline-none placeholder-slate-400 text-lg tracking-widest text-center"
+                className="bg-transparent border-none text-white px-4 py-3 flex-grow outline-none placeholder-zinc-400 text-lg tracking-widest text-center"
                 placeholder="Contraseña..."
                 value={password}
                 onChange={(e) => {
@@ -236,7 +236,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
             <button 
                 type="submit"
                 className={`p-3 rounded-xl transition-all duration-300 transform ${
-                    password ? 'bg-indigo-500 text-white shadow-lg scale-100' : 'bg-white/5 text-slate-500 scale-90 cursor-default'
+                    password ? 'bg-indigo-500 text-white shadow-lg scale-100' : 'bg-white/5 text-zinc-500 scale-90 cursor-default'
                 }`}
                 disabled={!password || isVerifying}
             >

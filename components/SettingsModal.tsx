@@ -298,23 +298,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-        <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row h-[600px] md:h-auto md:max-h-[85vh] relative">
+        <div className="bg-surface border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row h-[600px] md:h-auto md:max-h-[85vh] relative">
             
             <button 
                 onClick={onClose} 
-                className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 z-50"
+                className="absolute top-4 right-4 text-zinc-400 hover:text-white p-2 z-50"
             >
                 <X className="w-5 h-5" />
             </button>
 
             {/* Sidebar */}
-            <div className="w-full md:w-64 bg-slate-900/50 border-b md:border-b-0 md:border-r border-slate-700 p-4 md:p-6 flex flex-col gap-2 flex-shrink-0">
+            <div className="w-full md:w-64 bg-zinc-900/50 border-b md:border-b-0 md:border-r border-zinc-700 p-4 md:p-6 flex flex-col gap-2 flex-shrink-0">
                 <h2 className="text-xl font-bold text-white mb-4 px-2">Configuración</h2>
                 
                 <button 
                   onClick={() => setActiveTab('profile')}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
-                      activeTab === 'profile' ? 'bg-primary text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      activeTab === 'profile' ? 'bg-primary text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                   }`}
                 >
                     <User className="w-4 h-4" />
@@ -324,7 +324,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <button 
                   onClick={() => setActiveTab('data')}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
-                      activeTab === 'data' ? 'bg-primary text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      activeTab === 'data' ? 'bg-primary text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                   }`}
                 >
                     <Download className="w-4 h-4" />
@@ -334,7 +334,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <button 
                   onClick={() => setActiveTab('security')}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
-                      activeTab === 'security' ? 'bg-primary text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      activeTab === 'security' ? 'bg-primary text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                   }`}
                 >
                     <Shield className="w-4 h-4" />
@@ -343,7 +343,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-slate-800/20 relative custom-scrollbar">
+            <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-zinc-800/20 relative custom-scrollbar">
                 {activeTab === 'profile' && (
                     <div className="space-y-6 animate-fade-in">
                         <div>
@@ -353,23 +353,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-200 mb-2">Nombre de Usuario</label>
+                                    <label className="block text-sm font-bold text-zinc-200 mb-2">Nombre de Usuario</label>
                                     <input 
                                         type="text"
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
-                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-primary outline-none transition-all"
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-primary outline-none transition-all"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center justify-center gap-2">
+                                    <label className="block text-sm font-bold text-zinc-200 mb-2 flex items-center justify-center gap-2">
                                         <ImageIcon className="w-4 h-4"/> Foto de Perfil
                                     </label>
                                     <div className="flex justify-center">
                                         <div 
                                             className={`relative w-24 h-24 rounded-full border-2 border-dashed flex-shrink-0 flex items-center justify-center cursor-pointer overflow-hidden transition-all group ${
-                                                isDragging ? 'border-primary bg-primary/10' : 'border-slate-600 hover:border-slate-500 bg-slate-800'
+                                                isDragging ? 'border-primary bg-primary/10' : 'border-zinc-600 hover:border-zinc-500 bg-zinc-800'
                                             }`}
                                             onDragOver={handleDragOver}
                                             onDragLeave={handleDragLeave}
@@ -384,12 +384,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                     </div>
                                                 </>
                                             ) : (
-                                                <Upload className="w-8 h-8 text-slate-400" />
+                                                <Upload className="w-8 h-8 text-zinc-400" />
                                             )}
                                             <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={handleAvatarFileSelect} />
                                         </div>
                                     </div>
-                                    <p className="text-xs text-slate-500 mt-2 text-center">
+                                    <p className="text-xs text-zinc-500 mt-2 text-center">
                                         Arrastra una imagen o haz clic para seleccionarla.
                                     </p>
                                 </div>
@@ -412,7 +412,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="space-y-8 animate-fade-in relative">
                         
                         {/* STORAGE HEALTH WIDGET */}
-                        <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 md:p-5 relative overflow-hidden">
+                        <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-4 md:p-5 relative overflow-hidden">
                              <div className="flex items-center justify-between mb-4">
                                  <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                                      <HardDrive className={`w-4 h-4 ${storageStats.status === 'critical' ? 'text-red-500' : 'text-blue-400'}`} />
@@ -428,7 +428,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                              </div>
 
                              {/* Health Bar */}
-                             <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden mb-2">
+                             <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden mb-2">
                                  <div 
                                     className={`h-full transition-all duration-1000 ${
                                         storageStats.status === 'critical' ? 'bg-gradient-to-r from-red-500 to-orange-500' :
@@ -438,7 +438,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     style={{ width: `${storageStats.percentUsed}%` }}
                                  />
                              </div>
-                             <p className="text-xs text-slate-500 mb-4">
+                             <p className="text-xs text-zinc-500 mb-4">
                                  {storageStats.count} obras guardadas. 
                                  {storageStats.status === 'critical' && <span className="text-red-400 ml-1">¡Atención! El tamaño es elevado.</span>}
                                  {storageStats.status === 'warning' && <span className="text-yellow-400 ml-1">Considera optimizar.</span>}
@@ -446,7 +446,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                              </p>
 
                              {/* CLEANING TOOLS */}
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-800 pt-4">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-zinc-800 pt-4">
                                  {/* Tool 1: Clean Trash */}
                                  {storageStats.candidates.lowRated.length > 0 ? (
                                      <button 
@@ -462,8 +462,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                          </p>
                                      </button>
                                  ) : (
-                                     <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 opacity-50 flex flex-col justify-center">
-                                         <span className="text-xs font-bold text-slate-500 flex items-center gap-2"><CheckCircle2 className="w-3 h-3"/> Sin basura detectada</span>
+                                     <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50 opacity-50 flex flex-col justify-center">
+                                         <span className="text-xs font-bold text-zinc-500 flex items-center gap-2"><CheckCircle2 className="w-3 h-3"/> Sin basura detectada</span>
                                      </div>
                                  )}
 
@@ -472,12 +472,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                      <button 
                                         onClick={cleanDropped}
                                         disabled={isProcessingClean}
-                                        className="text-left p-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 transition-colors"
+                                        className="text-left p-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 transition-colors"
                                      >
-                                         <span className="flex items-center gap-2 text-xs font-bold text-slate-300 mb-1">
+                                         <span className="flex items-center gap-2 text-xs font-bold text-zinc-300 mb-1">
                                              <Archive className="w-3.5 h-3.5" /> Vaciar "Descartados"
                                          </span>
-                                         <p className="text-[10px] text-slate-500">
+                                         <p className="text-[10px] text-zinc-500">
                                              {storageStats.candidates.dropped.length} obras abandonadas.
                                          </p>
                                      </button>
@@ -507,14 +507,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         {/* EXPORT / IMPORT SECTION */}
                         <div className="grid grid-cols-1 gap-6">
                             {/* Full Backup */}
-                            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                            <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-700">
                                 <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wider mb-4 flex items-center gap-2">
                                     <Shield className="w-4 h-4" /> Respaldo Total
                                 </h3>
                                 <div className="space-y-3">
                                     <button 
                                         onClick={() => { onExportBackup(); showToast("Generando backup optimizado...", "info"); }}
-                                        className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-between group"
+                                        className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-between group"
                                     >
                                         <span className="flex items-center gap-2">
                                             <Download className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
@@ -526,7 +526,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         <button 
                                             type="button"
                                             onClick={triggerImportBackup}
-                                            className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                                            className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
                                         >
                                             <Upload className="w-4 h-4 text-blue-400" />
                                             Restaurar Backup
@@ -544,14 +544,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             </div>
                             
                             {/* Catalog Share */}
-                            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                            <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-700">
                                 <h3 className="text-sm font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
                                     <Share2 className="w-4 h-4" /> Compartir Catálogo
                                 </h3>
                                 <div className="space-y-3">
                                     <button 
                                         onClick={() => { onExportCatalog(); showToast("Generando catálogo optimizado...", "info"); }}
-                                        className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-between group"
+                                        className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-between group"
                                     >
                                         <span className="flex items-center gap-2">
                                             <FileJson className="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" />
@@ -562,7 +562,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <button 
                                         type="button"
                                         onClick={triggerImportCatalog}
-                                        className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                                        className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
                                     >
                                         <Upload className="w-4 h-4 text-purple-400" />
                                         Importar / Fusionar
@@ -595,17 +595,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                          {/* Clear Library Confirmation Overlay */}
                          {showClearLibraryConfirm && (
-                            <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-20 rounded-xl">
+                            <div className="absolute inset-0 bg-zinc-900/90 backdrop-blur-sm flex items-center justify-center z-20 rounded-xl">
                                 <div className="bg-surface border border-red-500/50 p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
                                     <Trash2 className="w-12 h-12 text-red-500 mx-auto mb-3" />
                                     <h3 className="text-lg font-bold text-white mb-2">¿Borrar TODO?</h3>
-                                    <p className="text-sm text-slate-300 mb-6">
+                                    <p className="text-sm text-zinc-300 mb-6">
                                         Perderás el progreso de <strong>todas</strong> tus obras. Tu perfil se mantendrá.
                                     </p>
                                     <div className="flex gap-3">
                                         <button 
                                             onClick={() => setShowClearLibraryConfirm(false)}
-                                            className="flex-1 px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                                            className="flex-1 px-4 py-2 bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors"
                                         >
                                             Cancelar
                                         </button>
@@ -626,26 +626,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="space-y-6 animate-fade-in relative">
                         {/* API Key Section */}
                         <div>
-                            <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
+                            <label className="block text-sm font-bold text-zinc-200 mb-2 flex items-center gap-2">
                                 <Key className="w-4 h-4 text-primary" /> Gemini API Key
                             </label>
                             <input 
                                 type="password"
                                 value={apiKey}
                                 onChange={(e) => setApiKey(e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-primary outline-none transition-all font-mono"
+                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-primary outline-none transition-all font-mono"
                                 placeholder="sk-..."
                             />
-                            <p className="text-xs text-slate-500 mt-2">
+                            <p className="text-xs text-zinc-500 mt-2">
                                 Esta clave se usa para buscar información de nuevas obras.
                             </p>
                         </div>
 
-                        <hr className="border-slate-700/50" />
+                        <hr className="border-zinc-700/50" />
 
                         {/* Password Section */}
                         <div>
-                            <label className="block text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
+                            <label className="block text-sm font-bold text-zinc-200 mb-2 flex items-center gap-2">
                                 <Shield className="w-4 h-4 text-emerald-400" /> Contraseña de Acceso
                             </label>
                             
@@ -662,7 +662,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </button>
                                 </div>
                             ) : (
-                                <p className="text-xs text-slate-500 mb-4">No tienes contraseña establecida. Tu colección es pública en este dispositivo.</p>
+                                <p className="text-xs text-zinc-500 mb-4">No tienes contraseña establecida. Tu colección es pública en este dispositivo.</p>
                             )}
 
                             <div className="relative">
@@ -670,13 +670,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     type={showPassword ? "text" : "password"}
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all pr-10"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all pr-10"
                                     placeholder={userProfile.password ? "Cambiar contraseña..." : "Establecer nueva contraseña..."}
                                 />
                                 <button 
                                     type="button" 
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                                    className="absolute right-3 top-1/2 -tranzinc-y-1/2 text-zinc-500 hover:text-zinc-300"
                                 >
                                     {showPassword ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
                                 </button>
@@ -695,17 +695,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                         {/* Custom Confirmation Modal Overlay */}
                         {showDeletePasswordConfirm && (
-                            <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-10 rounded-xl">
-                                <div className="bg-surface border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
+                            <div className="absolute inset-0 bg-zinc-900/90 backdrop-blur-sm flex items-center justify-center z-10 rounded-xl">
+                                <div className="bg-surface border border-zinc-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
                                     <AlertTriangle className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
                                     <h3 className="text-lg font-bold text-white mb-2">¿Eliminar Contraseña?</h3>
-                                    <p className="text-sm text-slate-400 mb-6">
+                                    <p className="text-sm text-zinc-400 mb-6">
                                         Cualquiera con acceso a este dispositivo podrá ver tu biblioteca completa.
                                     </p>
                                     <div className="flex gap-3">
                                         <button 
                                             onClick={() => setShowDeletePasswordConfirm(false)}
-                                            className="flex-1 px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+                                            className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
                                         >
                                             Cancelar
                                         </button>

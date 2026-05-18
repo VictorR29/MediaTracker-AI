@@ -42,9 +42,9 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
   return (
     <div className="flex flex-col gap-6 xl:gap-10 pt-10 lg:pt-0">
       {/* Synopsis */}
-      <div className="bg-slate-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-slate-800 shadow-xl">
+      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-zinc-800 shadow-xl">
         <div className="flex items-center justify-between mb-4 xl:mb-6">
-          <h3 className="text-xs xl:text-base font-bold text-slate-400 uppercase tracking-widest flex items-center gap-3">
+          <h3 className="text-xs xl:text-base font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-3">
             <FileText className="w-4 h-4 xl:w-5 xl:h-5" /> Sinopsis
           </h3>
           <button onClick={onSmartUpdate} disabled={isUpdatingInfo} className="text-[10px] xl:text-xs text-[rgb(var(--card-rgb))] flex items-center gap-2 font-bold hover:underline">
@@ -55,17 +55,17 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
           <textarea
             value={aiData.synopsis}
             onChange={(e) => onAIDataChange('synopsis', e.target.value)}
-            className="w-full h-56 bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-300 text-sm xl:text-base outline-none focus:border-[rgb(var(--card-rgb))] leading-relaxed"
+            className="w-full h-56 bg-zinc-900/50 border border-zinc-700 rounded-2xl p-5 text-zinc-300 text-sm xl:text-base outline-none focus:border-[rgb(var(--card-rgb))] leading-relaxed"
           />
         ) : (
-          <p className="text-sm xl:text-base text-slate-300 leading-relaxed whitespace-pre-line font-medium">
+          <p className="text-sm xl:text-base text-zinc-300 leading-relaxed whitespace-pre-line font-medium">
             {aiData.synopsis}
           </p>
         )}
       </div>
 
       {/* Progress Tracking */}
-      <div className="bg-slate-900/50 rounded-[2.5rem] p-6 xl:p-8 border border-slate-800 relative overflow-hidden shadow-2xl">
+      <div className="bg-zinc-900/50 rounded-[2.5rem] p-6 xl:p-8 border border-zinc-800 relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 left-0 w-2 h-full bg-[rgb(var(--card-rgb))]"></div>
         <div className="flex items-center justify-between mb-6 xl:mb-8">
           <h3 className="text-xs xl:text-base font-bold text-white uppercase tracking-widest flex items-center gap-3">
@@ -79,11 +79,11 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
         <div className="space-y-6 xl:space-y-8">
           {/* Status Select */}
           <div>
-            <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">Estado de la Obra</span>
+            <span className="block text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Estado de la Obra</span>
             <select
               value={tracking.status}
               onChange={(e) => onInputChange('status', e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 xl:px-5 xl:py-4 text-sm xl:text-base font-bold text-white outline-none focus:border-[rgb(var(--card-rgb))] appearance-none shadow-inner"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 xl:px-5 xl:py-4 text-sm xl:text-base font-bold text-white outline-none focus:border-[rgb(var(--card-rgb))] appearance-none shadow-inner"
             >
               <option value="Sin empezar">Sin empezar</option>
               <option value="Viendo/Leyendo">Viendo/Leyendo</option>
@@ -106,7 +106,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
                   type="date"
                   value={tracking.nextReleaseDate || ''}
                   onChange={(e) => onInputChange('nextReleaseDate', e.target.value)}
-                  className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[rgb(var(--card-rgb))]"
+                  className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[rgb(var(--card-rgb))]"
                 />
               </div>
               <p className="text-[10px] text-[rgb(var(--card-rgb)/0.7)] mt-2 pl-1">
@@ -120,13 +120,13 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
             <div className="space-y-4 xl:space-y-6">
               <div className="grid grid-cols-2 gap-4 xl:gap-6">
                 <div className="flex-1">
-                  <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">
+                  <span className="block text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">
                     {isReadingContent ? 'Volumen Actual' : 'Temporada Actual'}
                   </span>
                   <div className="relative">
                     <button
                       onClick={() => onInputChange('currentSeason', Math.max(1, tracking.currentSeason - 1))}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-white"
+                      className="absolute left-3 top-1/2 -tranzinc-y-1/2 p-1.5 text-zinc-500 hover:text-white"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -138,34 +138,34 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
                         if (tracking.totalSeasons > 0 && val > tracking.totalSeasons) val = tracking.totalSeasons;
                         onInputChange('currentSeason', val);
                       }}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
                     />
                     <button
                       onClick={() => onInputChange('currentSeason', tracking.totalSeasons > 0 ? Math.min(tracking.totalSeasons, tracking.currentSeason + 1) : tracking.currentSeason + 1)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-white"
+                      className="absolute right-3 top-1/2 -tranzinc-y-1/2 p-1.5 text-zinc-500 hover:text-white"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">Total {isReadingContent ? 'Vols' : 'Temps'}</span>
+                  <span className="block text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Total {isReadingContent ? 'Vols' : 'Temps'}</span>
                   <input
                     type="number"
                     value={tracking.totalSeasons}
                     onChange={(e) => onInputChange('totalSeasons', parseInt(e.target.value) || 1)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 xl:gap-6">
                 <div>
-                  <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">Capítulos Vistos</span>
+                  <span className="block text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Capítulos Vistos</span>
                   <div className="relative">
                     <button
                       onClick={() => onInputChange('watchedEpisodes', Math.max(0, tracking.watchedEpisodes - 1))}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-white"
+                      className="absolute left-3 top-1/2 -tranzinc-y-1/2 p-1.5 text-zinc-500 hover:text-white"
                     >
                       <Minus className="w-3 h-3 xl:w-4 xl:h-4" />
                     </button>
@@ -177,33 +177,33 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
                         if (tracking.totalEpisodesInSeason > 0 && val > tracking.totalEpisodesInSeason) val = tracking.totalEpisodesInSeason;
                         onInputChange('watchedEpisodes', val);
                       }}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
                     />
                     <button
                       onClick={() => onInputChange('watchedEpisodes', tracking.totalEpisodesInSeason > 0 ? Math.min(tracking.totalEpisodesInSeason, tracking.watchedEpisodes + 1) : tracking.watchedEpisodes + 1)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-white"
+                      className="absolute right-3 top-1/2 -tranzinc-y-1/2 p-1.5 text-zinc-500 hover:text-white"
                     >
                       <Plus className="w-3 h-3 xl:w-4 xl:h-4" />
                     </button>
                   </div>
                 </div>
                 <div>
-                  <span className="block text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">Total Capítulos</span>
+                  <span className="block text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Total Capítulos</span>
                   <input
                     type="number"
                     value={tracking.totalEpisodesInSeason}
                     onChange={(e) => onInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-3 xl:py-4 text-center text-base xl:text-lg font-bold text-white outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <div className="flex justify-between text-[10px] xl:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 xl:mb-3">
+                <div className="flex justify-between text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">
                   <span>Progreso T.{tracking.currentSeason}</span>
                   <span>{progressPercent.toFixed(0)}%</span>
                 </div>
-                <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
+                <div className="h-2.5 bg-zinc-800 rounded-full overflow-hidden shadow-inner">
                   <div
                     className="h-full transition-all duration-700"
                     style={{
@@ -232,7 +232,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
           {isMovie && (
             <button
               onClick={() => onInputChange('status', tracking.status === 'Completado' ? 'Sin empezar' : 'Completado')}
-              className={`w-full py-4 xl:py-5 rounded-[1.25rem] font-black text-sm xl:text-base flex items-center justify-center gap-4 transition-all border-2 ${tracking.status === 'Completado' ? 'bg-green-500/10 border-green-500/50 text-green-500 shadow-lg shadow-green-500/10' : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'}`}
+              className={`w-full py-4 xl:py-5 rounded-[1.25rem] font-black text-sm xl:text-base flex items-center justify-center gap-4 transition-all border-2 ${tracking.status === 'Completado' ? 'bg-green-500/10 border-green-500/50 text-green-500 shadow-lg shadow-green-500/10' : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800'}`}
             >
               {tracking.status === 'Completado' ? <CheckCircle2 className="w-5 h-5 xl:w-6 xl:h-6" /> : <PlayCircle className="w-5 h-5 xl:w-6 xl:h-6" />}
               {tracking.status === 'Completado' ? 'COMPLETADO' : 'MARCAR COMO VISTO'}
@@ -242,22 +242,22 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
       </div>
 
       {/* Personajes Destacados */}
-      <div className="bg-slate-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-slate-800">
-        <h3 className="text-xs xl:text-base font-bold text-slate-400 uppercase tracking-widest flex items-center gap-3 mb-4 xl:mb-6">
+      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-zinc-800">
+        <h3 className="text-xs xl:text-base font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-3 mb-4 xl:mb-6">
           <User className="w-4 h-4 xl:w-5 xl:h-5" /> Personajes Destacados
         </h3>
 
         {/* Character Tags List with Drag & Drop */}
         <div className="flex flex-wrap gap-2 xl:gap-3 mb-4 xl:mb-6">
           {(tracking.favoriteCharacters || []).map((char, idx) => {
-            let rankStyle = "bg-slate-800 border-slate-700 text-slate-300";
+            let rankStyle = "bg-zinc-800 border-zinc-700 text-zinc-300";
             let icon = null;
 
             if (idx === 0) {
               rankStyle = "bg-yellow-500/10 border-yellow-500 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.2)]";
               icon = <Trophy className="w-3.5 h-3.5" />;
             } else if (idx === 1) {
-              rankStyle = "bg-slate-300/10 border-slate-400 text-slate-300 shadow-[0_0_10px_rgba(203,213,225,0.1)]";
+              rankStyle = "bg-zinc-300/10 border-zinc-400 text-zinc-300 shadow-[0_0_10px_rgba(203,213,225,0.1)]";
               icon = <Medal className="w-3.5 h-3.5" />;
             } else if (idx === 2) {
               rankStyle = "bg-orange-700/10 border-orange-700 text-orange-600 shadow-[0_0_10px_rgba(194,65,12,0.1)]";
@@ -295,7 +295,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
             placeholder="Añadir nombre de personaje..."
             value={newCharacterInput}
             onChange={(e) => setNewCharacterInput(e.target.value)}
-            className="flex-1 bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-2.5 xl:px-5 xl:py-3 text-sm text-white outline-none focus:border-[rgb(var(--card-rgb))]"
+            className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl px-4 py-2.5 xl:px-5 xl:py-3 text-sm text-white outline-none focus:border-[rgb(var(--card-rgb))]"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 onAddCharacter();
@@ -309,7 +309,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
             <Plus className="w-5 h-5 xl:w-6 xl:h-6" />
           </button>
         </div>
-        <p className="text-[10px] text-slate-500 mt-2 italic pl-2">
+        <p className="text-[10px] text-zinc-500 mt-2 italic pl-2">
 Arrastra los nombres para cambiar su posición. Los 5 primeros aparecerán destacados.
         </p>
       </div>

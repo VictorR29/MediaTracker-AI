@@ -146,7 +146,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       case 'En Pausa': return { bg: 'bg-orange-500', text: 'text-white', label: 'EN PAUSA' };
       case 'Planeado / Pendiente': return { bg: 'bg-purple-500', text: 'text-white', label: 'PLANEADO' };
       case 'Descartado': return { bg: 'bg-red-600', text: 'text-white', label: 'DESCARTADO' };
-      default: return { bg: 'bg-slate-700', text: 'text-slate-300', label: 'DESCONOCIDO' };
+      default: return { bg: 'bg-zinc-700', text: 'text-zinc-300', label: 'DESCONOCIDO' };
     }
   })();
 
@@ -165,7 +165,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
     <div
       ref={cardRef}
       onClick={() => onClick(item)}
-      className={`group relative rounded-xl overflow-hidden cursor-pointer flex flex-col bg-[#1A1D26] w-full
+      className={`group relative rounded-xl overflow-hidden cursor-pointer flex flex-col bg-[#111113] w-full
         md:hover:scale-[1.02] md:transition-transform md:duration-200
         ${isVisible ? 'opacity-100' : 'opacity-0'}`}
       style={{
@@ -190,7 +190,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       )}
 
       {/* --- IMAGE BACKGROUND --- */}
-      <div className="absolute inset-0 bg-slate-900">
+      <div className="absolute inset-0 bg-zinc-900">
         {imgSrc && (
           <img
             src={imgSrc}
@@ -201,7 +201,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
             className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent" />
       </div>
 
       {/* --- TOP BADGES & ACTIONS --- */}
@@ -251,7 +251,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       {showQuickAction && (
         <button
           onClick={handleQuickAction}
-          className={`absolute bottom-20 right-3 z-40 p-2 md:p-3 rounded-full transform active:scale-95 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 ${isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-slate-900'}`}
+          className={`absolute bottom-20 right-3 z-40 p-2 md:p-3 rounded-full transform active:scale-95 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 ${isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-zinc-900'}`}
           style={!isCompleteSeason ? { color: dynamicColor } : {}}
           title={isCompleteSeason ? (isLastSeason ? "Completar Obra" : "Siguiente Temporada") : "+1 Capítulo"}
         >
@@ -285,12 +285,12 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
         <div className="flex items-center justify-between mt-0.5 pl-0.5">
           <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: dynamicColor }} />
-            <span className="text-[10px] md:text-xs font-bold text-slate-300 tracking-wide truncate max-w-[100px]">
+            <span className="text-[10px] md:text-xs font-bold text-zinc-300 tracking-wide truncate max-w-[100px]">
               {seasonLabel}
             </span>
           </div>
           <div className="px-1.5 py-0.5 rounded bg-white/10 border border-white/5">
-            <span className="text-[10px] md:text-xs font-mono font-medium text-slate-200">
+            <span className="text-[10px] md:text-xs font-mono font-medium text-zinc-200">
               {progressLabel}
             </span>
           </div>

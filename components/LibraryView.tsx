@@ -63,8 +63,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             />
           ))}
           {displayedLibrary.length === 0 && (
-            <div className="col-span-full text-center py-20 text-slate-500 flex flex-col items-center">
-              <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mb-4 border border-slate-800">
+            <div className="col-span-full text-center py-20 text-zinc-500 flex flex-col items-center">
+              <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-4 border border-zinc-800">
                 <SearchIcon className="w-8 h-8 opacity-20" />
               </div>
               <p>No se encontraron obras</p>

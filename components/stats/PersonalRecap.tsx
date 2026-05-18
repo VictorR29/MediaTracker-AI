@@ -9,7 +9,7 @@ export interface PersonalRecapProps {
 export const PersonalRecap: React.FC<PersonalRecapProps> = ({ stats }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
     {/* Visual Time Card */}
-    <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-4 md:p-8 shadow-2xl transition-all hover:border-indigo-500/30 flex flex-col">
+    <div className="group relative overflow-hidden rounded-3xl bg-zinc-900/60 backdrop-blur-xl border border-white/10 p-4 md:p-8 shadow-2xl transition-all hover:border-indigo-500/30 flex flex-col">
       {/* Decorative background glow */}
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-indigo-500/30 transition-colors duration-700"></div>
 
@@ -21,7 +21,7 @@ export const PersonalRecap: React.FC<PersonalRecapProps> = ({ stats }) => (
           </div>
           <div>
             <h3 className="text-lg font-bold text-white leading-none">Tiempo Visual</h3>
-            <p className="text-xs text-slate-400 mt-1">Invertidos en pantallas</p>
+            <p className="text-xs text-zinc-400 mt-1">Invertidos en pantallas</p>
           </div>
         </div>
 
@@ -35,39 +35,39 @@ export const PersonalRecap: React.FC<PersonalRecapProps> = ({ stats }) => (
         {/* Chips Grid */}
         <div className="grid grid-cols-2 gap-2 md:gap-3 mt-auto">
           {/* Anime Chip */}
-          <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip min-w-0">
+          <div className="bg-zinc-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-zinc-800/60 transition-colors group/chip min-w-0">
             <div className="flex items-center gap-2 mb-2 min-w-0">
               <Tv className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-indigo-300 transition-colors truncate">Animes</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 group-hover/chip:text-indigo-300 transition-colors truncate">Animes</span>
             </div>
             <div className="min-w-0">
-              <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.animeEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
-              <span className="block text-[10px] text-slate-500 truncate">{stats.consumedAnimes} obras</span>
+              <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.animeEpisodes} <span className="text-xs font-medium text-zinc-500">caps</span></span>
+              <span className="block text-[10px] text-zinc-500 truncate">{stats.consumedAnimes} obras</span>
             </div>
           </div>
 
           {/* Series Chip */}
-          <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip min-w-0">
+          <div className="bg-zinc-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-zinc-800/60 transition-colors group/chip min-w-0">
             <div className="flex items-center gap-2 mb-2 min-w-0">
               <Layers className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-purple-300 transition-colors truncate">Series</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 group-hover/chip:text-purple-300 transition-colors truncate">Series</span>
             </div>
             <div className="min-w-0">
-              <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.seriesEpisodes} <span className="text-xs font-medium text-slate-500">caps</span></span>
-              <span className="block text-[10px] text-slate-500 truncate">{stats.consumedSeries} obras</span>
+              <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.seriesEpisodes} <span className="text-xs font-medium text-zinc-500">caps</span></span>
+              <span className="block text-[10px] text-zinc-500 truncate">{stats.consumedSeries} obras</span>
             </div>
           </div>
 
           {/* Movies Chip - Full width on bottom */}
-          <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors col-span-2 group/chip min-w-0">
+          <div className="bg-zinc-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-zinc-800/60 transition-colors col-span-2 group/chip min-w-0">
             <div className="flex items-center gap-2 mb-2 min-w-0">
               <Film className="w-3.5 h-3.5 text-pink-400 flex-shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-pink-300 transition-colors truncate">Películas</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 group-hover/chip:text-pink-300 transition-colors truncate">Películas</span>
             </div>
             <div className="flex justify-between items-end min-w-0">
               <div className="min-w-0">
-                <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.consumedMovies} <span className="text-xs font-medium text-slate-500">vistas</span></span>
-                <span className="block text-[10px] text-slate-500 truncate">{stats.consumedMovies} obras</span>
+                <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.consumedMovies} <span className="text-xs font-medium text-zinc-500">vistas</span></span>
+                <span className="block text-[10px] text-zinc-500 truncate">{stats.consumedMovies} obras</span>
               </div>
             </div>
           </div>
@@ -76,7 +76,7 @@ export const PersonalRecap: React.FC<PersonalRecapProps> = ({ stats }) => (
     </div>
 
     {/* Reading Time Card */}
-    <div className="group relative overflow-hidden rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-4 md:p-8 shadow-2xl transition-all hover:border-emerald-500/30 flex flex-col">
+    <div className="group relative overflow-hidden rounded-3xl bg-zinc-900/60 backdrop-blur-xl border border-white/10 p-4 md:p-8 shadow-2xl transition-all hover:border-emerald-500/30 flex flex-col">
       {/* Decorative background glow */}
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-emerald-500/30 transition-colors duration-700"></div>
 
@@ -88,7 +88,7 @@ export const PersonalRecap: React.FC<PersonalRecapProps> = ({ stats }) => (
           </div>
           <div>
             <h3 className="text-lg font-bold text-white leading-none">Tiempo Lectura</h3>
-            <p className="text-xs text-slate-400 mt-1">Sumergido en historias</p>
+            <p className="text-xs text-zinc-400 mt-1">Sumergido en historias</p>
           </div>
         </div>
 
@@ -102,26 +102,26 @@ export const PersonalRecap: React.FC<PersonalRecapProps> = ({ stats }) => (
         {/* Chips Grid - Stacked on Desktop to match height of Visual Card */}
         <div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-3 mt-auto">
           {/* Manhwa/Manga Chip */}
-          <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip min-w-0">
+          <div className="bg-zinc-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-zinc-800/60 transition-colors group/chip min-w-0">
             <div className="flex items-center gap-2 mb-2 min-w-0">
               <BookOpen className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-orange-300 transition-colors truncate">Manhwa/Manga</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 group-hover/chip:text-orange-300 transition-colors truncate">Manhwa/Manga</span>
             </div>
             <div className="min-w-0">
-              <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.readingChapters} <span className="text-xs font-medium text-slate-500">caps</span></span>
-              <span className="block text-[10px] text-slate-500 truncate">{stats.consumedManhwas} obras</span>
+              <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.readingChapters} <span className="text-xs font-medium text-zinc-500">caps</span></span>
+              <span className="block text-[10px] text-zinc-500 truncate">{stats.consumedManhwas} obras</span>
             </div>
           </div>
 
           {/* Libros Chip */}
-          <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-slate-800/60 transition-colors group/chip min-w-0">
+          <div className="bg-zinc-800/40 border border-white/5 rounded-2xl p-3 flex flex-col justify-between hover:bg-zinc-800/60 transition-colors group/chip min-w-0">
             <div className="flex items-center gap-2 mb-2 min-w-0">
               <Book className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover/chip:text-emerald-300 transition-colors truncate">Libros</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 group-hover/chip:text-emerald-300 transition-colors truncate">Libros</span>
             </div>
             <div className="min-w-0">
-              <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.bookChapters} <span className="text-xs font-medium text-slate-500">pág</span></span>
-              <span className="block text-[10px] text-slate-500 truncate">{stats.consumedBooks} obras</span>
+              <span className="block text-lg md:text-xl font-bold text-white mb-0.5 truncate">{stats.bookChapters} <span className="text-xs font-medium text-zinc-500">pág</span></span>
+              <span className="block text-[10px] text-zinc-500 truncate">{stats.consumedBooks} obras</span>
             </div>
           </div>
         </div>

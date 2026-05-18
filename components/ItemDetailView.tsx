@@ -26,7 +26,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({ onUpdateItem, on
 
   if (!item) {
     return (
-      <div className="animate-fade-in text-center py-20 text-slate-500">
+      <div className="animate-fade-in text-center py-20 text-zinc-500">
         <p>Obra no encontrada</p>
         <button
           onClick={() => navigate('/')}
@@ -42,7 +42,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({ onUpdateItem, on
     <div className="animate-fade-in">
       <button
         onClick={() => navigate(-1)}
-        className="mb-4 flex items-center gap-2 text-slate-400 hover:text-white transition-colors font-medium"
+        className="mb-4 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors font-medium"
       >
         ← Volver a {backLabel}
       </button>

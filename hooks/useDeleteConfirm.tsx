@@ -40,20 +40,20 @@ export const useDeleteConfirm = (onAfterDelete?: () => void): DeleteConfirmState
   const DeleteModal: React.FC = () => {
     if (!itemToDelete) return null;
     return (
-      <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-        <div className="bg-surface border border-slate-700 rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-fade-in-up">
+      <div className="fixed inset-0 z-[100] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+        <div className="bg-surface border border-zinc-700 rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-fade-in-up">
           <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
             <AlertTriangle className="w-8 h-8 text-red-500" />
           </div>
           <h3 className="text-xl font-bold text-white mb-2">¿Eliminar Obra?</h3>
-          <p className="text-sm text-slate-400 mb-6">
+          <p className="text-sm text-zinc-400 mb-6">
             Estás a punto de borrar <span className="text-white font-bold">"{itemToDelete.aiData.title}"</span>.
             <br />Esta acción es irreversible y perderás todo tu progreso.
           </p>
           <div className="flex gap-3">
             <button
               onClick={cancelDelete}
-              className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-700"
+              className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl transition-all border border-zinc-700"
             >
               Cancelar
             </button>

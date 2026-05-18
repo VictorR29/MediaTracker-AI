@@ -83,33 +83,33 @@ const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ 
   const localPercent = totalItemsEcosystem > 0 ? (stats.itemsWithoutLinks / totalItemsEcosystem) * 100 : 0;
 
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-md transition-all overflow-hidden">
+    <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 md:p-6 shadow-md transition-all overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <span className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
+          <span className="text-xs font-bold uppercase text-zinc-500 tracking-wider flex items-center gap-2">
             <PieChart className="w-4 h-4 text-emerald-500" /> Distribución de Consumo
           </span>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-zinc-400 mt-1">
             Impacto en tu tiempo y fuentes de contenido
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg w-full md:w-auto">
+        <div className="grid grid-cols-3 gap-1 bg-zinc-800 p-1 rounded-lg w-full md:w-auto">
           <button
             onClick={() => setDistributionAxis('genre')}
-            className={`px-2 py-1.5 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap w-full ${distributionAxis === 'genre' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+            className={`px-2 py-1.5 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap w-full ${distributionAxis === 'genre' ? 'bg-emerald-600 text-white shadow' : 'text-zinc-400 hover:text-white'}`}
           >
             <Hash className="w-3 h-3 hidden sm:inline" /> Géneros
           </button>
           <button
             onClick={() => setDistributionAxis('emotion')}
-            className={`px-2 py-1.5 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap w-full ${distributionAxis === 'emotion' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+            className={`px-2 py-1.5 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap w-full ${distributionAxis === 'emotion' ? 'bg-emerald-600 text-white shadow' : 'text-zinc-400 hover:text-white'}`}
           >
             <Heart className="w-3 h-3 hidden sm:inline" /> Emociones
           </button>
           <button
             onClick={() => setDistributionAxis('platform')}
-            className={`px-2 py-1.5 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap w-full ${distributionAxis === 'platform' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+            className={`px-2 py-1.5 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap w-full ${distributionAxis === 'platform' ? 'bg-indigo-600 text-white shadow' : 'text-zinc-400 hover:text-white'}`}
           >
             <Globe className="w-3 h-3 hidden sm:inline" /> Plataformas
           </button>
@@ -122,11 +122,11 @@ const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ 
         <div className="animate-fade-in w-full">
           {/* 1. Bar Chart: Online vs Local */}
           <div className="mb-8">
-            <div className="flex justify-between text-xs text-slate-400 mb-2 font-medium">
+            <div className="flex justify-between text-xs text-zinc-400 mb-2 font-medium">
               <span className="flex items-center gap-1 min-w-0 truncate mr-2"><Globe className="w-3 h-3 text-indigo-400 flex-shrink-0"/> <span className="truncate">Streaming / Web ({linkPercent.toFixed(0)}%)</span></span>
-              <span className="flex items-center gap-1 min-w-0 truncate"><HardDrive className="w-3 h-3 text-slate-500 flex-shrink-0"/> <span className="truncate">Local / Físico ({localPercent.toFixed(0)}%)</span></span>
+              <span className="flex items-center gap-1 min-w-0 truncate"><HardDrive className="w-3 h-3 text-zinc-500 flex-shrink-0"/> <span className="truncate">Local / Físico ({localPercent.toFixed(0)}%)</span></span>
             </div>
-            <div className="h-4 w-full bg-slate-800 rounded-full overflow-hidden flex">
+            <div className="h-4 w-full bg-zinc-800 rounded-full overflow-hidden flex">
               <div
                 className="h-full bg-indigo-500 transition-all duration-1000 relative group"
                 style={{ width: `${linkPercent}%` }}
@@ -134,18 +134,18 @@ const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ 
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
               </div>
               <div
-                className="h-full bg-slate-700 transition-all duration-1000"
+                className="h-full bg-zinc-700 transition-all duration-1000"
                 style={{ width: `${localPercent}%` }}
               ></div>
             </div>
           </div>
 
           {/* 2. Top Platforms List */}
-          <h4 className="text-xs font-bold uppercase text-slate-500 tracking-wider mb-3">Top Fuentes</h4>
+          <h4 className="text-xs font-bold uppercase text-zinc-500 tracking-wider mb-3">Top Fuentes</h4>
           {stats.topPlatforms.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {stats.topPlatforms.map((p) => (
-                <div key={p.domain} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:bg-slate-800 transition-colors">
+                <div key={p.domain} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50 hover:bg-zinc-800 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center overflow-hidden border border-white/10 flex-shrink-0">
                       <img
@@ -154,18 +154,18 @@ const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ 
                         className="w-5 h-5 opacity-80"
                         onError={(e) => e.currentTarget.style.display = 'none'}
                       />
-                      <LinkIcon className="w-4 h-4 text-slate-500 absolute -z-10" />
+                      <LinkIcon className="w-4 h-4 text-zinc-500 absolute -z-10" />
                     </div>
-                    <span className="text-sm font-medium text-slate-200 truncate">{p.name}</span>
+                    <span className="text-sm font-medium text-zinc-200 truncate">{p.name}</span>
                   </div>
-                  <span className="text-xs font-mono text-slate-400 bg-black/20 px-2 py-1 rounded flex-shrink-0">{p.count} obras</span>
+                  <span className="text-xs font-mono text-zinc-400 bg-black/20 px-2 py-1 rounded flex-shrink-0">{p.count} obras</span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-6 border border-dashed border-slate-700 rounded-xl bg-slate-800/20">
-              <p className="text-xs text-slate-500">No se detectaron enlaces externos.</p>
-              <p className="text-[10px] text-slate-600 mt-1">Añade links personalizados a tus obras para ver este ranking.</p>
+            <div className="text-center py-6 border border-dashed border-zinc-700 rounded-xl bg-zinc-800/20">
+              <p className="text-xs text-zinc-500">No se detectaron enlaces externos.</p>
+              <p className="text-[10px] text-zinc-600 mt-1">Añade links personalizados a tus obras para ver este ranking.</p>
             </div>
           )}
         </div>
@@ -223,7 +223,7 @@ const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ 
                       key={idx}
                       onClick={() => setHighlightedSlice(isHighlighted ? null : slice.label)}
                       className={`flex items-center justify-between group cursor-pointer p-1.5 rounded-lg transition-all duration-300 ${
-                        isHighlighted ? 'bg-white/10 shadow-lg border border-white/10 translate-x-1' : 'hover:bg-slate-800/50 border border-transparent'
+                        isHighlighted ? 'bg-white/10 shadow-lg border border-white/10 tranzinc-x-1' : 'hover:bg-zinc-800/50 border border-transparent'
                       } ${
                         isDimmed ? 'opacity-40 grayscale-[0.5]' : 'opacity-100'
                       }`}
@@ -233,12 +233,12 @@ const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ 
                           className={`w-3 h-3 rounded-full shadow-sm flex-shrink-0 transition-transform ${isHighlighted ? 'scale-125' : ''}`}
                           style={{ backgroundColor: slice.color }}
                         />
-                        <span className={`text-sm font-medium transition-colors truncate flex-1 min-w-0 ${isHighlighted ? 'text-white font-bold' : 'text-slate-300 group-hover:text-white'}`} title={slice.label}>
+                        <span className={`text-sm font-medium transition-colors truncate flex-1 min-w-0 ${isHighlighted ? 'text-white font-bold' : 'text-zinc-300 group-hover:text-white'}`} title={slice.label}>
                           {slice.label}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                        <span className={`text-xs transition-colors ${isHighlighted ? 'text-white font-bold' : 'text-slate-200'}`}>
+                        <span className={`text-xs transition-colors ${isHighlighted ? 'text-white font-bold' : 'text-zinc-200'}`}>
                           {slice.percent.toFixed(1)}%
                         </span>
                       </div>
@@ -249,10 +249,10 @@ const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ 
             </div>
           </div>
         ) : (
-          <div className="w-full text-center py-10 opacity-50 flex flex-col items-center bg-slate-800/50 rounded-xl border border-slate-700/50 border-dashed">
-            <PieChart className="w-10 h-10 text-slate-500 mb-2" />
-            <p className="text-sm font-medium text-slate-400">Sin datos suficientes.</p>
-            <p className="text-xs text-slate-600">Añade tags a tus obras o aumenta tu consumo para ver este gráfico.</p>
+          <div className="w-full text-center py-10 opacity-50 flex flex-col items-center bg-zinc-800/50 rounded-xl border border-zinc-700/50 border-dashed">
+            <PieChart className="w-10 h-10 text-zinc-500 mb-2" />
+            <p className="text-sm font-medium text-zinc-400">Sin datos suficientes.</p>
+            <p className="text-xs text-zinc-600">Añade tags a tus obras o aumenta tu consumo para ver este gráfico.</p>
           </div>
         )
       )}

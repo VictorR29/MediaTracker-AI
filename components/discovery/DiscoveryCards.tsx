@@ -15,8 +15,8 @@ export const GenerativeCard: React.FC<GenerativeCardProps> = ({ title, type }) =
   return (
     <div className={`w-full h-full bg-gradient-to-br ${colors.bg} flex flex-col items-center justify-center p-8 text-center relative overflow-hidden`}>
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-      <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-      <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+      <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -tranzinc-y-1/2 tranzinc-x-1/2"></div>
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/20 rounded-full blur-2xl tranzinc-y-1/2 -tranzinc-x-1/2"></div>
 
       <div className="relative z-10 flex flex-col items-center h-full justify-between py-12">
         <div className="border border-white/30 bg-white/10 p-3 rounded-full backdrop-blur-md shadow-lg">
@@ -50,10 +50,10 @@ export const LoadingCard: React.FC = () => {
 
       {/* Main Shimmer Card (Center) */}
       <div
-        className="absolute w-[90%] md:w-[360px] h-full bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-10 animate-[float_3s_infinite_ease-in-out]"
+        className="absolute w-[90%] md:w-[360px] h-full bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-10 animate-[float_3s_infinite_ease-in-out]"
       >
         {/* Shimmer Effect Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 translate-x-[-150%] animate-[shimmer_1.2s_infinite]"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 tranzinc-x-[-150%] animate-[shimmer_1.2s_infinite]"></div>
 
         {/* Decorative Content */}
         <div className="h-full flex flex-col items-center justify-center gap-8 relative z-20">
@@ -70,20 +70,20 @@ export const LoadingCard: React.FC = () => {
       </div>
       <style>{`
         @keyframes shimmer {
-          0% { transform: translateX(-150%) skewX(-12deg); }
-          100% { transform: translateX(150%) skewX(-12deg); }
+          0% { transform: tranzincX(-150%) skewX(-12deg); }
+          100% { transform: tranzincX(150%) skewX(-12deg); }
         }
         @keyframes shuffle-left {
-          0%, 100% { transform: rotate(-4deg) translateX(-10px) scale(0.95); opacity: 0.5; }
-          50% { transform: rotate(-15deg) translateX(-60px) scale(0.9); opacity: 0.8; }
+          0%, 100% { transform: rotate(-4deg) tranzincX(-10px) scale(0.95); opacity: 0.5; }
+          50% { transform: rotate(-15deg) tranzincX(-60px) scale(0.9); opacity: 0.8; }
         }
         @keyframes shuffle-right {
-          0%, 100% { transform: rotate(4deg) translateX(10px) scale(0.95); opacity: 0.5; }
-          50% { transform: rotate(15deg) translateX(60px) scale(0.9); opacity: 0.8; }
+          0%, 100% { transform: rotate(4deg) tranzincX(10px) scale(0.95); opacity: 0.5; }
+          50% { transform: rotate(15deg) tranzincX(60px) scale(0.9); opacity: 0.8; }
         }
         @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
+          0%, 100% { transform: tranzincY(0); }
+          50% { transform: tranzincY(-10px); }
         }
       `}</style>
     </div>
@@ -96,11 +96,11 @@ export interface NoResultsCardProps {
 
 export const NoResultsCard: React.FC<NoResultsCardProps> = ({ onGoBack }) => {
   return (
-    <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl shadow-2xl">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-red-950/20 to-slate-900"></div>
+    <div className="w-full h-full bg-zinc-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl shadow-2xl">
+      <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-red-950/20 to-zinc-900"></div>
 
       {/* Animated rings */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-red-500/20 rounded-full animate-ping [animation-duration:3s]"></div>
+      <div className="absolute top-1/2 left-1/2 -tranzinc-x-1/2 -tranzinc-y-1/2 w-64 h-64 border border-red-500/20 rounded-full animate-ping [animation-duration:3s]"></div>
 
       <div className="relative z-10 flex flex-col items-center gap-6">
         <div className="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
@@ -108,13 +108,13 @@ export const NoResultsCard: React.FC<NoResultsCardProps> = ({ onGoBack }) => {
         </div>
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Incluso para la IA esto es un reto.</h2>
-          <p className="text-slate-400 text-sm md:text-base max-w-xs mx-auto leading-relaxed">
+          <p className="text-zinc-400 text-sm md:text-base max-w-xs mx-auto leading-relaxed">
             La combinación de filtros es muy específica o única. ¿Probamos con otro mood?
           </p>
         </div>
         <button
           onClick={onGoBack}
-          className="mt-4 px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-all shadow-lg flex items-center gap-2 transform hover:scale-105"
+          className="mt-4 px-8 py-4 bg-white text-zinc-900 font-bold rounded-xl hover:bg-zinc-200 transition-all shadow-lg flex items-center gap-2 transform hover:scale-105"
         >
           <ArrowLeft className="w-5 h-5" />
           Ajustar Filtros
@@ -131,15 +131,15 @@ export interface EndCardProps {
 
 export const EndCard: React.FC<EndCardProps> = ({ onLoadMore, onGoBack }) => {
   return (
-    <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl">
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-slate-900 to-slate-800"></div>
+    <div className="w-full h-full bg-zinc-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden border border-white/10 rounded-3xl">
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-zinc-900 to-zinc-800"></div>
       <div className="relative z-10 flex flex-col items-center gap-6">
         <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50 shadow-xl shadow-primary/20">
           <RefreshCw className="w-10 h-10 text-primary" />
         </div>
         <div>
           <h2 className="text-2xl font-bold text-white mb-2">¡Todo visto!</h2>
-          <p className="text-slate-400 text-sm max-w-xs mx-auto">
+          <p className="text-zinc-400 text-sm max-w-xs mx-auto">
             Has revisado las 6 recomendaciones. ¿Quieres generar otro lote basado en los mismos gustos?
           </p>
         </div>
@@ -153,7 +153,7 @@ export const EndCard: React.FC<EndCardProps> = ({ onLoadMore, onGoBack }) => {
           </button>
           <button
             onClick={onGoBack}
-            className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-700"
+            className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl transition-all border border-zinc-700"
           >
             Volver a Filtros
           </button>
@@ -175,7 +175,7 @@ export interface InfoSheetProps {
 export const InfoSheet: React.FC<InfoSheetProps> = ({ card, selectedMood, isOpen, onClose, onSelect, onNext }) => {
   return (
     <div
-      className={`absolute bottom-0 left-0 right-0 bg-slate-900/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${isOpen ? 'translate-y-0' : 'translate-y-full'
+      className={`absolute bottom-0 left-0 right-0 bg-zinc-900/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${isOpen ? 'tranzinc-y-0' : 'tranzinc-y-full'
         }`}
     >
       <div
@@ -209,7 +209,7 @@ export const InfoSheet: React.FC<InfoSheetProps> = ({ card, selectedMood, isOpen
       )}
 
       <div className="space-y-4 mb-8">
-        <p className="text-slate-200 text-sm leading-relaxed font-medium">
+        <p className="text-zinc-200 text-sm leading-relaxed font-medium">
           {card.synopsis}
         </p>
         <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 flex gap-3">
@@ -223,14 +223,14 @@ export const InfoSheet: React.FC<InfoSheetProps> = ({ card, selectedMood, isOpen
       <div className="flex gap-3">
         <button
           onClick={onSelect}
-          className="flex-1 bg-white text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-lg"
+          className="flex-1 bg-white text-zinc-900 font-bold py-3.5 rounded-xl hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2 shadow-lg"
         >
           <Search className="w-5 h-5" />
           Buscar y añadir
         </button>
         <button
           onClick={onNext}
-          className="px-6 py-3.5 bg-slate-800 text-white font-bold rounded-xl border border-white/10 hover:bg-slate-700 transition-colors"
+          className="px-6 py-3.5 bg-zinc-800 text-white font-bold rounded-xl border border-white/10 hover:bg-zinc-700 transition-colors"
         >
           Siguiente
         </button>

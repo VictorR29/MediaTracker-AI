@@ -28,13 +28,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading, place
           {isLoading ? (
             <Loader2 className="h-5 w-5 text-primary animate-spin" />
           ) : (
-            <Search className="h-5 w-5 text-slate-500 group-focus-within:text-slate-300 transition-colors" />
+            <Search className="h-5 w-5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
           )}
         </div>
         <input
           type="text"
-          className="block w-full pl-12 md:pl-14 pr-28 md:pr-32 py-4 md:py-5 bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl 
-                     text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50
+          className="block w-full pl-12 md:pl-14 pr-28 md:pr-32 py-4 md:py-5 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 rounded-2xl 
+                     text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50
                      transition-all shadow-2xl text-base md:text-lg truncate"
           placeholder={placeholder || "Busca un Anime, Serie o Película..."}
           value={query}

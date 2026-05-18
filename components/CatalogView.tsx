@@ -58,13 +58,13 @@ const CatalogPoster: React.FC<{
 
                 {/* BACK FACE (Info & Actions) */}
                 <div 
-                    className="absolute w-full h-full backface-hidden rotate-y-180 rounded-xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900"
+                    className="absolute w-full h-full backface-hidden rotate-y-180 rounded-xl overflow-hidden border border-white/10 shadow-2xl bg-zinc-900"
                     style={{ boxShadow: `inset 0 0 0 1px ${dynamicColor}40` }}
                 >
                     {/* Blurred Background */}
                     <div className="absolute inset-0 z-0">
                          <img src={imageSrc} className="w-full h-full object-cover blur-md scale-125 opacity-20" alt="" />
-                         <div className="absolute inset-0 bg-slate-950/80"></div>
+                         <div className="absolute inset-0 bg-zinc-950/80"></div>
                     </div>
 
                     <div className="relative z-10 h-full p-5 flex flex-col justify-center items-center text-center">
@@ -74,13 +74,13 @@ const CatalogPoster: React.FC<{
                         
                         <div className="w-10 h-1 bg-white/20 rounded-full mb-4"></div>
 
-                        <p className="text-xs text-slate-300 leading-relaxed line-clamp-5 font-medium mb-6">
+                        <p className="text-xs text-zinc-300 leading-relaxed line-clamp-5 font-medium mb-6">
                             {aiData.synopsis}
                         </p>
 
                         <button 
                             onClick={handleDetailClick}
-                            className="w-full py-3 bg-white hover:bg-slate-200 text-slate-900 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg transform hover:scale-105 active:scale-95"
+                            className="w-full py-3 bg-white hover:bg-zinc-200 text-zinc-900 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg transform hover:scale-105 active:scale-95"
                         >
                             <Info className="w-4 h-4" /> Ver Detalles
                         </button>
@@ -138,9 +138,9 @@ const Shelf: React.FC<{
 
     return (
         <div className="mb-12 animate-fade-in-up w-full max-w-full">
-            <div className="flex items-center gap-3 mb-5 px-4 md:px-8 border-l-4 border-slate-700 ml-4 md:ml-8 pl-3">
+            <div className="flex items-center gap-3 mb-5 px-4 md:px-8 border-l-4 border-zinc-700 ml-4 md:ml-8 pl-3">
                 <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight drop-shadow-md">{title}</h2>
-                <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">{items.length}</span>
+                <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">{items.length}</span>
             </div>
             
             <div className="relative group/shelf w-full">
@@ -279,7 +279,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
                 <Shelf title="Explorar más" icon={Compass} items={shelves.exploreMore} onOpenDetail={onOpenDetail} onHoverColor={setActiveColor} />
 
                 {library.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-32 text-slate-500">
+                    <div className="flex flex-col items-center justify-center py-32 text-zinc-500">
                         <Tv className="w-16 h-16 mb-4 opacity-20" />
                         <p className="text-lg font-medium">El catálogo está vacío.</p>
                     </div>

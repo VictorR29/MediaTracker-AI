@@ -45,14 +45,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="p-2 bg-slate-800 rounded-lg shadow shadow-primary/20 flex-shrink-0">
+          <div className="p-2 bg-zinc-800 rounded-lg shadow shadow-primary/20 flex-shrink-0">
             <BarChart2 className="w-6 h-6 text-primary" />
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 tracking-tight truncate">Mis Insights</h2>
+          <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 tracking-tight truncate">Mis Insights</h2>
         </div>
         <button
           onClick={() => setIsSettingsOpen(true)}
-          className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium flex-shrink-0"
+          className="p-2 text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium flex-shrink-0"
         >
           <Settings className="w-4 h-4" />
           <span className="hidden sm:inline">Configurar</span>

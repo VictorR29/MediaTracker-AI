@@ -3,20 +3,22 @@
 @tailwind utilities;
 
 :root {
-  --color-primary: 99 102 241; /* #6366f1 */
-  --color-secondary: 168 85 247; /* #a855f7 */
+  --color-primary: 99 102 241; /* indigo-500 — legacy fallback, overridden by dynamic color */
+  --color-secondary: 168 85 247; /* purple-500 — legacy fallback */
 }
 
 body, html {
-  background-color: #0f172a;
-  color: #f1f5f9;
+  background-color: #09090B;
+  color: #FAFAFA;
+  font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   width: 100%;
   max-width: 100vw;
   position: relative;
   -webkit-tap-highlight-color: transparent;
-  /* GPU-friendly scroll — promote body to compositor layer */
   -webkit-overflow-scrolling: touch;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Scroll perf: contain layout/paint in the main content area */
@@ -24,17 +26,58 @@ main {
   contain: layout style;
 }
 
-/* Custom scrollbar for webkit */
+/* Custom scrollbar — Zinc palette */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #09090B;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 4px;
+  background: #27272A;
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #3F3F46;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #27272A #09090B;
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(99, 102, 241, 0.30);
+}
+
+/* Stagger cascade animation utility */
+.stagger-children > * {
+  animation: staggerIn 400ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 400ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 450ms; }
+.stagger-children > *:nth-child(n+11) { animation-delay: 500ms; }
+
+/* Spring transition utility */
+.transition-spring {
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.transition-spring-bounce {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes staggerIn {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
 }

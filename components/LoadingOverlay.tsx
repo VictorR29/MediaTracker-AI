@@ -34,9 +34,9 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isVisible, type,
       default:
         return {
           icon: Loader2,
-          color: 'text-slate-400',
-          bgColor: 'bg-slate-800',
-          borderColor: 'border-slate-700',
+          color: 'text-zinc-400',
+          bgColor: 'bg-zinc-800',
+          borderColor: 'border-zinc-700',
           title: 'Cargando',
           desc: 'Por favor espera...'
         };
@@ -47,14 +47,14 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isVisible, type,
   const Icon = config.icon;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md animate-fade-in">
       <div className={`relative p-8 rounded-3xl border ${config.borderColor} ${config.bgColor} shadow-2xl max-w-sm w-full mx-4 flex flex-col items-center text-center`}>
         
         {/* Animated Background Glow */}
-        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 ${config.color.replace('text', 'bg')}/20 blur-[50px] rounded-full pointer-events-none`}></div>
+        <div className={`absolute top-1/2 left-1/2 -tranzinc-x-1/2 -tranzinc-y-1/2 w-32 h-32 ${config.color.replace('text', 'bg')}/20 blur-[50px] rounded-full pointer-events-none`}></div>
 
         <div className="relative z-10 mb-6">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border ${config.borderColor} bg-slate-900 shadow-xl`}>
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border ${config.borderColor} bg-zinc-900 shadow-xl`}>
                 <Icon className={`w-8 h-8 ${config.color} ${type === 'restore' ? 'animate-bounce' : 'animate-pulse'}`} />
             </div>
             {/* Spinning ring for all */}
@@ -64,12 +64,12 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isVisible, type,
         <h3 className="text-xl font-bold text-white mb-2 relative z-10">
             {message || config.title}
         </h3>
-        <p className="text-slate-400 text-sm font-medium relative z-10">
+        <p className="text-zinc-400 text-sm font-medium relative z-10">
             {config.desc}
         </p>
 
         {type === 'restore' && (
-             <div className="mt-6 flex items-center gap-2 text-xs text-slate-500 bg-black/20 px-3 py-1.5 rounded-full">
+             <div className="mt-6 flex items-center gap-2 text-xs text-zinc-500 bg-black/20 px-3 py-1.5 rounded-full">
                 <FileJson className="w-3 h-3" />
                 <span>Parseando JSON e IndexedDB</span>
              </div>
