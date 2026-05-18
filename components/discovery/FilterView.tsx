@@ -64,7 +64,7 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
       </div>
 
       <div className="bg-gradient-to-br from-surface to-zinc-900 border border-zinc-700 rounded-2xl p-4 md:p-8 mb-8 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -tranzinc-y-1/2 tranzinc-x-1/2 pointer-events-none"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
         <div className="relative z-10 max-w-5xl">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -144,7 +144,7 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                 )}
 
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -tranzinc-y-1/2 w-4 h-4 text-zinc-500" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                   <input
                     type="text"
                     placeholder={`Buscar ${selectedType} en tu biblioteca...`}
@@ -262,7 +262,7 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
             <button
               onClick={onGenerate}
               disabled={isLoading}
-              className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary/20 transition-all transform hover:-tranzinc-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+              className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
             >
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Compass className="w-5 h-5" />}
               {isLoading ? 'Analizando...' : 'Generar Experiencia'}

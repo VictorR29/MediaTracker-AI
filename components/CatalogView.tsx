@@ -270,7 +270,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
             />
             <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#0f172a] via-[#0f172a]/90 to-[#0f172a]" />
 
-            <div className="relative z-10 pt-6 w-full">
+            <div className="relative z-10 pt-6 w-full stagger-children">
                 <Shelf title="Continuar Viendo" icon={PlayCircle} items={shelves.continueWatching} onOpenDetail={onOpenDetail} onHoverColor={setActiveColor} />
                 <Shelf title="Tus Joyas" icon={Star} items={shelves.favorites} onOpenDetail={onOpenDetail} onHoverColor={setActiveColor} />
                 {shelves.genreShelves.map(shelf => (

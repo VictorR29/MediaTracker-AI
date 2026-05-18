@@ -96,7 +96,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
           {/* LEFT COLUMN: Welcome & Restore */}
           <div className="md:w-5/12 bg-zinc-900 p-6 md:p-10 flex flex-col justify-center border-b md:border-b-0 md:border-r border-zinc-700 relative overflow-hidden shrink-0">
                {/* Background Decoration */}
-               <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -tranzinc-y-1/2 -tranzinc-x-1/2 pointer-events-none"></div>
+               <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
                
                <div className="relative z-10 text-center md:text-left">
                   <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mb-4 md:mb-6 shadow-lg shadow-indigo-500/20 mx-auto md:mx-0">
@@ -150,7 +150,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
                       <div>
                           <label className="block text-xs font-bold text-zinc-400 uppercase mb-1.5 ml-1">Nombre de Usuario</label>
                           <div className="relative">
-                              <UserCircle className="absolute left-3 top-1/2 -tranzinc-y-1/2 w-5 h-5 text-zinc-500" />
+                              <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                               <input
                                   type="text"
                                   required
@@ -228,7 +228,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
                           <button 
                           type="button" 
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -tranzinc-y-1/2 text-zinc-500 hover:text-zinc-300"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
                           >
                               {showPassword ? <EyeOff className="w-3 h-3"/> : <Eye className="w-3 h-3"/>}
                           </button>
@@ -275,7 +275,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
               <button
                   type="submit"
                   disabled={!username.trim() || !apiKey.trim() || (!!password && password !== confirmPassword)}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 transition-all transform hover:-tranzinc-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-2 text-sm md:text-base"
+                  className="w-full py-4 px-6 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-2 text-sm md:text-base"
               >
                   <span>Comenzar Aventura</span>
                   <ArrowRight className="w-5 h-5" />

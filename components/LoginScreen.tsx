@@ -181,7 +181,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
           <div className="absolute inset-0 z-0 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900"></div>
       )}
 
-      <div className={`w-full max-w-md z-10 p-6 transition-all duration-1000 ${mounted ? 'opacity-100 tranzinc-y-0' : 'opacity-0 tranzinc-y-10'}`}>
+      <div className={`w-full max-w-md z-10 p-6 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         
         {/* Profile Section */}
         <div className="text-center mb-10 flex flex-col items-center">

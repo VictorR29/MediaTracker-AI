@@ -676,7 +676,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <button 
                                     type="button" 
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -tranzinc-y-1/2 text-zinc-500 hover:text-zinc-300"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
                                 >
                                     {showPassword ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
                                 </button>

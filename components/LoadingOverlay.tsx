@@ -51,7 +51,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isVisible, type,
       <div className={`relative p-8 rounded-3xl border ${config.borderColor} ${config.bgColor} shadow-2xl max-w-sm w-full mx-4 flex flex-col items-center text-center`}>
         
         {/* Animated Background Glow */}
-        <div className={`absolute top-1/2 left-1/2 -tranzinc-x-1/2 -tranzinc-y-1/2 w-32 h-32 ${config.color.replace('text', 'bg')}/20 blur-[50px] rounded-full pointer-events-none`}></div>
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 ${config.color.replace('text', 'bg')}/20 blur-[50px] rounded-full pointer-events-none`}></div>
 
         <div className="relative z-10 mb-6">
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border ${config.borderColor} bg-zinc-900 shadow-xl`}>

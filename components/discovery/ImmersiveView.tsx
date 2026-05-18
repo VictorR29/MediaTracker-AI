@@ -167,14 +167,14 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
           <>
             {/* Previous Card Ghost (Animation) */}
             {swipeDirection === 'up' && (
-              <div className="absolute inset-0 bg-zinc-800 rounded-3xl opacity-0 transform -tranzinc-y-full scale-75 transition-all duration-500 ease-out pointer-events-none"></div>
+              <div className="absolute inset-0 bg-zinc-800 rounded-3xl opacity-0 transform -translate-y-full scale-75 transition-all duration-500 ease-out pointer-events-none"></div>
             )}
 
             {/* ACTIVE CARD */}
             <div
               ref={cardRef}
-              className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transform-style-3d cursor-pointer ${swipeDirection === 'up' ? 'transition-all duration-500 -tranzinc-y-[150%] opacity-0 rotate-12' :
-                swipeDirection === 'down' ? 'transition-all duration-500 tranzinc-y-[150%] opacity-0 -rotate-12' :
+              className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transform-style-3d cursor-pointer ${swipeDirection === 'up' ? 'transition-all duration-500 -translate-y-[150%] opacity-0 rotate-12' :
+                swipeDirection === 'down' ? 'transition-all duration-500 translate-y-[150%] opacity-0 -rotate-12' :
                   'opacity-100'
                 }`}
               style={{
@@ -206,7 +206,7 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
             {/* Desktop Navigation Arrows */}
             {!isEndCard && (
               <div
-                className="absolute right-[-60px] top-1/2 -tranzinc-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
+                className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
                 onClick={(e) => { e.stopPropagation(); handleNext(); }}
               >
                 <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
@@ -216,7 +216,7 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
             )}
             {currentIndex > 0 && (
               <div
-                className="absolute left-[-60px] top-1/2 -tranzinc-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
+                className="absolute left-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
                 onClick={(e) => { e.stopPropagation(); handlePrev(); }}
               >
                 <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">

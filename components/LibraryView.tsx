@@ -51,7 +51,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           onOpenDetail={onOpenDetail}
         />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 stagger-children">
           {displayedLibrary.map(item => (
             <CompactMediaCard
               key={item.id}

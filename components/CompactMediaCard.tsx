@@ -140,13 +140,13 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   const statusStyle = (() => {
     switch (trackingData.status) {
       case 'Viendo/Leyendo':
-        return { bg: `bg-[rgb(var(--card-rgb))]`, text: 'text-white', label: isReadingContent ? 'LEYENDO' : 'VIENDO' };
-      case 'Completado': return { bg: 'bg-emerald-500', text: 'text-white', label: 'COMPLETADO' };
-      case 'Sin empezar': return { bg: 'bg-amber-500', text: 'text-black', label: 'SIN EMPEZAR' };
-      case 'En Pausa': return { bg: 'bg-orange-500', text: 'text-white', label: 'EN PAUSA' };
-      case 'Planeado / Pendiente': return { bg: 'bg-purple-500', text: 'text-white', label: 'PLANEADO' };
-      case 'Descartado': return { bg: 'bg-red-600', text: 'text-white', label: 'DESCARTADO' };
-      default: return { bg: 'bg-zinc-700', text: 'text-zinc-300', label: 'DESCONOCIDO' };
+        return { bg: `bg-[rgb(var(--card-rgb))]`, text: 'text-white', label: isReadingContent ? 'LEYENDO' : 'VIENDO', glow: '0 0 12px rgba(16, 185, 129, 0.30)' };
+      case 'Completado': return { bg: 'bg-emerald-500', text: 'text-white', label: 'COMPLETADO', glow: '' };
+      case 'Sin empezar': return { bg: 'bg-amber-500', text: 'text-black', label: 'SIN EMPEZAR', glow: '' };
+      case 'En Pausa': return { bg: 'bg-orange-500', text: 'text-white', label: 'EN PAUSA', glow: '' };
+      case 'Planeado / Pendiente': return { bg: 'bg-purple-500', text: 'text-white', label: 'PLANEADO', glow: '' };
+      case 'Descartado': return { bg: 'bg-red-600', text: 'text-white', label: 'DESCARTADO', glow: '' };
+      default: return { bg: 'bg-zinc-700', text: 'text-zinc-300', label: 'DESCONOCIDO', glow: '' };
     }
   })();
 
@@ -165,134 +165,142 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
     <div
       ref={cardRef}
       onClick={() => onClick(item)}
-      className={`group relative rounded-xl overflow-hidden cursor-pointer flex flex-col bg-[#111113] w-full
-        md:hover:scale-[1.02] md:transition-transform md:duration-200
-        ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+      className={`group relative rounded-2xl ring-1 ring-white/[0.06] p-1 bg-[#111113] w-full cursor-pointer
+      md:hover:scale-[1.02] transition-shadow duration-500 ease-spring
+      ${isVisible ? 'animate-stagger-in' : 'opacity-0'}`}
       style={{
-        aspectRatio: '2/3',
         '--card-rgb': dynamicRgb,
         contentVisibility: 'auto',
         containIntrinsicSize: '0 0',
+        boxShadow: `0 4px 24px rgba(${dynamicRgb}, 0.10)`,
       } as React.CSSProperties}
     >
-      {/* Return Due Banner */}
-      {isReturnDue && (
-        <div className="absolute top-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-bold px-2 py-1 text-center z-40">
-          ¡Hora de Volver!
-        </div>
-      )}
+      {/* Inner Core — double-bezel */}
+      <div className="rounded-[calc(1rem-0.25rem)] overflow-hidden relative flex flex-col bg-[#18181B]" style={{ aspectRatio: '2/3' }}>
 
-      {/* Planned Countdown Banner */}
-      {countdownText && (
-        <div className="absolute top-0 left-0 right-0 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-1 text-center z-40">
-          {countdownText}
-        </div>
-      )}
-
-      {/* --- IMAGE BACKGROUND --- */}
-      <div className="absolute inset-0 bg-zinc-900">
-        {imgSrc && (
-          <img
-            src={imgSrc}
-            alt={aiData.title}
-            onError={handleImageError}
-            onLoad={() => setImageLoaded(true)}
-            loading="lazy"
-            className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent" />
-      </div>
-
-      {/* --- TOP BADGES & ACTIONS --- */}
-
-      {/* Type Badge */}
-      <div className={`absolute left-3 z-30 pointer-events-none ${hasTopBanner ? 'top-8' : 'top-3'}`}>
-        <span
-          className="px-2.5 py-1 rounded-md bg-black/70 border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider"
-          style={{ borderColor: `${dynamicColor}40` }}
-        >
-          {aiData.mediaType}
-        </span>
-      </div>
-
-      {/* Actions Stack */}
-      <div className={`absolute left-3 z-30 flex flex-col gap-2 ${hasTopBanner ? 'top-16' : 'top-11'}`}>
-        {onToggleFavorite && (
-          <button
-            onClick={handleFavoriteClick}
-            className={`p-2 rounded-full bg-black/70 hover:bg-white text-white hover:text-yellow-500 border border-white/10 active:scale-95 ${isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-            title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
-          >
-            <Star className={`w-4 h-4 ${isFavorite ? 'fill-current text-yellow-400' : ''}`} />
-          </button>
-        )}
-        {onDelete && (
-          <button
-            onClick={handleDeleteClick}
-            className="p-2 rounded-full bg-black/70 text-white hover:bg-red-600 hover:text-white border border-white/10 active:scale-95 opacity-0 group-hover:opacity-100"
-            title="Eliminar"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Rating Badge */}
-      {score > 0 && (
-        <div className={`absolute right-3 z-30 pointer-events-none ${hasTopBanner ? 'top-8' : 'top-3'}`}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#2e1065]/90 border border-purple-500/30 text-white text-xs font-bold">
-            {score}
+        {/* Return Due Banner */}
+        {isReturnDue && (
+          <div className="absolute top-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-bold px-2 py-1 text-center z-40">
+            ¡Hora de Volver!
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Quick Action Button */}
-      {showQuickAction && (
-        <button
-          onClick={handleQuickAction}
-          className={`absolute bottom-20 right-3 z-40 p-2 md:p-3 rounded-full transform active:scale-95 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 ${isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-zinc-900'}`}
-          style={!isCompleteSeason ? { color: dynamicColor } : {}}
-          title={isCompleteSeason ? (isLastSeason ? "Completar Obra" : "Siguiente Temporada") : "+1 Capítulo"}
-        >
-          {isCompleteSeason
-            ? (isLastSeason ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <FastForward className="w-4 h-4 md:w-5 md:h-5" />)
-            : <Plus className="w-4 h-4 md:w-5 md:h-5" />}
-        </button>
-      )}
-
-      {/* --- CONTENT OVERLAY (BOTTOM) --- */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 z-30 flex flex-col gap-2.5">
-        <h3 className="text-white font-black text-base md:text-lg leading-tight line-clamp-2 tracking-tight mb-1">
-          {aiData.title}
-        </h3>
-
-        <div className="flex items-center gap-2 md:gap-3 w-full">
-          <div className={`flex-shrink-0 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${statusStyle.bg} ${statusStyle.text}`}>
-            {statusStyle.label}
+        {/* Planned Countdown Banner */}
+        {countdownText && (
+          <div className="absolute top-0 left-0 right-0 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-1 text-center z-40">
+            {countdownText}
           </div>
-          <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full"
-            style={{
-              width: `${progressPercent}%`,
-              backgroundColor: dynamicColor,
-            }}
+        )}
+
+        {/* --- IMAGE BACKGROUND --- */}
+        <div className="absolute inset-0 bg-zinc-900">
+          {imgSrc && (
+            <img
+              src={imgSrc}
+              alt={aiData.title}
+              onError={handleImageError}
+              onLoad={() => setImageLoaded(true)}
+              loading="lazy"
+              className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             />
-          </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#09090B] via-[#09090B]/70 to-transparent" />
+          <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at center bottom, rgba(${dynamicRgb}, 0.08) 0%, transparent 70%)` }} />
         </div>
 
-        <div className="flex items-center justify-between mt-0.5 pl-0.5">
-          <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: dynamicColor }} />
-            <span className="text-[10px] md:text-xs font-bold text-zinc-300 tracking-wide truncate max-w-[100px]">
-              {seasonLabel}
-            </span>
+        {/* --- TOP BADGES & ACTIONS --- */}
+
+        {/* Type Badge */}
+        <div className={`absolute left-3 z-30 pointer-events-none ${hasTopBanner ? 'top-8' : 'top-3'}`}>
+          <span
+            className="px-2.5 py-1 rounded-md bg-black/70 border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider"
+            style={{ borderColor: `${dynamicColor}40` }}
+          >
+            {aiData.mediaType}
+          </span>
+        </div>
+
+        {/* Actions Stack */}
+        <div className={`absolute left-3 z-30 flex flex-col gap-2 ${hasTopBanner ? 'top-16' : 'top-11'}`}>
+          {onToggleFavorite && (
+            <button
+              onClick={handleFavoriteClick}
+              className={`p-2 rounded-full bg-black/70 hover:bg-white text-white hover:text-yellow-500 border border-white/10 active:scale-95 ${isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+              title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+            >
+              <Star className={`w-4 h-4 ${isFavorite ? 'fill-current text-yellow-400' : ''}`} />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={handleDeleteClick}
+              className="p-2 rounded-full bg-black/70 text-white hover:bg-red-600 hover:text-white border border-white/10 active:scale-95 opacity-0 group-hover:opacity-100"
+              title="Eliminar"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Rating Badge */}
+        {score > 0 && (
+          <div className={`absolute right-3 z-30 pointer-events-none ${hasTopBanner ? 'top-8' : 'top-3'}`}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-800/90 ring-1 ring-white/[0.08] text-white text-xs font-bold" style={{ boxShadow: `0 0 8px rgba(${dynamicRgb}, 0.25)` }}>
+              {score}
+            </div>
           </div>
-          <div className="px-1.5 py-0.5 rounded bg-white/10 border border-white/5">
-            <span className="text-[10px] md:text-xs font-mono font-medium text-zinc-200">
-              {progressLabel}
-            </span>
+        )}
+
+        {/* Quick Action Button */}
+        {showQuickAction && (
+          <button
+            onClick={handleQuickAction}
+            className={`absolute bottom-20 right-3 z-40 p-2 md:p-3 rounded-full transform active:scale-[0.97] border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-transform duration-150 ease-spring ${isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-zinc-900'}`}
+            style={!isCompleteSeason ? { color: dynamicColor, boxShadow: `0 0 16px rgba(${dynamicRgb}, 0.25)` } : {}}
+            title={isCompleteSeason ? (isLastSeason ? "Completar Obra" : "Siguiente Temporada") : "+1 Capítulo"}
+          >
+            {isCompleteSeason
+              ? (isLastSeason ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <FastForward className="w-4 h-4 md:w-5 md:h-5" />)
+              : <Plus className="w-4 h-4 md:w-5 md:h-5" />}
+          </button>
+        )}
+
+        {/* --- CONTENT OVERLAY (BOTTOM) --- */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 z-30 flex flex-col gap-2.5">
+          <h3 className="text-white font-black text-base md:text-lg leading-tight line-clamp-2 tracking-[-0.02em] mb-1">
+            {aiData.title}
+          </h3>
+
+          <div className="flex items-center gap-2 md:gap-3 w-full">
+            <div
+              className={`flex-shrink-0 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${statusStyle.bg} ${statusStyle.text}`}
+              style={statusStyle.glow ? { boxShadow: statusStyle.glow } : {}}
+            >
+              {statusStyle.label}
+            </div>
+            <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${progressPercent}%`,
+                  backgroundColor: dynamicColor,
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-0.5 pl-0.5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: dynamicColor }} />
+              <span className="text-[10px] md:text-xs font-bold text-zinc-300 tracking-wide truncate max-w-[100px]">
+                {seasonLabel}
+              </span>
+            </div>
+            <div className="px-1.5 py-0.5 rounded bg-white/[0.08] ring-1 ring-white/[0.05]">
+              <span className="text-[10px] md:text-xs font-mono font-medium text-zinc-200">
+                {progressLabel}
+              </span>
+            </div>
           </div>
         </div>
       </div>

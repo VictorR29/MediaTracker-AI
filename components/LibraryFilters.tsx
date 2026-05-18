@@ -45,7 +45,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
         <div className="mb-6 space-y-4 relative z-20">
             <div className="flex gap-2">
                 <div className="relative flex-grow">
-                    <Search className="absolute left-3 top-1/2 -tranzinc-y-1/2 w-4 h-4 text-zinc-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                     <input
                     type="text"
                     placeholder="Filtrar por título..."

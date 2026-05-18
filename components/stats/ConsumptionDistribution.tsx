@@ -223,7 +223,7 @@ const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ 
                       key={idx}
                       onClick={() => setHighlightedSlice(isHighlighted ? null : slice.label)}
                       className={`flex items-center justify-between group cursor-pointer p-1.5 rounded-lg transition-all duration-300 ${
-                        isHighlighted ? 'bg-white/10 shadow-lg border border-white/10 tranzinc-x-1' : 'hover:bg-zinc-800/50 border border-transparent'
+                        isHighlighted ? 'bg-white/10 shadow-lg border border-white/10 translate-x-1' : 'hover:bg-zinc-800/50 border border-transparent'
                       } ${
                         isDimmed ? 'opacity-40 grayscale-[0.5]' : 'opacity-100'
                       }`}

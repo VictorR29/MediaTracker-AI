@@ -15,8 +15,8 @@ export const GenerativeCard: React.FC<GenerativeCardProps> = ({ title, type }) =
   return (
     <div className={`w-full h-full bg-gradient-to-br ${colors.bg} flex flex-col items-center justify-center p-8 text-center relative overflow-hidden`}>
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-      <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -tranzinc-y-1/2 tranzinc-x-1/2"></div>
-      <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/20 rounded-full blur-2xl tranzinc-y-1/2 -tranzinc-x-1/2"></div>
+      <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
 
       <div className="relative z-10 flex flex-col items-center h-full justify-between py-12">
         <div className="border border-white/30 bg-white/10 p-3 rounded-full backdrop-blur-md shadow-lg">
@@ -53,7 +53,7 @@ export const LoadingCard: React.FC = () => {
         className="absolute w-[90%] md:w-[360px] h-full bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-10 animate-[float_3s_infinite_ease-in-out]"
       >
         {/* Shimmer Effect Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 tranzinc-x-[-150%] animate-[shimmer_1.2s_infinite]"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 translate-x-[-150%] animate-[shimmer_1.2s_infinite]"></div>
 
         {/* Decorative Content */}
         <div className="h-full flex flex-col items-center justify-center gap-8 relative z-20">
@@ -70,20 +70,20 @@ export const LoadingCard: React.FC = () => {
       </div>
       <style>{`
         @keyframes shimmer {
-          0% { transform: tranzincX(-150%) skewX(-12deg); }
-          100% { transform: tranzincX(150%) skewX(-12deg); }
+          0% { transform: translateX(-150%) skewX(-12deg); }
+          100% { transform: translateX(150%) skewX(-12deg); }
         }
         @keyframes shuffle-left {
-          0%, 100% { transform: rotate(-4deg) tranzincX(-10px) scale(0.95); opacity: 0.5; }
-          50% { transform: rotate(-15deg) tranzincX(-60px) scale(0.9); opacity: 0.8; }
+          0%, 100% { transform: rotate(-4deg) translateX(-10px) scale(0.95); opacity: 0.5; }
+          50% { transform: rotate(-15deg) translateX(-60px) scale(0.9); opacity: 0.8; }
         }
         @keyframes shuffle-right {
-          0%, 100% { transform: rotate(4deg) tranzincX(10px) scale(0.95); opacity: 0.5; }
-          50% { transform: rotate(15deg) tranzincX(60px) scale(0.9); opacity: 0.8; }
+          0%, 100% { transform: rotate(4deg) translateX(10px) scale(0.95); opacity: 0.5; }
+          50% { transform: rotate(15deg) translateX(60px) scale(0.9); opacity: 0.8; }
         }
         @keyframes float {
-          0%, 100% { transform: tranzincY(0); }
-          50% { transform: tranzincY(-10px); }
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
         }
       `}</style>
     </div>
@@ -100,7 +100,7 @@ export const NoResultsCard: React.FC<NoResultsCardProps> = ({ onGoBack }) => {
       <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-red-950/20 to-zinc-900"></div>
 
       {/* Animated rings */}
-      <div className="absolute top-1/2 left-1/2 -tranzinc-x-1/2 -tranzinc-y-1/2 w-64 h-64 border border-red-500/20 rounded-full animate-ping [animation-duration:3s]"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-red-500/20 rounded-full animate-ping [animation-duration:3s]"></div>
 
       <div className="relative z-10 flex flex-col items-center gap-6">
         <div className="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
@@ -175,7 +175,7 @@ export interface InfoSheetProps {
 export const InfoSheet: React.FC<InfoSheetProps> = ({ card, selectedMood, isOpen, onClose, onSelect, onNext }) => {
   return (
     <div
-      className={`absolute bottom-0 left-0 right-0 bg-zinc-900/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${isOpen ? 'tranzinc-y-0' : 'tranzinc-y-full'
+      className={`absolute bottom-0 left-0 right-0 bg-zinc-900/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl p-6 md:p-8 transition-transform duration-500 ease-out z-50 max-w-2xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${isOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
     >
       <div
