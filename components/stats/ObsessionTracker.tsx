@@ -39,8 +39,8 @@ const getRankStyle = (index: number) => {
       label: '🥉'
     };
     default: return {
-      border: 'border-zinc-700',
-      bg: 'bg-zinc-800',
+      border: 'ring-zinc-600',
+      bg: 'bg-zinc-700/10',
       text: 'text-zinc-500',
       icon: Star,
       label: `${index + 1}.`
@@ -61,16 +61,17 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
   const currentTopList: ObsessionItem[] = stats.topItemsByType[obsessionTab] || [];
 
   return (
-    <div className="bg-zinc-800 border border-zinc-700 rounded-2xl p-4 md:p-6 shadow-md transition-all overflow-hidden">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <span className="text-xs font-bold uppercase text-zinc-500 tracking-wider flex items-center gap-2">
-            <Zap className="w-4 h-4 text-yellow-500" /> Top 3 Mayores Obsesiones
-          </span>
-          <p className="text-sm text-zinc-400 mt-1">Las obras que más tiempo han consumido de tu vida</p>
-        </div>
+  <div className="bg-[#111113] ring-1 ring-white/[0.06] p-1 rounded-2xl shadow-lg transition-all overflow-hidden">
+    <div className="bg-[#18181B] rounded-[calc(1rem-0.25rem)] p-4 md:p-6">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div>
+        <span className="text-[10px] font-extrabold uppercase text-zinc-400 flex items-center gap-2" style={{ letterSpacing: '0.1em' }}>
+          <Zap className="w-4 h-4 text-yellow-500" /> Top 3 Mayores Obsesiones
+        </span>
+        <p className="text-sm text-zinc-400 mt-1">Las obras que más tiempo han consumido de tu vida</p>
+      </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-zinc-900 p-2 rounded-lg w-full md:w-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-[#09090B] p-1.5 rounded-xl w-full md:w-auto ring-1 ring-white/[0.06]">
           {OBSESSION_TABS.map(tab => {
             const Icon = tab.icon;
             const isActive = obsessionTab === tab.id;
@@ -78,11 +79,11 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
               <button
                 key={tab.id}
                 onClick={() => setObsessionTab(tab.id)}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap w-full ${
-                  isActive
-                    ? 'bg-primary text-white shadow'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-                }`}
+          className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap w-full ${
+            isActive
+            ? 'bg-white text-[#09090B] shadow-lg'
+            : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+          }`}
               >
                 <Icon className="w-3 h-3 flex-shrink-0" />
                 <span>{tab.label}</span>
@@ -99,11 +100,11 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
             const style = getRankStyle(index);
             const isTop1 = index === 0;
 
-            return (
-              <div
-                key={item.id}
-                className={`relative rounded-xl border ${isTop1 ? 'border-2 shadow-[0_0_15px_rgba(234,179,8,0.15)]' : 'border'} overflow-hidden shadow-lg transition-all flex flex-col justify-end h-48 md:h-60 group ${style.border}`}
-              >
+        return (
+                  <div
+                    key={item.id}
+                    className={`relative rounded-xl ring-1 overflow-hidden shadow-lg transition-all flex flex-col justify-end h-48 md:h-60 group ${isTop1 ? 'ring-2 ring-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.15)]' : 'ring-white/[0.06]'}`}
+                  >
                 {/* Background Image for ALL ITEMS */}
                 {item.coverImage ? (
                   <div className="absolute inset-0 z-0">
@@ -118,7 +119,7 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
                 <div className="relative z-10 w-full p-4">
                   {/* Rank Badge */}
                   <div className="absolute top-0 right-0 p-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border font-bold text-xl backdrop-blur-md shadow-lg ${style.bg} ${style.border} ${style.text}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ring-1 font-bold text-xl backdrop-blur-md shadow-lg ${style.bg} ${style.border} ${style.text}`}>
                       {style.label}
                     </div>
                   </div>
@@ -133,7 +134,7 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
                       <span>
                         {item.unitCount} {obsessionTab.includes('Libro') || obsessionTab.includes('Webtoon') ? 'caps' : 'eps'}
                       </span>
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/40 border border-white/10 backdrop-blur-sm">
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/40 ring-1 ring-white/[0.06] backdrop-blur-sm">
                         <Clock className={`w-3 h-3 ${style.text}`} />
                         <span className="font-mono font-bold text-white">
                           {(item.time / 60).toFixed(1)}h
@@ -147,12 +148,13 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
           })}
         </div>
       ) : (
-        <div className="w-full text-center py-10 opacity-50 flex flex-col items-center bg-zinc-900 rounded-xl border border-zinc-700 border-dashed">
-          <Layout className="w-10 h-10 text-zinc-500 mb-2" />
+      <div className="w-full text-center py-10 opacity-50 flex flex-col items-center bg-[#111113] rounded-xl ring-1 ring-white/[0.06] ring-dashed">
+        <Layout className="w-10 h-10 text-zinc-500 mb-2" />
           <p className="text-sm font-medium text-zinc-400">Sin datos en {obsessionTab}.</p>
           <p className="text-xs text-zinc-600">Registra progreso para ver tu ranking.</p>
         </div>
       )}
+    </div>
     </div>
   );
 };

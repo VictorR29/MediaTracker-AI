@@ -44,16 +44,17 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="p-2 bg-zinc-800 rounded-lg shadow shadow-primary/20 flex-shrink-0">
-            <BarChart2 className="w-6 h-6 text-primary" />
-          </div>
-          <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 tracking-tight truncate">Mis Insights</h2>
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="p-2 bg-[#111113] rounded-lg ring-1 ring-white/[0.06] flex-shrink-0">
+          <BarChart2 className="w-6 h-6 text-white" />
         </div>
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          className="p-2 text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium flex-shrink-0"
-        >
+        <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-[-0.02em] truncate">Mis Insights</h2>
+      </div>
+      <button
+        onClick={() => setIsSettingsOpen(true)}
+        className="p-2 text-zinc-400 hover:text-white bg-[#1C1C1F] hover:bg-white/[0.08] rounded-lg ring-1 ring-white/[0.06] transition-all duration-150 flex items-center gap-2 text-xs font-medium flex-shrink-0 active:scale-[0.97]"
+        style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
+      >
           <Settings className="w-4 h-4" />
           <span className="hidden sm:inline">Configurar</span>
         </button>

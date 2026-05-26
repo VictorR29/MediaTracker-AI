@@ -136,13 +136,13 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
 
   // Background style
   const bgStyle = useMemo(() => {
-    if (isLoading || recommendations.length === 0) return { background: '#0f172a' };
-    if (isEndCard) return { background: '#0f172a' };
-    if (!currentCard) return { background: '#0f172a' };
+    if (isLoading || recommendations.length === 0) return { background: '#09090B' };
+    if (isEndCard) return { background: '#09090B' };
+    if (!currentCard) return { background: '#09090B' };
 
     const colors = getColorData(currentCard.title);
     return {
-      background: `radial-gradient(circle at 50% 30%, ${colors.shadow}40 0%, #0f172a 100%)`
+      background: `radial-gradient(circle at 50% 30%, ${colors.shadow}40 0%, #09090B 100%)`
     };
   }, [currentCard, isEndCard, isLoading, recommendations.length]);
 
@@ -151,7 +151,7 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
       className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden touch-none"
       style={bgStyle}
     >
-      <div className="absolute inset-0 bg-zinc-950/20 backdrop-blur-[2px]"></div>
+      <div className="absolute inset-0 bg-[#09090B]/20 backdrop-blur-[2px]"></div>
 
       {/* CARD CONTAINER */}
       <div className="relative w-full max-w-md h-[70vh] md:h-[600px] perspective-1000 flex items-center justify-center z-50">
@@ -165,64 +165,67 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
         {/* RESULTS STATE */}
         {!isLoading && recommendations.length > 0 && (
           <>
-            {/* Previous Card Ghost (Animation) */}
-            {swipeDirection === 'up' && (
-              <div className="absolute inset-0 bg-zinc-800 rounded-3xl opacity-0 transform -translate-y-full scale-75 transition-all duration-500 ease-out pointer-events-none"></div>
-            )}
+          {/* Previous Card Ghost (Animation) */}
+          {swipeDirection === 'up' && (
+            <div className="absolute inset-0 bg-[#111113] rounded-[2rem] opacity-0 transform -translate-y-full scale-75 transition-all duration-500 pointer-events-none" style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}></div>
+          )}
 
-            {/* ACTIVE CARD */}
-            <div
-              ref={cardRef}
-              className={`relative w-[90%] md:w-[360px] h-full rounded-3xl shadow-2xl transform-style-3d cursor-pointer ${swipeDirection === 'up' ? 'transition-all duration-500 -translate-y-[150%] opacity-0 rotate-12' :
-                swipeDirection === 'down' ? 'transition-all duration-500 translate-y-[150%] opacity-0 -rotate-12' :
-                  'opacity-100'
-                }`}
-              style={{
-                willChange: 'transform',
-                boxShadow: isEndCard ? 'none' : `0 25px 50px -12px ${cardColors.shadow}60`
-              }}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => !isEndCard && setIsInfoOpen(true)}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              {isEndCard ? (
-                <EndCard onLoadMore={onLoadMore} onGoBack={onGoBack} />
-              ) : (
-                <div className="absolute inset-0 rounded-3xl overflow-hidden bg-zinc-900 border border-white/10">
-                  <GenerativeCard title={currentCard.title} type={currentCard.mediaType} />
-                  <div className="absolute bottom-6 left-0 right-0 text-center transition-opacity duration-300 pointer-events-none" style={{ opacity: isInfoOpen ? 0 : 1 }}>
-                    <p className="text-xs font-medium text-white/60 flex items-center justify-center gap-2 bg-black/20 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit">
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-                      Toca para detalles
-                    </p>
-                  </div>
+          {/* ACTIVE CARD — Double-Bezel at Large Scale */}
+          <div
+            ref={cardRef}
+            className={`relative w-[90%] md:w-[360px] h-full rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06] transform-style-3d cursor-pointer ${swipeDirection === 'up' ? 'transition-all duration-500 -translate-y-[150%] opacity-0 rotate-12' :
+            swipeDirection === 'down' ? 'transition-all duration-500 translate-y-[150%] opacity-0 -rotate-12' :
+            'opacity-100'
+            }`}
+            style={{
+              willChange: 'transform',
+              transitionTimingFunction: swipeDirection ? 'cubic-bezier(0.32, 0.72, 0, 1)' : undefined,
+              boxShadow: isEndCard ? 'none' : `0 8px 48px ${cardColors.shadow}33`
+            }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            onClick={() => !isEndCard && setIsInfoOpen(true)}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {isEndCard ? (
+              <EndCard onLoadMore={onLoadMore} onGoBack={onGoBack} />
+            ) : (
+              <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
+                <GenerativeCard title={currentCard.title} type={currentCard.mediaType} />
+                <div className="absolute bottom-6 left-0 right-0 text-center transition-opacity duration-300 pointer-events-none" style={{ opacity: isInfoOpen ? 0 : 1 }}>
+                  <p className="text-[10px] font-extrabold text-white/60 flex items-center justify-center gap-2 bg-[#09090B]/30 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit uppercase" style={{ letterSpacing: '0.1em' }}>
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+                    Toca para detalles
+                  </p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
 
             {/* Desktop Navigation Arrows */}
             {!isEndCard && (
-              <div
-                className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
-                onClick={(e) => { e.stopPropagation(); handleNext(); }}
-              >
-                <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
-                  <ChevronDown className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            )}
-            {currentIndex > 0 && (
-              <div
-                className="absolute left-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2"
-                onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-              >
-                <div className="bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/20">
-                  <ChevronUp className="w-6 h-6 text-white" />
-                </div>
-              </div>
+          <div
+            className="absolute right-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2 active:scale-[0.97]"
+            style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
+            onClick={(e) => { e.stopPropagation(); handleNext(); }}
+          >
+            <div className="bg-[#111113]/80 backdrop-blur-xl p-3 rounded-full ring-1 ring-white/[0.12]">
+              <ChevronDown className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        )}
+        {currentIndex > 0 && (
+          <div
+            className="absolute left-[-60px] top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center cursor-pointer hover:scale-110 transition-transform p-2 active:scale-[0.97]"
+            style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
+            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+          >
+            <div className="bg-[#111113]/80 backdrop-blur-xl p-3 rounded-full ring-1 ring-white/[0.12]">
+              <ChevronUp className="w-6 h-6 text-white" />
+            </div>
+          </div>
             )}
           </>
         )}
@@ -232,18 +235,19 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
       {!isLoading && recommendations.length > 0 && (
         <div className="absolute top-4 left-0 right-0 z-50 px-4 md:px-6 pt-safe flex justify-between items-center w-full max-w-lg mx-auto pointer-events-none">
           {!isEndCard ? (
-            <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg animate-fade-in-up">
-              <Sparkles className="w-3 h-3 text-yellow-400" />
-              <span className="text-xs font-bold text-white font-mono">
-                {currentIndex + 1} / {recommendations.length}
-              </span>
-            </div>
-          ) : <div></div>}
+          <div className="pointer-events-auto bg-[#111113]/80 backdrop-blur-xl ring-1 ring-white/[0.08] rounded-full px-4 py-2 flex items-center gap-2 shadow-lg animate-fade-in-up">
+            <Sparkles className="w-3 h-3 text-yellow-400" />
+            <span className="text-xs font-bold text-white font-mono" style={{ letterSpacing: '0.02em' }}>
+              {currentIndex + 1} / {recommendations.length}
+            </span>
+          </div>
+        ) : <div></div>}
 
-          <button
-            onClick={onGoBack}
-            className="pointer-events-auto bg-black/40 hover:bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold transition-all border border-white/10 flex items-center gap-2 shadow-lg animate-fade-in-up hover:scale-105"
-          >
+        <button
+          onClick={onGoBack}
+          className="pointer-events-auto bg-[#111113]/80 hover:bg-[#1C1C1F]/80 backdrop-blur-xl text-white px-4 py-2 rounded-full text-xs font-bold transition-all ring-1 ring-white/[0.08] flex items-center gap-2 shadow-lg animate-fade-in-up hover:scale-105 active:scale-[0.97]"
+          style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
+        >
             <ArrowLeft className="w-3 h-3" />
             <span>Filtros</span>
           </button>

@@ -161,93 +161,96 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
   };
 
   return (
-    <div className="min-h-screen bg-zinc-900 flex items-center justify-center relative overflow-hidden">
-      
+    <div className="min-h-[100dvh] bg-[#09090B] flex items-center justify-center relative overflow-hidden">
+
       {/* Dynamic Background Cover with Blur and Overlay */}
       {emotionalContext?.bgImage ? (
-          <div className="absolute inset-0 z-0 overflow-hidden">
-             {/* Dark Overlay - Semitransparent zinc-950 to ensure readability */}
-             <div className="absolute inset-0 bg-zinc-950/70 z-10"></div>
-             
-             {/* The Image - Full Cover, Blurred */}
-             <img 
-                src={emotionalContext.bgImage} 
-                className="w-full h-full object-cover blur-[5px] scale-110 transition-transform duration-1000"
-                alt="Background Cover"
-             />
-          </div>
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          {/* Dark Overlay - Void Black to ensure readability */}
+          <div className="absolute inset-0 bg-[#09090B]/70 z-10"></div>
+
+          {/* The Image - Full Cover, Blurred */}
+          <img
+            src={emotionalContext.bgImage}
+            className="w-full h-full object-cover blur-[8px] scale-110 transition-transform duration-1000"
+            alt="Background Cover"
+          />
+        </div>
       ) : (
-          /* Standard Fallback Background (Gradient) */
-          <div className="absolute inset-0 z-0 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900"></div>
+        /* Standard Fallback Background (Gradient) */
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#09090B] via-[#111113] to-[#09090B]"></div>
       )}
 
       <div className={`w-full max-w-md z-10 p-6 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         
         {/* Profile Section */}
         <div className="text-center mb-10 flex flex-col items-center">
-           <div className="relative mb-6 group">
-                <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-[0_0_30px_rgba(99,102,241,0.5)]">
-                    <div className="w-full h-full rounded-full bg-zinc-900 overflow-hidden relative">
-                        {avatarUrl ? (
-                            <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-zinc-800">
-                                <User className="w-12 h-12 text-zinc-500" />
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <div className="absolute -bottom-2 -right-2 bg-zinc-900 rounded-full p-2 border border-zinc-700 shadow-lg">
-                    <Lock className="w-5 h-5 text-white" />
-                </div>
-           </div>
+      <div className="relative mb-6 group">
+        <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-[0_0_20px_rgba(99,102,241,0.40)]">
+          <div className="w-full h-full rounded-full bg-[#09090B] overflow-hidden relative">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-[#111113]">
+                <User className="w-12 h-12 text-zinc-500" />
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="absolute -bottom-2 -right-2 bg-[#111113] rounded-full p-2 ring-1 ring-white/[0.12] shadow-lg">
+          <Lock className="w-5 h-5 text-white" />
+        </div>
+      </div>
            
-           <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-2xl tracking-tight">
-               {displayMessage.title}
-           </h1>
-           <p className="text-indigo-200 text-lg font-medium drop-shadow-md mb-2 leading-relaxed px-4">
-               {displayMessage.subtitle}
-           </p>
-           
-           <div className="mt-4 flex items-center gap-2 text-sm text-zinc-300 bg-zinc-900/60 backdrop-blur-md px-5 py-2 rounded-full border border-white/10 shadow-lg">
-              <Sparkles className="w-4 h-4 text-yellow-400 animate-spin-slow" />
-              <span className="font-semibold tracking-wide">{displayMessage.cta}</span>
-           </div>
+      <h1 className="text-4xl font-extrabold text-white mb-2 drop-shadow-2xl" style={{ letterSpacing: '-0.03em' }}>
+        {displayMessage.title}
+      </h1>
+      <p className="text-zinc-300 text-lg font-medium drop-shadow-md mb-2 leading-relaxed px-4">
+
+        {displayMessage.subtitle}
+      </p>
+
+      <div className="mt-4 flex items-center gap-2 text-[10px] text-zinc-300 bg-[#111113]/80 backdrop-blur-xl px-5 py-2 rounded-full ring-1 ring-white/[0.08] shadow-lg">
+        <Sparkles className="w-4 h-4 text-yellow-400 animate-spin-slow" />
+        <span className="font-extrabold uppercase" style={{ letterSpacing: '0.1em' }}>{displayMessage.cta}</span>
+      </div>
         </div>
 
-        {/* Login Input */}
-        <form onSubmit={handleSubmit} className="relative group perspective-1000">
-          <div 
-             className={`bg-white/10 backdrop-blur-xl border p-2 rounded-2xl shadow-2xl flex items-center transition-all duration-300 ${
-                 error ? 'border-red-500/50 bg-red-900/10' : 'border-white/20 hover:bg-white/15 focus-within:bg-white/20 focus-within:border-indigo-400/50'
-             }`}
+      {/* Login Input — Double-Bezel */}
+      <form onSubmit={handleSubmit} className="relative group perspective-1000">
+        {/* Outer Shell */}
+        <div
+          className={`bg-[#111113] p-1 rounded-2xl ring-1 ring-white/[0.12] shadow-2xl transition-all duration-300 ${  error ? 'ring-red-500/50' : ''  }`}
+        >
+          {/* Inner Glass Core */}
+          <div
+            className={`bg-white/[0.06] backdrop-blur-xl p-2 rounded-[calc(1rem-0.25rem)] flex items-center transition-all duration-300 ${  error ? 'bg-red-900/10' : 'focus-within:bg-white/[0.08]'  }`}
           >
-            <input 
-                type="password" 
-                autoFocus
-                className="bg-transparent border-none text-white px-4 py-3 flex-grow outline-none placeholder-zinc-400 text-lg tracking-widest text-center"
-                placeholder="Contraseña..."
-                value={password}
-                onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError(false);
-                }}
+            <input
+              type="password"
+              autoFocus
+              className="bg-transparent border-none text-white px-4 py-3 flex-grow outline-none placeholder-zinc-500 text-lg tracking-widest text-center font-mono"
+              placeholder="Contraseña..."
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(false);
+              }}
             />
-            <button 
-                type="submit"
-                className={`p-3 rounded-xl transition-all duration-300 transform ${
-                    password ? 'bg-indigo-500 text-white shadow-lg scale-100' : 'bg-white/5 text-zinc-500 scale-90 cursor-default'
-                }`}
-                disabled={!password || isVerifying}
+            <button
+              type="submit"
+              className={`p-3 rounded-xl transition-all duration-150 transform active:scale-[0.95] ${  password ? 'bg-white text-[#09090B] shadow-[0_0_16px_rgba(255,255,255,0.10)] scale-100' : 'bg-white/5 text-zinc-500 scale-90 cursor-default'  }`}
+              style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+              disabled={!password || isVerifying}
             >
-                {isVerifying ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : password ? <Unlock className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
+              {isVerifying ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : password ? <Unlock className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
             </button>
           </div>
+        </div>
           
-          {/* Error Shake Animation Wrapper */}
-          {error && (
-            <div className="absolute inset-0 pointer-events-none border-2 border-red-500 rounded-2xl animate-[shake_0.4s_ease-in-out]"></div>
-          )}
+        {error && (
+          <div className="absolute inset-0 pointer-events-none ring-2 ring-red-500 rounded-2xl animate-[shake_0.4s_cubic-bezier(0.32,0.72,0,1)]"></div>
+        )}
         </form>
         
         {error && (
