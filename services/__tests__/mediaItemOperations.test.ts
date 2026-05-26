@@ -14,7 +14,7 @@ const baseItem: MediaItem = {
     coverDescription: '',
     coverImage: '',
     sourceUrls: [],
-    primaryColor: '#6366f1',
+    primaryColor: '#a78bfa',
   },
   trackingData: {
     status: 'Viendo/Leyendo',

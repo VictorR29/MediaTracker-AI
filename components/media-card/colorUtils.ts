@@ -7,7 +7,7 @@ export const extractColorFromImage = (imageSrc: string): Promise<string> => {
     img.onload = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve('#6366f1'); return; }
+      if (!ctx) { resolve('#a78bfa'); return; }
 
       canvas.width = 100;
       canvas.height = 100;
@@ -43,13 +43,13 @@ export const extractColorFromImage = (imageSrc: string): Promise<string> => {
           const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
           resolve(hex);
         } else {
-          resolve('#6366f1'); // Fallback
+          resolve('#a78bfa'); // Fallback
         }
       } catch (e) {
-        resolve('#6366f1'); // Fallback on CORS or error
+        resolve('#a78bfa'); // Fallback on CORS or error
       }
     };
-    img.onerror = () => resolve('#6366f1');
+    img.onerror = () => resolve('#a78bfa');
   });
 };
 

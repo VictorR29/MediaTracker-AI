@@ -91,15 +91,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/95 backdrop-blur-md">
       <div className="min-h-full w-full flex items-center justify-center p-4 py-8 md:p-6">
-        <div className="bg-surface border border-zinc-700 rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col md:flex-row overflow-hidden animate-fade-in-up">
-          
-          {/* LEFT COLUMN: Welcome & Restore */}
-          <div className="md:w-5/12 bg-zinc-900 p-6 md:p-10 flex flex-col justify-center border-b md:border-b-0 md:border-r border-zinc-700 relative overflow-hidden shrink-0">
-               {/* Background Decoration */}
-               <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+    <div className="bg-[#111113] ring-1 ring-white/[0.06] rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col md:flex-row overflow-hidden animate-fade-in-up">
+
+      {/* LEFT COLUMN: Welcome & Restore */}
+      <div className="md:w-5/12 bg-zinc-900 p-6 md:p-10 flex flex-col justify-center ring-1 ring-white/[0.06] ring-b md:ring-b-0 md:ring-r relative overflow-hidden shrink-0">
+        {/* Background Decoration */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
                
                <div className="relative z-10 text-center md:text-left">
-                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mb-4 md:mb-6 shadow-lg shadow-indigo-500/20 mx-auto md:mx-0">
+                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-tr from-violet-500 to-purple-500 rounded-2xl flex items-center justify-center mb-4 md:mb-6 shadow-lg shadow-violet-500/20 mx-auto md:mx-0">
                       <Sparkles className="text-white w-6 h-6 md:w-8 md:h-8" />
                   </div>
                   <h2 className="text-2xl md:text-4xl font-bold text-white mb-2 md:mb-3">MediaTracker AI</h2>
@@ -108,14 +108,14 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
                   </p>
 
                   {/* Restore Backup Section */}
-                  <div className="mt-2 md:mt-4 pt-4 md:pt-6 border-t border-zinc-800">
-                      <p className="text-[10px] md:text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 md:mb-3">¿Ya tienes una cuenta?</p>
-                      <button 
-                          type="button"
-                          onClick={handleImportClick}
-                          className="w-full flex items-center justify-center gap-2 md:gap-3 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 rounded-xl text-zinc-200 text-xs md:text-sm font-medium transition-all group"
-                      >
-                          <Upload className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+      <div className="mt-2 md:mt-4 pt-4 md:pt-6 ring-1 ring-white/[0.06] rounded-xl p-4">
+        <p className="text-[10px] md:text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 md:mb-3">¿Ya tienes una cuenta?</p>
+        <button
+          type="button"
+          onClick={handleImportClick}
+          className="w-full flex items-center justify-center gap-2 md:gap-3 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 ring-1 ring-white/[0.06] hover:ring-white/[0.12] rounded-xl text-zinc-200 text-xs md:text-sm font-medium transition-all group"
+        >
+          <Upload className="w-4 h-4 text-violet-400 group-hover:scale-110 transition-transform" />
                           <span>Restaurar Copia de Seguridad</span>
                       </button>
                       <input 
@@ -130,12 +130,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
           </div>
 
           {/* RIGHT COLUMN: Registration Form */}
-          <div className="md:w-7/12 p-6 md:p-10 bg-surface flex flex-col justify-center">
-              
-              <div className="mb-6 md:hidden flex items-center gap-3">
-                  <div className="h-px bg-zinc-700 flex-1"></div>
-                  <span className="text-[10px] text-zinc-500 uppercase font-bold">O empieza de cero</span>
-                  <div className="h-px bg-zinc-700 flex-1"></div>
+    <div className="md:w-7/12 p-6 md:p-10 bg-[#111113] flex flex-col justify-center">
+
+      <div className="mb-6 md:hidden flex items-center gap-3">
+        <div className="h-px bg-zinc-700 flex-1"></div>
+        <span className="text-[10px] text-zinc-500 uppercase font-bold">O empieza de cero</span>
+        <div className="h-px bg-zinc-700 flex-1"></div>
               </div>
 
               <div className="mb-6 hidden md:block">
@@ -154,7 +154,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
                               <input
                                   type="text"
                                   required
-                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl pl-10 pr-4 py-3 text-white placeholder-zinc-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm md:text-base"
+                                  className="w-full bg-zinc-900 ring-1 ring-white/[0.06] rounded-xl pl-10 pr-4 py-3 text-white placeholder-zinc-600 focus:ring-2 focus:ring-white/20 outline-none transition-all text-sm md:text-base"
                                   placeholder="Ej. OtakuMaster99"
                                   value={username}
                                   onChange={(e) => setUsername(e.target.value)}
@@ -168,7 +168,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
                        <label className="block text-xs font-bold text-zinc-400 uppercase mb-1.5 text-center md:text-right w-full">Avatar</label>
                        <div 
                               className={`relative w-14 h-14 md:w-[3.25rem] md:h-[3.25rem] rounded-full border-2 border-dashed flex-shrink-0 flex items-center justify-center cursor-pointer overflow-hidden transition-all group ${
-                                  isDragging ? 'border-primary bg-primary/10' : 'border-zinc-600 hover:border-zinc-500 bg-zinc-900'
+                                  isDragging ? 'ring-2 ring-white bg-white/10' : 'ring-1 ring-zinc-600 hover:ring-zinc-500 bg-zinc-900'
                               }`}
                               onDragOver={handleDragOver}
                               onDragLeave={handleDragLeave}
@@ -194,23 +194,23 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
               {/* API Key */}
               <div>
                   <label className="block text-xs font-bold text-zinc-400 uppercase mb-1.5 ml-1 flex items-center gap-2">
-                      <Key className="w-3 h-3 text-primary" /> Gemini API Key
+                      <Key className="w-3 h-3 text-white" /> Gemini API Key
                   </label>
                   <input
                       type="password"
                       required
-                      className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all font-mono text-xs md:text-sm"
+                      className="w-full bg-zinc-900 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:ring-2 focus:ring-white/20 outline-none transition-all font-mono text-xs md:text-sm"
                       placeholder="Pega tu API Key aquí..."
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                   />
                   <p className="text-[10px] text-zinc-500 mt-1.5 ml-1">
-                      Consíguela gratis en <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">Google AI Studio</a>.
+                      Consíguela gratis en <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-violet-400 hover:underline">Google AI Studio</a>.
                   </p>
               </div>
 
               {/* Password (Optional) */}
-              <div className="p-4 bg-zinc-900/50 rounded-xl border border-zinc-700/50 space-y-3">
+              <div className="p-4 bg-zinc-900/50 rounded-xl ring-1 ring-white/[0.06] space-y-3">
                   <div className="flex items-center gap-2 mb-1">
                       <Lock className="w-4 h-4 text-emerald-400" />
                       <label className="text-xs font-bold text-zinc-300 uppercase">Contraseña (Opcional)</label>
@@ -220,7 +220,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
                       <div className="relative">
                           <input
                               type={showPassword ? "text" : "password"}
-                              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                              className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
                               placeholder="Contraseña"
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
@@ -236,10 +236,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
                       
                       <input
                           type="password"
-                          className={`w-full bg-zinc-800 border rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:ring-1 outline-none transition-all ${
-                              password 
-                              ? (password === confirmPassword ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-red-500/50 focus:border-red-500')
-                              : 'border-zinc-700'
+            className={`w-full bg-zinc-800 ring-1 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:ring-1 outline-none transition-all ${
+              password
+              ? (password === confirmPassword ? 'ring-emerald-500/50 focus:ring-emerald-500' : 'ring-red-500/50 focus:ring-red-500')
+              : 'ring-white/[0.06]'
                           }`}
                           placeholder="Confirmar"
                           value={confirmPassword}
@@ -258,8 +258,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
                       key={color.name}
                       type="button"
                       onClick={() => setSelectedColor(color)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110 ${
-                          selectedColor.name === color.name ? 'ring-2 ring-white ring-offset-2 ring-offset-surface scale-110' : ''
+        className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110 ${
+                selectedColor.name === color.name ? 'ring-2 ring-white ring-offset-2 ring-offset-[#111113] scale-110' : ''
                       }`}
                       style={{ backgroundColor: color.hex }}
                       title={color.name}
@@ -275,7 +275,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
               <button
                   type="submit"
                   disabled={!username.trim() || !apiKey.trim() || (!!password && password !== confirmPassword)}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-2 text-sm md:text-base"
+                  className="w-full py-4 px-6 bg-white hover:bg-zinc-100 text-zinc-900 font-bold rounded-full shadow-lg transition-all transform hover:-translate-y-0.5 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-2 text-sm md:text-base"
               >
                   <span>Comenzar Aventura</span>
                   <ArrowRight className="w-5 h-5" />

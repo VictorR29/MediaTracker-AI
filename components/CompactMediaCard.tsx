@@ -55,7 +55,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const dynamicColor = aiData.primaryColor || '#6366f1';
+  const dynamicColor = aiData.primaryColor || '#a78bfa';
   const dynamicRgb = React.useMemo(() => hexToRgb(dynamicColor), [dynamicColor]);
 
   const isMovie = aiData.mediaType === 'Pelicula';
@@ -110,6 +110,8 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 
   const [imgSrc, setImgSrc] = useState<string | undefined>(undefined);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [justFavorited, setJustFavorited] = useState(false);
+  const [justIncremented, setJustIncremented] = useState(false);
 
   // Shared IntersectionObserver — registers/unregisters per card
   useEffect(() => {
@@ -133,8 +135,8 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
     }
   };
 
-  const handleQuickAction = (e: React.MouseEvent) => { e.stopPropagation(); onIncrement(item); };
-  const handleFavoriteClick = (e: React.MouseEvent) => { e.stopPropagation(); onToggleFavorite?.(item); };
+  const handleQuickAction = (e: React.MouseEvent) => { e.stopPropagation(); onIncrement(item); setJustIncremented(true); setTimeout(() => setJustIncremented(false), 350); };
+  const handleFavoriteClick = (e: React.MouseEvent) => { e.stopPropagation(); onToggleFavorite?.(item); setJustFavorited(true); setTimeout(() => setJustFavorited(false), 400); };
   const handleDeleteClick = (e: React.MouseEvent) => { e.stopPropagation(); onDelete?.(item); };
 
   const statusStyle = (() => {
@@ -225,7 +227,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
           {onToggleFavorite && (
             <button
               onClick={handleFavoriteClick}
-              className={`p-2 rounded-full bg-black/70 hover:bg-white text-white hover:text-yellow-500 border border-white/10 active:scale-95 ${isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+              className={`p-2 rounded-full bg-black/70 hover:bg-white text-white hover:text-yellow-500 border border-white/10 active:scale-95 ${isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} ${justFavorited ? 'animate-fav-bounce' : ''}`}
               title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
             >
               <Star className={`w-4 h-4 ${isFavorite ? 'fill-current text-yellow-400' : ''}`} />
@@ -255,7 +257,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
         {showQuickAction && (
           <button
             onClick={handleQuickAction}
-            className={`absolute bottom-20 right-3 z-40 p-2 md:p-3 rounded-full transform active:scale-[0.97] border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-transform duration-150 ease-spring ${isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-zinc-900'}`}
+            className={`absolute bottom-20 right-3 z-40 p-2 md:p-3 rounded-full transform active:scale-[0.97] border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-transform duration-150 ease-spring ${isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-zinc-900'} ${justIncremented ? 'animate-increment-pulse' : ''}`}
             style={!isCompleteSeason ? { color: dynamicColor, boxShadow: `0 0 16px rgba(${dynamicRgb}, 0.25)` } : {}}
             title={isCompleteSeason ? (isLastSeason ? "Completar Obra" : "Siguiente Temporada") : "+1 Capítulo"}
           >

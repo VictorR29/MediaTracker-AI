@@ -186,7 +186,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
         {/* Profile Section */}
         <div className="text-center mb-10 flex flex-col items-center">
       <div className="relative mb-6 group">
-        <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-[0_0_20px_rgba(99,102,241,0.40)]">
+        <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-violet-500 via-purple-500 to-pink-500 shadow-[0_0_20px_rgba(139,92,246,0.40)]">
           <div className="w-full h-full rounded-full bg-[#09090B] overflow-hidden relative">
             {avatarUrl ? (
               <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />

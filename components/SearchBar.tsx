@@ -21,21 +21,21 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading, place
   return (
     <div className="w-full max-w-2xl mx-auto relative group z-20">
       {/* Glow Effect behind search bar */}
-      <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-secondary opacity-30 blur-xl group-hover:opacity-50 transition-opacity duration-500 rounded-2xl"></div>
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-white/20 to-white/5 opacity-30 blur-xl group-hover:opacity-50 transition-opacity duration-500 rounded-2xl"></div>
       
       <form onSubmit={handleSubmit} className="relative">
         <div className="absolute inset-y-0 left-0 pl-4 md:pl-5 flex items-center pointer-events-none">
           {isLoading ? (
-            <Loader2 className="h-5 w-5 text-primary animate-spin" />
+            <Loader2 className="h-5 w-5 text-white animate-spin" />
           ) : (
             <Search className="h-5 w-5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
           )}
         </div>
         <input
           type="text"
-          className="block w-full pl-12 md:pl-14 pr-28 md:pr-32 py-4 md:py-5 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 rounded-2xl 
-                     text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50
-                     transition-all shadow-2xl text-base md:text-lg truncate"
+className="block w-full pl-12 md:pl-14 pr-28 md:pr-32 py-4 md:py-5 bg-zinc-900/90 backdrop-blur-xl ring-1 ring-white/[0.06] rounded-2xl
+text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-white/[0.06]
+transition-all shadow-2xl text-base md:text-lg truncate"
           placeholder={placeholder || "Busca un Anime, Serie o Película..."}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -45,9 +45,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading, place
         <button
           type="submit"
           disabled={isLoading || !query.trim()}
-          className="absolute inset-y-2 right-2 px-6 bg-primary hover:bg-indigo-600 text-white 
-                     font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed 
-                     flex items-center justify-center shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95"
+className="absolute inset-y-2 right-2 px-6 bg-white hover:bg-zinc-200 text-zinc-900
+font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed
+flex items-center justify-center shadow-lg active:scale-95"
           title="Buscar"
         >
           <span className="hidden md:inline">Buscar</span>

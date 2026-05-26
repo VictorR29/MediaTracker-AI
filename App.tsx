@@ -113,7 +113,7 @@ const AppInner: React.FC = () => {
   const DesktopNavLink = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, active: boolean, onClick: () => void }) => (
     <button onClick={onClick}
       className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${active ? 'bg-white/[0.08] text-white' : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'}`}>
-      <Icon className={`w-4 h-4 ${active ? 'text-primary' : ''}`} />{label}
+      <Icon className={`w-4 h-4 ${active ? 'text-white' : ''}`} />{label}
     </button>
   );
 
@@ -137,7 +137,7 @@ const AppInner: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200 font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-zinc-950 text-zinc-200 font-sans selection:bg-violet-500/30">
       <LoadingOverlay isVisible={isRestoring} type="restore" />
       <LoadingOverlay isVisible={isSearching} type="search" />
 
@@ -145,7 +145,7 @@ const AppInner: React.FC = () => {
       {!isImmersiveMode && (
       <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] md:w-auto md:max-w-2xl z-40 bg-[#111113]/80 backdrop-blur-xl rounded-full ring-1 ring-white/[0.08] px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5" style={{ boxShadow: '0 0 12px rgba(99,102,241,0.25)' }}>
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-tr from-violet-500 to-purple-500 p-0.5" style={{ boxShadow: '0 0 12px rgba(139,92,246,0.25)' }}>
             <div className="w-full h-full rounded-full bg-zinc-900 overflow-hidden">
               {userProfile?.avatarUrl ? <img src={userProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
               : <div className="w-full h-full flex items-center justify-center"><User className="w-5 h-5" /></div>}
@@ -193,14 +193,14 @@ const AppInner: React.FC = () => {
 
       {/* Mobile Bottom Nav */}
       <nav className={`md:hidden fixed bottom-0 w-full bg-[#111113]/95 backdrop-blur-xl border-t border-white/[0.06] pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-200 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
-        <button onClick={() => handleNavClick('/')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/' || currentPath.startsWith('/item/') ? 'text-primary' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><LayoutGrid className="w-5 h-5" /><span className="text-[9px] font-bold">Biblio</span></button>
-        <button onClick={() => handleNavClick('/wishlist')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/wishlist' ? 'text-primary' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><Bookmark className="w-5 h-5" /><span className="text-[9px] font-bold">Deseos</span></button>
+<button onClick={() => handleNavClick('/')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/' || currentPath.startsWith('/item/') ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><LayoutGrid className="w-5 h-5" /><span className="text-[9px] font-bold">Biblio</span></button>
+<button onClick={() => handleNavClick('/wishlist')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/wishlist' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><Bookmark className="w-5 h-5" /><span className="text-[9px] font-bold">Deseos</span></button>
         <button onClick={() => handleNavClick('/add')} className="flex flex-col items-center gap-1 p-2 min-w-[60px]">
-          <div className={`bg-primary text-white p-3 rounded-full -mt-8 shadow-lg ring-4 ring-[#09090B] shadow-[0_0_16px_rgba(255,255,255,0.10)] transition-transform active:scale-95 ${currentPath === '/add' ? 'ring-2 ring-primary/50' : ''}`}><PlusCircle className="w-6 h-6" /></div>
+          <div className={`bg-white text-zinc-900 p-3 rounded-full -mt-8 shadow-lg ring-4 ring-[#09090B] shadow-[0_0_16px_rgba(255,255,255,0.10)] transition-transform active:scale-95 ${currentPath === '/add' ? 'ring-2 ring-white/50' : ''}`}><PlusCircle className="w-6 h-6" /></div>
           <span className="text-[9px] font-bold opacity-0">Nuevo</span>
         </button>
-        <button onClick={() => handleNavClick('/discover')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/discover' ? 'text-primary' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><Compass className="w-5 h-5" /><span className="text-[9px] font-bold">Descubrir</span></button>
-        <button onClick={() => handleNavClick('/stats')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/stats' ? 'text-primary' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><BarChart2 className="w-5 h-5" /><span className="text-[9px] font-bold">Stats</span></button>
+<button onClick={() => handleNavClick('/discover')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/discover' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><Compass className="w-5 h-5" /><span className="text-[9px] font-bold">Descubrir</span></button>
+<button onClick={() => handleNavClick('/stats')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/stats' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><BarChart2 className="w-5 h-5" /><span className="text-[9px] font-bold">Stats</span></button>
       </nav>
 
       {/* Settings */}

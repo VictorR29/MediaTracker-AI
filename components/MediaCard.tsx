@@ -47,7 +47,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   }, [item]);
 
   const { aiData, trackingData: tracking } = localData;
-  const dynamicColor = aiData.primaryColor || '#6366f1';
+  const dynamicColor = aiData.primaryColor || '#a78bfa';
   const dynamicRgb = hexToRgb(dynamicColor);
 
   // Handlers
@@ -236,7 +236,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
   return (
     <div
-      className="bg-surface/50 border border-zinc-700/50 rounded-3xl overflow-hidden shadow-2xl animate-fade-in-up w-full"
+      className="bg-[#111113]/50 ring-1 ring-white/[0.06] rounded-3xl overflow-hidden shadow-2xl animate-fade-in-up w-full"
       style={{ '--card-rgb': dynamicRgb } as React.CSSProperties}
     >
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] xl:grid-cols-[320px_1fr_320px] gap-0 lg:gap-8 xl:gap-10 p-6 md:p-8 xl:p-10">

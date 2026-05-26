@@ -12,7 +12,7 @@ export const EditActionBar: React.FC<EditActionBarProps> = ({ onSave, onCancel }
       <button onClick={onSave} className="flex-1 md:flex-none md:w-auto px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/20 transition-all text-sm tracking-wide">
         <Save className="w-5 h-5" /> GUARDAR TODO
       </button>
-      <button onClick={onCancel} className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl transition-all border border-zinc-700 text-sm">
+      <button onClick={onCancel} className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl transition-all ring-1 ring-white/[0.06] text-sm">
         CANCELAR
       </button>
     </div>

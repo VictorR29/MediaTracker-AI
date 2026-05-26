@@ -30,7 +30,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({ onUpdateItem, on
         <p>Obra no encontrada</p>
         <button
           onClick={() => navigate('/')}
-          className="mt-4 px-6 py-3 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl transition-all"
+          className="mt-4 px-6 py-3 bg-white hover:bg-zinc-200 text-zinc-900 font-bold rounded-xl transition-all"
         >
           Volver a la biblioteca
         </button>

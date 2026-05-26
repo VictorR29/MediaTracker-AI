@@ -122,7 +122,7 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
       coverDescription: jsonPart.coverDescription || "",
       coverImage: jsonPart.coverImage || "",
       sourceUrls: sources || [],
-      primaryColor: jsonPart.primaryColor || "#6366f1",
+      primaryColor: jsonPart.primaryColor || "#a78bfa",
       releaseDate: jsonPart.releaseDate,
       endDate: jsonPart.endDate,
       franchise_link: jsonPart.franchise_link
@@ -139,7 +139,7 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
       coverDescription: "",
       coverImage: "",
       sourceUrls: [],
-      primaryColor: "#6366f1"
+      primaryColor: "#a78bfa"
     };
   }
 };

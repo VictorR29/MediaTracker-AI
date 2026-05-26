@@ -16,9 +16,9 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isVisible, type,
       case 'search':
         return {
           icon: Sparkles,
-          color: 'text-indigo-400',
-          bgColor: 'bg-indigo-500/10',
-          borderColor: 'border-indigo-500/20',
+color: 'text-violet-400',
+bgColor: 'bg-violet-500/10',
+borderColor: 'border-violet-500/20',
           title: 'Consultando a Gemini AI',
           desc: 'Analizando bases de datos globales...'
         };
@@ -35,8 +35,8 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isVisible, type,
         return {
           icon: Loader2,
           color: 'text-zinc-400',
-          bgColor: 'bg-zinc-800',
-          borderColor: 'border-zinc-700',
+        bgColor: 'bg-zinc-800',
+        borderColor: 'border-white/[0.06]',
           title: 'Cargando',
           desc: 'Por favor espera...'
         };

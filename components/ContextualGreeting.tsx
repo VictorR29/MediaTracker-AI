@@ -229,32 +229,44 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
   // Import missing icons for the TSX to compile correctly if not already present
   // Note: Added imports to the top of the file.
 
+  // Lumen Content: derive glow from the user's accent color (or neutral violet)
+  const accentHex = userProfile.accentColor
+    ? '#' + userProfile.accentColor.split(' ')[0]
+    : '#a78bfa'; // violet-400 as neutral fallback (no indigo)
+
   return (
     <div key={view} className="w-full max-w-5xl mx-auto mb-6 px-4 md:px-0">
       <div
-        className="relative overflow-hidden rounded-xl p-6 border border-white/10"
+        className="relative overflow-hidden rounded-2xl p-6 ring-1 ring-white/[0.06]"
         style={{
-          background: `linear-gradient(135deg, ${userProfile.accentColor ? '#' + userProfile.accentColor.split(' ')[0] : '#6366f1'} 0%, #0f172a 100%)`
+          background: `linear-gradient(135deg, ${accentHex}08 0%, #09090B 60%, #09090B 100%)`
         }}
       >
-        {/* Decorative accent — solid, no blur/pulse */}
+        {/* Lumen glow — subtle accent bleed from top-left */}
+        <div
+          className="absolute -top-12 -left-12 w-48 h-48 rounded-full opacity-20 pointer-events-none"
+          style={{ background: accentHex, filter: 'blur(60px)' }}
+        />
 
         <div className="relative z-10 flex items-start md:items-center gap-4">
-          <div className="p-3 bg-white/20 rounded-full flex-shrink-0">
+          <div
+            className="p-3 rounded-full flex-shrink-0 ring-1 ring-white/[0.08]"
+            style={{ background: `${accentHex}20` }}
+          >
             <Icon className="w-6 h-6 text-white" />
           </div>
           <div>
-            <p className="text-white text-lg md:text-xl font-bold leading-tight">
+            <p className="text-white text-lg md:text-xl font-semibold tracking-tight leading-tight">
               {greeting.text}
             </p>
-                     {greeting.subtext && (
-                        <p className="text-white/80 text-sm md:text-base mt-1 font-medium leading-relaxed">
-                            {greeting.subtext}
-                        </p>
-                     )}
-                 </div>
-             </div>
+            {greeting.subtext && (
+              <p className="text-zinc-400 text-sm md:text-base mt-1 font-medium leading-relaxed">
+                {greeting.subtext}
+              </p>
+            )}
+          </div>
         </div>
+      </div>
     </div>
   );
 };

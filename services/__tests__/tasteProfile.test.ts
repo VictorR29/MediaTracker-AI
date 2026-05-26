@@ -4,7 +4,7 @@ import { MediaItem } from '../../types';
 
 const makeItem = (title: string, mediaType: string, rating: string, genres: string[]): MediaItem => ({
   id: title.toLowerCase().replace(/\s/g, '-'),
-  aiData: { title, mediaType, synopsis: '', genres, status: 'Finalizado', totalContent: '', coverDescription: '', coverImage: '', sourceUrls: [], primaryColor: '#6366f1' },
+  aiData: { title, mediaType, synopsis: '', genres, status: 'Finalizado', totalContent: '', coverDescription: '', coverImage: '', sourceUrls: [], primaryColor: '#a78bfa' },
   trackingData: { status: 'Completado', currentSeason: 1, totalSeasons: 1, watchedEpisodes: 12, totalEpisodesInSeason: 12, is_favorite: false, rating, emotionalTags: [], comment: '', customLinks: [], favoriteCharacters: [], recommendedBy: '' },
   createdAt: 1000,
   lastInteraction: 2000,

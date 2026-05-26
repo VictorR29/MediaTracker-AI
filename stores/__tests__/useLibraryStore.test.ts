@@ -4,7 +4,7 @@ import { MediaItem } from '../../types';
 
 const mockItem: MediaItem = {
   id: 'test-1',
-  aiData: { title: 'Test Anime', mediaType: 'Anime', synopsis: '', genres: ['Acción'], status: 'Finalizado', totalContent: '', coverDescription: '', coverImage: '', sourceUrls: [], primaryColor: '#6366f1' },
+  aiData: { title: 'Test Anime', mediaType: 'Anime', synopsis: '', genres: ['Acción'], status: 'Finalizado', totalContent: '', coverDescription: '', coverImage: '', sourceUrls: [], primaryColor: '#a78bfa' },
   trackingData: { status: 'Completado', currentSeason: 1, totalSeasons: 1, watchedEpisodes: 12, totalEpisodesInSeason: 12, is_favorite: false, rating: 'Obra Maestra', emotionalTags: [], comment: '', customLinks: [], favoriteCharacters: [], recommendedBy: '' },
   createdAt: 1000,
   lastInteraction: 2000,

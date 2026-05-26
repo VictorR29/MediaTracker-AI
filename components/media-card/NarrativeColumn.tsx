@@ -42,7 +42,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
   return (
     <div className="flex flex-col gap-6 xl:gap-10 pt-10 lg:pt-0">
       {/* Synopsis */}
-      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-zinc-800 shadow-xl">
+      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.06] shadow-xl">
         <div className="flex items-center justify-between mb-4 xl:mb-6">
           <h3 className="text-xs xl:text-base font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-3">
             <FileText className="w-4 h-4 xl:w-5 xl:h-5" /> Sinopsis
@@ -55,7 +55,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
           <textarea
             value={aiData.synopsis}
             onChange={(e) => onAIDataChange('synopsis', e.target.value)}
-            className="w-full h-56 bg-zinc-900/50 border border-zinc-700 rounded-2xl p-5 text-zinc-300 text-sm xl:text-base outline-none focus:border-[rgb(var(--card-rgb))] leading-relaxed"
+            className="w-full h-56 bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-2xl p-5 text-zinc-300 text-sm xl:text-base outline-none focus:border-[rgb(var(--card-rgb))] leading-relaxed"
           />
         ) : (
           <p className="text-sm xl:text-base text-zinc-300 leading-relaxed whitespace-pre-line font-medium">
@@ -65,7 +65,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
       </div>
 
       {/* Progress Tracking */}
-      <div className="bg-zinc-900/50 rounded-[2.5rem] p-6 xl:p-8 border border-zinc-800 relative overflow-hidden shadow-2xl">
+      <div className="bg-zinc-900/50 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.06] relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 left-0 w-2 h-full bg-[rgb(var(--card-rgb))]"></div>
         <div className="flex items-center justify-between mb-6 xl:mb-8">
           <h3 className="text-xs xl:text-base font-bold text-white uppercase tracking-widest flex items-center gap-3">
@@ -106,7 +106,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
                   type="date"
                   value={tracking.nextReleaseDate || ''}
                   onChange={(e) => onInputChange('nextReleaseDate', e.target.value)}
-                  className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[rgb(var(--card-rgb))]"
+                  className="bg-zinc-900 ring-1 ring-white/[0.06] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[rgb(var(--card-rgb))]"
                 />
               </div>
               <p className="text-[10px] text-[rgb(var(--card-rgb)/0.7)] mt-2 pl-1">
@@ -242,7 +242,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
       </div>
 
       {/* Personajes Destacados */}
-      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-zinc-800">
+      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.06]">
         <h3 className="text-xs xl:text-base font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-3 mb-4 xl:mb-6">
           <User className="w-4 h-4 xl:w-5 xl:h-5" /> Personajes Destacados
         </h3>
@@ -250,7 +250,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
         {/* Character Tags List with Drag & Drop */}
         <div className="flex flex-wrap gap-2 xl:gap-3 mb-4 xl:mb-6">
           {(tracking.favoriteCharacters || []).map((char, idx) => {
-            let rankStyle = "bg-zinc-800 border-zinc-700 text-zinc-300";
+            let rankStyle = "bg-zinc-800 ring-1 ring-zinc-600 text-zinc-300";
             let icon = null;
 
             if (idx === 0) {

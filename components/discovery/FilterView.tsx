@@ -58,19 +58,19 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
 
   return (
     <div className="animate-fade-in pb-12">
-      <div className="flex items-center gap-3 mb-6 border-l-4 border-primary pl-4">
-        <h2 className="text-2xl font-bold text-white">Descubrimiento IA</h2>
-        <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+  <div className="flex items-center gap-3 mb-6 border-l-4 border-white pl-4">
+    <h2 className="text-2xl font-bold text-white">Descubrimiento IA</h2>
+    <Sparkles className="w-5 h-5 text-white animate-pulse" />
       </div>
 
-      <div className="bg-gradient-to-br from-surface to-zinc-900 border border-zinc-700 rounded-2xl p-4 md:p-8 mb-8 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+      <div className="bg-[#111113] ring-1 ring-white/[0.06] rounded-2xl p-4 md:p-8 mb-8 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
         <div className="relative z-10 max-w-5xl">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <Wand2 className="w-5 h-5 text-indigo-400" />
+                <Wand2 className="w-5 h-5 text-violet-400" />
                 Motor de Recomendación
               </h3>
               <p className="text-zinc-400 text-sm mt-1">
@@ -87,10 +87,10 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                 <button
                   key={type.value}
                   onClick={() => onSelectType(type.value)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all duration-300 ${isSelected
-                    ? `${type.bg} shadow-lg shadow-${type.color.split('-')[1]}-500/10 ring-1 ring-${type.color.split('-')[1]}-500`
-                    : 'bg-zinc-800 border-zinc-700 hover:border-zinc-600 text-zinc-400 hover:bg-zinc-750'
-                    }`}
+className={`flex items-center gap-2 px-4 py-2.5 rounded-lg ring-1 transition-all duration-300 ${isSelected
+  ? `${type.bg} shadow-lg shadow-${type.color.split('-')[1]}-500/10 ring-1 ring-${type.color.split('-')[1]}-500`
+  : 'bg-zinc-800 ring-white/[0.06] hover:ring-white/20 text-zinc-400 hover:bg-zinc-750'
+}`}
                 >
                   <Icon className={`w-4 h-4 ${isSelected ? type.color : ''}`} />
                   <span className={`text-sm font-medium ${isSelected ? 'text-white' : ''}`}>{type.label}</span>
@@ -100,13 +100,13 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
           </div>
 
           {/* Refine by Works Panel */}
-          <div className="bg-zinc-950/60 rounded-xl border border-zinc-700/60 overflow-hidden mb-4 transition-all">
-            <div
-              className="p-4 bg-zinc-900/50 border-b border-zinc-700/50 flex items-center justify-between cursor-pointer hover:bg-zinc-800/50 transition-colors"
-              onClick={onToggleRefine}
+<div className="bg-zinc-950/60 rounded-xl ring-1 ring-white/[0.04] overflow-hidden mb-4 transition-all">
+  <div
+    className="p-4 bg-zinc-900/50 border-b border-white/5 flex items-center justify-between cursor-pointer hover:bg-zinc-800/50 transition-colors"
+    onClick={onToggleRefine}
             >
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${selectedSeeds.length > 0 ? 'bg-primary/20 text-primary' : 'bg-zinc-800 text-zinc-500'}`}>
+                <div className={`p-2 rounded-lg ${selectedSeeds.length > 0 ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
                   <Filter className="w-4 h-4" />
                 </div>
                 <div>
@@ -131,9 +131,9 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                       const item = library.find(i => i.id === seedId);
                       if (!item) return null;
                       return (
-                        <div key={seedId} className="inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-primary/20 border border-primary/40 rounded-full text-xs font-bold text-white shadow-sm">
-                          <span className="truncate max-w-[150px]">{item.aiData.title}</span>
-                          <button onClick={() => onToggleSeed(seedId)} className="p-0.5 hover:bg-primary/40 rounded-full">
+  <div key={seedId} className="inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-white/20 ring-1 ring-white/[0.06] rounded-full text-xs font-bold text-white shadow-sm">
+    <span className="truncate max-w-[150px]">{item.aiData.title}</span>
+    <button onClick={() => onToggleSeed(seedId)} className="p-0.5 hover:bg-white/40 rounded-full">
                             <X className="w-3 h-3" />
                           </button>
                         </div>
@@ -150,7 +150,7 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                     placeholder={`Buscar ${selectedType} en tu biblioteca...`}
                     value={seedSearchQuery}
                     onChange={(e) => onSeedSearchChange(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg pl-10 pr-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-primary transition-all placeholder-zinc-600"
+                    className="w-full bg-zinc-900 ring-1 ring-white/[0.06] rounded-lg pl-10 pr-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-white/20 transition-all placeholder-zinc-600"
                   />
                 </div>
 
@@ -163,9 +163,9 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                         <button
                           key={item.id}
                           onClick={() => onToggleSeed(item.id)}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 border border-transparent hover:border-zinc-700 transition-all text-left group"
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 ring-1 ring-transparent hover:ring-white/[0.06] transition-all text-left group"
                         >
-                          <div className="w-8 h-12 bg-zinc-800 rounded overflow-hidden flex-shrink-0 border border-zinc-700 relative">
+                          <div className="w-8 h-12 bg-zinc-800 rounded overflow-hidden flex-shrink-0 ring-1 ring-white/[0.06] relative">
                             {item.aiData.coverImage ? (
                               <img
                                 src={item.aiData.coverImage}
@@ -182,7 +182,7 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                           <div className="min-w-0 flex-1">
                             <p className="text-xs font-medium text-zinc-300 group-hover:text-white truncate">{item.aiData.title}</p>
                           </div>
-                          <Plus className="w-4 h-4 text-zinc-600 group-hover:text-primary ml-auto opacity-0 group-hover:opacity-100 transition-all flex-shrink-0" />
+                          <Plus className="w-4 h-4 text-zinc-600 group-hover:text-white ml-auto opacity-0 group-hover:opacity-100 transition-all flex-shrink-0" />
                         </button>
                       ))}
                   </div>
@@ -192,13 +192,13 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
           </div>
 
           {/* Refine by Mood Panel */}
-          <div className="bg-zinc-950/60 rounded-xl border border-zinc-700/60 overflow-hidden mb-8 transition-all">
-            <div
-              className="p-4 bg-zinc-900/50 border-b border-zinc-700/50 flex items-center justify-between cursor-pointer hover:bg-zinc-800/50 transition-colors"
-              onClick={onToggleMoodPanel}
+<div className="bg-zinc-950/60 rounded-xl ring-1 ring-white/[0.04] overflow-hidden mb-8 transition-all">
+  <div
+    className="p-4 bg-zinc-900/50 border-b border-white/5 flex items-center justify-between cursor-pointer hover:bg-zinc-800/50 transition-colors"
+    onClick={onToggleMoodPanel}
             >
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${selectedMood ? 'bg-primary/20 text-primary' : 'bg-zinc-800 text-zinc-500'}`}>
+                <div className={`p-2 rounded-lg ${selectedMood ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
                   <Heart className="w-4 h-4" />
                 </div>
                 <div>
@@ -224,21 +224,21 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                         onClick={() => onToggleMood(isSelected ? null : mood.label)}
                         className={`flex items-center gap-3 p-3 rounded-xl border backdrop-blur-md transition-all duration-300 text-left group
                           ${isSelected
-                            ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(var(--color-primary),0.3)]'
-                            : 'bg-zinc-900/40 border-white/5 hover:border-primary/50 hover:bg-zinc-800/60'
+  ? 'ring-1 ring-white/20 bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.1)]'
+    : 'bg-zinc-900/40 ring-1 ring-white/5 hover:ring-white/20 hover:bg-zinc-800/60'
                           }
                         `}
                       >
                         <span
                           className="text-2xl filter drop-shadow-md transition-transform group-hover:scale-110"
-                          style={{ textShadow: isSelected ? '0 0 15px rgb(var(--color-primary))' : 'none' }}
+                          style={{ textShadow: isSelected ? '0 0 15px rgba(255,255,255,0.3)' : 'none' }}
                         >
                           {mood.emoji}
                         </span>
                         <span className={`text-sm font-medium leading-tight ${isSelected ? 'text-white' : 'text-zinc-300 group-hover:text-white'}`}>
                           {mood.label}
                         </span>
-                        {isSelected && <div className="ml-auto w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgb(var(--color-primary))]"></div>}
+                        {isSelected && <div className="ml-auto w-2 h-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>}
                       </button>
                     );
                   })}
@@ -255,14 +255,14 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-xs text-zinc-400 hidden md:block">
               {selectedSeeds.length > 0 || selectedMood
-                ? <span className="text-primary font-medium">Búsqueda personalizada activa</span>
+                ? <span className="text-white font-medium">Búsqueda personalizada activa</span>
                 : <span>Analizando perfil general</span>
               }
             </div>
             <button
               onClick={onGenerate}
               disabled={isLoading}
-              className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+              className="flex items-center gap-2 bg-white hover:bg-zinc-200 text-zinc-900 font-bold py-3 px-8 rounded-full shadow-lg shadow-white/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
             >
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Compass className="w-5 h-5" />}
               {isLoading ? 'Analizando...' : 'Generar Experiencia'}

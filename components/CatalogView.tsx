@@ -24,7 +24,7 @@ const CatalogPoster: React.FC<{
         ? aiData.coverImage
         : `https://placehold.co/400x600/1e293b/94a3b8?text=${encodeURIComponent(aiData.title)}&font=roboto`;
 
-    const dynamicColor = aiData.primaryColor || '#6366f1';
+    const dynamicColor = aiData.primaryColor || '#a78bfa';
 
     const handleClick = () => setIsFlipped(!isFlipped);
 
@@ -138,7 +138,7 @@ const Shelf: React.FC<{
 
     return (
         <div className="mb-12 animate-fade-in-up w-full max-w-full">
-            <div className="flex items-center gap-3 mb-5 px-4 md:px-8 border-l-4 border-zinc-700 ml-4 md:ml-8 pl-3">
+            <div className="flex items-center gap-3 mb-5 px-4 md:px-8 border-l-4 border-white/[0.06] ml-4 md:ml-8 pl-3">
                 <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight drop-shadow-md">{title}</h2>
                 <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">{items.length}</span>
             </div>
@@ -265,7 +265,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
     return (
         <div className="relative min-h-screen pb-20 w-full max-w-full overflow-x-hidden">
             <div 
-                className="fixed inset-0 z-0 pointer-events-none transition-[background-color] duration-1000 ease-in-out"
+                className="fixed inset-0 z-0 pointer-events-none transition-[background-color] duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
                 style={{ backgroundColor: activeColor, opacity: 0.15 }}
             />
             <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#0f172a] via-[#0f172a]/90 to-[#0f172a]" />

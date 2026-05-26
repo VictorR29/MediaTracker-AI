@@ -41,7 +41,7 @@ export const useDeleteConfirm = (onAfterDelete?: () => void): DeleteConfirmState
     if (!itemToDelete) return null;
     return (
       <div className="fixed inset-0 z-[100] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-        <div className="bg-surface border border-zinc-700 rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-fade-in-up">
+        <div className="bg-[#111113] ring-1 ring-white/[0.06] rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-fade-in-up">
           <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
             <AlertTriangle className="w-8 h-8 text-red-500" />
           </div>
@@ -53,7 +53,7 @@ export const useDeleteConfirm = (onAfterDelete?: () => void): DeleteConfirmState
           <div className="flex gap-3">
             <button
               onClick={cancelDelete}
-              className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl transition-all border border-zinc-700"
+              className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl transition-all ring-1 ring-white/[0.06]"
             >
               Cancelar
             </button>
