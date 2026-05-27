@@ -187,8 +187,8 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
 
         {/* Mobile Filter Modal (Full Screen Drawer) */}
         {isMobileModalOpen && (
-            <div className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm flex flex-col md:hidden animate-fade-in">
-                <div className="flex items-center justify-between p-4 ring-1 ring-white/[0.06] ring-b bg-[#111113]">
+	<div className="fixed inset-0 z-[60] bg-[#09090B]/95 backdrop-blur-sm flex flex-col md:hidden">
+	<div className="flex items-center justify-between p-4 border-b border-white/[0.06] bg-[#111113]">
 <h3 className="text-lg font-bold text-white flex items-center gap-2">
       <Filter className="w-5 h-5 text-white" /> Filtros
                     </h3>
@@ -197,7 +197,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                     </button>
                 </div>
                 
-                <div className="flex-grow overflow-y-auto p-4 space-y-6">
+	<div className="flex-grow overflow-y-auto p-4 space-y-6 pb-2">
                      {/* Mobile Inputs Stack */}
                      <div className="space-y-2">
                         <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Tipo de Medio</label>
@@ -206,7 +206,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                                  <button
                                     key={opt}
                                     onClick={() => handleChange('type', opt)}
-                                    className={`px-3 py-3 rounded-lg text-sm font-medium border transition-colors ${
+			className={`px-3 py-3 rounded-lg text-sm font-medium transition-colors ${ 
                                         filters.type === opt 
 ? 'bg-white/20 ring-1 ring-white/20 text-white'
     : 'bg-zinc-800 ring-1 ring-white/[0.06] text-zinc-400'
@@ -273,7 +273,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                      </div>
                 </div>
 
-                <div className="p-4 bg-[#111113] ring-1 ring-white/[0.06] ring-t">
+	<div className="sticky bottom-0 p-4 bg-[#111113] border-t border-white/[0.06]">
                     <button 
                         onClick={() => setIsMobileModalOpen(false)}
                         className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-bold py-3.5 rounded-full shadow-lg"

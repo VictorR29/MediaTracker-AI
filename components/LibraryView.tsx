@@ -51,26 +51,26 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           onOpenDetail={onOpenDetail}
         />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 stagger-children">
-          {displayedLibrary.map(item => (
-            <CompactMediaCard
-              key={item.id}
-              item={item}
-              onClick={onOpenDetail}
-              onIncrement={onIncrementProgress}
-              onToggleFavorite={onToggleFavorite}
-              onDelete={onRequestDelete}
-            />
-          ))}
-          {displayedLibrary.length === 0 && (
-            <div className="col-span-full text-center py-20 text-zinc-500 flex flex-col items-center">
-              <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-4 border border-zinc-800">
-                <SearchIcon className="w-8 h-8 opacity-20" />
-              </div>
-              <p>No se encontraron obras</p>
-              {view === 'upcoming' && <p className="text-sm mt-1">Añade obras a "Planeado" para verlas aquí.</p>}
-            </div>
-          )}
+	<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 stagger-children">
+		{displayedLibrary.map(item => (
+			<CompactMediaCard
+			key={item.id}
+			item={item}
+			onClick={onOpenDetail}
+			onIncrement={onIncrementProgress}
+			onToggleFavorite={onToggleFavorite}
+			onDelete={onRequestDelete}
+			/>
+		))}
+		{displayedLibrary.length === 0 && (
+			<div className="col-span-full text-center py-20 text-zinc-500 flex flex-col items-center">
+			<div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mb-4 ring-1 ring-white/[0.06]">
+				<SearchIcon className="w-8 h-8 text-zinc-600" />
+			</div>
+			<p className="text-zinc-400 font-medium">No se encontraron obras</p>
+			{view === 'upcoming' && <p className="text-sm mt-1 text-zinc-500">Añade obras a "Planeado" para verlas aquí.</p>}
+			</div>
+		)}
         </div>
       )}
     </div>

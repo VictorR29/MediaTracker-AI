@@ -43,8 +43,8 @@ const CatalogPoster: React.FC<{
                 
                 {/* FRONT FACE (Clean Cover Only) */}
                 <div 
-                    className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden shadow-2xl border border-white/5 bg-[#1A1D26]"
-                    style={{ boxShadow: isFlipped ? 'none' : `0 10px 30px -10px ${dynamicColor}40` }}
+		className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden shadow-2xl border border-white/5 bg-[#1A1D26]"
+		style={{ boxShadow: isFlipped ? 'none' : `0 10px 40px -10px ${dynamicColor}60, 0 0 60px ${dynamicColor}15` }}
                 >
                     <img 
                         src={imageSrc} 
@@ -138,7 +138,7 @@ const Shelf: React.FC<{
 
     return (
         <div className="mb-12 animate-fade-in-up w-full max-w-full">
-            <div className="flex items-center gap-3 mb-5 px-4 md:px-8 border-l-4 border-white/[0.06] ml-4 md:ml-8 pl-3">
+	<div className="flex items-center gap-3 mb-5 px-4 md:px-8 border-l-4 border-white/[0.10] ml-4 md:ml-8 pl-3">
                 <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight drop-shadow-md">{title}</h2>
                 <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">{items.length}</span>
             </div>
@@ -147,7 +147,7 @@ const Shelf: React.FC<{
                 {showLeftArrow && (
                     <button
                         onClick={() => scroll('left')}
-                        className="absolute left-0 top-0 bottom-0 z-30 w-16 bg-gradient-to-r from-[#0f172a] to-transparent flex items-center justify-start pl-4 opacity-0 group-hover/shelf:opacity-100 transition-opacity duration-300 hidden md:flex cursor-pointer"
+		className="absolute left-0 top-0 bottom-0 z-30 w-16 bg-gradient-to-r from-[#09090B] to-transparent flex items-center justify-start pl-4 opacity-0 group-hover/shelf:opacity-100 transition-opacity duration-300 hidden md:flex cursor-pointer"
                     >
                         <ChevronLeft className="w-10 h-10 text-white drop-shadow-lg transition-transform hover:scale-110" />
                     </button>
@@ -156,7 +156,7 @@ const Shelf: React.FC<{
                 {showRightArrow && (
                     <button
                         onClick={() => scroll('right')}
-                        className="absolute right-0 top-0 bottom-0 z-30 w-16 bg-gradient-to-l from-[#0f172a] to-transparent flex items-center justify-end pr-4 opacity-0 group-hover/shelf:opacity-100 transition-opacity duration-300 hidden md:flex cursor-pointer"
+		className="absolute right-0 top-0 bottom-0 z-30 w-16 bg-gradient-to-l from-[#09090B] to-transparent flex items-center justify-end pr-4 opacity-0 group-hover/shelf:opacity-100 transition-opacity duration-300 hidden md:flex cursor-pointer"
                     >
                         <ChevronRight className="w-10 h-10 text-white drop-shadow-lg transition-transform hover:scale-110" />
                     </button>
@@ -184,7 +184,7 @@ const Shelf: React.FC<{
 };
 
 export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail }) => {
-    const [activeColor, setActiveColor] = useState<string>('#0f172a');
+	const [activeColor, setActiveColor] = useState<string>('#09090B');
 
     const shelves = useMemo(() => {
         const validLibrary = library.filter(item => item && item.aiData && item.trackingData);
@@ -265,10 +265,10 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
     return (
         <div className="relative min-h-screen pb-20 w-full max-w-full overflow-x-hidden">
             <div 
-                className="fixed inset-0 z-0 pointer-events-none transition-[background-color] duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                style={{ backgroundColor: activeColor, opacity: 0.15 }}
-            />
-            <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#0f172a] via-[#0f172a]/90 to-[#0f172a]" />
+		className="fixed inset-0 z-0 pointer-events-none transition-[background-color] duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
+		style={{ backgroundColor: activeColor, opacity: 0.25 }}
+		/>
+	<div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#09090B] via-[#09090B]/90 to-[#09090B]" />
 
             <div className="relative z-10 pt-6 w-full stagger-children">
                 <Shelf title="Continuar Viendo" icon={PlayCircle} items={shelves.continueWatching} onOpenDetail={onOpenDetail} onHoverColor={setActiveColor} />

@@ -237,23 +237,28 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
   return (
     <div key={view} className="w-full max-w-5xl mx-auto mb-6 px-4 md:px-0">
       <div
-        className="relative overflow-hidden rounded-2xl p-6 ring-1 ring-white/[0.06]"
+        className="relative overflow-hidden rounded-2xl p-6 ring-1 ring-white/[0.08]"
         style={{
-          background: `linear-gradient(135deg, ${accentHex}08 0%, #09090B 60%, #09090B 100%)`
+          background: `linear-gradient(135deg, ${accentHex}15 0%, ${accentHex}08 40%, #09090B 100%)`
         }}
       >
-        {/* Lumen glow — subtle accent bleed from top-left */}
+        {/* Lumen glow — visible accent bleed from top-left */}
         <div
-          className="absolute -top-12 -left-12 w-48 h-48 rounded-full opacity-20 pointer-events-none"
+          className="absolute -top-16 -left-16 w-64 h-64 rounded-full opacity-30 pointer-events-none"
+          style={{ background: accentHex, filter: 'blur(80px)' }} 
+        />
+        {/* Secondary lumen glow — bottom-right subtle reflection */}
+        <div
+          className="absolute -bottom-12 -right-12 w-48 h-48 rounded-full opacity-15 pointer-events-none"
           style={{ background: accentHex, filter: 'blur(60px)' }}
         />
 
         <div className="relative z-10 flex items-start md:items-center gap-4">
           <div
             className="p-3 rounded-full flex-shrink-0 ring-1 ring-white/[0.08]"
-            style={{ background: `${accentHex}20` }}
+            style={{ background: `${accentHex}25`, boxShadow: `0 0 16px ${accentHex}30` }}
           >
-            <Icon className="w-6 h-6 text-white" />
+            <Icon className="w-6 h-6" style={{ color: accentHex }} />
           </div>
           <div>
             <p className="text-white text-lg md:text-xl font-semibold tracking-tight leading-tight">
