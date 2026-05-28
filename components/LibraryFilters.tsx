@@ -188,16 +188,18 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
         {/* Mobile Filter Modal (Full Screen Drawer) */}
         {isMobileModalOpen && (
 	<div className="fixed inset-0 z-[60] bg-[#09090B]/95 backdrop-blur-sm flex flex-col md:hidden">
-	<div className="flex items-center justify-between p-4 border-b border-white/[0.06] bg-[#111113]">
-<h3 className="text-lg font-bold text-white flex items-center gap-2">
-      <Filter className="w-5 h-5 text-white" /> Filtros
-                    </h3>
-                    <button onClick={() => setIsMobileModalOpen(false)} className="p-2 text-zinc-400 hover:text-white">
-                        <X className="w-6 h-6" />
-                    </button>
-                </div>
-                
-      <div className="flex-grow overflow-y-auto p-4 space-y-6 pb-4">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 bg-[#111113] border-b border-white/[0.06]">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <Filter className="w-5 h-5 text-white" /> Filtros
+        </h3>
+        <button onClick={() => setIsMobileModalOpen(false)} className="p-2 text-zinc-400 hover:text-white">
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Scrollable content */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
         {/* Mobile Inputs Stack */}
         <div className="space-y-2">
           <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Tipo de Medio</label>
@@ -287,10 +289,11 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
         </div>
       </div>
 
-      <div className="flex-shrink-0 p-4 bg-[#111113] border-t border-white/[0.06]">
+      {/* Footer - always visible at bottom */}
+      <div className="p-4 bg-[#111113] border-t border-white/[0.06]">
         <button
           onClick={() => setIsMobileModalOpen(false)}
-          className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-bold py-3.5 rounded-full shadow-lg"
+          className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-bold py-3.5 rounded-full shadow-lg active:scale-[0.98]"
         >
           <Check className="w-5 h-5" />
           Ver Resultados
