@@ -197,91 +197,105 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                     </button>
                 </div>
                 
-	<div className="flex-grow overflow-y-auto p-4 space-y-6 pb-2">
-                     {/* Mobile Inputs Stack */}
-                     <div className="space-y-2">
-                        <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Tipo de Medio</label>
-                        <div className="grid grid-cols-2 gap-2">
-                             {['All', 'Anime', 'Serie', 'Pelicula', 'Manhwa', 'Manga', 'Libro', 'Comic'].map(opt => (
-                                 <button
-                                    key={opt}
-                                    onClick={() => handleChange('type', opt)}
-			className={`px-3 py-3 rounded-lg text-sm font-medium transition-colors ${ 
-                                        filters.type === opt 
-? 'bg-white/20 ring-1 ring-white/20 text-white'
-    : 'bg-zinc-800 ring-1 ring-white/[0.06] text-zinc-400'
-                                    }`}
-                                 >
-                                     {opt === 'All' ? 'Todos' : (opt === 'Pelicula' ? 'Película' : opt)}
-                                 </button>
-                             ))}
-                        </div>
-                     </div>
+      <div className="flex-grow overflow-y-auto p-4 space-y-6 pb-4">
+        {/* Mobile Inputs Stack */}
+        <div className="space-y-2">
+          <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Tipo de Medio</label>
+          <div className="grid grid-cols-2 gap-2">
+            {['All', 'Anime', 'Serie', 'Pelicula', 'Manhwa', 'Manga', 'Libro', 'Comic'].map(opt => (
+              <button
+                key={opt}
+                onClick={() => handleChange('type', opt)}
+                className={`px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  filters.type === opt
+                    ? 'bg-white/20 ring-1 ring-white/20 text-white'
+                    : 'bg-zinc-800 ring-1 ring-white/[0.06] text-zinc-400'
+                }`}
+              >
+                {opt === 'All' ? 'Todos' : (opt === 'Pelicula' ? 'Película' : opt)}
+              </button>
+            ))}
+          </div>
+        </div>
 
-                     <div className="space-y-2">
-                        <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Estado</label>
-                        <select
-                            className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
-                            value={filters.status}
-                            onChange={(e) => handleChange('status', e.target.value)}
-                        >
-                            <option value="All">Todos</option>
-                            <option value="Sin empezar">Sin empezar</option>
-                            <option value="Viendo/Leyendo">Viendo/Leyendo</option>
-                            <option value="Completado">Completado</option>
-                            <option value="En Pausa">En Pausa</option>
-                            <option value="Descartado">Descartado</option>
-                            <option value="Planeado / Pendiente">Planeado / Pendiente</option>
-                        </select>
-                     </div>
+        <div className="space-y-2">
+          <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Estado</label>
+          <select
+            className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
+            value={filters.status}
+            onChange={(e) => handleChange('status', e.target.value)}
+          >
+            <option value="All">Todos</option>
+            <option value="Sin empezar">Sin empezar</option>
+            <option value="Viendo/Leyendo">Viendo/Leyendo</option>
+            <option value="Completado">Completado</option>
+            <option value="En Pausa">En Pausa</option>
+            <option value="Descartado">Descartado</option>
+            <option value="Planeado / Pendiente">Planeado / Pendiente</option>
+          </select>
+        </div>
 
-                     <div className="space-y-2">
-                        <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Género</label>
-                        <select
-                            className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
-                            value={filters.genre}
-                            onChange={(e) => handleChange('genre', e.target.value)}
-                        >
-                            <option value="All">Todos</option>
-                            {availableGenres.map(genre => (
-                            <option key={genre} value={genre}>{capitalize(genre)}</option>
-                            ))}
-                        </select>
-                     </div>
+        <div className="space-y-2">
+          <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Género</label>
+          <select
+            className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
+            value={filters.genre}
+            onChange={(e) => handleChange('genre', e.target.value)}
+          >
+            <option value="All">Todos</option>
+            {availableGenres.map(genre => (
+              <option key={genre} value={genre}>{capitalize(genre)}</option>
+            ))}
+          </select>
+        </div>
 
-                     <div className="space-y-2">
-                        <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Ordenar por</label>
-                         <div className="flex bg-zinc-800 rounded-lg p-1 ring-1 ring-white/[0.06]">
-                             {[
-                                 { label: 'Recientes', value: 'updated' },
-                                 { label: 'A-Z', value: 'title' },
-                                 { label: 'Progreso', value: 'progress' }
-                             ].map((opt) => (
-                                 <button
-                                    key={opt.value}
-                                    onClick={() => handleChange('sortBy', opt.value as any)}
-                                    className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${
-                                        filters.sortBy === opt.value 
-                                        ? 'bg-zinc-600 text-white shadow' 
-                                        : 'text-zinc-400'
-                                    }`}
-                                 >
-                                     {opt.label}
-                                 </button>
-                             ))}
-                         </div>
-                     </div>
-                </div>
+        <div className="space-y-2">
+          <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Calificación</label>
+          <select
+            className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
+            value={filters.rating}
+            onChange={(e) => handleChange('rating', e.target.value)}
+          >
+            <option value="All">Todas</option>
+            {RATING_OPTIONS.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
 
-	<div className="sticky bottom-0 p-4 bg-[#111113] border-t border-white/[0.06]">
-                    <button 
-                        onClick={() => setIsMobileModalOpen(false)}
-                        className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-bold py-3.5 rounded-full shadow-lg"
-                    >
-                        <Check className="w-5 h-5" />
-                        Ver Resultados
-                    </button>
-                </div>
+        <div className="space-y-2">
+          <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Ordenar por</label>
+          <div className="flex bg-zinc-800 rounded-lg p-1 ring-1 ring-white/[0.06]">
+            {[
+              { label: 'Recientes', value: 'updated' },
+              { label: 'A-Z', value: 'title' },
+              { label: 'Progreso', value: 'progress' }
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleChange('sortBy', opt.value as any)}
+                className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${
+                  filters.sortBy === opt.value
+                    ? 'bg-zinc-600 text-white shadow'
+                    : 'text-zinc-400'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-shrink-0 p-4 bg-[#111113] border-t border-white/[0.06]">
+        <button
+          onClick={() => setIsMobileModalOpen(false)}
+          className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-bold py-3.5 rounded-full shadow-lg"
+        >
+          <Check className="w-5 h-5" />
+          Ver Resultados
+        </button>
+      </div>
             </div>
         )}
     </>
