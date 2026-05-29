@@ -1,143 +1,122 @@
 // Helper to extract dominant color from image
-// Uses a CORS proxy fallback strategy to handle cross-origin images
-const CORS_PROXIES = [
-  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-];
+// Uses blob fetch to bypass CORS restrictions on cross-origin images
 
 export const extractColorFromImage = async (imageSrc: string): Promise<string> => {
-  // Skip placeholders and data URIs
   if (!imageSrc || imageSrc.includes('placehold.co')) return '#c084fc';
+
+  // Data URIs can be read directly
   if (imageSrc.startsWith('data:')) {
-    return extractFromDataUri(imageSrc);
+    return sampleImageCanvas(imageSrc);
   }
 
-  // Try direct extraction first (works for same-origin and CORS-enabled images)
-  const direct = await tryExtract(imageSrc, true);
-  if (direct) return direct;
-
-  // Try without CORS attribute (tainted canvas — will fail getImageData but worth trying)
-  const noCors = await tryExtract(imageSrc, false);
-  if (noCors) return noCors;
-
-  // Try CORS proxies
-  for (const proxy of CORS_PROXIES) {
-    const proxied = await tryExtract(proxy(imageSrc), true);
-    if (proxied) return proxied;
+  // Blob fetch: download image as blob, create local object URL, read canvas
+  // This bypasses CORS because fetch() doesn't enforce same-origin for images,
+  // and blob: URLs are same-origin by definition.
+  try {
+    const response = await fetch(imageSrc, { mode: 'cors' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      const color = await sampleImageCanvas(objectUrl);
+      return color;
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  } catch {
+    // If CORS fetch fails, try no-cors (opaque response — can't read body but
+    // some CDNs allow it). If that also fails, try loading via Image with crossOrigin.
+    try {
+      return await sampleViaImage(imageSrc, true);
+    } catch {
+      try {
+        return await sampleViaImage(imageSrc, false);
+      } catch {
+        return '#c084fc';
+      }
+    }
   }
-
-  return '#c084fc'; // All methods failed
 };
 
-const tryExtract = (imageSrc: string, useCrossOrigin: boolean): Promise<string | null> => {
-  return new Promise((resolve) => {
+// Primary extraction: load from any URL (blob:, data:, same-origin) into canvas
+const sampleImageCanvas = (src: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
-    if (useCrossOrigin) img.crossOrigin = "Anonymous";
-    img.src = imageSrc;
-
-    const timeout = setTimeout(() => {
-      img.src = '';
-      resolve(null);
-    }, 5000); // 5s timeout — don't block the UI
+    img.crossOrigin = 'Anonymous';
+    const timeout = setTimeout(() => { img.src = ''; reject('timeout'); }, 4000);
 
     img.onload = () => {
       clearTimeout(timeout);
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve(null); return; }
-
-      canvas.width = 50; // Smaller canvas = faster
-      canvas.height = 50;
-
       try {
-        ctx.drawImage(img, 0, 0, 50, 50);
-        const data = ctx.getImageData(5, 5, 40, 40).data;
-        let r = 0, g = 0, b = 0, count = 0;
-
-        for (let i = 0; i < data.length; i += 4) {
-          const cr = data[i];
-          const cg = data[i + 1];
-          const cb = data[i + 2];
-          const brightness = (cr + cg + cb) / 3;
-          const saturation = Math.max(cr, cg, cb) - Math.min(cr, cg, cb);
-
-          if (brightness > 20 && brightness < 245 && saturation > 20) {
-            r += cr;
-            g += cg;
-            b += cb;
-            count++;
-          }
-        }
-
-        if (count > 0) {
-          r = Math.round(r / count);
-          g = Math.round(g / count);
-          b = Math.round(b / count);
-          const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-          resolve(hex);
-        } else {
-          resolve(null);
-        }
-      } catch {
-        // CORS tainted canvas — resolve null to try next method
-        resolve(null);
+        const color = sampleCanvas(img);
+        resolve(color);
+      } catch (e) {
+        reject(e);
       }
     };
-
-    img.onerror = () => {
-      clearTimeout(timeout);
-      resolve(null);
-    };
+    img.onerror = () => { clearTimeout(timeout); reject('img error'); };
+    img.src = src;
   });
 };
 
-const extractFromDataUri = (dataUri: string): Promise<string> => {
-  return new Promise((resolve) => {
+// Fallback: load via Image element (works if server sends CORS headers)
+const sampleViaImage = (src: string, useCrossOrigin: boolean): Promise<string> => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
+    if (useCrossOrigin) img.crossOrigin = 'Anonymous';
+    const timeout = setTimeout(() => { img.src = ''; reject('timeout'); }, 4000);
+
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve('#c084fc'); return; }
-
-      canvas.width = 50;
-      canvas.height = 50;
-      ctx.drawImage(img, 0, 0, 50, 50);
-
+      clearTimeout(timeout);
       try {
-        const data = ctx.getImageData(5, 5, 40, 40).data;
-        let r = 0, g = 0, b = 0, count = 0;
-
-        for (let i = 0; i < data.length; i += 4) {
-          const cr = data[i];
-          const cg = data[i + 1];
-          const cb = data[i + 2];
-          const brightness = (cr + cg + cb) / 3;
-          const saturation = Math.max(cr, cg, cb) - Math.min(cr, cg, cb);
-
-          if (brightness > 20 && brightness < 245 && saturation > 20) {
-            r += cr;
-            g += cg;
-            b += cb;
-            count++;
-          }
-        }
-
-        if (count > 0) {
-          r = Math.round(r / count);
-          g = Math.round(g / count);
-          b = Math.round(b / count);
-          const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-          resolve(hex);
-        } else {
-          resolve('#c084fc');
-        }
-      } catch {
-        resolve('#c084fc');
+        const color = sampleCanvas(img);
+        resolve(color);
+      } catch (e) {
+        reject(e);
       }
     };
-    img.onerror = () => resolve('#c084fc');
-    img.src = dataUri;
+    img.onerror = () => { clearTimeout(timeout); reject('img error'); };
+    img.src = src;
   });
+};
+
+// Core pixel sampling — shared by all methods
+const sampleCanvas = (img: HTMLImageElement): string => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('no canvas context');
+
+  canvas.width = 40;
+  canvas.height = 40;
+  ctx.drawImage(img, 0, 0, 40, 40);
+
+  const data = ctx.getImageData(4, 4, 32, 32).data;
+  let r = 0, g = 0, b = 0, count = 0;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const cr = data[i];
+    const cg = data[i + 1];
+    const cb = data[i + 2];
+    const brightness = (cr + cg + cb) / 3;
+    const saturation = Math.max(cr, cg, cb) - Math.min(cr, cg, cb);
+
+    // Filter out blacks, whites, and greys — we want vibrant colors
+    if (brightness > 20 && brightness < 245 && saturation > 20) {
+      r += cr;
+      g += cg;
+      b += cb;
+      count++;
+    }
+  }
+
+  if (count > 0) {
+    r = Math.round(r / count);
+    g = Math.round(g / count);
+    b = Math.round(b / count);
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
+  return '#c084fc'; // All pixels were too dark/light/grey
 };
 
 // Helper to convert Hex to RGB string for Tailwind opacity modifiers

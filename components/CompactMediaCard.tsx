@@ -59,6 +59,11 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   const dynamicColor = aiData.primaryColor || '#c084fc';
   const dynamicRgb = React.useMemo(() => hexToRgb(dynamicColor), [dynamicColor]);
 
+  // Debug: log what primaryColor we're working with
+  useEffect(() => {
+    console.log(`[lumen] "${aiData.title}" → primaryColor: "${aiData.primaryColor}" → dynamicColor: ${dynamicColor}`);
+  }, []);
+
   // Auto-extract color from cover image when primaryColor is missing
   const [extractedColor, setExtractedColor] = useState<string | null>(null);
   const extractionAttempted = useRef(false);
@@ -124,11 +129,15 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
     if (aiData.primaryColor || extractionAttempted.current || !imgSrc) return;
     extractionAttempted.current = true;
     let cancelled = false;
+    console.log(`[lumen] Extracting color for "${aiData.title}" from: ${imgSrc?.substring(0, 80)}...`);
     extractColorFromImage(imgSrc).then(color => {
-      if (!cancelled && color && color !== '#c084fc') {
-        setExtractedColor(color);
+      if (!cancelled) {
+        console.log(`[lumen] "${aiData.title}" → extracted: ${color}, had primaryColor: ${aiData.primaryColor}`);
+        if (color && color !== '#c084fc') {
+          setExtractedColor(color);
+        }
       }
-    }).catch(() => { /* silently fail */ });
+    }).catch(err => { console.warn(`[lumen] Failed for "${aiData.title}":`, err); });
     return () => { cancelled = true; };
   }, [imgSrc, aiData.primaryColor]);
 
