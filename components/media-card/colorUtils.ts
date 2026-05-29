@@ -7,7 +7,7 @@ export const extractColorFromImage = (imageSrc: string): Promise<string> => {
     img.onload = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve('#a78bfa'); return; }
+      if (!ctx) { resolve('#c084fc'); return; }
 
       canvas.width = 100;
       canvas.height = 100;

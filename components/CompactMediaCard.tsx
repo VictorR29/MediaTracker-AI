@@ -15,7 +15,7 @@ const hexToRgb = (hex: string) => {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
   hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-	return result ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}` : '167 139 250';
+  return result ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}` : '192 132 252';
 };
 
 const getPlaceholder = (title: string) =>
@@ -55,7 +55,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const dynamicColor = aiData.primaryColor || '#a78bfa';
+  const dynamicColor = aiData.primaryColor || '#c084fc';
   const dynamicRgb = React.useMemo(() => hexToRgb(dynamicColor), [dynamicColor]);
 
   const isMovie = aiData.mediaType === 'Pelicula';
@@ -142,14 +142,14 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 
   const statusStyle = (() => {
     switch (trackingData.status) {
-	case 'Viendo/Leyendo':
-		return { bg: `bg-[rgb(var(--card-rgb))]`, text: 'text-white', label: isReadingContent ? 'LEYENDO' : 'VIENDO', glow: `0 0 12px rgba(${dynamicRgb}, 0.45)` };
-	case 'Completado': return { bg: 'bg-emerald-500', text: 'text-white', label: 'COMPLETADO', glow: '0 0 10px rgba(16, 185, 129, 0.35)' };
-	case 'Sin empezar': return { bg: 'bg-amber-500', text: 'text-black', label: 'SIN EMPEZAR', glow: '0 0 10px rgba(245, 158, 11, 0.30)' };
-	case 'En Pausa': return { bg: 'bg-orange-500', text: 'text-white', label: 'EN PAUSA', glow: '0 0 10px rgba(249, 115, 22, 0.30)' };
-	case 'Planeado / Pendiente': return { bg: 'bg-purple-500', text: 'text-white', label: 'PLANEADO', glow: '0 0 10px rgba(168, 85, 247, 0.30)' };
-	case 'Descartado': return { bg: 'bg-red-600', text: 'text-white', label: 'DESCARTADO', glow: '0 0 10px rgba(239, 68, 68, 0.30)' };
-	default: return { bg: 'bg-zinc-700', text: 'text-zinc-300', label: 'DESCONOCIDO', glow: '' };
+      case 'Viendo/Leyendo':
+        return { bg: `bg-[rgb(var(--card-rgb))]`, text: 'text-white', label: isReadingContent ? 'LEYENDO' : 'VIENDO', glow: `0 0 16px rgba(${dynamicRgb}, 0.65)` };
+      case 'Completado': return { bg: 'bg-emerald-500', text: 'text-white', label: 'COMPLETADO', glow: '0 0 14px rgba(16, 185, 129, 0.55)' };
+      case 'Sin empezar': return { bg: 'bg-amber-500', text: 'text-black', label: 'SIN EMPEZAR', glow: '0 0 14px rgba(245, 158, 11, 0.50)' };
+      case 'En Pausa': return { bg: 'bg-orange-500', text: 'text-white', label: 'EN PAUSA', glow: '0 0 14px rgba(249, 115, 22, 0.50)' };
+      case 'Planeado / Pendiente': return { bg: 'bg-purple-500', text: 'text-white', label: 'PLANEADO', glow: '0 0 14px rgba(168, 85, 247, 0.50)' };
+      case 'Descartado': return { bg: 'bg-red-600', text: 'text-white', label: 'DESCARTADO', glow: '0 0 14px rgba(239, 68, 68, 0.50)' };
+      default: return { bg: 'bg-zinc-700', text: 'text-zinc-300', label: 'DESCONOCIDO', glow: '' };
     }
   })();
 
@@ -177,9 +177,9 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 		'--card-rgb': dynamicRgb,
 		contentVisibility: 'auto',
 		containIntrinsicSize: '0 0',
-		boxShadow: isHovered
-			? `0 8px 32px rgba(${dynamicRgb}, 0.30), 0 0 60px rgba(${dynamicRgb}, 0.12)`
-			: `0 4px 24px rgba(${dynamicRgb}, 0.20), 0 0 40px rgba(${dynamicRgb}, 0.08)`,
+    boxShadow: isHovered
+      ? `0 8px 32px rgba(${dynamicRgb}, 0.60), 0 0 80px rgba(${dynamicRgb}, 0.25)`
+      : `0 4px 24px rgba(${dynamicRgb}, 0.45), 0 0 60px rgba(${dynamicRgb}, 0.15)`,
 	} as React.CSSProperties}
     >
       {/* Inner Core — double-bezel */}
@@ -212,7 +212,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-[#09090B] via-[#09090B]/70 to-transparent" />
-	<div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at center bottom, rgba(${dynamicRgb}, 0.15) 0%, transparent 70%)` }} />
+        <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at center bottom, rgba(${dynamicRgb}, 0.40) 0%, transparent 70%)` }} />
         </div>
 
         {/* --- TOP BADGES & ACTIONS --- */}
@@ -221,7 +221,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
         <div className={`absolute left-3 z-30 pointer-events-none ${hasTopBanner ? 'top-8' : 'top-3'}`}>
 	<span
 		className="px-2.5 py-1 rounded-md bg-black/70 text-[10px] font-bold text-white uppercase tracking-wider"
-		style={{ border: `1px solid ${dynamicColor}50`, boxShadow: `0 0 8px rgba(${dynamicRgb}, 0.20)` }}
+          style={{ border: `1px solid ${dynamicColor}80`, boxShadow: `0 0 12px rgba(${dynamicRgb}, 0.50)` }}
 	>
             {aiData.mediaType}
           </span>
@@ -252,7 +252,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
         {/* Rating Badge */}
         {score > 0 && (
           <div className={`absolute right-3 z-30 pointer-events-none ${hasTopBanner ? 'top-8' : 'top-3'}`}>
-	<div className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-800/90 ring-1 ring-white/[0.08] text-white text-xs font-bold" style={{ boxShadow: `0 0 12px rgba(${dynamicRgb}, 0.40)` }}>
+	<div className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-800/90 ring-1 ring-white/[0.08] text-white text-xs font-bold"           style={{ boxShadow: `0 0 18px rgba(${dynamicRgb}, 0.70)` }}>
               {score}
             </div>
           </div>
@@ -263,7 +263,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
           <button
             onClick={handleQuickAction}
             className={`absolute bottom-20 right-3 z-40 p-2 md:p-3 rounded-full transform active:scale-[0.97] border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-transform duration-150 ease-spring ${isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-zinc-900'} ${justIncremented ? 'animate-increment-pulse' : ''}`}
-	style={!isCompleteSeason ? { color: dynamicColor, boxShadow: `0 0 20px rgba(${dynamicRgb}, 0.35)` } : {}}
+          style={!isCompleteSeason ? { color: dynamicColor, boxShadow: `0 0 24px rgba(${dynamicRgb}, 0.60)` } : {}}
             title={isCompleteSeason ? (isLastSeason ? "Completar Obra" : "Siguiente Temporada") : "+1 Capítulo"}
           >
             {isCompleteSeason
@@ -298,7 +298,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 
           <div className="flex items-center justify-between mt-0.5 pl-0.5">
             <div className="flex items-center gap-1.5">
-	<div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dynamicColor, boxShadow: `0 0 6px rgba(${dynamicRgb}, 0.50)` }} />
+	<div className="w-2 h-2 rounded-full flex-shrink-0"           style={{ backgroundColor: dynamicColor, boxShadow: `0 0 10px rgba(${dynamicRgb}, 0.80)` }} />
               <span className="text-[10px] md:text-xs font-bold text-zinc-300 tracking-wide truncate max-w-[100px]">
                 {seasonLabel}
               </span>
