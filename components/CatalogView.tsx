@@ -24,7 +24,7 @@ const CatalogPoster: React.FC<{
         ? aiData.coverImage
         : `https://placehold.co/400x600/1e293b/94a3b8?text=${encodeURIComponent(aiData.title)}&font=roboto`;
 
-    const dynamicColor = aiData.primaryColor || '#a78bfa';
+    const dynamicColor = aiData.primaryColor || '#c084fc';
 
     const handleClick = () => setIsFlipped(!isFlipped);
 

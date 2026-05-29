@@ -47,7 +47,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   }, [item]);
 
   const { aiData, trackingData: tracking } = localData;
-  const dynamicColor = aiData.primaryColor || '#a78bfa';
+  const dynamicColor = aiData.primaryColor || '#c084fc';
   const dynamicRgb = hexToRgb(dynamicColor);
 
   // Handlers

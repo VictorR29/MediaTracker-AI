@@ -123,7 +123,7 @@ export const RATING_TO_SCORE: Record<string, number> = {
 };
 
 export const THEME_COLORS = [
-  { name: 'Indigo', value: '167 139 250', hex: '#a78bfa' },
+  { name: 'Indigo', value: '192 132 252', hex: '#c084fc' },
   { name: 'Purple', value: '168 85 247', hex: '#a855f7' },
   { name: 'Pink', value: '236 72 153', hex: '#ec4899' },
   { name: 'Emerald', value: '16 185 129', hex: '#10b981' },

@@ -122,11 +122,10 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
       coverDescription: jsonPart.coverDescription || "",
       coverImage: jsonPart.coverImage || "",
       sourceUrls: sources || [],
-      primaryColor: jsonPart.primaryColor || "#a78bfa",
+primaryColor: jsonPart.primaryColor || "#c084fc",
       releaseDate: jsonPart.releaseDate,
-      endDate: jsonPart.endDate,
-      franchise_link: jsonPart.franchise_link
-    };
+      endDate: jsonPart.franchise_link
+  };
   } catch (error) {
     console.error("Gemini Search Error:", error);
     return {
@@ -139,7 +138,7 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
       coverDescription: "",
       coverImage: "",
       sourceUrls: [],
-      primaryColor: "#a78bfa"
+      primaryColor: "#c084fc"
     };
   }
 };

@@ -8,7 +8,7 @@ export interface ConsumptionDistributionProps {
 
 // Extended Palette for more slices
 const CHART_COLORS = [
-  '#a78bfa', '#ec4899', '#10b981', '#f59e0b', '#3b82f6',
+  '#c084fc', '#ec4899', '#10b981', '#f59e0b', '#3b82f6',
   '#8b5cf6', '#f43f5e', '#14b8a6', '#84cc16', '#ef4444',
   '#06b6d4', '#d946ef', '#eab308', '#22c55e', '#71717a'
 ];

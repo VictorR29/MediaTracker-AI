@@ -81,7 +81,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail }) => {
         totalContent: '',
         coverDescription: '',
         sourceUrls: [],
-        primaryColor: '#a78bfa'
+        primaryColor: '#c084fc'
       },
       trackingData: {
         status: 'Sin empezar',

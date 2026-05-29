@@ -43,13 +43,13 @@ export const extractColorFromImage = (imageSrc: string): Promise<string> => {
           const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
           resolve(hex);
         } else {
-          resolve('#a78bfa'); // Fallback
+          resolve('#c084fc'); // Fallback
         }
       } catch (e) {
-        resolve('#a78bfa'); // Fallback on CORS or error
+        resolve('#c084fc'); // Fallback on CORS or error
       }
     };
-    img.onerror = () => resolve('#a78bfa');
+    img.onerror = () => resolve('#c084fc');
   });
 };
 

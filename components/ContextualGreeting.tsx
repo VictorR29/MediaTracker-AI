@@ -232,7 +232,7 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
   // Lumen Content: derive glow from the user's accent color (or neutral violet)
   const accentHex = userProfile.accentColor
     ? '#' + userProfile.accentColor.split(' ')[0]
-    : '#a78bfa'; // violet-400 as neutral fallback (no indigo)
+    : '#c084fc'; // purple-400 as neutral fallback (no indigo)
 
   return (
     <div key={view} className="w-full max-w-5xl mx-auto mb-6 px-4 md:px-0">
