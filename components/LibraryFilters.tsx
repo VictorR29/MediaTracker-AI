@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, ArrowUpDown, Tags, Filter, X, Check, Star, LayoutGrid, GalleryVerticalEnd } from 'lucide-react';
 import { RATING_OPTIONS } from '../types';
 
@@ -185,127 +186,141 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
             </div>
         </div>
 
-    {/* Mobile Filter Modal (Full Screen Drawer) */}
-    {isMobileModalOpen && (
-      <div className="fixed inset-0 z-[60] md:hidden" onClick={() => setIsMobileModalOpen(false)}>
-        {/* Backdrop */}
-        <div className="absolute inset-0 bg-[#09090B]/95 backdrop-blur-sm" />
+    {/* Mobile Filter Modal — rendered via Portal to body to escape any stacking context */}
+    {isMobileModalOpen && createPortal(
+      <div
+        className="md:hidden"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: 'rgba(9,9,11,0.95)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+        }}
+      >
+        {/* Header */}
+        <div style={{ flexShrink: 0, padding: '1rem', backgroundColor: '#111113', borderBottom: '1px solid rgba(255,255,255,0.06)' }} className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <Filter className="w-5 h-5 text-white" /> Filtros
+          </h3>
+          <button onClick={() => setIsMobileModalOpen(false)} className="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-white/10">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
 
-        {/* Modal panel */}
-        <div className="absolute inset-0 flex flex-col" onClick={(e) => e.stopPropagation()}>
-          {/* Header */}
-          <div className="flex-shrink-0 flex items-center justify-between p-4 pt-[calc(1rem+env(safe-area-inset-top))] bg-[#111113] border-b border-white/[0.06]">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Filter className="w-5 h-5 text-white" /> Filtros
-            </h3>
-            <button onClick={() => setIsMobileModalOpen(false)} className="p-2 text-zinc-400 hover:text-white">
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          {/* Scrollable content — explicit height calc to avoid flex squish */}
-          <div className="overflow-y-auto p-4 space-y-6" style={{ flex: '1 1 0%', minHeight: 0 }}>
-            {/* Mobile Inputs Stack */}
-            <div className="space-y-2">
-              <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Tipo de Medio</label>
-              <div className="grid grid-cols-2 gap-2">
-                {['All', 'Anime', 'Serie', 'Pelicula', 'Manhwa', 'Manga', 'Libro', 'Comic'].map(opt => (
-                  <button
-                    key={opt}
-                    onClick={() => handleChange('type', opt)}
-                    className={`px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                      filters.type === opt
-                        ? 'bg-white/20 ring-1 ring-white/20 text-white'
-                        : 'bg-zinc-800 ring-1 ring-white/[0.06] text-zinc-400'
-                    }`}
-                  >
-                    {opt === 'All' ? 'Todos' : (opt === 'Pelicula' ? 'Película' : opt)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Estado</label>
-              <select
-                className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
-                value={filters.status}
-                onChange={(e) => handleChange('status', e.target.value)}
-              >
-                <option value="All">Todos</option>
-                <option value="Sin empezar">Sin empezar</option>
-                <option value="Viendo/Leyendo">Viendo/Leyendo</option>
-                <option value="Completado">Completado</option>
-                <option value="En Pausa">En Pausa</option>
-                <option value="Descartado">Descartado</option>
-                <option value="Planeado / Pendiente">Planeado / Pendiente</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Género</label>
-              <select
-                className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
-                value={filters.genre}
-                onChange={(e) => handleChange('genre', e.target.value)}
-              >
-                <option value="All">Todos</option>
-                {availableGenres.map(genre => (
-                  <option key={genre} value={genre}>{capitalize(genre)}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Calificación</label>
-              <select
-                className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
-                value={filters.rating}
-                onChange={(e) => handleChange('rating', e.target.value)}
-              >
-                <option value="All">Todas</option>
-                {RATING_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Ordenar por</label>
-              <div className="flex bg-zinc-800 rounded-lg p-1 ring-1 ring-white/[0.06]">
-                {[
-                  { label: 'Recientes', value: 'updated' },
-                  { label: 'A-Z', value: 'title' },
-                  { label: 'Progreso', value: 'progress' }
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleChange('sortBy', opt.value as any)}
-                    className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${
-                      filters.sortBy === opt.value
-                        ? 'bg-zinc-600 text-white shadow'
-                        : 'text-zinc-400'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+        {/* Scrollable content */}
+        <div style={{ flex: '1 1 0%', minHeight: 0, overflowY: 'auto', padding: '1rem' }} className="space-y-6">
+          {/* Tipo */}
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Tipo de Medio</label>
+            <div className="grid grid-cols-2 gap-2">
+              {['All', 'Anime', 'Serie', 'Pelicula', 'Manhwa', 'Manga', 'Libro', 'Comic'].map(opt => (
+                <button
+                  key={opt}
+                  onClick={() => handleChange('type', opt)}
+                  className={`px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    filters.type === opt
+                      ? 'bg-white/20 ring-1 ring-white/20 text-white'
+                      : 'bg-zinc-800 ring-1 ring-white/[0.06] text-zinc-400'
+                  }`}
+                >
+                  {opt === 'All' ? 'Todos' : (opt === 'Pelicula' ? 'Película' : opt)}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Footer — flex-shrink-0 ensures it NEVER collapses */}
-          <div className="flex-shrink-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-[#111113] border-t border-white/[0.06]">
-            <button
-              onClick={() => setIsMobileModalOpen(false)}
-              className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-bold py-3.5 rounded-full shadow-lg active:scale-[0.98]"
+          {/* Estado */}
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Estado</label>
+            <select
+              className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
+              value={filters.status}
+              onChange={(e) => handleChange('status', e.target.value)}
             >
-              <Check className="w-5 h-5" />
-              Ver Resultados
-            </button>
+              <option value="All">Todos</option>
+              <option value="Sin empezar">Sin empezar</option>
+              <option value="Viendo/Leyendo">Viendo/Leyendo</option>
+              <option value="Completado">Completado</option>
+              <option value="En Pausa">En Pausa</option>
+              <option value="Descartado">Descartado</option>
+              <option value="Planeado / Pendiente">Planeado / Pendiente</option>
+            </select>
+          </div>
+
+          {/* Género */}
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Género</label>
+            <select
+              className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
+              value={filters.genre}
+              onChange={(e) => handleChange('genre', e.target.value)}
+            >
+              <option value="All">Todos</option>
+              {availableGenres.map(genre => (
+                <option key={genre} value={genre}>{capitalize(genre)}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Calificación */}
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Calificación</label>
+            <select
+              className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
+              value={filters.rating}
+              onChange={(e) => handleChange('rating', e.target.value)}
+            >
+              <option value="All">Todas</option>
+              {RATING_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Ordenar */}
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Ordenar por</label>
+            <div className="flex bg-zinc-800 rounded-lg p-1 ring-1 ring-white/[0.06]">
+              {[
+                { label: 'Recientes', value: 'updated' },
+                { label: 'A-Z', value: 'title' },
+                { label: 'Progreso', value: 'progress' }
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleChange('sortBy', opt.value as any)}
+                  className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${
+                    filters.sortBy === opt.value
+                      ? 'bg-zinc-600 text-white shadow'
+                      : 'text-zinc-400'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+
+        {/* Footer — GUARANTEED visible, no Tailwind, inline styles only */}
+        <div style={{ flexShrink: 0, padding: '1rem', backgroundColor: '#111113', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <button
+            onClick={() => setIsMobileModalOpen(false)}
+            className="w-full flex items-center justify-center gap-2 bg-white text-zinc-900 font-bold py-3.5 rounded-full shadow-lg active:scale-[0.98]"
+          >
+            <Check className="w-5 h-5" />
+            Ver Resultados
+          </button>
+        </div>
+      </div>,
+      document.body
     )}
     </>
   );
