@@ -19,19 +19,32 @@
   <script type="module" src="./index.tsx"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(registration => {
-            console.log('SW registered: ', registration);
-          })
-          .catch(registrationError => {
-            console.log('SW registration failed: ', registrationError);
-          });
+      const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-        // Reload page if controller changes (new SW activated)
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          window.location.reload();
-        });
+      window.addEventListener('load', () => {
+        if (isDev) {
+          // Dev mode: unregister any existing SW to prevent cache conflicts with Vite HMR
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(reg => reg.unregister());
+            if (registrations.length > 0) {
+              console.log('SW unregistered in dev mode, reloading...');
+              window.location.reload();
+            }
+          });
+        } else {
+          // Production: register SW normally
+          navigator.serviceWorker.register('./sw.js')
+            .then(registration => {
+              console.log('SW registered: ', registration);
+            })
+            .catch(registrationError => {
+              console.log('SW registration failed: ', registrationError);
+            });
+
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            window.location.reload();
+          });
+        }
       });
     }
   </script>
