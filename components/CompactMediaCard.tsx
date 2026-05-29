@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
 import { Plus, Check, Trash2, Star, FastForward } from 'lucide-react';
+import { extractColorFromImage } from './media-card/colorUtils';
 
 interface CompactMediaCardProps {
   item: MediaItem;
@@ -58,6 +59,10 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   const dynamicColor = aiData.primaryColor || '#c084fc';
   const dynamicRgb = React.useMemo(() => hexToRgb(dynamicColor), [dynamicColor]);
 
+  // Auto-extract color from cover image when primaryColor is missing
+  const [extractedColor, setExtractedColor] = useState<string | null>(null);
+  const extractionAttempted = useRef(false);
+
   const isMovie = aiData.mediaType === 'Pelicula';
   const isBook = aiData.mediaType === 'Libro';
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
@@ -108,11 +113,28 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
     ? aiData.coverImage!
     : getPlaceholder(aiData.title);
 
-	const [imgSrc, setImgSrc] = useState<string | undefined>(undefined);
-	const [imageLoaded, setImageLoaded] = useState(false);
-	const [justFavorited, setJustFavorited] = useState(false);
-	const [justIncremented, setJustIncremented] = useState(false);
-	const [isHovered, setIsHovered] = useState(false);
+  const [imgSrc, setImgSrc] = useState<string | undefined>(undefined);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [justFavorited, setJustFavorited] = useState(false);
+  const [justIncremented, setJustIncremented] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Auto-extract color from cover image when primaryColor is missing
+  useEffect(() => {
+    if (aiData.primaryColor || extractionAttempted.current || !imgSrc) return;
+    extractionAttempted.current = true;
+    let cancelled = false;
+    extractColorFromImage(imgSrc).then(color => {
+      if (!cancelled && color && color !== '#c084fc') {
+        setExtractedColor(color);
+      }
+    }).catch(() => { /* silently fail */ });
+    return () => { cancelled = true; };
+  }, [imgSrc, aiData.primaryColor]);
+
+  // Use extracted color if available, otherwise fall back
+  const resolvedColor = extractedColor || dynamicColor;
+  const resolvedRgb = React.useMemo(() => hexToRgb(resolvedColor), [resolvedColor]);
 
   // Shared IntersectionObserver — registers/unregisters per card
   useEffect(() => {
@@ -143,7 +165,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   const statusStyle = (() => {
     switch (trackingData.status) {
       case 'Viendo/Leyendo':
-        return { bg: `bg-[rgb(var(--card-rgb))]`, text: 'text-white', label: isReadingContent ? 'LEYENDO' : 'VIENDO', glow: `0 0 16px rgba(${dynamicRgb}, 0.65)` };
+        return { bg: `bg-[rgb(var(--card-rgb))]`, text: 'text-white', label: isReadingContent ? 'LEYENDO' : 'VIENDO', glow: `0 0 16px rgba(${resolvedRgb}, 0.65)` };
       case 'Completado': return { bg: 'bg-emerald-500', text: 'text-white', label: 'COMPLETADO', glow: '0 0 14px rgba(16, 185, 129, 0.55)' };
       case 'Sin empezar': return { bg: 'bg-amber-500', text: 'text-black', label: 'SIN EMPEZAR', glow: '0 0 14px rgba(245, 158, 11, 0.50)' };
       case 'En Pausa': return { bg: 'bg-orange-500', text: 'text-white', label: 'EN PAUSA', glow: '0 0 14px rgba(249, 115, 22, 0.50)' };
@@ -173,14 +195,14 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 		className={`group relative rounded-2xl ring-1 ring-white/[0.06] p-1 bg-[#111113] w-full cursor-pointer
 		md:hover:scale-[1.02] transition-shadow duration-500 ease-spring
 		${isVisible ? 'animate-stagger-in' : 'opacity-0'}`}
-	style={{
-		'--card-rgb': dynamicRgb,
-		contentVisibility: 'auto',
-		containIntrinsicSize: '0 0',
-    boxShadow: isHovered
-      ? `0 8px 32px rgba(${dynamicRgb}, 0.60), 0 0 80px rgba(${dynamicRgb}, 0.25)`
-      : `0 4px 24px rgba(${dynamicRgb}, 0.45), 0 0 60px rgba(${dynamicRgb}, 0.15)`,
-	} as React.CSSProperties}
+ style={{
+  '--card-rgb': resolvedRgb,
+  contentVisibility: 'auto',
+  containIntrinsicSize: '0 0',
+  boxShadow: isHovered
+    ? `0 8px 32px rgba(${resolvedRgb}, 0.60), 0 0 80px rgba(${resolvedRgb}, 0.25)`
+    : `0 4px 24px rgba(${resolvedRgb}, 0.45), 0 0 60px rgba(${resolvedRgb}, 0.15)`,
+ } as React.CSSProperties}
     >
       {/* Inner Core — double-bezel */}
       <div className="rounded-[calc(1rem-0.25rem)] overflow-hidden relative flex flex-col bg-[#18181B]" style={{ aspectRatio: '2/3' }}>
@@ -212,7 +234,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-[#09090B] via-[#09090B]/70 to-transparent" />
-        <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at center bottom, rgba(${dynamicRgb}, 0.40) 0%, transparent 70%)` }} />
+        <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at center bottom, rgba(${resolvedRgb}, 0.40) 0%, transparent 70%)` }} />
         </div>
 
         {/* --- TOP BADGES & ACTIONS --- */}
@@ -221,7 +243,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
         <div className={`absolute left-3 z-30 pointer-events-none ${hasTopBanner ? 'top-8' : 'top-3'}`}>
 	<span
 		className="px-2.5 py-1 rounded-md bg-black/70 text-[10px] font-bold text-white uppercase tracking-wider"
-          style={{ border: `1px solid ${dynamicColor}80`, boxShadow: `0 0 12px rgba(${dynamicRgb}, 0.50)` }}
+          style={{ border: `1px solid ${resolvedColor}80`, boxShadow: `0 0 12px rgba(${resolvedRgb}, 0.50)` }}
 	>
             {aiData.mediaType}
           </span>
@@ -252,7 +274,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
         {/* Rating Badge */}
         {score > 0 && (
           <div className={`absolute right-3 z-30 pointer-events-none ${hasTopBanner ? 'top-8' : 'top-3'}`}>
-	<div className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-800/90 ring-1 ring-white/[0.08] text-white text-xs font-bold"           style={{ boxShadow: `0 0 18px rgba(${dynamicRgb}, 0.70)` }}>
+	<div className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-800/90 ring-1 ring-white/[0.08] text-white text-xs font-bold"           style={{ boxShadow: `0 0 18px rgba(${resolvedRgb}, 0.70)` }}>
               {score}
             </div>
           </div>
@@ -263,7 +285,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
           <button
             onClick={handleQuickAction}
             className={`absolute bottom-20 right-3 z-40 p-2 md:p-3 rounded-full transform active:scale-[0.97] border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-transform duration-150 ease-spring ${isCompleteSeason ? 'bg-green-500 text-white' : 'bg-white text-zinc-900'} ${justIncremented ? 'animate-increment-pulse' : ''}`}
-          style={!isCompleteSeason ? { color: dynamicColor, boxShadow: `0 0 24px rgba(${dynamicRgb}, 0.60)` } : {}}
+          style={!isCompleteSeason ? { color: resolvedColor, boxShadow: `0 0 24px rgba(${resolvedRgb}, 0.60)` } : {}}
             title={isCompleteSeason ? (isLastSeason ? "Completar Obra" : "Siguiente Temporada") : "+1 Capítulo"}
           >
             {isCompleteSeason
@@ -290,7 +312,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
                 className="h-full rounded-full"
                 style={{
                   width: `${progressPercent}%`,
-                  backgroundColor: dynamicColor,
+backgroundColor: resolvedColor,
                 }}
               />
             </div>
@@ -298,7 +320,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 
           <div className="flex items-center justify-between mt-0.5 pl-0.5">
             <div className="flex items-center gap-1.5">
-	<div className="w-2 h-2 rounded-full flex-shrink-0"           style={{ backgroundColor: dynamicColor, boxShadow: `0 0 10px rgba(${dynamicRgb}, 0.80)` }} />
+<div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: resolvedColor, boxShadow: `0 0 10px rgba(${resolvedRgb}, 0.80)` }} />
               <span className="text-[10px] md:text-xs font-bold text-zinc-300 tracking-wide truncate max-w-[100px]">
                 {seasonLabel}
               </span>
