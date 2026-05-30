@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem, RATING_TO_SCORE } from '../types';
 import { Plus, Check, Trash2, Star, FastForward } from 'lucide-react';
 import { extractColorFromImage } from './media-card/colorUtils';
+import { useLibraryStore } from '../stores/useLibraryStore';
 
 interface CompactMediaCardProps {
   item: MediaItem;
@@ -56,7 +57,10 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const dynamicColor = aiData.primaryColor || '#c084fc';
+  // A "real" primaryColor means Gemini assigned a unique color.
+  // #c084fc is the generic fallback — treat it as "no color" and extract from image.
+  const hasRealColor = aiData.primaryColor && aiData.primaryColor !== '#c084fc' && aiData.primaryColor !== '#a78bfa';
+  const dynamicColor = hasRealColor ? aiData.primaryColor! : '#c084fc';
   const dynamicRgb = React.useMemo(() => hexToRgb(dynamicColor), [dynamicColor]);
 
   // Debug: log what primaryColor we're working with
@@ -124,22 +128,27 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   const [justIncremented, setJustIncremented] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Auto-extract color from cover image when primaryColor is missing
+  // Auto-extract color from cover image when no real primaryColor exists
+  const updateItem = useLibraryStore(s => s.updateItem);
   useEffect(() => {
-    if (aiData.primaryColor || extractionAttempted.current || !imgSrc) return;
+    if (hasRealColor || extractionAttempted.current || !imgSrc) return;
     extractionAttempted.current = true;
     let cancelled = false;
-    console.log(`[lumen] Extracting color for "${aiData.title}" from: ${imgSrc?.substring(0, 80)}...`);
     extractColorFromImage(imgSrc).then(color => {
-      if (!cancelled) {
-        console.log(`[lumen] "${aiData.title}" → extracted: ${color}, had primaryColor: ${aiData.primaryColor}`);
-        if (color && color !== '#c084fc') {
-          setExtractedColor(color);
-        }
+      if (!cancelled && color && color !== '#c084fc') {
+        console.log(`[lumen] "${aiData.title}" → extracted: ${color}`);
+        setExtractedColor(color);
+        // Persist extracted color so we don't re-extract next time
+        updateItem({
+          ...item,
+          aiData: { ...item.aiData, primaryColor: color }
+        });
+      } else if (!cancelled) {
+        console.log(`[lumen] "${aiData.title}" → extraction returned fallback, no update`);
       }
     }).catch(err => { console.warn(`[lumen] Failed for "${aiData.title}":`, err); });
     return () => { cancelled = true; };
-  }, [imgSrc, aiData.primaryColor]);
+  }, [imgSrc, hasRealColor]);
 
   // Use extracted color if available, otherwise fall back
   const resolvedColor = extractedColor || dynamicColor;
