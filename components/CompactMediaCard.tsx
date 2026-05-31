@@ -130,17 +130,14 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
     let cancelled = false;
     extractColorFromImage(imgSrc).then(color => {
       if (!cancelled && color && color !== '#c084fc') {
-        console.log(`[lumen] "${aiData.title}" → extracted: ${color}`);
         setExtractedColor(color);
         // Persist extracted color so we don't re-extract next time
         updateItem({
           ...item,
           aiData: { ...item.aiData, primaryColor: color }
         });
-      } else if (!cancelled) {
-        console.log(`[lumen] "${aiData.title}" → extraction returned fallback, no update`);
       }
-    }).catch(err => { console.warn(`[lumen] Failed for "${aiData.title}":`, err); });
+    }).catch(() => { /* silently fail */ });
     return () => { cancelled = true; };
   }, [imgSrc, hasRealColor]);
 
@@ -208,8 +205,8 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   contentVisibility: 'auto',
   containIntrinsicSize: '0 0',
   boxShadow: isHovered
-    ? `0 8px 32px rgba(${dynamicRgb}, 0.60), 0 0 80px rgba(${dynamicRgb}, 0.25)`
-    : `0 4px 24px rgba(${dynamicRgb}, 0.45), 0 0 60px rgba(${dynamicRgb}, 0.15)`,
+    ? `0 0 40px rgba(${dynamicRgb}, 0.70), 0 0 80px rgba(${dynamicRgb}, 0.30), 0 0 120px rgba(${dynamicRgb}, 0.10)`
+    : `0 0 30px rgba(${dynamicRgb}, 0.50), 0 0 60px rgba(${dynamicRgb}, 0.25), 0 0 100px rgba(${dynamicRgb}, 0.08)`,
  } as React.CSSProperties}
     >
       {/* Inner Core — double-bezel */}
