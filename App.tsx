@@ -34,7 +34,7 @@ const AppInner: React.FC = () => {
   const {
     isImmersiveMode, isBottomNavVisible, showScrollTop,
     isSettingsOpen, setSettingsOpen, setImmersiveMode,
-    setBottomNavVisible, setShowScrollTop
+    setBottomNavVisible, setShowScrollTop, setLibraryScrollY
   } = useUIStore();
   const lastScrollYRef = useRef(0);
 
@@ -67,13 +67,18 @@ const AppInner: React.FC = () => {
   // ─── Navigation helpers ─────────────────────────────────────────
 
   const handleOpenDetail = useCallback((item: MediaItem) => {
+    setLibraryScrollY(window.scrollY);
     navigate(`/item/${item.id}`);
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [navigate]);
+  }, [navigate, setLibraryScrollY]);
 
   const handleNavClick = (targetPath: string) => {
+    if (targetPath === '/') {
+      // LibraryView will restore its saved scroll position on mount
+    } else {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
     navigate(targetPath);
-    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   // ─── CRUD / Actions ────────────────────────────────────────────

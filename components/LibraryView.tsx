@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { Search as SearchIcon } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useLibraryStore } from '../stores/useLibraryStore';
@@ -28,7 +28,34 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
   const userProfile = useAuthStore(s => s.userProfile);
   const { library, filters, setFilters, getDisplayedLibrary, getAvailableGenres } = useLibraryStore();
-  const { libraryViewMode, toggleLibraryViewMode } = useUIStore();
+  const { libraryViewMode, toggleLibraryViewMode, libraryScrollY, setLibraryScrollY } = useUIStore();
+
+  // Restore saved scroll position on mount (returning from detail view)
+  useEffect(() => {
+    if (libraryScrollY > 0) {
+      const savedY = libraryScrollY;
+      setLibraryScrollY(0); // Clear so fresh visits start at top
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: savedY, behavior: 'instant' });
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps — intentionally run once on mount
+
+  // Debounced scroll position save
+  const scrollSaveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    const handleScroll = () => {
+      clearTimeout(scrollSaveTimerRef.current);
+      scrollSaveTimerRef.current = setTimeout(() => {
+        setLibraryScrollY(window.scrollY);
+      }, 300);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollSaveTimerRef.current);
+    };
+  }, [setLibraryScrollY]);
 
   const displayedLibrary = useMemo(() => getDisplayedLibrary(view), [library, filters, view, getDisplayedLibrary]);
   const availableGenres = useMemo(() => getAvailableGenres(), [library, getAvailableGenres]);
