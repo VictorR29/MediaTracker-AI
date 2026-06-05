@@ -24,7 +24,7 @@ const ReflectionColumnInner: React.FC<ReflectionColumnProps> = ({
   return (
     <div className="flex flex-col gap-6 xl:gap-8 pt-10 lg:pt-0">
       {/* Rating Grid */}
-      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 border border-zinc-800 flex flex-col shadow-xl">
+      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 border border-zinc-800/60 flex flex-col shadow-xl" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.15)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.08), 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)` }}>
         <div className="grid grid-cols-4 gap-2 xl:gap-3 mb-6 xl:mb-8">
           {RATING_OPTIONS.map((opt) => {
             const isSelected = tracking.rating === opt;
@@ -59,10 +59,10 @@ const ReflectionColumnInner: React.FC<ReflectionColumnProps> = ({
         </button>
       </div>
 
-      {/* Reflection */}
-      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-zinc-800 shadow-xl flex flex-col min-h-0">
-        <h3 className="text-sm xl:text-base font-bold text-white mb-6 xl:mb-8 flex items-center gap-3">
-          <MessageSquare className="w-4 h-4 xl:w-5 xl:h-5 text-zinc-400" /> Reflexión
+  {/* Reflection */}
+  <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-zinc-800/60 shadow-xl flex flex-col min-h-0" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.15)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.08), 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)` }}>
+    <h3 className="text-sm xl:text-base font-bold text-white mb-6 xl:mb-8 flex items-center gap-3" style={{ textShadow: `0 0 15px rgba(${dynamicRgb}, 0.20)` }}>
+      <MessageSquare className="w-4 h-4 xl:w-5 xl:h-5 text-zinc-400" /> Reflexión
         </h3>
 
         <div className="mb-6 xl:mb-8">
@@ -103,10 +103,10 @@ const ReflectionColumnInner: React.FC<ReflectionColumnProps> = ({
         </div>
       </div>
 
-      {/* Final Comment */}
-      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-zinc-800 flex-1 flex flex-col shadow-xl">
-        <h3 className="text-sm xl:text-base font-bold text-white mb-4 xl:mb-6 flex items-center gap-3">
-          <FileText className="w-4 h-4 xl:w-5 xl:h-5 text-zinc-400" /> Comentario Final
+  {/* Final Comment */}
+  <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 border border-zinc-800/60 flex-1 flex flex-col shadow-xl" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.15)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.08), 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)` }}>
+    <h3 className="text-sm xl:text-base font-bold text-white mb-4 xl:mb-6 flex items-center gap-3" style={{ textShadow: `0 0 15px rgba(${dynamicRgb}, 0.20)` }}>
+      <FileText className="w-4 h-4 xl:w-5 xl:h-5 text-zinc-400" /> Comentario Final
         </h3>
         <textarea
           value={tracking.comment}

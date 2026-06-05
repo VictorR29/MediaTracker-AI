@@ -50,8 +50,8 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
           onDragLeave={(e) => { e.preventDefault(); }}
           onDrop={onImageDrop}
           style={{
-            border: isEditing ? `2px dashed ${isDragging ? dynamicColor : '#475569'}` : `1px solid ${dynamicColor}40`,
-            boxShadow: isEditing ? 'none' : `0 20px 40px -10px ${dynamicColor}40`
+          border: isEditing ? `2px dashed ${isDragging ? dynamicColor : '#475569'}` : `1px solid ${dynamicColor}50`,
+          boxShadow: isEditing ? 'none' : `0 20px 40px -10px ${dynamicColor}60, 0 0 60px -10px ${dynamicColor}30`
           }}
         >
           {aiData.coverImage ? (
@@ -120,8 +120,8 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
           </div>
         ) : (
           <>
-            <h1 className="text-2xl xl:text-3xl font-black text-white leading-tight mb-2">{aiData.title}</h1>
-            {aiData.originalTitle && <p className="text-sm text-zinc-500 italic mb-4">{aiData.originalTitle}</p>}
+            <h1 className="text-2xl xl:text-3xl font-black leading-tight mb-2" style={{ background: `linear-gradient(to right, #ffffff, ${dynamicColor})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{aiData.title}</h1>
+            {aiData.originalTitle && <p className="text-sm text-zinc-500 italic mb-4" style={{ textShadow: `0 0 20px rgba(${dynamicRgb}, 0.15)` }}>{aiData.originalTitle}</p>}
           </>
         )}
 
@@ -151,9 +151,9 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
       </div>
 
       {/* Metadata Details */}
-      <div className="space-y-5 xl:space-y-6 text-sm ring-1 ring-white/[0.06] rounded-2xl p-4 xl:p-6 pt-6 xl:pt-8">
+      <div className="space-y-5 xl:space-y-6 text-sm ring-1 ring-white/[0.04] rounded-2xl p-4 xl:p-6 pt-6 xl:pt-8" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.20)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.10)` }}>
         <div className="flex flex-col gap-2">
-          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs">Fechas</span>
+          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}>Fechas</span>
           <div className="flex justify-between items-center text-zinc-300 text-xs xl:text-sm">
             <span className="font-medium">Estreno:</span>
             {isEditing ? (
@@ -183,7 +183,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
         </div>
 
         <div className="flex flex-col gap-3">
-          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs">Géneros</span>
+          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}>Géneros</span>
           <div className="flex flex-wrap gap-2">
             {(aiData.genres || []).map(g => (
               <span key={g} className="px-2.5 py-1 bg-zinc-800 ring-1 ring-white/[0.06] rounded-lg text-zinc-300 text-xs flex items-center gap-1.5">
@@ -213,7 +213,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
         </div>
 
         <div className="flex flex-col gap-3">
-          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs flex items-center gap-2"><Layout className="w-3 h-3 xl:w-4 xl:h-4" /> Estructura</span>
+          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs flex items-center gap-2" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}><Layout className="w-3 h-3 xl:w-4 xl:h-4" /> Estructura</span>
           {isEditing ? (
             <textarea
               value={aiData.totalContent || ''}
@@ -229,7 +229,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
         </div>
 
         <div className="flex flex-col gap-3">
-          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs flex items-center gap-2"><Globe className="w-3 h-3 xl:w-4 xl:h-4 text-[rgb(var(--card-rgb))]" /> Mis Enlaces & Seguimiento</span>
+          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs flex items-center gap-2" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}><Globe className="w-3 h-3 xl:w-4 xl:h-4 text-[rgb(var(--card-rgb))]" /> Mis Enlaces & Seguimiento</span>
           <div className="flex flex-col gap-2">
             {tracking.customLinks && tracking.customLinks.map((link) => (
               <div key={link.id} className="flex items-center justify-between group bg-zinc-900/50 p-2 rounded-xl ring-1 ring-white/[0.06]">

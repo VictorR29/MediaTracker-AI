@@ -42,9 +42,9 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
   return (
     <div className="flex flex-col gap-6 xl:gap-10 pt-10 lg:pt-0">
       {/* Synopsis */}
-      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.06] shadow-xl">
+      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.04]" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.15)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.08), 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)` }}>
         <div className="flex items-center justify-between mb-4 xl:mb-6">
-          <h3 className="text-xs xl:text-base font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-3">
+          <h3 className="text-xs xl:text-base font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-3" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}>
             <FileText className="w-4 h-4 xl:w-5 xl:h-5" /> Sinopsis
           </h3>
           <button onClick={onSmartUpdate} disabled={isUpdatingInfo} className="text-[10px] xl:text-xs text-[rgb(var(--card-rgb))] flex items-center gap-2 font-bold hover:underline">
@@ -65,10 +65,10 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
       </div>
 
       {/* Progress Tracking */}
-      <div className="bg-zinc-900/50 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.06] relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 left-0 w-2 h-full bg-[rgb(var(--card-rgb))]"></div>
+      <div className="bg-zinc-900/50 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.04] relative overflow-hidden" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.20)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.10), 0 25px 50px -12px rgb(0 0 0 / 0.25)` }}>
+        <div className="absolute top-0 left-0 w-2 h-full bg-[rgb(var(--card-rgb))]" style={{ boxShadow: `0 0 12px rgba(${dynamicRgb}, 0.40)` }}></div>
         <div className="flex items-center justify-between mb-6 xl:mb-8">
-          <h3 className="text-xs xl:text-base font-bold text-white uppercase tracking-widest flex items-center gap-3">
+          <h3 className="text-xs xl:text-base font-bold text-white uppercase tracking-widest flex items-center gap-3" style={{ textShadow: `0 0 15px rgba(${dynamicRgb}, 0.20)` }}>
             <CheckCircle2 className="w-4 h-4 xl:w-5 xl:h-5 text-[rgb(var(--card-rgb))]" /> Mi Progreso
           </h3>
           <div className="bg-[rgb(var(--card-rgb)/0.1)] text-[rgb(var(--card-rgb))] text-[10px] xl:text-xs font-bold px-3 py-1 rounded-full border border-[rgb(var(--card-rgb)/0.2)]">
@@ -242,8 +242,8 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
       </div>
 
       {/* Personajes Destacados */}
-      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.06]">
-        <h3 className="text-xs xl:text-base font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-3 mb-4 xl:mb-6">
+      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.04]" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.15)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.08)` }}>
+        <h3 className="text-xs xl:text-base font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-3 mb-4 xl:mb-6" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}>
           <User className="w-4 h-4 xl:w-5 xl:h-5" /> Personajes Destacados
         </h3>
 

@@ -5,7 +5,7 @@ import { updateMediaInfo, generateReviewSummary } from '../services/geminiServic
 import { computeNextSeason, createCustomLink, processImageToBase64, reorderCharacters } from '../services/mediaItemOperations';
 import { useToast } from '../context/ToastContext';
 import { IdentityColumn, NarrativeColumn, ReflectionColumn, EditActionBar } from './media-card';
-import { extractColorFromImage, hexToRgb } from './media-card/colorUtils';
+import { extractColorFromImage, hexToRgb, vibrify } from './media-card/colorUtils';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -47,8 +47,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   }, [item]);
 
   const { aiData, trackingData: tracking } = localData;
-  const dynamicColor = aiData.primaryColor || '#c084fc';
-  const dynamicRgb = hexToRgb(dynamicColor);
+  
+  // VIBRIFY: ensure the color is saturated and bright enough for the "Cinema" feel
+  const rawColor = aiData.primaryColor || '#c084fc';
+  const dynamicColor = React.useMemo(() => vibrify(rawColor), [rawColor]);
+  const dynamicRgb = React.useMemo(() => hexToRgb(dynamicColor), [dynamicColor]);
 
   // Handlers
   const handleInputChange = (field: keyof UserTrackingData, value: any, shouldSave = true) => {
@@ -236,10 +239,21 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
   return (
     <div
-      className="bg-[#111113]/50 ring-1 ring-white/[0.06] rounded-3xl overflow-hidden shadow-2xl animate-fade-in-up w-full"
-      style={{ '--card-rgb': dynamicRgb } as React.CSSProperties}
+      className="relative bg-[#09090B] ring-1 ring-white/[0.04] rounded-3xl overflow-hidden shadow-2xl animate-fade-in-up w-full"
+      style={{ 
+        '--card-rgb': dynamicRgb,
+        boxShadow: `0 0 60px -15px rgba(${dynamicRgb}, 0.30)`
+      } as React.CSSProperties}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] xl:grid-cols-[320px_1fr_320px] gap-0 lg:gap-8 xl:gap-10 p-6 md:p-8 xl:p-10">
+      {/* Ambient Wash: Light bleed from the work's essence */}
+      <div 
+        className="absolute inset-0 pointer-events-none" 
+        style={{ 
+          background: `radial-gradient(circle at center, rgba(${dynamicRgb}, 0.15) 0%, transparent 70%)` 
+        }} 
+      />
+      
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] xl:grid-cols-[320px_1fr_320px] gap-0 lg:gap-8 xl:gap-10 p-6 md:p-8 xl:p-10">
         <IdentityColumn
           aiData={aiData}
           trackingData={tracking}
@@ -303,4 +317,5 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       {isEditing && <EditActionBar onSave={saveChanges} onCancel={cancelChanges} />}
     </div>
   );
+
 };
