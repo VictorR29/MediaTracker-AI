@@ -301,9 +301,9 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 
         {/* --- CONTENT OVERLAY (BOTTOM) --- */}
         <div className="absolute bottom-0 left-0 right-0 p-4 z-30 flex flex-col gap-2.5">
-          <h3 className="text-white font-black text-base md:text-lg leading-tight line-clamp-2 tracking-[-0.02em] mb-1">
-            {aiData.title}
-          </h3>
+                <h3 className="text-white font-black text-base md:text-lg leading-tight line-clamp-2 tracking-[-0.02em] mb-1" style={{ textShadow: `0 0 20px rgba(${dynamicRgb}, 0.25)` }}>
+                  {aiData.title}
+                </h3>
 
           <div className="flex items-center gap-2 md:gap-3 w-full">
             <div
