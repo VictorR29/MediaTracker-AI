@@ -1,25 +1,13 @@
 
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutGrid, Bookmark, PlusCircle, Compass, BarChart2,
   LogOut, Settings, X
 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { useAuthStore } from '../stores/useAuthStore';
 
-const NAV_ITEMS = [
-  { icon: LayoutGrid, label: 'Biblioteca', path: '/' },
-  { icon: Bookmark, label: 'Deseos', path: '/wishlist' },
-  { icon: PlusCircle, label: 'Añadir', path: '/add' },
-  { icon: Compass, label: 'Descubrir', path: '/discover' },
-  { icon: BarChart2, label: 'Stats', path: '/stats' },
-] as const;
-
 export const MobileMenuSheet: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const { isMobileMenuOpen, setMobileMenuOpen, setSettingsOpen } = useUIStore();
   const username = useAuthStore(s => s.userProfile?.username);
 
@@ -43,14 +31,6 @@ export const MobileMenuSheet: React.FC = () => {
 
   if (!isMobileMenuOpen) return null;
 
-  const handleNav = (path: string) => {
-    setMobileMenuOpen(false);
-    navigate(path);
-    if (path !== '/') {
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    }
-  };
-
   const handleSettings = () => {
     setMobileMenuOpen(false);
     setSettingsOpen(true);
@@ -69,58 +49,33 @@ export const MobileMenuSheet: React.FC = () => {
         onClick={() => setMobileMenuOpen(false)}
       />
 
-      {/* Sheet slides up from top */}
-      <div className="absolute top-0 left-0 right-0 bg-[#111113] ring-1 ring-white/[0.10] rounded-b-3xl shadow-2xl animate-slide-down p-6 pb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-white">{username}'s Library</h2>
-            <p className="text-xs text-zinc-500 mt-0.5">Menú de navegación</p>
-          </div>
+      {/* Sheet slides down from top */}
+      <div className="absolute top-4 left-3 right-3 bg-[#111113] ring-1 ring-white/[0.10] rounded-3xl shadow-2xl animate-slide-down p-3">
+        <div className="flex items-center justify-between px-3 py-2">
+          <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">{username}</h2>
           <button
             onClick={() => setMobileMenuOpen(false)}
-            className="p-2 text-zinc-400 hover:text-white hover:bg-white/[0.06] rounded-full transition-colors"
+            className="p-1.5 text-zinc-500 hover:text-white hover:bg-white/[0.06] rounded-full transition-colors"
             aria-label="Cerrar menú"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <nav className="flex flex-col gap-1.5">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const active = location.pathname === item.path ||
-              (item.path === '/' && location.pathname.startsWith('/item/'));
-            return (
-              <button
-                key={item.path}
-                onClick={() => handleNav(item.path)}
-                className={`flex items-center gap-4 p-4 rounded-2xl font-bold text-base transition-all ${
-                  active
-                    ? 'bg-white/[0.08] text-white ring-1 ring-white/[0.10]'
-                    : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-zinc-500'}`} />
-                <span className="uppercase tracking-wider text-sm">{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="mt-6 pt-6 border-t border-white/[0.06] flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1 mt-1">
           <button
             onClick={handleSettings}
-            className="flex items-center gap-4 p-4 rounded-2xl font-bold text-base text-zinc-400 hover:bg-white/[0.04] hover:text-white transition-all"
+            className="flex items-center gap-3 p-3 rounded-2xl font-bold text-sm text-zinc-300 hover:bg-white/[0.06] hover:text-white transition-all"
           >
             <Settings className="w-5 h-5 text-zinc-500" />
-            <span className="uppercase tracking-wider text-sm">Configuración</span>
+            <span className="uppercase tracking-wider">Configuración</span>
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-4 p-4 rounded-2xl font-bold text-base text-red-400 hover:bg-red-500/10 transition-all"
+            className="flex items-center gap-3 p-3 rounded-2xl font-bold text-sm text-red-400 hover:bg-red-500/10 transition-all"
           >
             <LogOut className="w-5 h-5" />
-            <span className="uppercase tracking-wider text-sm">Cerrar Sesión</span>
+            <span className="uppercase tracking-wider">Cerrar Sesión</span>
           </button>
         </div>
       </div>
