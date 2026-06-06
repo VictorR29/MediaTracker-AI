@@ -44,7 +44,7 @@ const extractJSON = (text: string, isArray: boolean = false): any => {
   throw new Error(`No valid JSON ${isArray ? 'Array' : 'Object'} found in response.`);
 };
 
-export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeContext?: string): Promise<AIWorkData> => {
+export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeContext?: string): Promise<AIWorkData | null> => {
   const ai = new GoogleGenAI({ apiKey });
   const modelId = "gemini-2.5-flash";
 
@@ -55,6 +55,13 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
   const prompt = `
     Act as a media database expert. Search for information about the entertainment title: "${query}".
     ${typeContextInstruction}
+
+    FOREIGN-LANGUAGE / VARIANT SEARCH RULES (CRITICAL):
+    - If the exact title isn't found, search for alternate titles, romanizations, original kanji/hangul/han characters, and common variants (e.g., "manhwa", "webtoon", "manga", "light novel").
+    - Korean, Chinese, and Japanese works frequently have multiple romanizations of the same title (e.g. Revised vs McCune-Reischauer for Korean, Hepburn vs Kunrei-shiki for Japanese, Pinyin vs Wade-Giles for Chinese). Try at least one alternate romanization before giving up.
+    - Also try the work in its native script when the query is a romanization. Example: if "Reality Quest" returns nothing, try "리얼리티 퀘스트" or append "manhwa" / "webtoon" to the query.
+    - If the query contains a suffix like "manhwa" / "manga" / "webtoon" / "anime", keep it — the user is signaling the medium.
+    - Always attempt at least one alternate form before declaring no results. Only return a non-result JSON if, after several genuine variants and known platforms (WEBTOON, Naver, MangaPlus, MyAnimeList, AniList, Wikipedia, Fandom), nothing is found.
 
     You MUST return a JSON object containing the following details.
     If exact numbers aren't found, estimate based on the latest available info.
@@ -121,22 +128,11 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
       sourceUrls: sources || [],
       primaryColor: "#c084fc",
       releaseDate: jsonPart.releaseDate,
-      endDate: jsonPart.franchise_link
+      endDate: jsonPart.endDate
   };
   } catch (error) {
     console.error("Gemini Search Error:", error);
-    return {
-      title: query,
-      mediaType: "Otro",
-      synopsis: "No se pudo obtener información automática. Por favor edita los detalles manualmente.",
-      genres: [],
-      status: "Desconocido",
-      totalContent: "?",
-      coverDescription: "",
-      coverImage: "",
-      sourceUrls: [],
-      primaryColor: "#c084fc"
-    };
+    return null;
   }
 };
 

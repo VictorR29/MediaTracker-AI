@@ -106,6 +106,9 @@ const AppInner: React.FC = () => {
     setIsSearching(true);
     try {
       const data = await searchMediaInfo(title, userProfile.apiKey, type);
+      if (!data) {
+        showToast(`Sin resultados para "${title}". Probá con el título original o agregalo manualmente.`, "error");
+      }
       navigate('/add', { state: { searchQuery: title, searchType: type, searchData: data } });
     } catch (e) {
       showToast("Error buscando recomendación", "error");

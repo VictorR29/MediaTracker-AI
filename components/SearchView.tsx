@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { PlusCircle, PenTool, Tv, Clapperboard, Film, BookOpen, Book, FileText, X } from 'lucide-react';
+import { PlusCircle, PenTool, Tv, Clapperboard, Film, BookOpen, Book, FileText, X, SearchX, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useAuthStore } from '../stores/useAuthStore';
@@ -15,6 +15,8 @@ interface SearchViewProps {
   onSearchingChange?: (isSearching: boolean) => void;
 }
 
+const VARIANT_SUFFIXES = ['manhwa', 'webtoon', 'manga', String(new Date().getFullYear())];
+
 export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchingChange }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -24,6 +26,8 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
 
   const [isSearching, setIsSearching] = useState(false);
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
+  const [noResultBaseQuery, setNoResultBaseQuery] = useState<string | null>(null);
+  const [variantIndex, setVariantIndex] = useState(0);
 
   const updateSearching = (v: boolean) => {
     setIsSearching(v);
@@ -37,8 +41,14 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
     }
     updateSearching(true);
     setPreviewItem(null);
+    setNoResultBaseQuery(null);
+    setVariantIndex(0);
     try {
       const data = await searchMediaInfo(query, userProfile.apiKey);
+      if (!data) {
+        setNoResultBaseQuery(query);
+        return;
+      }
       const tempItem: MediaItem = {
         id: 'preview',
         aiData: data,
@@ -51,11 +61,41 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
       };
       setPreviewItem(tempItem);
     } catch (e) {
-      showToast("Error en la búsqueda", "error");
+      setNoResultBaseQuery(query);
     } finally {
       updateSearching(false);
     }
   }, [userProfile?.apiKey, showToast, onSearchingChange]);
+
+  const handleRetryWithVariant = useCallback(async () => {
+    if (!noResultBaseQuery) return;
+    const suffix = VARIANT_SUFFIXES[variantIndex % VARIANT_SUFFIXES.length];
+    setVariantIndex((variantIndex + 1) % VARIANT_SUFFIXES.length);
+    if (!userProfile?.apiKey) return;
+    updateSearching(true);
+    setPreviewItem(null);
+    try {
+      const data = await searchMediaInfo(`${noResultBaseQuery} ${suffix}`, userProfile.apiKey);
+      if (!data) {
+        return;
+      }
+      const tempItem: MediaItem = {
+        id: 'preview',
+        aiData: data,
+        trackingData: {
+          status: 'Sin empezar', currentSeason: 1, totalSeasons: 1,
+          watchedEpisodes: 0, totalEpisodesInSeason: 0,
+          emotionalTags: [], favoriteCharacters: [], rating: '', comment: ''
+        },
+        createdAt: Date.now()
+      };
+      setPreviewItem(tempItem);
+    } catch (e) {
+      // keep no-result state; user can try next variant
+    } finally {
+      updateSearching(false);
+    }
+  }, [noResultBaseQuery, variantIndex, userProfile?.apiKey, onSearchingChange]);
 
   const handleAddFromSearch = useCallback(async (itemToAdd: MediaItem) => {
     const newItem: MediaItem = {
@@ -65,6 +105,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
     };
     await addItem(newItem);
     setPreviewItem(null);
+    setNoResultBaseQuery(null);
     showToast("Añadido a la biblioteca", "success");
     onOpenDetail(newItem);
   }, [addItem, showToast, onOpenDetail]);
@@ -104,6 +145,8 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
     };
     onOpenDetail(newItem);
   };
+
+  const showNoResult = !previewItem && !!noResultBaseQuery;
 
   return (
     <>
@@ -145,6 +188,40 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
                 <PlusCircle className="w-5 h-5" /> AÑADIR A BIBLIOTECA
               </button>
             </div>
+          </div>
+        ) : showNoResult ? (
+          <div className="mt-8 animate-fade-in-up bg-zinc-900/40 border border-white/5 rounded-2xl p-6 text-center">
+            <div className="flex justify-center mb-3">
+              <div className="p-3 rounded-full bg-zinc-800/60 ring-1 ring-white/[0.06]">
+                <SearchX className="w-6 h-6 text-zinc-400" />
+              </div>
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">
+              No encontramos resultados para <span className="text-zinc-300">"{noResultBaseQuery}"</span>
+            </h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              Si es una obra coreana, china o japonesa, probá con su título original.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={handleRetryWithVariant}
+                disabled={isSearching}
+                className="px-5 py-3 bg-white hover:bg-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-900 font-bold rounded-full shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.97]"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Buscar variantes
+              </button>
+              <button
+                onClick={handleManualAdd}
+                className="px-5 py-3 bg-zinc-800/50 hover:bg-zinc-800 text-white rounded-full font-bold transition-all ring-1 ring-white/[0.06] hover:ring-white/[0.12] flex items-center justify-center gap-2 group"
+              >
+                <PenTool className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
+                Agregar manualmente
+              </button>
+            </div>
+            <p className="text-zinc-500 text-xs mt-4">
+              Próxima búsqueda: "{noResultBaseQuery} {VARIANT_SUFFIXES[variantIndex % VARIANT_SUFFIXES.length]}"
+            </p>
           </div>
         ) : (
           <div className="mt-12 text-center border-t border-zinc-800 pt-8">
