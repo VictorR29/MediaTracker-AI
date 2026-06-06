@@ -55,20 +55,20 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
   const prompt = `
     Act as a media database expert. Search for information about the entertainment title: "${query}".
     ${typeContextInstruction}
-    
-    You MUST return a JSON object containing the following details. 
+
+    You MUST return a JSON object containing the following details.
     If exact numbers aren't found, estimate based on the latest available info.
-    
+
     CRITICAL - MEDIA TYPE CLASSIFICATION RULES:
-    1. "Pelicula": Use this for ANY standalone movie or theatrical release. 
+    1. "Pelicula": Use this for ANY standalone movie or theatrical release.
        - IMPORTANT: If it is an Anime Movie (e.g. 'Demon Slayer: Mugen Train', 'The End of Evangelion'), it MUST be classified as "Pelicula", NOT "Anime".
     2. "Serie": Live-action TV Series.
     3. "Anime": Japanese animation SERIES (TV format, ONAs, OVAs that are series-like).
     4. "Libro": Novels, Light Novels.
     5. "Manhwa" / "Manga" / "Comic".
-    
+
     FRANCHISE LINKING:
-    If the item is a "Pelicula" that belongs to a larger Series/Anime franchise (e.g., the query is "Demon Slayer Mugen Train"), 
+    If the item is a "Pelicula" that belongs to a larger Series/Anime franchise (e.g., the query is "Demon Slayer Mugen Train"),
     you MUST populate the "franchise_link" field with the name of the PARENT franchise (e.g., "Demon Slayer: Kimetsu no Yaiba").
     If it is a standalone movie (e.g. "Inception"), leave "franchise_link" empty.
 
@@ -81,9 +81,6 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
       "genres": ["Genre1", "Genre2"],
       "status": "Publication/Broadcast status (e.g., En emisión, Finalizado, En pausa)",
       "totalContent": "FOR ANIME/SERIES: Use vertical format '\\n'.\n1. Released Seasons (Count ONLY currently released/airing):\n'[X] Temporadas'\n'- Temporada 1: [X] Caps'\n\n2. CURRENTLY AIRING / SIMULCAST RULE:\nIf a season is currently broadcasting (new episodes coming out weekly), format it as:\n'- Temporada [X]: [Released So Far]/[Total Planned] Caps (En emisión)'\nExample: '- Temporada 2: 3/12 Caps (En emisión)' or '- Temporada 1: 5/? Caps (En emisión)'.\n\n3. Future Seasons (If officially announced):\n'Temporada [X] Anunciada:\n- Estreno: [YYYY-MM-DD or Season Year]'\n\nFOR OTHERS: Just string like '120 Capítulos' or 'Duración 1h 57m'.",
-      "coverDescription": "A short English visual description of the official poster (e.g. 'poster of Naruto anime')",
-      "coverImage": "Find a DIRECT public URL (https) for the official poster. PREFER URLs from 'upload.wikimedia.org', 'm.media-amazon.com', 'cdn.myanimelist.net' or 'static.wikia.nocookie.net'. The URL MUST end in .jpg, .png or .webp. If uncertain, leave empty.",
-      "primaryColor": "Identify the DOMINANT HEX COLOR associated with the work's cover art or branding (e.g. '#FF5733'). It MUST be a 6-digit HEX code.",
       "releaseDate": "The release date or year (ISO 'YYYY-MM-DD').",
       "endDate": "The end date or year. Leave empty if it's a Movie.",
       "franchise_link": "Name of the parent franchise if applicable, or empty string."
@@ -119,10 +116,10 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
       genres: jsonPart.genres || [],
       status: jsonPart.status || "Desconocido",
       totalContent: jsonPart.totalContent || "?",
-      coverDescription: jsonPart.coverDescription || "",
-      coverImage: jsonPart.coverImage || "",
+      coverDescription: "",
+      coverImage: "",
       sourceUrls: sources || [],
-primaryColor: jsonPart.primaryColor || "#c084fc",
+      primaryColor: "#c084fc",
       releaseDate: jsonPart.releaseDate,
       endDate: jsonPart.franchise_link
   };
@@ -151,36 +148,45 @@ export const updateMediaInfo = async (currentData: AIWorkData, apiKey: string): 
   const prompt = `
     Act as a media database expert auditor.
     Target: "${currentData.title}" (${currentData.mediaType}).
-    
+
     Current Data:
     - Status: ${currentData.status}
     - Total Content: ${currentData.totalContent}
     - Release Date: ${currentData.releaseDate || 'N/A'}
     - End Date: ${currentData.endDate || 'N/A'}
     - Current Synopsis: "${currentData.synopsis || ''}"
-    
-    Task: Search for the absolute latest status, content count (seasons/episodes) and broadcast dates.
-    Compare with Current Data.
-    
-    Specific Rules for Update:
-    1. FUTURE CONTENT CHECK: If the "Current Data" contains "Anunciada", "Futura", or "Estreno" for a season, check today's date vs the release date. 
-       - If the season HAS STARTED: Merge it into the main season count, remove the "Anunciada" label, and list its episodes naturally. Update the total season count in the first line.
-       - If it is STILL in the future: Keep the "Anunciada" format but update the release date/year if new info is available.
-    
-    2. ONGOING CHECK: If a season is currently airing, use the format: '- Temporada X: [Current]/[Total] Caps (En emisión)'. Update the [Current] count if it has increased.
 
-    3. SYNOPSIS:
-       - IF the current synopsis is TOO SHORT, VAGUE or placeholder: GENERATE a new one (max 300 chars, Spanish).
-       - IF there is a MAJOR plot update (e.g. new season started): GENERATE a new synopsis.
-       - Otherwise return null.
+    Task: Search for the absolute latest status, content count (seasons/episodes) and broadcast dates.
+    Compare with Current Data and apply the matching SCENARIO rule below.
+
+    SCENARIO 1 — Season HAS STARTED since last check:
+    The "Current Data" contains a "Temporada [X] Anunciada" and today is at or past its release date.
+    Action: Merge it into the main season count, remove the "Anunciada" label, list its episodes naturally, and update the total season count in the first line.
+    Example output: "2 Temporadas\\n- Temporada 1: 12 Caps\\n- Temporada 2: 1/12 Caps (En emisión)"
+
+    SCENARIO 2 — Season STILL in the future:
+    The "Current Data" contains a "Temporada [X] Anunciada" and today is BEFORE its release date.
+    Action: Keep the "Anunciada" format but update the release date/year if new info is available.
+    Example output: "1 Temporadas\\n- Temporada 1: 12 Caps\\nTemporada 2 Anunciada:\\n- Estreno: 2026-Q4"
+
+    SCENARIO 3 — Season currently AIRING (was airing before too):
+    A season in "Current Data" already has the "(En emisión)" suffix.
+    Action: Update the [Current] count to the latest released episode count. Keep the "En emisión" label.
+    Example output: "- Temporada 2: 5/12 Caps (En emisión)" (was 3/12 last time)
+
+    SCENARIO 4 — Synopsis update:
+    Action: ONLY rewrite the synopsis if:
+      a) Current synopsis is empty, too short (< 50 chars), or placeholder text, OR
+      b) There is a MAJOR plot update (e.g. a new season has started since the last synopsis).
+    Otherwise return null for synopsis.
 
     Return a JSON object:
     {
       "status": "The latest correct status",
-      "totalContent": "Vertical format:\nLine 1: 'X Temporadas'\nLine 2+: '- Temporada X: Y Caps'\n...followed by any 'Temporada Z Anunciada:\n- Estreno: Date' if applicable.",
+      "totalContent": "Vertical format per SCENARIO rules above",
       "releaseDate": "YYYY-MM-DD",
       "endDate": "YYYY-MM-DD (or null if ongoing)",
-      "synopsis": "New string ONLY IF rules above are met, otherwise null",
+      "synopsis": "New string ONLY IF SCENARIO 4 rules are met, otherwise null",
       "hasChanges": boolean
     }
   `;
@@ -304,7 +310,7 @@ export const getRecommendations = async (
     });
 
     const text = response.text || "[]";
-    return JSON.parse(text);
+    return extractJSON(text, true);
   } catch (error) {
     console.error("Recommendation Error:", error);
     return [];
