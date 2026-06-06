@@ -28,15 +28,26 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
   const userProfile = useAuthStore(s => s.userProfile);
   const { library, filters, setFilters, getDisplayedLibrary, getAvailableGenres } = useLibraryStore();
-  const { libraryViewMode, toggleLibraryViewMode, libraryScrollY, setLibraryScrollY } = useUIStore();
+  const { libraryViewMode, toggleLibraryViewMode, libraryScrollY, setLibraryScrollY, lastOpenedItemId, setLastOpenedItemId } = useUIStore();
 
-  // Restore saved scroll position on mount (returning from detail view)
+  // Restore scroll position on mount (returning from detail view)
+  // Uses scrollIntoView on the previously opened card to be resilient
+  // to contentVisibility: auto layout shifts
   useEffect(() => {
-    if (libraryScrollY > 0) {
-      const savedY = libraryScrollY;
-      setLibraryScrollY(0); // Clear so fresh visits start at top
+    if (lastOpenedItemId) {
+      const itemId = lastOpenedItemId;
+      setLastOpenedItemId(null);
+      setLibraryScrollY(0);
+      // Wait for the grid to render, then scroll to the card
       requestAnimationFrame(() => {
-        window.scrollTo({ top: savedY, behavior: 'instant' });
+        requestAnimationFrame(() => {
+          const cardEl = document.getElementById(`card-${itemId}`);
+          if (cardEl) {
+            cardEl.scrollIntoView({ block: 'center', behavior: 'instant' });
+          } else if (libraryScrollY > 0) {
+            window.scrollTo({ top: libraryScrollY, behavior: 'instant' });
+          }
+        });
       });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps — intentionally run once on mount
@@ -78,17 +89,18 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           onOpenDetail={onOpenDetail}
         />
       ) : (
-	<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 stagger-children">
-		{displayedLibrary.map(item => (
-			<CompactMediaCard
-			key={item.id}
-			item={item}
-			onClick={onOpenDetail}
-			onIncrement={onIncrementProgress}
-			onToggleFavorite={onToggleFavorite}
-			onDelete={onRequestDelete}
-			/>
-		))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 stagger-children">
+          {displayedLibrary.map(item => (
+            <CompactMediaCard
+              key={item.id}
+              id={`card-${item.id}`}
+              item={item}
+              onClick={onOpenDetail}
+              onIncrement={onIncrementProgress}
+              onToggleFavorite={onToggleFavorite}
+              onDelete={onRequestDelete}
+            />
+          ))}
 		{displayedLibrary.length === 0 && (
 			<div className="col-span-full text-center py-20 text-zinc-500 flex flex-col items-center">
 			<div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mb-4 ring-1 ring-white/[0.06]">

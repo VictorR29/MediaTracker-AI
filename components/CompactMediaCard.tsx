@@ -6,6 +6,7 @@ import { extractColorFromImage, vibrify, hexToRgb } from './media-card/colorUtil
 import { useLibraryStore } from '../stores/useLibraryStore';
 
 interface CompactMediaCardProps {
+  id?: string;
   item: MediaItem;
   onClick: (item: MediaItem) => void;
   onIncrement: (item: MediaItem) => void;
@@ -43,7 +44,7 @@ const getSharedObserver = () => {
   return sharedObserver;
 };
 
-export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ item, onClick, onIncrement, onToggleFavorite, onDelete }) => {
+export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ id, item, onClick, onIncrement, onToggleFavorite, onDelete }) => {
   const { aiData, trackingData } = item;
   const isFavorite = trackingData.is_favorite || false;
 
@@ -191,9 +192,10 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
       ? `${trackingData.watchedEpisodes} / ${trackingData.totalEpisodesInSeason}`
       : `${trackingData.watchedEpisodes} / ?`;
 
-  return (
-	<div
-		ref={cardRef}
+return (
+    <div
+      id={id}
+      ref={cardRef}
 		onClick={() => onClick(item)}
 		onMouseEnter={() => setIsHovered(true)}
 		onMouseLeave={() => setIsHovered(false)}
@@ -202,8 +204,8 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 		${isVisible ? 'animate-stagger-in' : 'opacity-0'}`}
  style={{
   '--card-rgb': dynamicRgb,
-  contentVisibility: 'auto',
-  containIntrinsicSize: '0 0',
+        contentVisibility: 'auto',
+        containIntrinsicSize: 'auto 300px',
   boxShadow: isHovered
     ? `0 0 40px rgba(${dynamicRgb}, 0.70), 0 0 80px rgba(${dynamicRgb}, 0.30), 0 0 120px rgba(${dynamicRgb}, 0.10)`
     : `0 0 30px rgba(${dynamicRgb}, 0.50), 0 0 60px rgba(${dynamicRgb}, 0.25), 0 0 100px rgba(${dynamicRgb}, 0.08)`,

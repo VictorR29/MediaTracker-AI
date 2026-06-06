@@ -32,9 +32,9 @@ const AppInner: React.FC = () => {
   const { userProfile, isAuthenticated, init: initAuth } = useAuthStore();
   const { library, loadLibrary, updateItem, addItem, isRestoring } = useLibraryStore();
   const {
-    isImmersiveMode, isBottomNavVisible, showScrollTop,
-    isSettingsOpen, setSettingsOpen, setImmersiveMode,
-    setBottomNavVisible, setShowScrollTop, setLibraryScrollY
+  isImmersiveMode, isBottomNavVisible, showScrollTop,
+  isSettingsOpen, setSettingsOpen, setImmersiveMode,
+  setBottomNavVisible, setShowScrollTop, setLibraryScrollY, setLastOpenedItemId
   } = useUIStore();
   const lastScrollYRef = useRef(0);
 
@@ -67,10 +67,11 @@ const AppInner: React.FC = () => {
   // ─── Navigation helpers ─────────────────────────────────────────
 
   const handleOpenDetail = useCallback((item: MediaItem) => {
-    setLibraryScrollY(window.scrollY);
-    navigate(`/item/${item.id}`);
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [navigate, setLibraryScrollY]);
+  setLibraryScrollY(window.scrollY);
+  setLastOpenedItemId(item.id);
+  navigate(`/item/${item.id}`);
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [navigate, setLibraryScrollY, setLastOpenedItemId]);
 
   const handleNavClick = (targetPath: string) => {
     if (targetPath === '/') {
