@@ -84,7 +84,13 @@ const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ 
 
   return (
     <div className="bg-[#111113] ring-1 ring-white/[0.06] p-1 rounded-2xl shadow-lg transition-all overflow-hidden">
-      <div className="bg-[#18181B] rounded-[calc(1rem-0.25rem)] p-4 md:p-6">
+      <div
+        className="bg-[#18181B] rounded-[calc(1rem-0.25rem)] p-4 md:p-6 transition-all duration-500"
+        style={chartData[0] ? {
+          borderTop: `1px solid ${chartData[0].color}30`,
+          boxShadow: `inset 0 1px 0 ${chartData[0].color}15`
+        } : undefined}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <span className="text-[10px] font-extrabold uppercase text-zinc-400 flex items-center gap-2" style={{ letterSpacing: '0.1em' }}>
@@ -231,7 +237,7 @@ const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ 
                         }`}
                         style={{
                           strokeOpacity: isHighlighted ? 1 : (isDimmed ? 0.4 : 1),
-                          filter: `drop-shadow(0 0 ${isHighlighted ? 12 : 4}px ${slice.color})`
+                          filter: isHighlighted ? `drop-shadow(0 0 2px ${slice.color})` : 'none'
                         }}
                       />
                     );
@@ -265,8 +271,8 @@ const ConsumptionDistributionInner: React.FC<ConsumptionDistributionProps> = ({ 
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div
-                            className={`w-3 h-3 rounded-full shadow-sm flex-shrink-0 transition-transform ${isHighlighted ? 'scale-125' : ''}`}
-                            style={{ backgroundColor: slice.color, boxShadow: `0 0 6px ${slice.color}80` }}
+                            className={`w-3 h-3 rounded-full flex-shrink-0 transition-all ${isHighlighted ? 'scale-125 ring-2 ring-white/30' : ''}`}
+                            style={{ backgroundColor: slice.color }}
                           />
                           <span className={`text-sm font-medium transition-colors truncate flex-1 min-w-0 ${isHighlighted ? 'text-white font-bold' : 'text-zinc-300 group-hover:text-white'}`} title={slice.label}>
                             {slice.label}
