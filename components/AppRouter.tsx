@@ -33,6 +33,7 @@ interface AppRouterProps {
   onImportBackup: (file: File) => void;
   isRestoring: boolean;
   onToggleImmersive: (v: boolean) => void;
+  onSearchingChange?: (isSearching: boolean) => void;
 }
 
 export const AppRouter: React.FC<AppRouterProps> = ({
@@ -45,6 +46,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
   onImportBackup,
   isRestoring,
   onToggleImmersive,
+  onSearchingChange,
 }) => {
   const { userProfile, isAuthenticated, loading, login, completeOnboarding } = useAuthStore();
   const library = useLibraryStore(s => s.library);
@@ -96,7 +98,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
       } />
       <Route path="/add" element={
         <RouteSuspense>
-          <SearchView onOpenDetail={onOpenDetail} />
+          <SearchView onOpenDetail={onOpenDetail} onSearchingChange={onSearchingChange} />
         </RouteSuspense>
       } />
       <Route path="/wishlist" element={

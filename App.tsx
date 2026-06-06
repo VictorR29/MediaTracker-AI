@@ -137,6 +137,7 @@ const AppInner: React.FC = () => {
           onImportBackup={dataHandlers.handleImportBackup}
           isRestoring={isRestoring}
           onToggleImmersive={setImmersiveMode}
+          onSearchingChange={setIsSearching}
         />
       </div>
     );
@@ -185,6 +186,7 @@ const AppInner: React.FC = () => {
           onImportBackup={dataHandlers.handleImportBackup}
           isRestoring={isRestoring}
           onToggleImmersive={setImmersiveMode}
+          onSearchingChange={setIsSearching}
         />
       </main>
 

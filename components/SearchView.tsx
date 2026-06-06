@@ -12,9 +12,10 @@ import { MediaCard } from './MediaCard';
 
 interface SearchViewProps {
   onOpenDetail: (item: MediaItem) => void;
+  onSearchingChange?: (isSearching: boolean) => void;
 }
 
-export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail }) => {
+export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchingChange }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const userProfile = useAuthStore(s => s.userProfile);
@@ -24,12 +25,17 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
 
+  const updateSearching = (v: boolean) => {
+    setIsSearching(v);
+    onSearchingChange?.(v);
+  };
+
   const handleSearch = useCallback(async (query: string) => {
     if (!userProfile?.apiKey) {
       showToast("Configura tu API Key primero", "error");
       return;
     }
-    setIsSearching(true);
+    updateSearching(true);
     setPreviewItem(null);
     try {
       const data = await searchMediaInfo(query, userProfile.apiKey);
@@ -47,9 +53,9 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail }) => {
     } catch (e) {
       showToast("Error en la búsqueda", "error");
     } finally {
-      setIsSearching(false);
+      updateSearching(false);
     }
-  }, [userProfile?.apiKey, showToast]);
+  }, [userProfile?.apiKey, showToast, onSearchingChange]);
 
   const handleAddFromSearch = useCallback(async (itemToAdd: MediaItem) => {
     const newItem: MediaItem = {
