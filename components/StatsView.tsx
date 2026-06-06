@@ -76,6 +76,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
           value={stats.total}
           icon={Layers}
           color={{ bg: 'bg-blue-500', text: 'text-blue-500' }}
+          accentColor="#3b82f6"
         />
         <StatCard
           title="Completados"
@@ -83,6 +84,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
           subtext={`${Math.round((stats.completed / (stats.total || 1)) * 100)}% del total`}
           icon={Trophy}
           color={{ bg: 'bg-green-500', text: 'text-green-500' }}
+          accentColor="#22c55e"
         />
         <StatCard
           title="Calificación Prom."
@@ -90,6 +92,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
           subtext={stats.averageScore === "N/A" ? "" : stats.averageLabel}
           icon={Zap}
           color={{ bg: 'bg-yellow-500', text: 'text-yellow-500' }}
+          accentColor="#eab308"
         />
         <StatCard
           title="Género Más Común"
@@ -97,6 +100,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
           subtext={`En ${stats.maxGenreCount} obras (${Math.round((stats.maxGenreCount / (stats.total || 1)) * 100)}%)`}
           icon={Hash}
           color={{ bg: 'bg-purple-500', text: 'text-purple-500' }}
+          accentColor="#a855f7"
         />
       </div>
 
