@@ -114,3 +114,12 @@ main {
   animation: deleteExit 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   pointer-events: none;
 }
+
+/* Slide down: mobile menu sheet drops from top */
+@keyframes slideDown {
+  0% { transform: translateY(-100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-down {
+  animation: slideDown 280ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}

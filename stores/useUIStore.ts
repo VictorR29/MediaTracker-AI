@@ -6,6 +6,7 @@ interface UIState {
   showScrollTop: boolean;
   isSettingsOpen: boolean;
   isManualTypeSelectorOpen: boolean;
+  isMobileMenuOpen: boolean;
   libraryViewMode: 'grid' | 'catalog';
   libraryScrollY: number;
   lastOpenedItemId: string | null;
@@ -14,6 +15,7 @@ interface UIState {
   setShowScrollTop: (v: boolean) => void;
   setSettingsOpen: (v: boolean) => void;
   setManualTypeSelectorOpen: (v: boolean) => void;
+  setMobileMenuOpen: (v: boolean) => void;
   setLibraryScrollY: (y: number) => void;
   setLastOpenedItemId: (id: string | null) => void;
   toggleLibraryViewMode: () => void;
@@ -25,6 +27,7 @@ export const useUIStore = create<UIState>((set) => ({
   showScrollTop: false,
   isSettingsOpen: false,
   isManualTypeSelectorOpen: false,
+  isMobileMenuOpen: false,
   libraryViewMode: 'grid',
   libraryScrollY: 0,
   lastOpenedItemId: null,
@@ -34,6 +37,7 @@ export const useUIStore = create<UIState>((set) => ({
   setShowScrollTop: (v) => set({ showScrollTop: v }),
   setSettingsOpen: (v) => set({ isSettingsOpen: v }),
   setManualTypeSelectorOpen: (v) => set({ isManualTypeSelectorOpen: v }),
+  setMobileMenuOpen: (v) => set({ isMobileMenuOpen: v }),
   setLibraryScrollY: (y) => set({ libraryScrollY: y }),
   setLastOpenedItemId: (id) => set({ lastOpenedItemId: id }),
   toggleLibraryViewMode: () => set(state => ({

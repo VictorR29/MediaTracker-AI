@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutGrid, Bookmark, PlusCircle, Compass, BarChart2,
-  Search as SearchIcon, LogOut, Settings, User, ArrowUp
+  Search as SearchIcon, LogOut, Settings, User, ArrowUp, MoreVertical
 } from 'lucide-react';
 import { useToast } from './context/ToastContext';
 import { MediaItem } from './types';
@@ -20,6 +20,7 @@ import { AppRouter } from './components/AppRouter';
 import { SettingsModal } from './components/SettingsModal';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { MobileMenuSheet } from './components/MobileMenuSheet';
 
 // ─── Inner App (needs router context) ───────────────────────────────
 
@@ -34,7 +35,8 @@ const AppInner: React.FC = () => {
   const {
   isImmersiveMode, isBottomNavVisible, showScrollTop,
   isSettingsOpen, setSettingsOpen, setImmersiveMode,
-  setBottomNavVisible, setShowScrollTop, setLibraryScrollY, setLastOpenedItemId
+  setBottomNavVisible, setShowScrollTop, setLibraryScrollY, setLastOpenedItemId,
+  setMobileMenuOpen
   } = useUIStore();
   const lastScrollYRef = useRef(0);
 
@@ -150,28 +152,54 @@ const AppInner: React.FC = () => {
 
       {/* Header */}
       {!isImmersiveMode && (
-	<header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] md:w-auto md:max-w-2xl z-40 bg-[#111113]/80 backdrop-blur-xl rounded-full ring-1 ring-white/[0.10] px-4 py-2 flex items-center justify-between shadow-[0_0_24px_rgba(139,92,246,0.08)]">
-        <div className="flex items-center gap-3">
-	<div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-tr from-violet-500 to-purple-500 p-0.5" style={{ boxShadow: '0 0 16px rgba(139,92,246,0.40)' }}>
-            <div className="w-full h-full rounded-full bg-zinc-900 overflow-hidden">
-              {userProfile?.avatarUrl ? <img src={userProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center"><User className="w-5 h-5" /></div>}
+        <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] md:max-w-6xl z-40 bg-[#111113]/80 backdrop-blur-xl rounded-2xl md:rounded-full ring-1 ring-white/[0.10] px-3 md:px-5 py-2 md:py-2.5 flex items-center justify-between md:gap-6 shadow-[0_0_24px_rgba(139,92,246,0.08)]">
+          {/* LEFT: Avatar + username */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 md:w-10 md:h-10 flex-shrink-0 rounded-full bg-gradient-to-tr from-violet-500 to-purple-500 p-0.5" style={{ boxShadow: '0 0 16px rgba(139,92,246,0.40)' }}>
+              <div className="w-full h-full rounded-full bg-zinc-900 overflow-hidden">
+                {userProfile?.avatarUrl ? <img src={userProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center"><User className="w-5 h-5" /></div>}
+              </div>
             </div>
+            <h1 className="font-bold text-white text-sm md:text-base truncate min-w-0">{userProfile?.username}</h1>
           </div>
-          <h1 className="font-bold text-white text-lg hidden lg:block">{userProfile?.username}'s Library</h1>
-        </div>
-        <nav className="hidden md:flex items-center gap-1">
-          <DesktopNavLink icon={LayoutGrid} label="Biblioteca" active={currentPath === '/' || currentPath.startsWith('/item/')} onClick={() => handleNavClick('/')} />
-          <DesktopNavLink icon={Bookmark} label="Deseos" active={currentPath === '/wishlist'} onClick={() => handleNavClick('/wishlist')} />
-          <DesktopNavLink icon={PlusCircle} label="Añadir" active={currentPath === '/add'} onClick={() => handleNavClick('/add')} />
-          <DesktopNavLink icon={Compass} label="Descubrir" active={currentPath === '/discover'} onClick={() => handleNavClick('/discover')} />
-          <DesktopNavLink icon={BarChart2} label="Stats" active={currentPath === '/stats'} onClick={() => handleNavClick('/stats')} />
-        </nav>
-        <div className="flex items-center gap-2 md:gap-4">
-          <button onClick={() => setSettingsOpen(true)} className="p-2 text-zinc-400 hover:text-white hover:bg-white/[0.04] rounded-full transition-colors"><Settings className="w-5 h-5" /></button>
-          <button onClick={() => useAuthStore.getState().logout()} className="p-2 text-zinc-400 hover:text-red-400 hover:bg-white/[0.04] rounded-full transition-colors"><LogOut className="w-5 h-5" /></button>
-        </div>
-      </header>
+
+          {/* CENTER (desktop only): Nav pills */}
+          <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
+            <DesktopNavLink icon={LayoutGrid} label="Biblioteca" active={currentPath === '/' || currentPath.startsWith('/item/')} onClick={() => handleNavClick('/')} />
+            <DesktopNavLink icon={Bookmark} label="Deseos" active={currentPath === '/wishlist'} onClick={() => handleNavClick('/wishlist')} />
+            <DesktopNavLink icon={PlusCircle} label="Añadir" active={currentPath === '/add'} onClick={() => handleNavClick('/add')} />
+            <DesktopNavLink icon={Compass} label="Descubrir" active={currentPath === '/discover'} onClick={() => handleNavClick('/discover')} />
+            <DesktopNavLink icon={BarChart2} label="Stats" active={currentPath === '/stats'} onClick={() => handleNavClick('/stats')} />
+          </nav>
+
+          {/* RIGHT: Settings + Logout (desktop) / More (mobile) */}
+          <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="hidden md:flex p-2 text-zinc-400 hover:text-white hover:bg-white/[0.06] rounded-full transition-colors"
+              title="Configuración"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => useAuthStore.getState().logout()}
+              className="hidden md:flex p-2 text-zinc-400 hover:text-red-400 hover:bg-white/[0.06] rounded-full transition-colors"
+              title="Cerrar sesión"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+            {/* Mobile: single "more" button that opens the menu sheet */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden p-2 text-zinc-400 hover:text-white hover:bg-white/[0.06] rounded-full transition-colors"
+              title="Menú"
+              aria-label="Abrir menú"
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
       )}
 
       {/* Main */}
@@ -191,6 +219,7 @@ const AppInner: React.FC = () => {
       </main>
 
       <DeleteModal />
+      <MobileMenuSheet />
 
       {/* Scroll To Top */}
       <button onClick={scrollToTop}
