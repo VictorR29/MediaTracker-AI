@@ -25,21 +25,21 @@ const ReflectionColumnInner: React.FC<ReflectionColumnProps> = ({
     <div className="flex flex-col gap-6 xl:gap-8">
       {/* Rating Grid */}
       <div className="bg-zinc-900/40 rounded-2xl p-6 border border-zinc-800/60 flex flex-col shadow-xl" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.15)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.08), 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)` }}>
-        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-4 lg:gap-2 xl:gap-3 mb-6 xl:mb-8">
-          {RATING_OPTIONS.map((opt) => {
-            const isSelected = tracking.rating === opt;
-            const label = opt.split(' ')[0];
-            return (
-              <button
-                key={opt}
-                onClick={() => onInputChange('rating', opt)}
-                className={`flex flex-col items-center gap-1 xl:gap-2 min-h-[44px] p-3 xl:p-3 rounded-2xl border transition-all ${isSelected ? 'bg-[rgb(var(--card-rgb)/0.2)] border-[rgb(var(--card-rgb))] text-[rgb(var(--card-rgb))] shadow-lg' : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800'}`}
-              >
-                <Star className={`w-3 h-3 xl:w-4 xl:h-4 ${isSelected ? 'fill-current' : ''}`} />
-                <span className="text-xs font-black uppercase tracking-tighter text-center">{label}</span>
-              </button>
-            );
-          })}
+      <div className="flex flex-wrap gap-2 mb-6 xl:mb-8">
+        {RATING_OPTIONS.map((opt) => {
+          const isSelected = tracking.rating === opt;
+          const label = opt.split(' ')[0];
+          return (
+            <button
+              key={opt}
+              onClick={() => onInputChange('rating', opt)}
+              className={`flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected ? 'bg-[rgb(var(--card-rgb)/0.15)] border-[rgb(var(--card-rgb)/0.6)] text-[rgb(var(--card-rgb))] shadow-[0_0_12px_rgba(var(--card-rgb),0.15)]' : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}`}
+            >
+              <Star className={`w-3 h-3 ${isSelected ? 'fill-current' : ''}`} />
+              <span className="uppercase tracking-wide">{label}</span>
+            </button>
+          );
+        })}
         </div>
         <button
           onClick={onGenerateReview}
