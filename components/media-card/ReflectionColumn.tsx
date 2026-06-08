@@ -95,7 +95,7 @@ const ReflectionColumnInner: React.FC<ReflectionColumnProps> = ({
               className={`flex items-center gap-2 xl:gap-3 min-h-[44px] px-3 py-2.5 rounded-2xl text-xs font-black border transition-all text-left uppercase tracking-tight ${isActive ? 'bg-[rgb(var(--card-rgb)/0.1)] border-[rgb(var(--card-rgb)/0.4)] text-[rgb(var(--card-rgb))] shadow-inner' : 'bg-zinc-950/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800'}`}
             >
               <span className="text-sm">{tag.emoji}</span>
-              <span className="truncate">{tag.label}</span>
+              <span>{tag.shortLabel}</span>
             </button>
           );
         })}

@@ -1,14 +1,14 @@
 import { Tv, Clapperboard, Film, BookOpen } from 'lucide-react';
 
 export const MOOD_OPTIONS = [
-  { emoji: "🤯", label: "Quiero algo que me vuele la cabeza" },
-  { emoji: "🍿", label: "Algo ligero para ver sin pensar" },
-  { emoji: "❤️", label: "Busco una historia que me rompa el corazón" },
-  { emoji: "🔥", label: "Necesito adrenalina pura y emoción" },
-  { emoji: "🌌", label: "Algo que me transporte a otro mundo" },
-  { emoji: "🧘", label: "Quiero aprender o reflexionar sobre la vida" },
-  { emoji: "👻", label: "Quiero sentir tensión y un poco de miedo" },
-  { emoji: "🚬", label: "Algo crudo, oscuro y realista" }
+  { emoji: "🤯", label: "Quiero algo que me vuele la cabeza", shortLabel: "Volar la cabeza" },
+  { emoji: "🍿", label: "Algo ligero para ver sin pensar", shortLabel: "Ligero y sin pensar" },
+  { emoji: "❤️", label: "Busco una historia que me rompa el corazón", shortLabel: "Romper el corazón" },
+  { emoji: "🔥", label: "Necesito adrenalina pura y emoción", shortLabel: "Adrenalina pura" },
+  { emoji: "🌌", label: "Algo que me transporte a otro mundo", shortLabel: "Otro mundo" },
+  { emoji: "🧘", label: "Quiero aprender o reflexionar sobre la vida", shortLabel: "Reflexionar" },
+  { emoji: "👻", label: "Quiero sentir tensión y un poco de miedo", shortLabel: "Tensión y miedo" },
+  { emoji: "🚬", label: "Algo crudo, oscuro y realista", shortLabel: "Crudo y oscuro" }
 ];
 
 export const MEDIA_TYPES = [

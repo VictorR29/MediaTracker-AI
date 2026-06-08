@@ -234,7 +234,7 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                   }`}
                 >
                   <span className="text-sm">{mood.emoji}</span>
-                  <span className="truncate max-w-[180px]">{mood.label}</span>
+                  <span>{mood.shortLabel}</span>
                 </button>
               );
             })}
