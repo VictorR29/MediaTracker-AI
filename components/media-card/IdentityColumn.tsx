@@ -42,7 +42,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
   return (
     <div className="flex flex-col gap-6 xl:gap-8">
       {/* Poster with Interactive Upload */}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 max-w-[280px] mx-auto sm:max-w-none">
         <div
           className={`relative rounded-2xl overflow-hidden shadow-2xl aspect-[2/3] bg-zinc-900 group transition-all duration-300 ${isEditing ? 'cursor-pointer' : ''} ${isDragging ? 'ring-4 ring-[rgb(var(--card-rgb))] scale-[1.02]' : ''}`}
           onClick={onImageClick}
@@ -82,7 +82,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
         </div>
         {isEditing && (
           <div>
-            <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">URL de Portada (Opcional)</label>
+            <label className="text-xs uppercase font-bold text-zinc-500 mb-1 block">URL de Portada (Opcional)</label>
             <input
               value={aiData.coverImage || ''}
               onChange={(e) => {
@@ -101,7 +101,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
         {isEditing ? (
           <div className="space-y-3 mb-4">
             <div>
-              <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">Título Principal</label>
+              <label className="text-xs uppercase font-bold text-zinc-500 mb-1 block">Título Principal</label>
               <input
                 value={aiData.title}
                 onChange={(e) => onAIDataChange('title', e.target.value)}
@@ -109,7 +109,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
               />
             </div>
             <div>
-              <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">Título Original</label>
+              <label className="text-xs uppercase font-bold text-zinc-500 mb-1 block">Título Original</label>
               <input
                 value={aiData.originalTitle || ''}
                 onChange={(e) => onAIDataChange('originalTitle', e.target.value)}
@@ -120,14 +120,14 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
           </div>
         ) : (
           <>
-            <h1 className="text-2xl xl:text-3xl font-black leading-tight mb-2" style={{ background: `linear-gradient(to right, #ffffff, ${dynamicColor})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{aiData.title}</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black leading-tight mb-2" style={{ background: `linear-gradient(to right, #ffffff, ${dynamicColor})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{aiData.title}</h1>
             {aiData.originalTitle && <p className="text-sm text-zinc-500 italic mb-4" style={{ textShadow: `0 0 20px rgba(${dynamicRgb}, 0.15)` }}>{aiData.originalTitle}</p>}
           </>
         )}
 
         <div className="flex flex-wrap gap-2 mb-6 xl:mb-8">
-<span className="px-3 xl:px-4 py-1.5 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded text-[10px] xl:text-xs font-bold text-zinc-400 uppercase">{aiData.mediaType}</span>
-      <span className="px-3 xl:px-4 py-1.5 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded text-[10px] xl:text-xs font-bold text-zinc-400 uppercase">{aiData.status}</span>
+        <span className="px-3 py-1.5 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded text-xs font-bold text-zinc-400 uppercase">{aiData.mediaType}</span>
+        <span className="px-3 py-1.5 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded text-xs font-bold text-zinc-400 uppercase">{aiData.status}</span>
           {!isEditing && (
             <button onClick={onToggleEdit} className="p-1.5 text-zinc-500 hover:text-white transition-colors" title="Editar detalles">
               <Edit3 className="w-5 h-5" />
@@ -153,7 +153,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
       {/* Metadata Details */}
       <div className="space-y-5 xl:space-y-6 text-sm ring-1 ring-white/[0.04] rounded-2xl p-4 xl:p-6 pt-6 xl:pt-8" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.20)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.10)` }}>
         <div className="flex flex-col gap-2">
-          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}>Fechas</span>
+          <span className="text-zinc-500 font-bold uppercase tracking-widest text-xs" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}>Fechas</span>
           <div className="flex justify-between items-center text-zinc-300 text-xs xl:text-sm">
             <span className="font-medium">Estreno:</span>
             {isEditing ? (
@@ -183,10 +183,10 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
         </div>
 
         <div className="flex flex-col gap-3">
-          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}>Géneros</span>
+          <span className="text-zinc-500 font-bold uppercase tracking-widest text-xs" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}>Géneros</span>
           <div className="flex flex-wrap gap-2">
             {(aiData.genres || []).map(g => (
-              <span key={g} className="px-2.5 py-1 bg-zinc-800 ring-1 ring-white/[0.06] rounded-lg text-zinc-300 text-xs flex items-center gap-1.5">
+              <span key={g} className="px-3 py-1.5 bg-zinc-800 ring-1 ring-white/[0.06] rounded-lg text-zinc-300 text-xs flex items-center gap-1.5">
                 {g}
                 {isEditing && (
                   <button onClick={() => onRemoveGenre(g)} className="text-zinc-500 hover:text-red-400">
@@ -213,7 +213,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
         </div>
 
         <div className="flex flex-col gap-3">
-          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs flex items-center gap-2" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}><Layout className="w-3 h-3 xl:w-4 xl:h-4" /> Estructura</span>
+          <span className="text-zinc-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}><Layout className="w-3 h-3 xl:w-4 xl:h-4" /> Estructura</span>
           {isEditing ? (
             <textarea
               value={aiData.totalContent || ''}
@@ -229,7 +229,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
         </div>
 
         <div className="flex flex-col gap-3">
-          <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] xl:text-xs flex items-center gap-2" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}><Globe className="w-3 h-3 xl:w-4 xl:h-4 text-[rgb(var(--card-rgb))]" /> Mis Enlaces & Seguimiento</span>
+          <span className="text-zinc-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}><Globe className="w-3 h-3 xl:w-4 xl:h-4 text-[rgb(var(--card-rgb))]" /> Mis Enlaces & Seguimiento</span>
           <div className="flex flex-col gap-2">
             {tracking.customLinks && tracking.customLinks.map((link) => (
               <div key={link.id} className="flex items-center justify-between group bg-zinc-900/50 p-2 rounded-xl ring-1 ring-white/[0.06]">

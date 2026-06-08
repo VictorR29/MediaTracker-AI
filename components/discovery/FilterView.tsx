@@ -79,7 +79,7 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 md:gap-3 mb-8">
+          <div className="flex flex-wrap gap-2 mb-8">
             {MEDIA_TYPES.map(type => {
               const Icon = type.icon;
               const isSelected = selectedType === type.value;
@@ -87,13 +87,19 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                 <button
                   key={type.value}
                   onClick={() => onSelectType(type.value)}
-className={`flex items-center gap-2 px-4 py-2.5 rounded-lg ring-1 transition-all duration-300 ${isSelected
-  ? `${type.bg} shadow-lg shadow-${type.color.split('-')[1]}-500/10 ring-1 ring-${type.color.split('-')[1]}-500`
-  : 'bg-zinc-800 ring-white/[0.06] hover:ring-white/20 text-zinc-400 hover:bg-zinc-750'
-}`}
+                  className={`flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected
+                    ? 'text-white shadow-lg'
+                    : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
+                  }`}
+                  style={isSelected ? {
+                    backgroundColor: `${type.activeColor}15`,
+                    borderColor: `${type.activeColor}60`,
+                    boxShadow: `0 0 12px ${type.activeColor}20`,
+                    color: type.activeColor,
+                  } : undefined}
                 >
-                  <Icon className={`w-4 h-4 ${isSelected ? type.color : ''}`} />
-                  <span className={`text-sm font-medium ${isSelected ? 'text-white' : ''}`}>{type.label}</span>
+                  <Icon className={`w-3.5 h-3.5`} />
+                  <span className="uppercase tracking-wide">{type.label}</span>
                 </button>
               );
             })}
@@ -213,36 +219,26 @@ className={`flex items-center gap-2 px-4 py-2.5 rounded-lg ring-1 transition-all
               <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-300 ${isMoodOpen ? 'rotate-180' : ''}`} />
             </div>
 
-            {isMoodOpen && (
-              <div className="p-4 animate-fade-in">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {MOOD_OPTIONS.map((mood) => {
-                    const isSelected = selectedMood === mood.label;
-                    return (
-                      <button
-                        key={mood.label}
-                        onClick={() => onToggleMood(isSelected ? null : mood.label)}
-                        className={`flex items-center gap-3 p-3 rounded-xl border backdrop-blur-md transition-all duration-300 text-left group
-                          ${isSelected
-  ? 'ring-1 ring-white/20 bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.1)]'
-    : 'bg-zinc-900/40 ring-1 ring-white/5 hover:ring-white/20 hover:bg-zinc-800/60'
-                          }
-                        `}
-                      >
-                        <span
-                          className="text-2xl filter drop-shadow-md transition-transform group-hover:scale-110"
-                          style={{ textShadow: isSelected ? '0 0 15px rgba(255,255,255,0.3)' : 'none' }}
-                        >
-                          {mood.emoji}
-                        </span>
-                        <span className={`text-sm font-medium leading-tight ${isSelected ? 'text-white' : 'text-zinc-300 group-hover:text-white'}`}>
-                          {mood.label}
-                        </span>
-                        {isSelected && <div className="ml-auto w-2 h-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>}
-                      </button>
-                    );
-                  })}
-                </div>
+      {isMoodOpen && (
+        <div className="p-4 animate-fade-in">
+          <div className="flex flex-wrap gap-2">
+            {MOOD_OPTIONS.map((mood) => {
+              const isSelected = selectedMood === mood.label;
+              return (
+                <button
+                  key={mood.label}
+                  onClick={() => onToggleMood(isSelected ? null : mood.label)}
+                  className={`flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected
+                    ? 'bg-white/10 border-white/30 text-white shadow-[0_0_12px_rgba(255,255,255,0.1)]'
+                    : 'bg-zinc-900/40 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                  }`}
+                >
+                  <span className="text-sm">{mood.emoji}</span>
+                  <span className="truncate max-w-[180px]">{mood.label}</span>
+                </button>
+              );
+            })}
+          </div>
                 {selectedMood && (
                   <button onClick={() => onToggleMood(null)} className="mt-3 text-xs text-zinc-500 hover:text-red-400 underline flex items-center gap-1">
                     <X className="w-3 h-3" /> Quitar filtro de mood

@@ -40,14 +40,14 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
 
   return (
-    <div className="flex flex-col gap-6 xl:gap-10 pt-10 lg:pt-0">
+    <div className="flex flex-col gap-6 xl:gap-10">
       {/* Synopsis */}
-      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.04]" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.15)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.08), 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)` }}>
+      <div className="bg-zinc-900/40 rounded-2xl p-6 xl:p-8 ring-1 ring-white/[0.04]" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.15)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.08), 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)` }}>
         <div className="flex items-center justify-between mb-4 xl:mb-6">
           <h3 className="text-xs xl:text-base font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-3" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}>
             <FileText className="w-4 h-4 xl:w-5 xl:h-5" /> Sinopsis
           </h3>
-          <button onClick={onSmartUpdate} disabled={isUpdatingInfo} className="text-[10px] xl:text-xs text-[rgb(var(--card-rgb))] flex items-center gap-2 font-bold hover:underline">
+          <button onClick={onSmartUpdate} disabled={isUpdatingInfo} className="text-xs text-[rgb(var(--card-rgb))] flex items-center gap-2 font-bold hover:underline">
             <RefreshCw className={`w-3 h-3 xl:w-4 xl:h-4 ${isUpdatingInfo ? 'animate-spin' : ''}`} /> ACTUALIZAR CON IA
           </button>
         </div>
@@ -65,13 +65,13 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
       </div>
 
       {/* Progress Tracking */}
-      <div className="bg-zinc-900/50 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.04] relative overflow-hidden" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.20)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.10), 0 25px 50px -12px rgb(0 0 0 / 0.25)` }}>
+      <div className="bg-zinc-900/50 rounded-2xl p-6 xl:p-8 ring-1 ring-white/[0.04] relative overflow-hidden" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.20)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.10), 0 25px 50px -12px rgb(0 0 0 / 0.25)` }}>
         <div className="absolute top-0 left-0 w-2 h-full bg-[rgb(var(--card-rgb))]" style={{ boxShadow: `0 0 12px rgba(${dynamicRgb}, 0.40)` }}></div>
         <div className="flex items-center justify-between mb-6 xl:mb-8">
           <h3 className="text-xs xl:text-base font-bold text-white uppercase tracking-widest flex items-center gap-3" style={{ textShadow: `0 0 15px rgba(${dynamicRgb}, 0.20)` }}>
             <CheckCircle2 className="w-4 h-4 xl:w-5 xl:h-5 text-[rgb(var(--card-rgb))]" /> Mi Progreso
           </h3>
-          <div className="bg-[rgb(var(--card-rgb)/0.1)] text-[rgb(var(--card-rgb))] text-[10px] xl:text-xs font-bold px-3 py-1 rounded-full border border-[rgb(var(--card-rgb)/0.2)]">
+          <div className="bg-[rgb(var(--card-rgb)/0.1)] text-[rgb(var(--card-rgb))] text-xs font-bold px-3 py-1 rounded-full border border-[rgb(var(--card-rgb)/0.2)]">
             ¡Victoria, {username || 'Vikthor'}!
           </div>
         </div>
@@ -79,7 +79,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
         <div className="space-y-6 xl:space-y-8">
           {/* Status Select */}
           <div>
-            <span className="block text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Estado de la Obra</span>
+            <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Estado de la Obra</span>
             <select
               value={tracking.status}
               onChange={(e) => onInputChange('status', e.target.value)}
@@ -109,7 +109,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
                   className="bg-zinc-900 ring-1 ring-white/[0.06] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[rgb(var(--card-rgb))]"
                 />
               </div>
-              <p className="text-[10px] text-[rgb(var(--card-rgb)/0.7)] mt-2 pl-1">
+              <p className="text-xs text-[rgb(var(--card-rgb)/0.7)] mt-2 pl-1">
                 Define una fecha para ver una cuenta regresiva en tu biblioteca.
               </p>
             </div>
@@ -120,8 +120,8 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
             <div className="space-y-4 xl:space-y-6">
               <div className="grid grid-cols-2 gap-4 xl:gap-6">
                 <div className="flex-1">
-                  <span className="block text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">
-                    {isReadingContent ? 'Volumen Actual' : 'Temporada Actual'}
+<span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">
+                  {isReadingContent ? 'Volumen Actual' : 'Temporada Actual'}
                   </span>
                   <div className="relative">
                     <button
@@ -149,7 +149,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
                   </div>
                 </div>
                 <div className="flex-1">
-                  <span className="block text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Total {isReadingContent ? 'Vols' : 'Temps'}</span>
+                  <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Total {isReadingContent ? 'Vols' : 'Temps'}</span>
                   <input
                     type="number"
                     value={tracking.totalSeasons}
@@ -161,7 +161,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
 
               <div className="grid grid-cols-2 gap-4 xl:gap-6">
                 <div>
-                  <span className="block text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Capítulos Vistos</span>
+                  <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Capítulos Vistos</span>
                   <div className="relative">
                     <button
                       onClick={() => onInputChange('watchedEpisodes', Math.max(0, tracking.watchedEpisodes - 1))}
@@ -188,7 +188,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
                   </div>
                 </div>
                 <div>
-                  <span className="block text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Total Capítulos</span>
+                  <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">Total Capítulos</span>
                   <input
                     type="number"
                     value={tracking.totalEpisodesInSeason}
@@ -199,11 +199,11 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
               </div>
 
               <div>
-                <div className="flex justify-between text-[10px] xl:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">
+                <div className="flex justify-between text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 xl:mb-3">
                   <span>Progreso T.{tracking.currentSeason}</span>
                   <span>{progressPercent.toFixed(0)}%</span>
                 </div>
-                <div className="h-2.5 bg-zinc-800 rounded-full overflow-hidden shadow-inner">
+                <div className="h-3 bg-zinc-800 rounded-full overflow-hidden shadow-inner">
                   <div
                     className="h-full transition-all duration-700"
                     style={{
@@ -242,7 +242,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
       </div>
 
       {/* Personajes Destacados */}
-      <div className="bg-zinc-900/40 rounded-[2.5rem] p-6 xl:p-8 ring-1 ring-white/[0.04]" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.15)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.08)` }}>
+      <div className="bg-zinc-900/40 rounded-2xl p-6 xl:p-8 ring-1 ring-white/[0.04]" style={{ borderTop: `1px solid rgba(${dynamicRgb}, 0.15)`, boxShadow: `inset 0 1px 0 rgba(${dynamicRgb}, 0.08)` }}>
         <h3 className="text-xs xl:text-base font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-3 mb-4 xl:mb-6" style={{ textShadow: `0 0 12px rgba(${dynamicRgb}, 0.10)` }}>
           <User className="w-4 h-4 xl:w-5 xl:h-5" /> Personajes Destacados
         </h3>
@@ -309,7 +309,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
             <Plus className="w-5 h-5 xl:w-6 xl:h-6" />
           </button>
         </div>
-        <p className="text-[10px] text-zinc-500 mt-2 italic pl-2">
+        <p className="text-xs text-zinc-500 mt-2 italic pl-2">
 Arrastra los nombres para cambiar su posición. Los 5 primeros aparecerán destacados.
         </p>
       </div>

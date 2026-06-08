@@ -197,7 +197,7 @@ export const InfoSheet: React.FC<InfoSheetProps> = ({ card, selectedMood, isOpen
 
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 pr-4">
-          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400 mb-1 block">
+          <span className="text-xs font-bold uppercase tracking-[0.1em] text-zinc-400 mb-1 block">
             Recomendación IA
           </span>
           <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
