@@ -195,7 +195,7 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
               <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
                 <GenerativeCard title={currentCard.title} type={currentCard.mediaType} />
                 <div className="absolute bottom-6 left-0 right-0 text-center transition-opacity duration-300 pointer-events-none" style={{ opacity: isInfoOpen ? 0 : 1 }}>
-                  <p className="text-[10px] font-extrabold text-white/60 flex items-center justify-center gap-2 bg-[#09090B]/30 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit uppercase" style={{ letterSpacing: '0.1em' }}>
+                  <p className="text-xs font-extrabold text-white/60 flex items-center justify-center gap-2 bg-[#09090B]/30 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit uppercase" style={{ letterSpacing: '0.1em' }}>
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
                     Toca para detalles
                   </p>

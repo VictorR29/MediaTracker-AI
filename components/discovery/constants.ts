@@ -12,11 +12,11 @@ export const MOOD_OPTIONS = [
 ];
 
 export const MEDIA_TYPES = [
-  { label: 'Anime', value: 'Anime', icon: Tv, color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/50' },
-  { label: 'Series', value: 'Serie', icon: Clapperboard, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/50' },
-  { label: 'Películas', value: 'Pelicula', icon: Film, color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/50' },
-  { label: 'Libros', value: 'Libro', icon: BookOpen, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/50' },
-  { label: 'Manhwa/Manga', value: 'Manhwa', icon: BookOpen, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/50' },
+  { label: 'Anime', value: 'Anime', icon: Tv, color: 'text-violet-400', activeColor: '#8b5cf6' },
+  { label: 'Series', value: 'Serie', icon: Clapperboard, color: 'text-purple-400', activeColor: '#c084fc' },
+  { label: 'Películas', value: 'Pelicula', icon: Film, color: 'text-pink-400', activeColor: '#f472b6' },
+  { label: 'Libros', value: 'Libro', icon: BookOpen, color: 'text-emerald-400', activeColor: '#34d399' },
+  { label: 'Manhwa/Manga', value: 'Manhwa', icon: BookOpen, color: 'text-orange-400', activeColor: '#fb923c' },
 ];
 
 export const CARD_GRADIENTS = [
