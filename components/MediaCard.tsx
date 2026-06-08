@@ -253,7 +253,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         }} 
       />
       
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] xl:grid-cols-[320px_1fr_320px] gap-0 lg:gap-8 xl:gap-10 p-6 md:p-8 xl:p-10">
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] xl:grid-cols-[320px_1fr_320px] gap-8 lg:gap-8 xl:gap-10 p-4 sm:p-6 md:p-8">
         <IdentityColumn
           aiData={aiData}
           trackingData={tracking}
