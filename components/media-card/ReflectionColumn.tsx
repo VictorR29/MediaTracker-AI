@@ -78,8 +78,8 @@ const ReflectionColumnInner: React.FC<ReflectionColumnProps> = ({
 
     <div>
       <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 xl:mb-4">Resumen Emocional</span>
-        {/* Emotional Tags — flex-wrap pills */}
-        <div className="flex flex-wrap gap-2">
+        {/* Emotional Tags — flex-wrap pills mobile, grid desktop */}
+        <div className="flex flex-wrap gap-2 lg:grid lg:grid-cols-3 lg:gap-2.5">
           {EMOTIONAL_TAGS_OPTIONS.map(tag => {
             const isActive = (tracking.emotionalTags || []).includes(tag.label);
             return (
@@ -92,7 +92,7 @@ const ReflectionColumnInner: React.FC<ReflectionColumnProps> = ({
                     : [...currentTags, tag.label];
                   onInputChange('emotionalTags', newTags);
                 }}
-                className={`flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-full text-xs font-bold border transition-all ${isActive ? 'bg-[rgb(var(--card-rgb)/0.1)] border-[rgb(var(--card-rgb)/0.4)] text-[rgb(var(--card-rgb))] shadow-inner' : 'bg-zinc-950/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800'}`}
+                className={`flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-full lg:rounded-2xl lg:gap-3 lg:px-4 lg:py-2.5 text-xs font-bold lg:font-black lg:uppercase lg:tracking-tight lg:text-left border transition-all ${isActive ? 'bg-[rgb(var(--card-rgb)/0.1)] border-[rgb(var(--card-rgb)/0.4)] text-[rgb(var(--card-rgb))] shadow-inner' : 'bg-zinc-950/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800'}`}
               >
                 <span className="text-sm">{tag.emoji}</span>
                 <span>{tag.shortLabel}</span>

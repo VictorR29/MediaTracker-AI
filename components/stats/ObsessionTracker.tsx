@@ -147,15 +147,11 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
             <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 md:hidden scrollbar-none">
               {currentTopList.map((item, index) => {
                 const style = getRankStyle(index, topAccent?.hex ?? '#eab308');
-                const isTop1 = index === 0;
 
                 return (
                   <div
                     key={item.id}
-                    className={`relative rounded-2xl ring-1 overflow-hidden shadow-lg transition-all flex flex-col justify-end snap-center group shrink-0 min-w-[260px] w-[75vw] max-w-[320px] h-56 ${
-                      isTop1 ? 'ring-2 ring-yellow-500' : 'ring-white/[0.06]'
-                    }`}
-                    style={isTop1 ? { boxShadow: `0 0 24px rgba(${topAccent?.rgb ?? '234,179,8'}, 0.3)` } : undefined}
+                    className="relative rounded-2xl ring-1 ring-white/[0.06] overflow-hidden shadow-lg transition-all flex flex-col justify-end snap-center group shrink-0 min-w-[260px] w-[75vw] max-w-[320px] h-56"
                   >
                     {/* Cover — full bleed background */}
                     {item.coverImage ? (
@@ -188,10 +184,20 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
                       </span>
                     </div>
 
+                    {/* Medal badge */}
+                    <div className="absolute top-3 left-3 z-10">
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center ring-1 backdrop-blur-md text-sm ${style.bg} ${style.border} ${style.text}`}
+                        style={{ boxShadow: `0 0 10px ${style.hex}50` }}
+                      >
+                        {style.label}
+                      </div>
+                    </div>
+
                     {/* Content */}
                     <div className="relative z-10 w-full p-4">
                       <h4
-                        className={`font-bold text-white leading-snug line-clamp-2 ${isTop1 ? 'text-base' : 'text-sm'}`}
+                        className="font-bold text-white leading-snug line-clamp-2 text-sm"
                         title={item.title}
                       >
                         {item.title}
@@ -204,7 +210,7 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
                           <Clock className={`w-3 h-3 ${style.text}`} />
                           <span
                             className="font-mono font-bold text-white text-xs tracking-[0.02em]"
-                            style={isTop1 ? { textShadow: `0 0 8px ${style.hex}80` } : undefined}
+                            style={index === 0 ? { textShadow: `0 0 8px ${style.hex}80` } : undefined}
                           >
                             {(item.time / 60).toFixed(1)}h
                           </span>
@@ -259,6 +265,16 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
                       >
                         {index + 1}
                       </span>
+                    </div>
+
+                    {/* Medal badge */}
+                    <div className="absolute top-3 left-3 z-10">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ring-1 backdrop-blur-md text-base ${style.bg} ${style.border} ${style.text}`}
+                        style={{ boxShadow: `0 0 12px ${style.hex}60` }}
+                      >
+                        {style.label}
+                      </div>
                     </div>
 
                     {/* Content */}
