@@ -258,43 +258,61 @@ export const getRecommendations = async (
   excludedTitles: string[],
   targetType: string,
   apiKey: string,
-  targetMood?: string
+  targetMood?: string,
+  topEmotions: string[] = [],
+  isLoadMore = false
 ): Promise<RecommendationResult[]> => {
   const ai = new GoogleGenAI({ apiKey });
   const modelId = "gemini-2.5-flash";
 
   const moodInstruction = targetMood
-    ? `
-    USER MOOD REQUEST: "${targetMood}"
-    INSTRUCTION: Utiliza las obras seleccionadas (Favorite Titles) como base de estilo (si se han seleccionado, sino hazlo en base al perfil general) y el Mood como la atmósfera emocional predominante. Si son contradictorios, prioriza el Mood pero mantén elementos estéticos de las obras.
-    `
-    : '';
+? `
+USER MOOD REQUEST: "${targetMood}"
+INSTRUCTION: Utiliza las obras seleccionadas (Favorite Titles) como base de estilo (si se han seleccionado, sino hazlo en base al perfil general) y el Mood como la atmósfera emocional predominante. Si son contradictorios, prioriza el Mood pero mantén elementos estéticos de las obras.
+`
+: '';
+
+  const emotionInstruction = topEmotions.length > 0
+? `- Emotional Profile: The user consistently tags their favorites with: ${topEmotions.join(', ')}. Use these as STRONG signals of what resonates emotionally. Prioritize recommendations that match these emotional qualities.`
+: '';
+
+  const diversityInstruction = isLoadMore
+? `
+DIVERSIFICATION (2nd+ batch): The user has already seen the first batch of recommendations. You MUST diversify from the previous results:
+- Try a DIFFERENT sub-genre, era, demographic, or narrative style than what you would typically suggest first.
+- If the first batch leaned action-heavy, try something character-driven. If it leaned dark, try something with hope.
+- Still respect the user's core profile, but explore adjacent tastes.
+`
+: '';
 
   const prompt = `
-    Act as an expert recommender system for Entertainment Media.
-    
-    User Profile:
-    - Favorite Titles: ${likedTitles.join(', ')}
-    - Top Genres: ${topGenres.join(', ')}
-    ${moodInstruction}
-    
-    Task: Recommend 6 UNIQUE titles of type "${targetType}" that the user might like.
-    
-    Constraints:
-    - DO NOT recommend any of these already known titles: ${excludedTitles.join(', ')}
-    - The titles must be real and popular enough to be found.
-    - Diversity: Try to include 1 hidden gem and 5 hits.
-    
-    Return a JSON Array of objects with this structure:
-    [
-      {
-        "title": "Title Name",
-        "mediaType": "${targetType}",
-        "synopsis": "A compelling, descriptive synopsis in Spanish (approx 40-60 words). It should clearly explain the premise and hook of the story, avoiding vague descriptions.",
-        "reason": "A specific, personalized reason in Spanish (approx 25-40 words). Explain WHY this fits the user based on the specific themes, tone, or complexity of their 'Favorite Titles' ${targetMood ? 'and specifically their requested Mood' : ''}. Do not use generic phrases like 'Because you like anime'."
-      }
-    ]
-  `;
+Act as an expert recommender system for Entertainment Media.
+
+User Profile:
+- Favorite Titles: ${likedTitles.join(', ')}
+- Top Genres: ${topGenres.join(', ')}
+${emotionInstruction}
+${moodInstruction}
+
+Task: Recommend 6 UNIQUE titles of type "${targetType}" that the user might like.
+
+Constraints:
+- DO NOT recommend any of these already known titles: ${excludedTitles.join(', ')}
+- VERIFIED EXISTENCE: Every title MUST be real and verifiable on MyAnimeList, IMDB, Letterboxd, or Goodreads. If you are unsure whether a title exists, DO NOT include it. Prefer well-known or critically acclaimed titles over obscure ones you might misremember. Using the official/primary title (in original language or English) significantly reduces hallucination — always prefer the most recognized title for that medium.
+- Diversity: Try to include 1 hidden gem (lesser-known but high quality) and 5 hits.
+- NO SEQUELS of excluded titles unless the sequel is a standalone story.
+${diversityInstruction}
+
+Return a JSON Array of objects with this structure:
+[
+  {
+    "title": "Official Title Name (use the most recognized title for this medium)",
+    "mediaType": "${targetType}",
+    "synopsis": "A compelling, descriptive synopsis in Spanish (approx 40-60 words). It should clearly explain the premise and hook of the story, avoiding vague descriptions.",
+    "reason": "A specific, personalized reason in Spanish (approx 25-40 words). Explain WHY this fits the user based on the specific themes, tone, or complexity of their 'Favorite Titles' ${targetMood ? 'and specifically their requested Mood' : ''}${topEmotions.length > 0 ? " and their emotional preferences" : ''}. Do not use generic phrases like 'Because you like anime'."
+  }
+]
+`;
 
   try {
     const response = await ai.models.generateContent({

@@ -4,6 +4,7 @@ import { getRecommendations, RecommendationResult } from '../services/geminiServ
 import { computeTasteProfile } from '../services/tasteProfile';
 import { FilterView } from './discovery/FilterView';
 import { ImmersiveView } from './discovery/ImmersiveView';
+import { MOOD_OPTIONS } from './discovery/constants';
 
 interface DiscoveryViewProps {
   library: MediaItem[];
@@ -44,7 +45,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   }, [viewMode, onToggleImmersive]);
 
   // --- LOGIC: Taste Profile Computation ---
-  const { topGenres, likedTitles, excludedTitles } = useMemo(
+  const { topGenres, likedTitles, excludedTitles, topEmotions } = useMemo(
     () => computeTasteProfile(library, selectedType, selectedSeeds),
     [library, selectedType, selectedSeeds]
   );
@@ -68,7 +69,14 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
 
     try {
       const allExcluded = [...excludedTitles, ...sessionExcludedTitles];
-      const results = await getRecommendations(likedTitles, topGenres, allExcluded, selectedType, apiKey, selectedMood || undefined);
+      // Resolve mood: send keywords (precise for Gemini) instead of raw Spanish label
+      const moodKeywords = selectedMood
+        ? MOOD_OPTIONS.find(m => m.label === selectedMood)?.keywords || selectedMood
+        : undefined;
+      const results = await getRecommendations(
+        likedTitles, topGenres, allExcluded, selectedType, apiKey,
+        moodKeywords, topEmotions, isLoadMore
+      );
 
       if (results.length > 0) {
         setRecommendations(results);

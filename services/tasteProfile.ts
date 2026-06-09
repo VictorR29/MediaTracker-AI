@@ -13,19 +13,27 @@ export const computeTasteProfile = (
   library: MediaItem[],
   selectedType: string,
   selectedSeeds: string[]
-): { topGenres: string[]; likedTitles: string[]; excludedTitles: string[] } => {
+): { topGenres: string[]; likedTitles: string[]; excludedTitles: string[]; topEmotions: string[] } => {
   const genreCounts: Record<string, number> = {};
+  const emotionCounts: Record<string, number> = {};
   const liked: string[] = [];
   const excluded: string[] = [];
 
   library.forEach(item => excluded.push(item.aiData.title));
 
+  const collectProfile = (item: MediaItem) => {
+    liked.push(item.aiData.title);
+    item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
+    // Weight emotions by rating score — God Tier emotions count more
+    const weight = Math.max(1, (RATING_TO_SCORE[item.trackingData.rating] || 5) / 5);
+    (item.trackingData.emotionalTags || []).forEach(tag => {
+      emotionCounts[tag] = (emotionCounts[tag] || 0) + weight;
+    });
+  };
+
   if (selectedSeeds.length > 0) {
     const seedItems = library.filter(item => selectedSeeds.includes(item.id));
-    seedItems.forEach(item => {
-      liked.push(item.aiData.title);
-      item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
-    });
+    seedItems.forEach(collectProfile);
   } else {
     const targetTypes = selectedType === 'Manhwa' ? ['Manhwa', 'Manga', 'Comic'] : [selectedType];
     library.forEach(item => {
@@ -33,8 +41,7 @@ export const computeTasteProfile = (
         const rating = item.trackingData.rating;
         const score = RATING_TO_SCORE[rating] || 0;
         if ((score >= 7 || (score === 0 && item.trackingData.status === 'Completado'))) {
-          liked.push(item.aiData.title);
-          item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
+          collectProfile(item);
         }
       }
     });
@@ -45,5 +52,10 @@ export const computeTasteProfile = (
     .map(([g]) => g)
     .slice(0, 5);
 
-  return { topGenres: sortedGenres, likedTitles: liked, excludedTitles: excluded };
+  const topEmotions = Object.entries(emotionCounts)
+    .sort(([, a], [, b]) => b - a)
+    .map(([tag]) => tag)
+    .slice(0, 3);
+
+  return { topGenres: sortedGenres, likedTitles: liked, excludedTitles: excluded, topEmotions };
 };

@@ -1,14 +1,14 @@
 import { Tv, Clapperboard, Film, BookOpen } from 'lucide-react';
 
 export const MOOD_OPTIONS = [
-  { emoji: "🤯", label: "Quiero algo que me vuele la cabeza", shortLabel: "Volar la cabeza" },
-  { emoji: "🍿", label: "Algo ligero para ver sin pensar", shortLabel: "Ligero y sin pensar" },
-  { emoji: "❤️", label: "Busco una historia que me rompa el corazón", shortLabel: "Romper el corazón" },
-  { emoji: "🔥", label: "Necesito adrenalina pura y emoción", shortLabel: "Adrenalina pura" },
-  { emoji: "🌌", label: "Algo que me transporte a otro mundo", shortLabel: "Otro mundo" },
-  { emoji: "🧘", label: "Quiero aprender o reflexionar sobre la vida", shortLabel: "Reflexionar" },
-  { emoji: "👻", label: "Quiero sentir tensión y un poco de miedo", shortLabel: "Tensión y miedo" },
-  { emoji: "🚬", label: "Algo crudo, oscuro y realista", shortLabel: "Crudo y oscuro" }
+  { emoji: "🤯", label: "Quiero algo que me vuele la cabeza", shortLabel: "Volar la cabeza", keywords: "mind-blowing, plot twist, unpredictable, psychological, non-linear narrative" },
+  { emoji: "🍿", label: "Algo ligero para ver sin pensar", shortLabel: "Ligero y sin pensar", keywords: "lighthearted, feel-good, easy watching, episodic, comfort watch, comedy" },
+  { emoji: "❤️", label: "Busco una historia que me rompa el corazón", shortLabel: "Romper el corazón", keywords: "emotional, heartbreaking, bittersweet, tragic, romance, drama, tearjerker" },
+  { emoji: "🔥", label: "Necesito adrenalina pura y emoción", shortLabel: "Adrenalina pura", keywords: "action-packed, thrilling, fast-paced, intense, high-stakes, adrenaline" },
+  { emoji: "🌌", label: "Algo que me transporte a otro mundo", shortLabel: "Otro mundo", keywords: "immersive worldbuilding, fantasy, sci-fi, escapism, atmospheric, imaginative" },
+  { emoji: "🧘", label: "Quiero aprender o reflexionar sobre la vida", shortLabel: "Reflexionar", keywords: "philosophical, thought-provoking, introspective, character study, slice of life, meaningful" },
+  { emoji: "👻", label: "Quiero sentir tensión y un poco de miedo", shortLabel: "Tensión y miedo", keywords: "suspenseful, horror, tension, psychological thriller, eerie, dark atmosphere" },
+  { emoji: "🚬", label: "Algo crudo, oscuro y realista", shortLabel: "Crudo y oscuro", keywords: "gritty, realistic, dark, noir, mature themes, morally complex, raw" }
 ];
 
 export const MEDIA_TYPES = [
