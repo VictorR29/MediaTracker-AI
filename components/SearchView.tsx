@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { PlusCircle, PenTool, Tv, Clapperboard, Film, BookOpen, Book, FileText, X, SearchX, RefreshCw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useLibraryStore } from '../stores/useLibraryStore';
@@ -19,6 +19,7 @@ const VARIANT_SUFFIXES = ['manhwa', 'webtoon', 'manga', String(new Date().getFul
 
 export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchingChange }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
   const userProfile = useAuthStore(s => s.userProfile);
   const addItem = useLibraryStore(s => s.addItem);
@@ -28,6 +29,30 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
   const [noResultBaseQuery, setNoResultBaseQuery] = useState<string | null>(null);
   const [variantIndex, setVariantIndex] = useState(0);
+
+  // Consume navigation state from recommendation flow
+  useEffect(() => {
+    const state = location.state as { searchQuery?: string; searchType?: string; searchData?: any } | null;
+    if (state?.searchData) {
+      const tempItem: MediaItem = {
+        id: 'preview',
+        aiData: state.searchData,
+        trackingData: {
+          status: 'Sin empezar', currentSeason: 1, totalSeasons: 1,
+          watchedEpisodes: 0, totalEpisodesInSeason: 0,
+          emotionalTags: [], favoriteCharacters: [], rating: '', comment: ''
+        },
+        createdAt: Date.now()
+      };
+      setPreviewItem(tempItem);
+      // Clear state so it doesn't re-trigger on back/forward
+      navigate('/add', { replace: true, state: {} });
+    } else if (state?.searchQuery && !state.searchData) {
+      // searchMediaInfo failed in App.tsx — show no-result state
+      setNoResultBaseQuery(state.searchQuery);
+      navigate('/add', { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
   const updateSearching = (v: boolean) => {
     setIsSearching(v);

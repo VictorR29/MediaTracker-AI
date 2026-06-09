@@ -144,30 +144,22 @@ export const EndCard: React.FC<EndCardProps> = ({ onLoadMore, onGoBack }) => {
           </p>
         </div>
         <div className="flex flex-col gap-3 w-full max-w-xs">
-      <button
-        onClick={onLoadMore}
-        className="w-full py-4 bg-white hover:bg-zinc-200 text-zinc-900 font-bold rounded-full transition-all shadow-lg flex items-center justify-center gap-2 active:scale-[0.97]"
-        style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
-      >
-        <Sparkles className="w-5 h-5" />
-        Generar otras 6
-      </button>
-      <button
-        onClick={onGoBack}
-        className="w-full py-4 bg-[#1C1C1F] hover:bg-white/[0.08] text-zinc-300 font-bold rounded-full transition-all ring-1 ring-white/[0.06] active:scale-[0.97]"
-        style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
-      >
+        <button
+          onClick={onLoadMore}
+          className="w-full py-4 bg-white hover:bg-zinc-200 text-zinc-900 font-bold rounded-full transition-all shadow-lg flex items-center justify-center gap-2 active:scale-[0.97]"
+          style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
+        >
           <Sparkles className="w-5 h-5" />
           Generar otras 6
         </button>
-      <button
-        onClick={onGoBack}
-        className="w-full py-4 bg-[#1C1C1F] hover:bg-white/[0.08] text-zinc-300 font-bold rounded-full transition-all ring-1 ring-white/[0.06] active:scale-[0.97]"
-        style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
-      >
-        <ArrowLeft className="w-5 h-5" />
-        Volver a Filtros
-      </button>
+        <button
+          onClick={onGoBack}
+          className="w-full py-4 bg-[#1C1C1F] hover:bg-white/[0.08] text-zinc-300 font-bold rounded-full transition-all ring-1 ring-white/[0.06] flex items-center justify-center gap-2 active:scale-[0.97]"
+          style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Volver a Filtros
+        </button>
         </div>
       </div>
     </div>
@@ -238,7 +230,7 @@ export const InfoSheet: React.FC<InfoSheetProps> = ({ card, selectedMood, isOpen
           className="flex-1 bg-white text-zinc-900 font-bold py-3.5 rounded-full hover:bg-zinc-200 transition-all duration-150 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97] flex items-center justify-center gap-2 shadow-lg"
         >
           <Search className="w-5 h-5" />
-          Buscar y añadir
+          Buscar obra
         </button>
         <button
           onClick={onNext}
