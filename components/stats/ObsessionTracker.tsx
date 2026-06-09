@@ -143,7 +143,7 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
         {/* TOP 3 LIST */}
         {currentTopList.length > 0 ? (
           <>
-            {/* Mobile: horizontal scroll carousel — poster + info side by side */}
+            {/* Mobile: horizontal scroll carousel — full-bleed cover, taller cards */}
             <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 md:hidden scrollbar-none">
               {currentTopList.map((item, index) => {
                 const style = getRankStyle(index, topAccent?.hex ?? '#eab308');
@@ -152,68 +152,64 @@ export const ObsessionTracker: React.FC<ObsessionTrackerProps> = ({ stats }) => 
                 return (
                   <div
                     key={item.id}
-                    className={`relative rounded-2xl ring-1 overflow-hidden shadow-lg transition-all flex snap-center group shrink-0 min-w-[280px] w-[85vw] max-w-[360px] h-44 ${
+                    className={`relative rounded-2xl ring-1 overflow-hidden shadow-lg transition-all flex flex-col justify-end snap-center group shrink-0 min-w-[260px] w-[75vw] max-w-[320px] h-56 ${
                       isTop1 ? 'ring-2 ring-yellow-500' : 'ring-white/[0.06]'
                     }`}
                     style={isTop1 ? { boxShadow: `0 0 24px rgba(${topAccent?.rgb ?? '234,179,8'}, 0.3)` } : undefined}
                   >
-                    {/* Poster — left side */}
-                    <div className="relative w-28 h-full flex-shrink-0 z-0 overflow-hidden">
-                      {item.coverImage ? (
-                        <>
-                          <img
-                            src={item.coverImage}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-70"
-                            alt=""
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-zinc-950" />
-                        </>
-                      ) : (
-                        <div
-                          className="w-full h-full"
-                          style={{
-                            background: `radial-gradient(ellipse at 50% 80%, rgba(${topAccent?.rgb ?? '161,161,170'}, 0.25) 0%, #18181B 70%)`,
-                          }}
+                    {/* Cover — full bleed background */}
+                    {item.coverImage ? (
+                      <div className="absolute inset-0 z-0">
+                        <img
+                          src={item.coverImage}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-60 group-hover:opacity-45"
+                          alt=""
                         />
-                      )}
-
-                      {/* Rank watermark on poster */}
-                      <div className="absolute top-2 left-2 z-10 pointer-events-none">
-                        <span
-                          className="text-4xl font-black leading-none"
-                          style={{
-                            color: `rgba(${topAccent?.rgb ?? '234,179,8'}, 0.18)`,
-                          }}
-                        >
-                          {index + 1}
-                        </span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/60 to-zinc-900/20" />
                       </div>
+                    ) : (
+                      <div
+                        className="absolute inset-0 z-0"
+                        style={{
+                          background: `radial-gradient(ellipse at 50% 90%, rgba(${topAccent?.rgb ?? '161,161,170'}, 0.20) 0%, #09090B 70%)`,
+                        }}
+                      />
+                    )}
+
+                    {/* Rank watermark — large, semi-transparent */}
+                    <div className="absolute top-3 right-4 z-10 pointer-events-none">
+                      <span
+                        className="text-6xl font-black leading-none"
+                        style={{
+                          color: `rgba(${topAccent?.rgb ?? '234,179,8'}, 0.12)`,
+                        }}
+                      >
+                        {index + 1}
+                      </span>
                     </div>
 
-                    {/* Info — right side */}
-                    <div className="relative z-10 flex-1 flex flex-col justify-end p-3 bg-[#09090B]">
+                    {/* Content */}
+                    <div className="relative z-10 w-full p-4">
                       <h4
-                        className={`font-bold text-white leading-snug line-clamp-2 ${isTop1 ? 'text-sm' : 'text-xs'}`}
+                        className={`font-bold text-white leading-snug line-clamp-2 ${isTop1 ? 'text-base' : 'text-sm'}`}
                         title={item.title}
                       >
                         {item.title}
                       </h4>
-
-                      {/* Time badge */}
-                      <div className="flex items-center gap-1.5 mt-2 self-start px-2.5 py-1 rounded-full bg-white/[0.06] ring-1 ring-white/[0.06]">
-                        <Clock className={`w-3 h-3 ${style.text}`} />
-                        <span
-                          className="font-mono font-bold text-white text-xs tracking-[0.02em]"
-                          style={isTop1 ? { textShadow: `0 0 8px ${style.hex}80` } : undefined}
-                        >
-                          {(item.time / 60).toFixed(1)}h
+                      <div className="flex items-center justify-between text-xs text-zinc-300 mt-2">
+                        <span className="text-zinc-400">
+                          {item.unitCount} {unitLabel}
                         </span>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 ring-1 ring-white/[0.06] backdrop-blur-sm">
+                          <Clock className={`w-3 h-3 ${style.text}`} />
+                          <span
+                            className="font-mono font-bold text-white text-xs tracking-[0.02em]"
+                            style={isTop1 ? { textShadow: `0 0 8px ${style.hex}80` } : undefined}
+                          >
+                            {(item.time / 60).toFixed(1)}h
+                          </span>
+                        </div>
                       </div>
-
-                      {/* Unit count */}
-                      <span className="text-xs text-zinc-500 mt-1.5">
-                        {item.unitCount} {unitLabel}
-                      </span>
                     </div>
                   </div>
                 );

@@ -95,7 +95,7 @@ export const EMOTIONAL_TAGS_OPTIONS: EmotionalTagOption[] = [
 { label: "Me decepcionó el final", shortLabel: "Mal final", emoji: "📉", sentiment: 'negative' },
 { label: "Trama sin rumbo / Lenta", shortLabel: "Lenta/Sin rumbo", emoji: "🐌", sentiment: 'negative' },
 { label: "Final decepcionante", shortLabel: "Decepcionante", emoji: "👎", sentiment: 'negative' },
-{ label: "Personajes planos/irritantes", shortLabel: "Planos/Irritantes", emoji: "🙄", sentiment: 'negative' },
+{ label: "Personajes planos/irritantes", shortLabel: "Pjs planos", emoji: "🙄", sentiment: 'negative' },
 { label: "Contenido de relleno excesivo", shortLabel: "Mucho relleno", emoji: "🧀", sentiment: 'negative' },
 { label: "Inconsistencias en la historia", shortLabel: "Inconsistencias", emoji: "🤨", sentiment: 'negative' },
 { label: "Me costó terminarlo", shortLabel: "Costó terminarlo", emoji: "😮‍💨", sentiment: 'negative' }
