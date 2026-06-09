@@ -78,28 +78,28 @@ const ReflectionColumnInner: React.FC<ReflectionColumnProps> = ({
 
     <div>
       <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 xl:mb-4">Resumen Emocional</span>
-          {/* Emotional Tags Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2 xl:gap-2.5">
-        {EMOTIONAL_TAGS_OPTIONS.map(tag => {
-          const isActive = (tracking.emotionalTags || []).includes(tag.label);
-          return (
-            <button
-              key={tag.label}
-              onClick={() => {
-                const currentTags = tracking.emotionalTags || [];
-                const newTags = isActive
-                  ? currentTags.filter(t => t !== tag.label)
-                  : [...currentTags, tag.label];
-                onInputChange('emotionalTags', newTags);
-              }}
-              className={`flex items-center gap-2 xl:gap-3 min-h-[44px] px-3 py-2.5 rounded-2xl text-xs font-black border transition-all text-left uppercase tracking-tight ${isActive ? 'bg-[rgb(var(--card-rgb)/0.1)] border-[rgb(var(--card-rgb)/0.4)] text-[rgb(var(--card-rgb))] shadow-inner' : 'bg-zinc-950/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800'}`}
-            >
-              <span className="text-sm">{tag.emoji}</span>
-              <span>{tag.shortLabel}</span>
-            </button>
-          );
-        })}
-          </div>
+        {/* Emotional Tags — flex-wrap pills */}
+        <div className="flex flex-wrap gap-2">
+          {EMOTIONAL_TAGS_OPTIONS.map(tag => {
+            const isActive = (tracking.emotionalTags || []).includes(tag.label);
+            return (
+              <button
+                key={tag.label}
+                onClick={() => {
+                  const currentTags = tracking.emotionalTags || [];
+                  const newTags = isActive
+                    ? currentTags.filter(t => t !== tag.label)
+                    : [...currentTags, tag.label];
+                  onInputChange('emotionalTags', newTags);
+                }}
+                className={`flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-full text-xs font-bold border transition-all ${isActive ? 'bg-[rgb(var(--card-rgb)/0.1)] border-[rgb(var(--card-rgb)/0.4)] text-[rgb(var(--card-rgb))] shadow-inner' : 'bg-zinc-950/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800'}`}
+              >
+                <span className="text-sm">{tag.emoji}</span>
+                <span>{tag.shortLabel}</span>
+              </button>
+            );
+          })}
+        </div>
         </div>
       </div>
 
