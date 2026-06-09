@@ -78,8 +78,8 @@ const ReflectionColumnInner: React.FC<ReflectionColumnProps> = ({
 
     <div>
       <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 xl:mb-4">Resumen Emocional</span>
-        {/* Emotional Tags — flex-wrap pills on mobile, grid on md+ */}
-        <div className="flex flex-wrap gap-2 md:grid md:grid-cols-2 md:gap-2.5 xl:grid-cols-3">
+        {/* Emotional Tags — flex-wrap pills on mobile, grid-cols-2 on md+ */}
+        <div className="flex flex-wrap gap-2 md:grid md:grid-cols-2 md:gap-2.5">
           {EMOTIONAL_TAGS_OPTIONS.map(tag => {
             const isActive = (tracking.emotionalTags || []).includes(tag.label);
             return (
