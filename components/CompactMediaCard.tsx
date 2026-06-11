@@ -12,6 +12,11 @@ interface CompactMediaCardProps {
   onIncrement: (item: MediaItem) => void;
   onToggleFavorite?: (item: MediaItem) => void;
   onDelete?: (item: MediaItem) => void;
+  // Stagger entrance animation (mount/filter change)
+  staggerIndex?: number;
+  staggerTrigger?: number;
+  // Only first N cards get mount stagger; rest use IntersectionObserver
+  useMountStagger?: boolean;
 }
 
 const getPlaceholder = (title: string) =>
@@ -44,12 +49,53 @@ const getSharedObserver = () => {
   return sharedObserver;
 };
 
-export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ id, item, onClick, onIncrement, onToggleFavorite, onDelete }) => {
+export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ id, item, onClick, onIncrement, onToggleFavorite, onDelete, staggerIndex = 0, staggerTrigger = 0, useMountStagger = true }) => {
   const { aiData, trackingData } = item;
   const isFavorite = trackingData.is_favorite || false;
 
   const [isVisible, setIsVisible] = useState(false);
+  const [showEntrance, setShowEntrance] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Animate on mount (first time card appears in DOM)
+  React.useEffect(() => {
+    if (!useMountStagger) return;
+    setHasMounted(true);
+    // Two frames: ensure opacity-0 paints before animation starts
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setShowEntrance(true);
+      });
+    });
+  }, [useMountStagger]);
+
+  // Re-animate on filter/view change (parent triggers via staggerTrigger)
+  React.useEffect(() => {
+    if (!useMountStagger || !hasMounted) return;
+    setShowEntrance(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setShowEntrance(true);
+      });
+    });
+  }, [staggerTrigger, useMountStagger, hasMounted]);
+
+  // For cards beyond first N: use IntersectionObserver for entrance
+  React.useEffect(() => {
+    if (useMountStagger) return;
+    const observer = getSharedObserver();
+    if (cardRef.current) {
+      observerCallbacks.set(cardRef.current, () => setShowEntrance(true));
+      observer.observe(cardRef.current);
+    }
+    return () => {
+      if (cardRef.current) {
+        observerCallbacks.delete(cardRef.current);
+        observer.unobserve(cardRef.current);
+      }
+    };
+  }, [useMountStagger]);
 
   // A "real" primaryColor means Gemini assigned a unique color.
   // #c084fc is the generic fallback — treat it as "no color" and extract from image.
@@ -201,11 +247,12 @@ return (
 		onMouseLeave={() => setIsHovered(false)}
 		className={`group relative rounded-2xl ring-1 ring-white/[0.06] p-1 bg-[#111113] w-full cursor-pointer
 		md:hover:scale-[1.02] transition-shadow duration-500 ease-spring
-		${isVisible ? 'animate-stagger-in' : 'opacity-0'}`}
+		${showEntrance ? 'animate-stagger-in' : 'opacity-0'}`}
  style={{
   '--card-rgb': dynamicRgb,
         contentVisibility: 'auto',
         containIntrinsicSize: 'auto 300px',
+        animationDelay: showEntrance ? `${staggerIndex * 80}ms` : undefined,
   boxShadow: isHovered
     ? `0 0 40px rgba(${dynamicRgb}, 0.70), 0 0 80px rgba(${dynamicRgb}, 0.30), 0 0 120px rgba(${dynamicRgb}, 0.10)`
     : `0 0 30px rgba(${dynamicRgb}, 0.50), 0 0 60px rgba(${dynamicRgb}, 0.25), 0 0 100px rgba(${dynamicRgb}, 0.08)`,

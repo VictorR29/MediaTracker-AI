@@ -21,7 +21,7 @@ export default {
         'fade-in': 'fadeIn 500ms cubic-bezier(0.32, 0.72, 0, 1)',
         'fade-in-up': 'fadeInUp 500ms cubic-bezier(0.32, 0.72, 0, 1)',
         'slide-in-right': 'slideInRight 300ms cubic-bezier(0.32, 0.72, 0, 1)',
-        'stagger-in': 'staggerIn 400ms cubic-bezier(0.32, 0.72, 0, 1) both',
+        'stagger-in': 'staggerIn 600ms cubic-bezier(0.32, 0.72, 0, 1) both',
       },
       keyframes: {
         fadeIn: {
@@ -36,10 +36,10 @@ export default {
           '0%': { opacity: '0', transform: 'translateX(100%)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
-        staggerIn: {
-          '0%': { opacity: '0', transform: 'translateY(16px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
+staggerIn: {
+        '0%': { opacity: '0', transform: 'translateY(20px)' },
+        '100%': { opacity: '1', transform: 'translateY(0)' },
+      },
       },
       transitionTimingFunction: {
         spring: 'cubic-bezier(0.32, 0.72, 0, 1)',

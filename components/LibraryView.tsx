@@ -23,6 +23,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onToggleFavorite,
   onRequestDelete,
 }) => {
+  // Stagger entrance trigger — increments on mount or filter/view change
+  const [staggerTrigger, setStaggerTrigger] = React.useState(0);
   const location = useLocation();
   const view = location.pathname === '/wishlist' ? 'upcoming' : 'library';
 
@@ -71,6 +73,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const displayedLibrary = useMemo(() => getDisplayedLibrary(view), [library, filters, view, getDisplayedLibrary]);
   const availableGenres = useMemo(() => getAvailableGenres(), [library, getAvailableGenres]);
 
+  // Trigger stagger re-entrance on filter/view change (mount is handled locally by each card)
+  React.useEffect(() => {
+    setStaggerTrigger(t => t + 1);
+  }, [view, filters.searchQuery, filters.statusFilter, filters.genreFilter, filters.sortBy]);
+
   return (
     <div>
       <ContextualGreeting userProfile={userProfile!} library={library} view={view} />
@@ -90,7 +97,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         />
       ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 stagger-children">
-          {displayedLibrary.map(item => (
+          {displayedLibrary.map((item, index) => (
             <CompactMediaCard
               key={item.id}
               id={`card-${item.id}`}
@@ -99,6 +106,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               onIncrement={onIncrementProgress}
               onToggleFavorite={onToggleFavorite}
               onDelete={onRequestDelete}
+              staggerIndex={index}
+              staggerTrigger={staggerTrigger}
+              // Only first 8 cards get mount stagger; rest use IntersectionObserver
+              useMountStagger={index < 8}
             />
           ))}
 		{displayedLibrary.length === 0 && (
