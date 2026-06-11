@@ -71,6 +71,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
         onUnlock={login}
         username={userProfile.username}
         avatarUrl={userProfile.avatarUrl}
+        accentColor={userProfile.accentColor}
         library={library}
       />
     );

@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Lock, ArrowRight, User, Sparkles, Unlock } from 'lucide-react';
-import { MediaItem, EMOTIONAL_TAGS_OPTIONS } from '../types';
+import { MediaItem, EMOTIONAL_TAGS_OPTIONS, parseAccentToRgb, parseAccentToHex } from '../types';
 
 interface LoginScreenProps {
   onUnlock: (password: string) => Promise<boolean>;
   username?: string;
   avatarUrl?: string;
+  accentColor?: string;
   library?: MediaItem[];
 }
 
@@ -17,10 +18,13 @@ const pickRandom = (arr: string[] | string | undefined): string | null => {
   return arr[Math.floor(Math.random() * arr.length)];
 };
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, avatarUrl, library = [] }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, avatarUrl, accentColor, library = [] }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const accentRgb = parseAccentToRgb(accentColor);
+  const accentHex = parseAccentToHex(accentColor);
 
   useEffect(() => {
     setMounted(true);
@@ -177,8 +181,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
           />
         </div>
       ) : (
-        /* Standard Fallback Background (Gradient) */
-        <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#09090B] via-[#111113] to-[#09090B]"></div>
+        /* Standard Fallback Background (Accent Gradient) */
+        <div className="absolute inset-0 z-0" style={{ background: `radial-gradient(ellipse at 50% 30%, rgba(${accentRgb},0.08) 0%, #09090B 70%)` }}></div>
       )}
 
       <div className={`w-full max-w-md z-10 p-6 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
@@ -186,7 +190,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
         {/* Profile Section */}
         <div className="text-center mb-10 flex flex-col items-center">
       <div className="relative mb-6 group">
-        <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-violet-500 via-purple-500 to-pink-500 shadow-[0_0_20px_rgba(139,92,246,0.40)]">
+        <div className="w-28 h-28 rounded-full p-1" style={{ background: `linear-gradient(135deg, ${accentHex}, ${accentHex}88)`, boxShadow: `0 0 24px rgba(${accentRgb},0.45)` }}>
           <div className="w-full h-full rounded-full bg-[#09090B] overflow-hidden relative">
             {avatarUrl ? (
               <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
@@ -197,7 +201,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
             )}
           </div>
         </div>
-        <div className="absolute -bottom-2 -right-2 bg-[#111113] rounded-full p-2 ring-1 ring-white/[0.12] shadow-lg">
+        <div className="absolute -bottom-2 -right-2 rounded-full p-2 ring-1 ring-white/[0.12] shadow-lg" style={{ background: `rgba(${accentRgb},0.20)` }}>
           <Lock className="w-5 h-5 text-white" />
         </div>
       </div>
@@ -210,8 +214,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
         {displayMessage.subtitle}
       </p>
 
-      <div className="mt-4 flex items-center gap-2 text-[10px] text-zinc-300 bg-[#111113]/80 backdrop-blur-xl px-5 py-2 rounded-full ring-1 ring-white/[0.08] shadow-lg">
-        <Sparkles className="w-4 h-4 text-yellow-400 animate-spin-slow" />
+      <div className="mt-4 flex items-center gap-2 text-[10px] text-zinc-300 px-5 py-2 rounded-full ring-1 ring-white/[0.08] shadow-lg" style={{ background: `rgba(${accentRgb},0.10)`, backdropFilter: 'blur(16px)' }}>
+        <Sparkles className="w-4 h-4" style={{ color: accentHex }} />
         <span className="font-extrabold uppercase" style={{ letterSpacing: '0.1em' }}>{displayMessage.cta}</span>
       </div>
         </div>
