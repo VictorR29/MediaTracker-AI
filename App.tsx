@@ -176,9 +176,18 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
 
       {/* Header — Floating Glass Pill (auto-hide on scroll down) */}
       {!isImmersiveMode && (
-        <div className="mt-4 flex justify-center">
-          <header className={`w-auto z-40 bg-[#111113]/80 backdrop-blur-xl rounded-full ring-1 ring-white/[0.08] px-5 py-2.5 flex items-center justify-between gap-6 shadow-[0_4px_24px_rgba(0,0,0,0.30)] relative transition-transform duration-200 ease-spring ${isHeaderVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`}
-            style={detailRgb ? { boxShadow: `0 4px 24px rgba(0,0,0,0.30), inset 0 -1px 0 rgba(${detailRgb}, 0.15)` } : undefined}>
+        <div className="mt-4 flex justify-center px-4 md:px-6">
+          <header
+            className={`w-auto max-w-5xl z-40 rounded-full px-5 py-2.5 flex items-center justify-between gap-6 relative transition-transform duration-200 ease-spring ${isHeaderVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`}
+            style={{
+              background: `linear-gradient(135deg, rgba(24,24,27,0.75) 0%, rgba(9,9,11,0.82) 100%)`,
+              backdropFilter: 'blur(40px) saturate(1.8)',
+              WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+              boxShadow: detailRgb
+                ? `0 4px 24px rgba(0,0,0,0.35), inset 0 -1px 0 rgba(${detailRgb}, 0.18), 0 0 0 1px rgba(255,255,255,0.06)`
+                : `0 4px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06)`,
+            }}
+          >
           {/* LEFT: Avatar + username */}
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 md:w-10 md:h-10 flex-shrink-0 rounded-full bg-gradient-to-tr from-violet-500 to-purple-500 p-0.5" style={{ boxShadow: '0 0 16px rgba(139,92,246,0.40)' }}>
@@ -255,40 +264,70 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
         <ArrowUp className="w-6 h-6" />
       </button>
 
-      {/* Mobile Bottom Nav — Enhanced Glass + Dynamic Tint */}
-      <nav className={`md:hidden fixed bottom-0 w-full bg-[#18181B]/90 backdrop-blur-2xl border-t border-white/[0.08] pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-200 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
+      {/* Mobile Bottom Nav — Frosted Glass + Dynamic Tint */}
+      <nav
+        className={`md:hidden fixed bottom-0 w-full pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-200 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}
+        style={{
+          background: `linear-gradient(to top, rgba(9,9,11,0.92) 0%, rgba(24,24,27,0.78) 100%)`,
+          backdropFilter: 'blur(40px) saturate(1.8)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+          borderTop: `1px solid rgba(${activeColorRgb || '16,185,129'},0.12)`,
+          boxShadow: `0 -4px 24px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04)`,
+        }}
+      >
         {/* Biblioteca */}
         <button onClick={() => handleNavClick('/')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/' || currentPath.startsWith('/item/') ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
-          <LayoutGrid className={`w-5 h-5 ${currentPath === '/' || currentPath.startsWith('/item/') ? `drop-shadow-[0_0_8px_rgba(${activeColorRgb || '16,185,129'},0.60)]` : ''}`} />
+          <LayoutGrid
+            className="w-5 h-5"
+            style={currentPath === '/' || currentPath.startsWith('/item/')
+              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb || '16,185,129'},0.50))` }
+              : undefined}
+          />
           <span className="text-[9px] font-bold">Biblio</span>
         </button>
-        
+
         {/* Deseos */}
         <button onClick={() => handleNavClick('/wishlist')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/wishlist' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
-          <Bookmark className={`w-5 h-5 ${currentPath === '/wishlist' ? `drop-shadow-[0_0_8px_rgba(${activeColorRgb || '16,185,129'},0.60)]` : ''}`} />
+          <Bookmark
+            className="w-5 h-5"
+            style={currentPath === '/wishlist'
+              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb || '16,185,129'},0.50))` }
+              : undefined}
+          />
           <span className="text-[9px] font-bold">Deseos</span>
         </button>
-        
+
         {/* Añadir (+) */}
         <button onClick={() => handleNavClick('/add')} className="flex flex-col items-center gap-1 p-2 min-w-[60px]">
-          <div className={`bg-white text-zinc-900 p-3 rounded-full -mt-8 shadow-lg ring-4 ring-[#09090B] transition-transform active:scale-95 ${currentPath === '/add' ? 'ring-white/50' : ''}`} 
-            style={{ 
-              boxShadow: `0 0 32px rgba(${activeColorRgb || '16,185,129'},0.50), 0 0 64px rgba(${activeColorRgb || '16,185,129'},0.25), 0 8px 32px rgba(0,0,0,0.50)` 
+          <div
+            className={`bg-white text-zinc-900 p-3 rounded-full -mt-8 ring-4 ring-[#09090B] transition-transform active:scale-95 ${currentPath === '/add' ? 'ring-white/50' : ''}`}
+            style={{
+              boxShadow: `0 0 20px rgba(${activeColorRgb || '16,185,129'},0.35), 0 0 40px rgba(${activeColorRgb || '16,185,129'},0.15), 0 8px 24px rgba(0,0,0,0.50)`
             }}>
             <PlusCircle className="w-6 h-6" />
           </div>
           <span className="text-[9px] font-bold opacity-0">Nuevo</span>
         </button>
-        
+
         {/* Descubrir */}
         <button onClick={() => handleNavClick('/discover')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/discover' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
-          <Compass className={`w-5 h-5 ${currentPath === '/discover' ? `drop-shadow-[0_0_8px_rgba(${activeColorRgb || '16,185,129'},0.60)]` : ''}`} />
+          <Compass
+            className="w-5 h-5"
+            style={currentPath === '/discover'
+              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb || '16,185,129'},0.50))` }
+              : undefined}
+          />
           <span className="text-[9px] font-bold">Descubrir</span>
         </button>
-        
+
         {/* Stats */}
         <button onClick={() => handleNavClick('/stats')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/stats' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
-          <BarChart2 className={`w-5 h-5 ${currentPath === '/stats' ? `drop-shadow-[0_0_8px_rgba(${activeColorRgb || '16,185,129'},0.60)]` : ''}`} />
+          <BarChart2
+            className="w-5 h-5"
+            style={currentPath === '/stats'
+              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb || '16,185,129'},0.50))` }
+              : undefined}
+          />
           <span className="text-[9px] font-bold">Stats</span>
         </button>
       </nav>
