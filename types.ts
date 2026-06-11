@@ -132,6 +132,37 @@ export const THEME_COLORS = [
   { name: 'Sky', value: '14 165 233', hex: '#0ea5e9' },
 ];
 
+/**
+ * Parse an accent color string (hex or 'R G B' format) into a hex color.
+ * Falls back to indigo-400 (#c084fc) if invalid or missing.
+ */
+export const parseAccentToHex = (accentColor: string | undefined): string => {
+  if (!accentColor) return '#c084fc';
+  if (accentColor.startsWith('#')) return accentColor;
+  // Handle '192 132 252' RGB space-separated format
+  const parts = accentColor.split(' ').map(Number);
+  if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+    return '#' + parts.map(c => Math.min(255, Math.max(0, c)).toString(16).padStart(2, '0')).join('');
+  }
+  return '#c084fc';
+};
+
+/**
+ * Parse an accent color string (hex or 'R G B' format) into an 'R,G,B' string
+ * suitable for inline rgba() styles.
+ */
+export const parseAccentToRgb = (accentColor: string | undefined): string => {
+  if (!accentColor) return '192,132,252';
+  if (accentColor.startsWith('#')) {
+    const hex = accentColor.replace('#', '');
+    if (hex.length !== 6) return '192,132,252';
+    return [hex.slice(0, 2), hex.slice(2, 4), hex.slice(4, 6)]
+      .map(c => parseInt(c, 16)).join(',');
+  }
+  // Already in 'R G B' format
+  return accentColor.replace(/ /g, ',');
+};
+
 // --- GENRE NORMALIZATION LOGIC ---
 
 export const GENRE_MAPPING: Record<string, string> = {

@@ -5,7 +5,7 @@ import {
   Search as SearchIcon, LogOut, Settings, User, ArrowUp, MoreVertical
 } from 'lucide-react';
 import { useToast } from './context/ToastContext';
-import { MediaItem } from './types';
+import { MediaItem, parseAccentToRgb } from './types';
 import { saveMediaItem } from './services/storage';
 import { searchMediaInfo } from './services/geminiService';
 
@@ -131,9 +131,10 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
   const currentPath = location.pathname;
 
-  // Convert lastActiveColor to rgb for inline styles
-  const activeColorRgb = lastActiveColor ? lastActiveColor.replace('#', '').match(/.{2}/g)?.map(c => parseInt(c, 16)).join(',') : undefined;
-  const activeColorHex = lastActiveColor || '#10B981'; // fallback to emerald
+  // Convert accent / last-active color to rgb for inline styles
+  const baseAccentRgb = parseAccentToRgb(userProfile?.accentColor);
+  const activeColorRgb = lastActiveColor ? lastActiveColor.replace('#', '').match(/.{2}/g)?.map(c => parseInt(c, 16)).join(',') : baseAccentRgb;
+  const activeColorHex = lastActiveColor || parseAccentToRgb(userProfile?.accentColor);
 
   // Check if we're on a detail view for dynamic tint
   const isDetailView = currentPath.startsWith('/item/');
@@ -185,12 +186,12 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
               WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
               boxShadow: detailRgb
                 ? `0 4px 24px rgba(0,0,0,0.35), inset 0 -1px 0 rgba(${detailRgb}, 0.18), 0 0 0 1px rgba(255,255,255,0.06)`
-                : `0 4px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06)`,
+                : `0 4px 24px rgba(0,0,0,0.35), inset 0 -1px 0 rgba(${activeColorRgb}, 0.12), 0 0 0 1px rgba(255,255,255,0.06)`,
             }}
           >
           {/* LEFT: Avatar + username */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 md:w-10 md:h-10 flex-shrink-0 rounded-full bg-gradient-to-tr from-violet-500 to-purple-500 p-0.5" style={{ boxShadow: '0 0 16px rgba(139,92,246,0.40)' }}>
+            <div className="w-9 h-9 md:w-10 md:h-10 flex-shrink-0 rounded-full p-0.5" style={{ background: `linear-gradient(135deg, rgb(${activeColorRgb}), rgb(${baseAccentRgb}))`, boxShadow: `0 0 16px rgba(${activeColorRgb},0.40)` }}>
               <div className="w-full h-full rounded-full bg-zinc-900 overflow-hidden">
                 {userProfile?.avatarUrl ? <img src={userProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center"><User className="w-5 h-5" /></div>}
@@ -271,7 +272,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
           background: `linear-gradient(to top, rgba(9,9,11,0.92) 0%, rgba(24,24,27,0.78) 100%)`,
           backdropFilter: 'blur(40px) saturate(1.8)',
           WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
-          borderTop: `1px solid rgba(${activeColorRgb || '16,185,129'},0.12)`,
+          borderTop: `1px solid rgba(${activeColorRgb},0.12)`,
           boxShadow: `0 -4px 24px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04)`,
         }}
       >
@@ -280,7 +281,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
           <LayoutGrid
             className="w-5 h-5"
             style={currentPath === '/' || currentPath.startsWith('/item/')
-              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb || '16,185,129'},0.50))` }
+              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb},0.50))` }
               : undefined}
           />
           <span className="text-[9px] font-bold">Biblio</span>
@@ -291,7 +292,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
           <Bookmark
             className="w-5 h-5"
             style={currentPath === '/wishlist'
-              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb || '16,185,129'},0.50))` }
+              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb},0.50))` }
               : undefined}
           />
           <span className="text-[9px] font-bold">Deseos</span>
@@ -302,7 +303,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
           <div
             className={`bg-white text-zinc-900 p-3 rounded-full -mt-8 ring-4 ring-[#09090B] transition-transform active:scale-95 ${currentPath === '/add' ? 'ring-white/50' : ''}`}
             style={{
-              boxShadow: `0 0 20px rgba(${activeColorRgb || '16,185,129'},0.35), 0 0 40px rgba(${activeColorRgb || '16,185,129'},0.15), 0 8px 24px rgba(0,0,0,0.50)`
+              boxShadow: `0 0 20px rgba(${activeColorRgb},0.35), 0 0 40px rgba(${activeColorRgb},0.15), 0 8px 24px rgba(0,0,0,0.50)`
             }}>
             <PlusCircle className="w-6 h-6" />
           </div>
@@ -314,7 +315,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
           <Compass
             className="w-5 h-5"
             style={currentPath === '/discover'
-              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb || '16,185,129'},0.50))` }
+              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb},0.50))` }
               : undefined}
           />
           <span className="text-[9px] font-bold">Descubrir</span>
@@ -325,7 +326,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
           <BarChart2
             className="w-5 h-5"
             style={currentPath === '/stats'
-              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb || '16,185,129'},0.50))` }
+              ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb},0.50))` }
               : undefined}
           />
           <span className="text-[9px] font-bold">Stats</span>

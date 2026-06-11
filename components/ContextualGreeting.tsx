@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { MediaItem, UserProfile, EMOTIONAL_TAGS_OPTIONS } from '../types';
+import { MediaItem, UserProfile, EMOTIONAL_TAGS_OPTIONS, parseAccentToHex } from '../types';
 import { Sparkles, Coffee, Sun, Moon, Film, Tv, BookOpen, PenTool, Zap, Heart, Clock, Star, Hourglass, Bookmark, Feather, Image as ImageIcon, Clapperboard, AlertCircle, Frown, CloudRain, PlayCircle, CheckCircle2, PauseCircle, CalendarClock } from 'lucide-react';
 
 interface ContextualGreetingProps {
@@ -230,9 +230,7 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
   // Note: Added imports to the top of the file.
 
   // Lumen Content: derive glow from the user's accent color (or neutral violet)
-  const accentHex = userProfile.accentColor
-    ? '#' + userProfile.accentColor.split(' ')[0]
-    : '#c084fc'; // purple-400 as neutral fallback (no indigo)
+  const accentHex = parseAccentToHex(userProfile.accentColor);
 
   return (
     <div key={view} className="w-full max-w-5xl mx-auto mb-6 px-4 md:px-0">
