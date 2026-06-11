@@ -32,12 +32,12 @@ const AppInner: React.FC = () => {
   // Stores
   const { userProfile, isAuthenticated, init: initAuth } = useAuthStore();
   const { library, loadLibrary, updateItem, addItem, isRestoring } = useLibraryStore();
-  const {
+const {
   isImmersiveMode, isBottomNavVisible, showScrollTop,
   isSettingsOpen, setSettingsOpen, setImmersiveMode,
   setBottomNavVisible, setShowScrollTop, setLibraryScrollY, setLastOpenedItemId,
-  setMobileMenuOpen
-  } = useUIStore();
+  setMobileMenuOpen, lastActiveColor, setLastActiveColor
+} = useUIStore();
   const lastScrollYRef = useRef(0);
 
   // Custom hooks
@@ -48,18 +48,25 @@ const AppInner: React.FC = () => {
 
   // Local state (search-only, doesn't belong in a store)
   const [isSearching, setIsSearching] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
 
   // Init auth + library on mount
   useEffect(() => {
     initAuth().then(() => loadLibrary());
   }, []);
 
-  // Scroll handling for bottom nav + scroll-top (ref-based to avoid re-render per pixel)
+  // Scroll handling for bottom nav + scroll-top + header visibility (ref-based to avoid re-render per pixel)
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       setBottomNavVisible(!(currentScrollY > lastScrollYRef.current && currentScrollY > 100));
       setShowScrollTop(currentScrollY > 300);
+      // Header: hide on scroll down, show on scroll up (after 100px threshold)
+      if (currentScrollY > 100) {
+        setIsHeaderVisible(currentScrollY < lastScrollYRef.current);
+      } else {
+        setIsHeaderVisible(true);
+      }
       lastScrollYRef.current = currentScrollY;
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -68,12 +75,16 @@ const AppInner: React.FC = () => {
 
   // ─── Navigation helpers ─────────────────────────────────────────
 
-  const handleOpenDetail = useCallback((item: MediaItem) => {
+const handleOpenDetail = useCallback((item: MediaItem) => {
   setLibraryScrollY(window.scrollY);
   setLastOpenedItemId(item.id);
+  // Update last active color for bottom nav tint
+  if (item.aiData?.primaryColor) {
+    setLastActiveColor(item.aiData.primaryColor);
+  }
   navigate(`/item/${item.id}`);
   window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [navigate, setLibraryScrollY, setLastOpenedItemId]);
+}, [navigate, setLibraryScrollY, setLastOpenedItemId, setLastActiveColor]);
 
   const handleNavClick = (targetPath: string) => {
     if (targetPath === '/') {
@@ -120,6 +131,16 @@ const AppInner: React.FC = () => {
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
   const currentPath = location.pathname;
 
+  // Convert lastActiveColor to rgb for inline styles
+  const activeColorRgb = lastActiveColor ? lastActiveColor.replace('#', '').match(/.{2}/g)?.map(c => parseInt(c, 16)).join(',') : undefined;
+  const activeColorHex = lastActiveColor || '#10B981'; // fallback to emerald
+
+  // Check if we're on a detail view for dynamic tint
+  const isDetailView = currentPath.startsWith('/item/');
+  const detailItem = isDetailView ? library.find(i => i.id === currentPath.split('/')[2]) : null;
+  const detailColor = detailItem?.aiData?.primaryColor;
+  const detailRgb = detailColor ? detailColor.replace('#', '').match(/.{2}/g)?.map(c => parseInt(c, 16)).join(',') : undefined;
+
   // Desktop Nav Link
   const DesktopNavLink = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, active: boolean, onClick: () => void }) => (
     <button onClick={onClick}
@@ -153,9 +174,11 @@ const AppInner: React.FC = () => {
       <LoadingOverlay isVisible={isRestoring} type="restore" />
       <LoadingOverlay isVisible={isSearching} type="search" />
 
-      {/* Header */}
+      {/* Header — Floating Glass Pill (auto-hide on scroll down) */}
       {!isImmersiveMode && (
-        <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] md:max-w-6xl z-40 bg-[#111113]/80 backdrop-blur-xl rounded-2xl md:rounded-full ring-1 ring-white/[0.10] px-3 md:px-5 py-2 md:py-2.5 flex items-center justify-between md:gap-6 shadow-[0_0_24px_rgba(139,92,246,0.08)]">
+        <div className="mt-4 flex justify-center">
+          <header className={`w-auto z-40 bg-[#111113]/80 backdrop-blur-xl rounded-full ring-1 ring-white/[0.08] px-5 py-2.5 flex items-center justify-between gap-6 shadow-[0_4px_24px_rgba(0,0,0,0.30)] relative transition-transform duration-200 ease-spring ${isHeaderVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`}
+            style={detailRgb ? { boxShadow: `0 4px 24px rgba(0,0,0,0.30), inset 0 -1px 0 rgba(${detailRgb}, 0.15)` } : undefined}>
           {/* LEFT: Avatar + username */}
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 md:w-10 md:h-10 flex-shrink-0 rounded-full bg-gradient-to-tr from-violet-500 to-purple-500 p-0.5" style={{ boxShadow: '0 0 16px rgba(139,92,246,0.40)' }}>
@@ -203,10 +226,11 @@ const AppInner: React.FC = () => {
             </button>
           </div>
         </header>
+        </div>
       )}
 
       {/* Main */}
-      <main className={`pt-24 md:pt-24 pb-24 px-4 md:px-8 max-w-7xl mx-auto min-h-screen ${isImmersiveMode ? 'pt-0 px-0 max-w-none' : ''}`}>
+      <main className={`pt-4 pb-24 px-4 md:px-8 max-w-7xl mx-auto min-h-screen ${isImmersiveMode ? 'pt-0 px-0 max-w-none' : ''}`}>
         <AppRouter
           onOpenDetail={handleOpenDetail}
           onIncrementProgress={handleIncrementProgress}
@@ -231,16 +255,42 @@ const AppInner: React.FC = () => {
         <ArrowUp className="w-6 h-6" />
       </button>
 
-      {/* Mobile Bottom Nav */}
-      <nav className={`md:hidden fixed bottom-0 w-full bg-[#111113]/95 backdrop-blur-xl border-t border-white/[0.06] pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-200 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
-	<button onClick={() => handleNavClick('/')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/' || currentPath.startsWith('/item/') ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><LayoutGrid className={`w-5 h-5 ${currentPath === '/' || currentPath.startsWith('/item/') ? 'drop-shadow-[0_0_6px_rgba(255,255,255,0.30)]' : ''}`} /><span className="text-[9px] font-bold">Biblio</span></button>
-	<button onClick={() => handleNavClick('/wishlist')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/wishlist' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><Bookmark className={`w-5 h-5 ${currentPath === '/wishlist' ? 'drop-shadow-[0_0_6px_rgba(255,255,255,0.30)]' : ''}`} /><span className="text-[9px] font-bold">Deseos</span></button>
+      {/* Mobile Bottom Nav — Enhanced Glass + Dynamic Tint */}
+      <nav className={`md:hidden fixed bottom-0 w-full bg-[#18181B]/90 backdrop-blur-2xl border-t border-white/[0.08] pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-200 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}>
+        {/* Biblioteca */}
+        <button onClick={() => handleNavClick('/')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/' || currentPath.startsWith('/item/') ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
+          <LayoutGrid className={`w-5 h-5 ${currentPath === '/' || currentPath.startsWith('/item/') ? `drop-shadow-[0_0_8px_rgba(${activeColorRgb || '16,185,129'},0.60)]` : ''}`} />
+          <span className="text-[9px] font-bold">Biblio</span>
+        </button>
+        
+        {/* Deseos */}
+        <button onClick={() => handleNavClick('/wishlist')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/wishlist' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
+          <Bookmark className={`w-5 h-5 ${currentPath === '/wishlist' ? `drop-shadow-[0_0_8px_rgba(${activeColorRgb || '16,185,129'},0.60)]` : ''}`} />
+          <span className="text-[9px] font-bold">Deseos</span>
+        </button>
+        
+        {/* Añadir (+) */}
         <button onClick={() => handleNavClick('/add')} className="flex flex-col items-center gap-1 p-2 min-w-[60px]">
-	<div className={`bg-white text-zinc-900 p-3 rounded-full -mt-8 shadow-lg ring-4 ring-[#09090B] shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-transform active:scale-95 ${currentPath === '/add' ? 'ring-2 ring-white/50' : ''}`}><PlusCircle className="w-6 h-6" /></div>
+          <div className={`bg-white text-zinc-900 p-3 rounded-full -mt-8 shadow-lg ring-4 ring-[#09090B] transition-transform active:scale-95 ${currentPath === '/add' ? 'ring-white/50' : ''}`} 
+            style={{ 
+              boxShadow: `0 0 32px rgba(${activeColorRgb || '16,185,129'},0.50), 0 0 64px rgba(${activeColorRgb || '16,185,129'},0.25), 0 8px 32px rgba(0,0,0,0.50)` 
+            }}>
+            <PlusCircle className="w-6 h-6" />
+          </div>
           <span className="text-[9px] font-bold opacity-0">Nuevo</span>
         </button>
-	<button onClick={() => handleNavClick('/discover')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/discover' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><Compass className={`w-5 h-5 ${currentPath === '/discover' ? 'drop-shadow-[0_0_6px_rgba(255,255,255,0.30)]' : ''}`} /><span className="text-[9px] font-bold">Descubrir</span></button>
-	<button onClick={() => handleNavClick('/stats')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/stats' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}><BarChart2 className={`w-5 h-5 ${currentPath === '/stats' ? 'drop-shadow-[0_0_6px_rgba(255,255,255,0.30)]' : ''}`} /><span className="text-[9px] font-bold">Stats</span></button>
+        
+        {/* Descubrir */}
+        <button onClick={() => handleNavClick('/discover')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/discover' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
+          <Compass className={`w-5 h-5 ${currentPath === '/discover' ? `drop-shadow-[0_0_8px_rgba(${activeColorRgb || '16,185,129'},0.60)]` : ''}`} />
+          <span className="text-[9px] font-bold">Descubrir</span>
+        </button>
+        
+        {/* Stats */}
+        <button onClick={() => handleNavClick('/stats')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/stats' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
+          <BarChart2 className={`w-5 h-5 ${currentPath === '/stats' ? `drop-shadow-[0_0_8px_rgba(${activeColorRgb || '16,185,129'},0.60)]` : ''}`} />
+          <span className="text-[9px] font-bold">Stats</span>
+        </button>
       </nav>
 
       {/* Settings */}
