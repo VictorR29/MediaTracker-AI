@@ -278,7 +278,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
               >
                 <GripVertical className="w-3 h-3 opacity-0 group-hover:opacity-50" />
                 {icon}
-                <span>{char}</span>
+                <span>{char.name}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); onRemoveCharacter(idx); }}
                   className="ml-1 hover:text-white hover:bg-white/20 rounded-full p-0.5"

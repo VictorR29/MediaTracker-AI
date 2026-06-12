@@ -58,7 +58,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
     // Random Character
     const charsRaw = focusWork.trackingData.favoriteCharacters;
     const charList = Array.isArray(charsRaw) ? charsRaw : (typeof charsRaw === 'string' ? (charsRaw as string).split(',') : []);
-    const cleanChars = charList.filter(c => c && c.trim() !== '');
+    const cleanChars = charList
+      .map(c => typeof c === 'string' ? c : c?.name || '')
+      .filter(c => c && c.trim() !== '');
     const character = pickRandom(cleanChars) || 'el protagonista';
 
     // Random Emotion — usar forma contextual para inserción en oraciones

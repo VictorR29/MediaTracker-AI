@@ -135,7 +135,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const handleAddCharacter = () => {
     if (!newCharacterInput.trim()) return;
     const currentList = tracking.favoriteCharacters || [];
-    handleInputChange('favoriteCharacters', [...currentList, newCharacterInput.trim()]);
+    handleInputChange('favoriteCharacters', [...currentList, { name: newCharacterInput.trim() }]);
     setNewCharacterInput('');
   };
 

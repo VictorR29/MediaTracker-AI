@@ -52,7 +52,9 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
     // [Personaje Favorito]
     const rawChars = focusWork.trackingData.favoriteCharacters;
     const charList = Array.isArray(rawChars) ? rawChars : (typeof rawChars === 'string' ? (rawChars as string).split(',') : []);
-    const cleanChars = charList.filter(c => c && c.trim() !== '');
+    const cleanChars = charList
+      .map(c => typeof c === 'string' ? c : c?.name || '')
+      .filter(c => c && c.trim() !== '');
     const character = pickRandom(cleanChars) || (mediaType === 'Pelicula' ? 'el protagonista' : 'tu personaje favorito');
 
     // [Emoción Dominante]

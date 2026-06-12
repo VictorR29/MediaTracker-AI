@@ -25,7 +25,7 @@ export interface UserTrackingData {
   totalEpisodesInSeason: number;
   accumulated_consumption?: number; // New: Stores history (e.g., eps from prev seasons)
   emotionalTags: string[];
-  favoriteCharacters: string[]; // Changed to array of strings for tags
+  favoriteCharacters: { name: string; image?: string }[]; // Character names with optional profile image
   rating: string; // e.g., "God Tier", "Bueno", etc.
   comment: string;
   recommendedBy?: string; // New field for social aspect
