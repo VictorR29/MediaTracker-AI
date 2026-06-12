@@ -54,12 +54,23 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
 
-  // Collect top 1 character from each work
+  // Rating order for sorting
+  const ratingOrder: Record<string, number> = {
+    'God Tier': 1,
+    'Excelente': 2,
+    'Muy Bueno': 3,
+    'Bueno': 4,
+    'Regular': 5,
+    'Malo': 6,
+  };
+
+  // Collect top 1 character from each work, sorted by rating
   const characters: CharacterEntry[] = library
     .filter(item => {
       const chars = item.trackingData.favoriteCharacters;
       return chars && chars.length > 0 && chars[0]?.name;
     })
+    .sort((a, b) => (ratingOrder[a.trackingData.rating] || 99) - (ratingOrder[b.trackingData.rating] || 99))
     .map(item => ({
       mediaId: item.id,
       mediaTitle: item.aiData.title,
@@ -67,6 +78,14 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
       primaryColor: item.aiData.primaryColor,
       character: item.trackingData.favoriteCharacters[0],
     }));
+
+  // Debug log
+  console.log('[TopCharacters] library size:', library.length, 'characters found:', characters.length);
+  console.log('[TopCharacters] first 3 items favoriteCharacters:', library.slice(0, 3).map(i => ({
+    title: i.aiData.title,
+    chars: i.trackingData.favoriteCharacters,
+    charsType: typeof i.trackingData.favoriteCharacters?.[0]
+  })));
 
   const updateCharacterImage = useCallback(async (mediaId: string, imageUrl: string) => {
     setUploadingId(mediaId);
