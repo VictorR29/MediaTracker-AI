@@ -257,125 +257,121 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       className="relative bg-[#09090B] ring-1 ring-white/[0.04] rounded-3xl overflow-hidden shadow-2xl animate-fade-in-up w-full"
       style={{ 
         '--card-rgb': dynamicRgb,
-        boxShadow: `0 0 60px -15px rgba(${dynamicRgb}, 0.30)`
+        boxShadow: `0 0 80px -20px rgba(${dynamicRgb}, 0.25)`
       } as React.CSSProperties}
     >
       {/* Ambient Wash */}
       <div 
         className="absolute inset-0 pointer-events-none" 
         style={{ 
-          background: `radial-gradient(circle at center, rgba(${dynamicRgb}, 0.15) 0%, transparent 70%)` 
+          background: `radial-gradient(ellipse at top left, rgba(${dynamicRgb}, 0.12) 0%, transparent 60%)` 
         }} 
       />
 
       <div className="relative z-10">
-        {/* ─── HEADER ─── */}
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6 md:p-8 pb-0">
-          {/* Cover Image */}
-          <div className="flex-shrink-0 mx-auto sm:mx-0">
-            <div
-              className={`relative w-32 h-48 sm:w-36 sm:h-52 rounded-xl overflow-hidden shadow-lg group transition-all duration-300 ${isEditing ? 'cursor-pointer' : ''} ${isDragging ? 'ring-4 ring-[rgb(var(--card-rgb))] scale-[1.02]' : ''}`}
-              onClick={handleImageClick}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              style={{
-                border: isEditing ? `2px dashed ${isDragging ? dynamicColor : '#475569'}` : `1px solid ${dynamicColor}50`,
-                boxShadow: isEditing ? 'none' : `0 10px 30px -5px ${dynamicColor}40`
-              }}
-            >
-              {aiData.coverImage ? (
-                <img src={aiData.coverImage} alt={aiData.title} className="w-full h-full object-cover pointer-events-none" />
+        {/* ─── HERO SECTION ─── */}
+        <div className="relative">
+          {/* Cover Image - Full width on mobile, overlaid */}
+          <div className="relative h-[300px] sm:h-[350px] md:h-[400px] overflow-hidden">
+            {aiData.coverImage ? (
+              <img src={aiData.coverImage} alt={aiData.title} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-zinc-700 bg-zinc-900">
+                <ImageIcon className="w-20 h-20 mb-3 opacity-30" />
+                <span className="text-sm font-medium opacity-40">Sin Imagen</span>
+              </div>
+            )}
+            
+            {/* Gradient overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#09090B] via-[#09090B]/60 to-transparent" />
+            
+            {/* Edit overlay for image */}
+            {isEditing && (
+              <div 
+                className={`absolute inset-0 bg-black/50 flex flex-col items-center justify-center transition-opacity cursor-pointer ${isDragging ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}
+                onClick={handleImageClick}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <Upload className="w-10 h-10 text-white mb-2" />
+                <span className="text-white text-sm font-bold px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm">
+                  {isDragging ? 'Soltar imagen' : 'Click o arrastra para cambiar'}
+                </span>
+              </div>
+            )}
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+
+            {/* Title overlay at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
+              {isEditing ? (
+                <div className="space-y-2">
+                  <input
+                    value={aiData.title}
+                    onChange={(e) => onAIDataChange('title', e.target.value)}
+                    className="w-full bg-black/40 backdrop-blur-sm ring-1 ring-white/10 rounded-xl px-4 py-3 text-2xl sm:text-3xl font-black text-white outline-none focus:ring-white/20 placeholder:text-white/30"
+                    placeholder="Título de la obra"
+                  />
+                  <input
+                    value={aiData.originalTitle || ''}
+                    onChange={(e) => onAIDataChange('originalTitle', e.target.value)}
+                    className="w-full bg-black/40 backdrop-blur-sm ring-1 ring-white/10 rounded-xl px-4 py-2 text-sm text-zinc-300 italic outline-none focus:ring-white/20 placeholder:text-white/20"
+                    placeholder="Título original (opcional)"
+                  />
+                </div>
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-zinc-700 p-2 text-center bg-zinc-900">
-                  <ImageIcon className="w-8 h-8 mb-1 opacity-50" />
-                  <span className="text-[10px] font-medium opacity-50">Sin Imagen</span>
+                <div>
+                  <h1 
+                    className="text-3xl sm:text-4xl md:text-5xl font-black leading-tight mb-2 drop-shadow-lg"
+                    style={{ background: `linear-gradient(to right, #ffffff, ${dynamicColor})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+                  >
+                    {aiData.title}
+                  </h1>
+                  {aiData.originalTitle && (
+                    <p className="text-sm sm:text-base text-zinc-400 italic drop-shadow-md">{aiData.originalTitle}</p>
+                  )}
                 </div>
               )}
-              {isEditing && (
-                <div className={`absolute inset-0 bg-black/60 flex flex-col items-center justify-center transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                  <Upload className="w-6 h-6 text-white mb-1" />
-                  <span className="text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20 backdrop-blur-sm">
-                    {isDragging ? 'Soltar' : 'Cambiar'}
-                  </span>
-                </div>
-              )}
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
             </div>
           </div>
 
-          {/* Title & Badges */}
-          <div className="flex-1 min-w-0 flex flex-col justify-center">
-            {isEditing ? (
-              <div className="space-y-2 mb-3">
-                <input
-                  value={aiData.title}
-                  onChange={(e) => onAIDataChange('title', e.target.value)}
-                  className="w-full bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl px-3 py-2 text-xl sm:text-2xl font-black text-white outline-none focus:ring-white/20"
-                  placeholder="Título de la obra"
-                />
-                <input
-                  value={aiData.originalTitle || ''}
-                  onChange={(e) => onAIDataChange('originalTitle', e.target.value)}
-                  className="w-full bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl px-3 py-1.5 text-sm text-zinc-400 italic outline-none focus:ring-white/20"
-                  placeholder="Título original (opcional)"
-                />
-              </div>
-            ) : (
-              <div className="mb-3">
-                <h1 
-                  className="text-2xl sm:text-3xl font-black leading-tight mb-1"
-                  style={{ background: `linear-gradient(to right, #ffffff, ${dynamicColor})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
-                >
-                  {aiData.title}
-                </h1>
-                {aiData.originalTitle && (
-                  <p className="text-sm text-zinc-500 italic">{aiData.originalTitle}</p>
-                )}
-              </div>
+          {/* Badges & Actions bar */}
+          <div className="flex flex-wrap items-center gap-2 px-4 sm:px-6 md:px-8 py-3 bg-zinc-900/50 border-b border-white/[0.04]">
+            <span className="px-2.5 py-1 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded-md text-[10px] font-bold text-zinc-400 uppercase">{aiData.mediaType}</span>
+            <span className="px-2.5 py-1 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded-md text-[10px] font-bold text-zinc-400 uppercase">{aiData.status}</span>
+            {tracking.is_favorite && (
+              <span className="px-2.5 py-1 bg-yellow-500/10 ring-1 ring-yellow-500/30 rounded-md text-[10px] font-bold text-yellow-500 uppercase flex items-center gap-1">
+                <Star className="w-3 h-3 fill-current" /> Favorito
+              </span>
             )}
-
-            {/* Badges */}
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="px-2.5 py-1 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded-md text-[10px] font-bold text-zinc-400 uppercase">{aiData.mediaType}</span>
-              <span className="px-2.5 py-1 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded-md text-[10px] font-bold text-zinc-400 uppercase">{aiData.status}</span>
-              {tracking.is_favorite && (
-                <span className="px-2.5 py-1 bg-yellow-500/10 ring-1 ring-yellow-500/30 rounded-md text-[10px] font-bold text-yellow-500 uppercase flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-current" /> Favorito
-                </span>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            
+            <div className="flex items-center gap-2 ml-auto">
               <button
                 onClick={() => handleInputChange('is_favorite', !tracking.is_favorite)}
-                className={`min-w-[44px] min-h-[44px] flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ring-1 ${
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl transition-all ${
                   tracking.is_favorite 
-                    ? 'bg-yellow-500/10 ring-yellow-500/30 text-yellow-500' 
-                    : 'bg-zinc-800/50 ring-white/[0.06] text-zinc-500 hover:text-white'
+                    ? 'text-yellow-500' 
+                    : 'text-zinc-500 hover:text-yellow-500'
                 }`}
               >
-                <Star className={`w-4 h-4 ${tracking.is_favorite ? 'fill-current' : ''}`} />
-                <span className="hidden sm:inline">{tracking.is_favorite ? 'FAVORITO' : 'FAVORITO'}</span>
+                <Star className={`w-5 h-5 ${tracking.is_favorite ? 'fill-current' : ''}`} />
               </button>
               
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-zinc-800/50 ring-1 ring-white/[0.06] text-zinc-500 hover:text-white transition-all"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl text-zinc-500 hover:text-white transition-all"
                 >
-                  <Edit3 className="w-4 h-4" />
-                  <span className="hidden sm:inline">EDITAR</span>
+                  <Edit3 className="w-5 h-5" />
                 </button>
               )}
 
               {onDelete && (
                 <button
                   onClick={onDelete}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl bg-red-900/10 hover:bg-red-900/20 text-red-500 ring-1 ring-red-900/30 transition-colors ml-auto"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-all"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-5 h-5" />
                 </button>
               )}
             </div>
@@ -383,12 +379,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         </div>
 
         {/* ─── TABS ─── */}
-        <div className="flex border-b border-white/[0.06] bg-zinc-900/20 mx-4 sm:mx-6 md:mx-8 mt-4">
+        <div className="flex border-b border-white/[0.04]">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all relative ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-all relative ${
                 activeTab === tab.id
                   ? 'text-white'
                   : 'text-zinc-500 hover:text-zinc-300'
@@ -397,14 +393,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               <tab.icon className="w-4 h-4" />
               {tab.label}
               {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-white rounded-full" />
+                <div className="absolute bottom-0 left-8 right-8 h-0.5 rounded-full" style={{ backgroundColor: dynamicColor }} />
               )}
             </button>
           ))}
         </div>
 
         {/* ─── TAB CONTENT ─── */}
-        <div className="p-4 sm:p-6 md:p-8 min-h-[400px]">
+        <div className="p-4 sm:p-6 md:p-8 min-h-[350px]">
           {/* ═══ INFO TAB ═══ */}
           {activeTab === 'info' && (
             <div className="space-y-6 animate-fade-in">
