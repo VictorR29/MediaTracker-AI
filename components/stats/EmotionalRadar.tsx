@@ -7,7 +7,7 @@ interface EmotionalRadarProps {
 }
 
 // How many emotion axes to show (max)
-const MAX_AXES = 8;
+const MAX_AXES = 6;
 
 // Colors for the radar
 const RADAR_COLOR = '#a78bfa'; // violet
@@ -17,9 +17,9 @@ const LABEL_COLOR = 'rgba(255, 255, 255, 0.7)';
 
 // Short labels for display (maps long emotion names to short forms)
 const SHORT_LABELS: Record<string, string> = {
-  'Corazón Roto': '💔 Corazón',
+  'Corazón Roto': '💔 Roto',
   'Perfecto': '✨ Perfecto',
-  'Entrañables': '🫂 Entrañables',
+  'Entrañables': '🫂 Entrañ.',
   'Adictivo': '💉 Adictivo',
   'Arte Increíble': '🎨 Arte',
   'Soundtrack': '🎵 Sound',
@@ -28,9 +28,9 @@ const SHORT_LABELS: Record<string, string> = {
   'Giro Impactante': '🤯 Giro',
   'Ritmo Impecable': '⚡ Ritmo',
   'Mundo Épico': '🌍 Mundo',
-  'Reflexivo': '🤔 Reflexión',
+  'Reflexivo': '🤔 Reflex.',
   'Desafiante': '🧩 Desafío',
-  'Adrenalina': '🔥 Adrenalina',
+  'Adrenalina': '🔥 Adrenal.',
   'Para Maratón': '🍿 Maratón',
   'Sin Clichés': '🦄 Original',
   'Confusa': '🌀 Confusa',
@@ -52,7 +52,7 @@ function getShortLabel(label: string): string {
     if (key.toLowerCase() === lower) return val;
   }
   // Fallback: truncate
-  return label.length > 12 ? label.slice(0, 11) + '…' : label;
+  return label.length > 10 ? label.slice(0, 9) + '…' : label;
 }
 
 export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
@@ -123,7 +123,7 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
   // Label positions (slightly outside the radius)
   const labelPositions = emotions.map(([label], i) => {
     const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
-    const labelRadius = radius + 28;
+    const labelRadius = radius + 36;
     return {
       label: getShortLabel(label),
       fullLabel: label,
