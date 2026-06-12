@@ -176,11 +176,11 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
       <LoadingOverlay isVisible={isRestoring} type="restore" />
       <LoadingOverlay isVisible={isSearching} type="search" />
 
-      {/* Header — Floating Glass Pill (auto-hide on scroll down) */}
+      {/* Header — Floating Glass Pill (auto-hide on scroll down, fixed position) */}
       {!isImmersiveMode && (
-        <div className="mt-4 flex justify-center px-4 md:px-6">
+        <div className="fixed top-0 left-0 right-0 z-40 flex justify-center px-4 md:px-6 pt-3 pointer-events-none">
           <header
-            className={`w-auto max-w-5xl z-40 rounded-full px-5 py-2.5 flex items-center justify-between gap-6 relative transition-transform duration-200 ease-spring ${isHeaderVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`}
+            className={`w-auto max-w-5xl rounded-full px-5 py-2.5 flex items-center justify-between gap-6 relative transition-all duration-300 ease-spring pointer-events-auto ${isHeaderVisible ? 'translate-y-0 opacity-100' : '-translate-y-[120%] opacity-0'}`}
             style={{
               background: `linear-gradient(135deg, rgba(24,24,27,0.75) 0%, rgba(9,9,11,0.82) 100%)`,
               backdropFilter: 'blur(40px) saturate(1.8)',
