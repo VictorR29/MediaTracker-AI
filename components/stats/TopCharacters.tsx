@@ -1,4 +1,5 @@
 import React, { useRef, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Camera, User, Crown, Link, Upload, X } from 'lucide-react';
 import { MediaItem } from '../../types';
 import { useLibraryStore } from '../../stores/useLibraryStore';
@@ -188,7 +189,7 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
       </div>
 
       {/* Image upload modal */}
-      {editingId && (
+      {editingId && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#1C1C1F] rounded-2xl p-6 w-full max-w-sm ring-1 ring-white/10 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
@@ -240,7 +241,8 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
