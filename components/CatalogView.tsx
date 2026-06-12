@@ -263,7 +263,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
     }, [library]);
 
     return (
-        <div className="relative min-h-screen pb-20 w-full max-w-full overflow-x-hidden">
+        <div className="relative min-h-[100dvh] pb-20 w-full max-w-full overflow-x-hidden">
             <div 
 		className="fixed inset-0 z-0 pointer-events-none transition-[background-color] duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
 		style={{ backgroundColor: activeColor, opacity: 0.25 }}

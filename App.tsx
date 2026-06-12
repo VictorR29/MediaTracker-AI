@@ -153,7 +153,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
   // Not authenticated → full-screen lock, no app chrome
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-zinc-950">
+      <div className="min-h-[100dvh] bg-zinc-950">
         <AppRouter
           onOpenDetail={handleOpenDetail}
           onIncrementProgress={handleIncrementProgress}
@@ -172,7 +172,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200 font-sans selection:bg-violet-500/30">
+    <div className="min-h-[100dvh] bg-zinc-950 text-zinc-200 font-sans selection:bg-violet-500/30">
       <LoadingOverlay isVisible={isRestoring} type="restore" />
       <LoadingOverlay isVisible={isSearching} type="search" />
 
@@ -241,7 +241,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
       )}
 
       {/* Main */}
-      <main className={`pt-20 pb-24 px-4 md:px-8 md:pt-4 max-w-7xl mx-auto min-h-screen ${isImmersiveMode ? 'pt-0 px-0 max-w-none' : ''}`}>
+      <main className={`pt-20 pb-24 px-4 md:px-8 md:pt-4 max-w-7xl mx-auto min-h-[100dvh] ${isImmersiveMode ? 'pt-0 px-0 max-w-none' : ''}`}>
         <AppRouter
           onOpenDetail={handleOpenDetail}
           onIncrementProgress={handleIncrementProgress}
