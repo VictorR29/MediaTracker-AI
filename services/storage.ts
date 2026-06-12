@@ -116,9 +116,27 @@ export const getLibrary = async (): Promise<MediaItem[]> => {
     const request = store.getAll();
 
     request.onsuccess = () => {
-      // Sort by createdAt desc by default
       const items = (request.result as MediaItem[]).sort((a, b) => b.createdAt - a.createdAt);
-      resolve(items);
+      
+      // Migration: Convert old string[] favoriteCharacters to new object[] format
+      const migratedItems = items.map(item => {
+        if (item.trackingData?.favoriteCharacters) {
+          const chars = item.trackingData.favoriteCharacters;
+          // Check if it's the old string format
+          if (chars.length > 0 && typeof chars[0] === 'string') {
+            return {
+              ...item,
+              trackingData: {
+                ...item.trackingData,
+                favoriteCharacters: (chars as any[]).map(name => ({ name, image: undefined })),
+              },
+            };
+          }
+        }
+        return item;
+      });
+      
+      resolve(migratedItems);
     };
     request.onerror = () => reject(request.error);
   });
