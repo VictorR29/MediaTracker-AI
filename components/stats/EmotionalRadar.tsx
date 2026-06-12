@@ -305,40 +305,6 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
             </p>
           </div>
         )}
-
-        {/* Legend — interactive like pie chart, always visible */}
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {emotions.map(([label, time], i) => {
-            const percent = maxTime > 0 ? (time / maxTime) * 100 : 0;
-            const isActive = hoveredAxis === label;
-            return (
-              <button
-                key={label}
-                onClick={() => handleDotClick(label)}
-                onMouseEnter={() => setHoveredAxis(label)}
-                onMouseLeave={() => setHoveredAxis(null)}
-                className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all duration-200 ${
-                  isActive
-                    ? 'bg-white/10 ring-1 ring-white/20 text-white translate-x-1'
-                    : 'bg-white/[0.02] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 ring-1 ring-transparent'
-                }`}
-              >
-                <div
-                  className={`w-3 h-3 rounded-full flex-shrink-0 transition-all duration-200 ${isActive ? 'scale-125 ring-2 ring-white/30' : ''}`}
-                  style={{ backgroundColor: RADAR_COLOR, opacity: 0.3 + (percent / 100) * 0.7 }}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className={`text-xs font-bold truncate ${isActive ? 'text-white' : ''}`}>
-                    {getShortLabel(label)}
-                  </p>
-                  <p className="text-[10px] text-zinc-500 font-mono">
-                    {time.toFixed(0)}min
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
       </div>
     </div>
   );
