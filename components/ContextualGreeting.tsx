@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { MediaItem, UserProfile, EMOTIONAL_TAGS_OPTIONS, parseAccentToHex } from '../types';
-import { Sparkles, Coffee, Sun, Moon, Film, Tv, BookOpen, PenTool, Zap, Heart, Clock, Star, Hourglass, Bookmark, Feather, Image as ImageIcon, Clapperboard, AlertCircle, Frown, CloudRain, PlayCircle, CheckCircle2, PauseCircle, CalendarClock } from 'lucide-react';
+import { Sparkles, Coffee, Sun, Moon, Film, Tv, BookOpen, PenTool, Zap, Heart, Clock, Star, Hourglass, Bookmark, Feather, Image as ImageIcon, Clapperboard, AlertCircle, AlertTriangle, Frown, CloudRain, PlayCircle, CheckCircle2, PauseCircle, CalendarClock } from 'lucide-react';
 
 interface ContextualGreetingProps {
   userProfile: UserProfile;
@@ -58,7 +58,11 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
     // [Emoción Dominante]
     const rawEmotions = focusWork.trackingData.emotionalTags;
     const emotionList = Array.isArray(rawEmotions) ? rawEmotions : [];
-    const emotion = pickRandom(emotionList) || 'una emoción intensa';
+    // Buscar el tag completo para usar su forma contextual (gramaticalmente correcta)
+    const emotionTag = emotionList.length > 0
+      ? EMOTIONAL_TAGS_OPTIONS.find(opt => emotionList.includes(opt.label))
+      : null;
+    const emotion = emotionTag?.contextual || 'una emoción intensa';
 
     // [Negative Check]
     const negativeTags = EMOTIONAL_TAGS_OPTIONS
@@ -66,7 +70,11 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
         .map(opt => opt.label);
     
     const hasNegativeTag = emotionList.some(tag => negativeTags.includes(tag));
-    const negativeEmotion = emotionList.find(tag => negativeTags.includes(tag)) || 'ese problema';
+    const negativeEmotionLabel = emotionList.find(tag => negativeTags.includes(tag));
+    const negativeEmotionTag = negativeEmotionLabel
+      ? EMOTIONAL_TAGS_OPTIONS.find(opt => opt.label === negativeEmotionLabel)
+      : null;
+    const negativeEmotion = negativeEmotionTag?.contextual || 'ese problema';
 
     // [Clave de Trama / Género]
     const genres = focusWork.aiData.genres || [];
@@ -100,7 +108,7 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
         { text: `¿Continuamos con "{title}", {user}?`, subtext: `Esa atmósfera de {emotion} se está poniendo interesante.`, icon: Zap },
         { text: `No dejes a {character} esperando.`, subtext: `Tu progreso en "{title}" es constante. ¡Sigue así!`, icon: Clock },
         { text: `Hora de volver al mundo de "{title}".`, subtext: `La trama de {plotKey} requiere tu atención inmediata.`, icon: Tv },
-        { text: `Un poco más de "{title}" para hoy.`, subtext: `Sumérgete de nuevo y siente esa {emotion}.`, icon: Coffee }
+        { text: `Un poco más de "{title}" para hoy.`, subtext: `Sumérgete de nuevo y siente {emotion}.`, icon: Coffee }
     ],
 
     // --- CONTEXTO: SIN EMPEZAR (PROVOCADOR / INICIO) ---
@@ -109,7 +117,7 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
         { text: `Una nueva aventura te aguarda: "{title}".`, subtext: `Descubre por qué {character} será importante en tu viaje.`, icon: Star },
         { text: `{user}, "{title}" sigue intacta.`, subtext: `Es el momento perfecto para empezar y sentir {emotion} por primera vez.`, icon: BookOpen },
         { text: `¿Curiosidad por "{title}"?`, subtext: `No dejes que siga acumulando polvo digital. ¡Dale play!`, icon: Clapperboard },
-        { text: `El inicio de "{title}" promete mucho.`, subtext: `Prepara tus emociones para una dosis de {plotKey}.`, icon: Sun }
+        { text: `El inicio de "{title}" promete mucho.`, subtext: `Prepara tus emociones para {plotKey}.`, icon: Sun }
     ],
 
     // --- CONTEXTO: COMPLETADO (CELEBRACIÓN / MEMORIA) ---
@@ -117,7 +125,7 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
         { text: `Gracias por registrar esta joya: "{title}".`, subtext: `Tu reflexión sobre {emotion} ha sido guardada en la historia.`, icon: CheckCircle2 },
         { text: `¡Misión cumplida con "{title}"!`, subtext: `Ahora {character} vive en tu memoria como una leyenda.`, icon: Heart },
         { text: `Qué viaje ha sido "{title}", ¿verdad?`, subtext: `Una obra {rating} que definió tu gusto por {plotKey}.`, icon: Feather },
-        { text: `Cerraste el ciclo de "{title}".`, subtext: `¿Qué vas a empezar ahora que has superado esa {emotion}?`, icon: Trophy },
+        { text: `Cerraste el ciclo de "{title}".`, subtext: `¿Qué vas a empezar ahora que superaste {emotion}?`, icon: Trophy },
         { text: `Honor a quien honor merece.`, subtext: `Has completado "{title}". Tu colección brilla más hoy.`, icon: Award }
     ],
 
@@ -125,7 +133,7 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
     'Planned': [
         { text: `La dulce espera por "{title}".`, subtext: `Está en tu Wishlist. Pronto llegará el momento de {character}.`, icon: CalendarClock },
         { text: `"{title}" está en el horizonte.`, subtext: `Prepárate mentalmente para una dosis futura de {plotKey}.`, icon: Hourglass },
-        { text: `Paciencia, {user}. "{title}" llegará.`, subtext: `Mientras tanto, imagina las posibilidades de esa {emotion}.`, icon: Bookmark },
+        { text: `Paciencia, {user}. "{title}" llegará.`, subtext: `Mientras tanto, imagina las posibilidades de {emotion}.`, icon: Bookmark },
         { text: `Tienes "{title}" en la mira.`, subtext: `Un futuro estreno que promete sacudir tu lista de {plotKey}.`, icon: Telescope },
         { text: `Reserva energía para "{title}".`, subtext: `Cuando se estrene, {character} te estará esperando.`, icon: Star }
     ],
@@ -141,9 +149,11 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
 
     // --- CONTEXTO: CRÍTICO (Prioridad si hay tags negativos en Pausa/Watching) ---
     'Critical': [
-        { text: `¿Vale la pena continuar "{title}"?`, subtext: `Notaste "{negativeEmotion}". Quizás es hora de reevaluar tu tiempo.`, icon: AlertCircle },
+        { text: `¿Vale la pena continuar "{title}"?`, subtext: `Notaste {negativeEmotion}. Quizás es hora de reevaluar tu tiempo.`, icon: AlertCircle },
         { text: `{user}, fuiste duro con "{title}".`, subtext: `Esa sensación de {negativeEmotion} no se ignora fácilmente.`, icon: Frown },
-        { text: `Reflexionemos sobre "{title}".`, subtext: `¿{negativeEmotion} arruinó la experiencia o hay esperanza?`, icon: CloudRain }
+        { text: `Reflexionemos sobre "{title}".`, subtext: `¿{negativeEmotion} arruinó la experiencia o hay esperanza?`, icon: CloudRain },
+        { text: `{user}, "{title}" tiene un problema.`, subtext: `Ese {negativeEmotion} está pesando más de la cuenta. ¿Lo dejamos?`, icon: AlertTriangle },
+        { text: `Seamos honestos con "{title}".`, subtext: `Ese {negativeEmotion} no se puede ignorar para siempre.`, icon: Frown }
     ]
 
   }), []);

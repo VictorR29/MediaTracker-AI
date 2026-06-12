@@ -65,40 +65,41 @@ export interface UserProfile {
 export interface EmotionalTagOption {
   label: string;
   shortLabel: string;
+  contextual: string; // Forma gramatical correcta para inserción en oraciones
   emoji: string;
   sentiment: 'positive' | 'neutral' | 'negative';
 }
 
 export const EMOTIONAL_TAGS_OPTIONS: EmotionalTagOption[] = [
 // Existing / Positive / Neutral
-{ label: "Me rompió el corazón", shortLabel: "Corazón roto", emoji: "💔", sentiment: 'positive' },
-{ label: "Siento que es perfecto", shortLabel: "Perfecto", emoji: "✨", sentiment: 'positive' },
-{ label: "Personajes entrañables", shortLabel: "Entrañables", emoji: "🫂", sentiment: 'positive' },
-{ label: "Adictivo", shortLabel: "Adictivo", emoji: "💉", sentiment: 'positive' },
-{ label: "Arte/Visuales increíbles", shortLabel: "Arte increíble", emoji: "🎨", sentiment: 'positive' },
-{ label: "Soundtrack memorable", shortLabel: "Soundtrack", emoji: "🎵", sentiment: 'positive' },
-{ label: "Me hizo reír mucho", shortLabel: "Mucha risa", emoji: "🤣", sentiment: 'positive' },
-{ label: "Me dio miedo/ansiedad", shortLabel: "Miedo/Ansiedad", emoji: "😨", sentiment: 'neutral' },
+{ label: "Me rompió el corazón", shortLabel: "Corazón roto", contextual: "una historia que rompe el corazón", emoji: "💔", sentiment: 'positive' },
+{ label: "Siento que es perfecto", shortLabel: "Perfecto", contextual: "una obra perfecta", emoji: "✨", sentiment: 'positive' },
+{ label: "Personajes entrañables", shortLabel: "Entrañables", contextual: "personajes entrañables", emoji: "🫂", sentiment: 'positive' },
+{ label: "Adictivo", shortLabel: "Adictivo", contextual: "algo adictivo", emoji: "💉", sentiment: 'positive' },
+{ label: "Arte/Visuales increíbles", shortLabel: "Arte increíble", contextual: "un arte increíble", emoji: "🎨", sentiment: 'positive' },
+{ label: "Soundtrack memorable", shortLabel: "Soundtrack", contextual: "una soundtrack memorable", emoji: "🎵", sentiment: 'positive' },
+{ label: "Me hizo reír mucho", shortLabel: "Mucha risa", contextual: "algo que me hizo reír mucho", emoji: "🤣", sentiment: 'positive' },
+{ label: "Me dio miedo/ansiedad", shortLabel: "Miedo/Ansiedad", contextual: "una sensación de miedo", emoji: "😨", sentiment: 'neutral' },
 
 // New Positive / Neutral (Quality Focus)
-{ label: "Giro de trama impactante", shortLabel: "Giro impactante", emoji: "🤯", sentiment: 'positive' },
-{ label: "Ritmo impecable", shortLabel: "Ritmo impecable", emoji: "⚡", sentiment: 'positive' },
-{ label: "Construcción de mundo épica", shortLabel: "Mundo épico", emoji: "🌍", sentiment: 'positive' },
-{ label: "Me hizo reflexionar", shortLabel: "Reflexivo", emoji: "🤔", sentiment: 'positive' },
-{ label: "Desafiante / Complejo", shortLabel: "Desafiante", emoji: "🧩", sentiment: 'neutral' },
-{ label: "Pura adrenalina", shortLabel: "Adrenalina", emoji: "🔥", sentiment: 'positive' },
-{ label: "Ideal para maratón", shortLabel: "Para maratón", emoji: "🍿", sentiment: 'positive' },
-{ label: "Cero clichés", shortLabel: "Sin clichés", emoji: "🦄", sentiment: 'positive' },
+{ label: "Giro de trama impactante", shortLabel: "Giro impactante", contextual: "un giro impactante", emoji: "🤯", sentiment: 'positive' },
+{ label: "Ritmo impecable", shortLabel: "Ritmo impecable", contextual: "un ritmo impecable", emoji: "⚡", sentiment: 'positive' },
+{ label: "Construcción de mundo épica", shortLabel: "Mundo épico", contextual: "un mundo épico", emoji: "🌍", sentiment: 'positive' },
+{ label: "Me hizo reflexionar", shortLabel: "Reflexivo", contextual: "algo que me hizo reflexionar", emoji: "🤔", sentiment: 'positive' },
+{ label: "Desafiante / Complejo", shortLabel: "Desafiante", contextual: "un desafío complejo", emoji: "🧩", sentiment: 'neutral' },
+{ label: "Pura adrenalina", shortLabel: "Adrenalina", contextual: "pura adrenalina", emoji: "🔥", sentiment: 'positive' },
+{ label: "Ideal para maratón", shortLabel: "Para maratón", contextual: "algo ideal para maratón", emoji: "🍿", sentiment: 'positive' },
+{ label: "Cero clichés", shortLabel: "Sin clichés", contextual: "algo sin clichés", emoji: "🦄", sentiment: 'positive' },
 
 // New Negative / Critical (Deficiency Focus)
-{ label: "Trama confusa", shortLabel: "Confusa", emoji: "🌀", sentiment: 'negative' },
-{ label: "Me decepcionó el final", shortLabel: "Mal final", emoji: "📉", sentiment: 'negative' },
-{ label: "Trama sin rumbo / Lenta", shortLabel: "Lenta/Sin rumbo", emoji: "🐌", sentiment: 'negative' },
-{ label: "Final decepcionante", shortLabel: "Decepcionante", emoji: "👎", sentiment: 'negative' },
-{ label: "Personajes planos/irritantes", shortLabel: "Pjs planos", emoji: "🙄", sentiment: 'negative' },
-{ label: "Contenido de relleno excesivo", shortLabel: "Mucho relleno", emoji: "🧀", sentiment: 'negative' },
-{ label: "Inconsistencias en la historia", shortLabel: "Inconsistencias", emoji: "🤨", sentiment: 'negative' },
-{ label: "Me costó terminarlo", shortLabel: "Costó terminarlo", emoji: "😮‍💨", sentiment: 'negative' }
+{ label: "Trama confusa", shortLabel: "Confusa", contextual: "una trama confusa", emoji: "🌀", sentiment: 'negative' },
+{ label: "Me decepcionó el final", shortLabel: "Mal final", contextual: "un final decepcionante", emoji: "📉", sentiment: 'negative' },
+{ label: "Trama sin rumbo / Lenta", shortLabel: "Lenta/Sin rumbo", contextual: "una trama lenta", emoji: "🐌", sentiment: 'negative' },
+{ label: "Final decepcionante", shortLabel: "Decepcionante", contextual: "un final decepcionante", emoji: "👎", sentiment: 'negative' },
+{ label: "Personajes planos/irritantes", shortLabel: "Pjs planos", contextual: "personajes planos", emoji: "🙄", sentiment: 'negative' },
+{ label: "Contenido de relleno excesivo", shortLabel: "Mucho relleno", contextual: "mucho relleno", emoji: "🧀", sentiment: 'negative' },
+{ label: "Inconsistencias en la historia", shortLabel: "Inconsistencias", contextual: "inconsistencias en la historia", emoji: "🤨", sentiment: 'negative' },
+{ label: "Me costó terminarlo", shortLabel: "Costó terminarlo", contextual: "algo que costó terminar", emoji: "😮‍💨", sentiment: 'negative' }
 ];
 
 export const RATING_OPTIONS = [

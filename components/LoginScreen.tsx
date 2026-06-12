@@ -61,17 +61,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
     const cleanChars = charList.filter(c => c && c.trim() !== '');
     const character = pickRandom(cleanChars) || 'el protagonista';
 
-    // Random Emotion
+    // Random Emotion — usar forma contextual para inserción en oraciones
     const emotionsRaw = focusWork.trackingData.emotionalTags;
     const emotionList = Array.isArray(emotionsRaw) ? emotionsRaw : [];
-    const emotion = pickRandom(emotionList) || 'una emoción intensa';
+    const emotionTag = emotionList.length > 0
+      ? EMOTIONAL_TAGS_OPTIONS.find(opt => emotionList.includes(opt.label))
+      : null;
+    const emotion = emotionTag?.contextual || 'una emoción intensa';
 
     // Negative Tag Detection
     const negativeTags = EMOTIONAL_TAGS_OPTIONS
         .filter(opt => opt.sentiment === 'negative')
         .map(opt => opt.label);
     const hasNegativeTag = emotionList.some(tag => negativeTags.includes(tag));
-    const negativeEmotion = emotionList.find(tag => negativeTags.includes(tag)) || 'ese detalle';
+    const negLabel = emotionList.find(tag => negativeTags.includes(tag));
+    const negTag = negLabel ? EMOTIONAL_TAGS_OPTIONS.find(opt => opt.label === negLabel) : null;
+    const negativeEmotion = negTag?.contextual || 'ese detalle';
 
     // 3. Plantillas de Mensajes BASADAS EN ESTADO (STATUS)
     const templates = [
