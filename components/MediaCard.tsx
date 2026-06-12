@@ -584,46 +584,42 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               {!isMovie && (
                 <div className="space-y-3">
                   {/* Season stepper */}
-                  <div className="flex items-center gap-3 bg-zinc-900/50 rounded-xl px-4 py-3">
-                    <span className="text-xs font-bold text-zinc-500 uppercase w-24 flex-shrink-0">
-                      {isReadingContent ? 'Vol. Actual' : 'Temporada'}
+                  <div className="bg-zinc-900/50 rounded-xl px-4 py-3">
+                    <span className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">
+                      {isReadingContent ? 'Volumen Actual' : 'Temporada Actual'}
                     </span>
-                    <div className="flex items-center gap-2 flex-1 justify-center">
+                    <div className="flex items-center justify-between">
                       <button onClick={() => handleInputChange('currentSeason', Math.max(1, tracking.currentSeason - 1))}
-                        className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
-                        <ChevronLeft className="w-4 h-4" />
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        <ChevronLeft className="w-5 h-5" />
                       </button>
-                      <span className="text-xl font-black text-white w-12 text-center">{tracking.currentSeason}</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-black text-white">{tracking.currentSeason}</span>
+                        <span className="text-zinc-600 text-sm font-bold">/ {tracking.totalSeasons}</span>
+                      </div>
                       <button onClick={() => handleInputChange('currentSeason', tracking.totalSeasons > 0 ? Math.min(tracking.totalSeasons, tracking.currentSeason + 1) : tracking.currentSeason + 1)}
-                        className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
-                        <ChevronRight className="w-4 h-4" />
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        <ChevronRight className="w-5 h-5" />
                       </button>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-zinc-600 text-sm">de</span>
-                      <input type="number" value={tracking.totalSeasons} onChange={(e) => handleInputChange('totalSeasons', parseInt(e.target.value) || 1)}
-                        className="w-12 bg-zinc-800 ring-1 ring-white/[0.06] rounded-lg py-1.5 text-center text-sm font-bold text-white outline-none" />
                     </div>
                   </div>
 
                   {/* Episode stepper */}
-                  <div className="flex items-center gap-3 bg-zinc-900/50 rounded-xl px-4 py-3">
-                    <span className="text-xs font-bold text-zinc-500 uppercase w-24 flex-shrink-0">Capítulos</span>
-                    <div className="flex items-center gap-2 flex-1 justify-center">
+                  <div className="bg-zinc-900/50 rounded-xl px-4 py-3">
+                    <span className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Capítulos Vistos</span>
+                    <div className="flex items-center justify-between">
                       <button onClick={() => handleInputChange('watchedEpisodes', Math.max(0, tracking.watchedEpisodes - 1))}
-                        className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
-                        <Minus className="w-4 h-4" />
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        <Minus className="w-5 h-5" />
                       </button>
-                      <span className="text-xl font-black text-white w-12 text-center">{tracking.watchedEpisodes}</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-black text-white">{tracking.watchedEpisodes}</span>
+                        <span className="text-zinc-600 text-sm font-bold">/ {tracking.totalEpisodesInSeason}</span>
+                      </div>
                       <button onClick={() => handleInputChange('watchedEpisodes', tracking.totalEpisodesInSeason > 0 ? Math.min(tracking.totalEpisodesInSeason, tracking.watchedEpisodes + 1) : tracking.watchedEpisodes + 1)}
-                        className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
-                        <Plus className="w-4 h-4" />
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        <Plus className="w-5 h-5" />
                       </button>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-zinc-600 text-sm">de</span>
-                      <input type="number" value={tracking.totalEpisodesInSeason} onChange={(e) => handleInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)}
-                        className="w-12 bg-zinc-800 ring-1 ring-white/[0.06] rounded-lg py-1.5 text-center text-sm font-bold text-white outline-none" />
                     </div>
                   </div>
 
