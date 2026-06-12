@@ -237,6 +237,19 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
 
           {/* Right: Legend + Stats */}
           <div className="flex-1 w-full min-w-0">
+            {/* Hovered stat — header above legend */}
+            {hoveredAxis && (
+              <div className="mb-3 p-3 md:p-4 bg-white/[0.04] rounded-xl ring-1 ring-white/[0.08] flex items-center gap-3 animate-fade-in">
+                <div className="w-2 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: RADAR_COLOR }} />
+                <div className="min-w-0">
+                  <p className="text-sm md:text-base font-bold text-white truncate">{hoveredAxis}</p>
+                  <p className="text-xs text-zinc-400 font-mono">
+                    {(emotions.find(([l]) => l === hoveredAxis)?.[1] ?? 0).toFixed(0)} minutos invertidos
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Legend — interactive grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-2">
               {emotions.map(([label, time], i) => {
@@ -281,16 +294,6 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
                 );
               })}
             </div>
-
-            {/* Hovered stat detail */}
-            {hoveredAxis && (
-              <div className="mt-4 p-3 bg-white/[0.03] rounded-xl ring-1 ring-white/[0.06] text-center animate-fade-in">
-                <p className="text-base font-bold text-white">{hoveredAxis}</p>
-                <p className="text-xs text-zinc-400 font-mono mt-1">
-                  {(emotions.find(([l]) => l === hoveredAxis)?.[1] ?? 0).toFixed(0)} minutos invertidos
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </div>
