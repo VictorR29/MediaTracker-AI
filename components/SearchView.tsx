@@ -141,7 +141,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
     setManualTypeSelectorOpen(true);
   };
 
-  const handleManualTypeSelection = (type: string) => {
+  const handleManualTypeSelection = async (type: string) => {
     setManualTypeSelectorOpen(false);
     const isMovie = type === 'Pelicula';
     const newItem: MediaItem = {
@@ -170,6 +170,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
       },
       createdAt: Date.now()
     };
+    await addItem(newItem);
     onOpenDetail(newItem);
   };
 
