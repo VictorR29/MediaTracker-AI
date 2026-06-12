@@ -302,8 +302,40 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             )}
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
 
+            {/* Floating action buttons - top right */}
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-1.5 z-20">
+              <button
+                onClick={() => handleInputChange('is_favorite', !tracking.is_favorite)}
+                className={`min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-full backdrop-blur-md transition-all ${
+                  tracking.is_favorite 
+                    ? 'bg-yellow-500/20 text-yellow-400' 
+                    : 'bg-black/40 text-white/60 hover:text-yellow-400 hover:bg-yellow-500/20'
+                }`}
+              >
+                <Star className={`w-4 h-4 ${tracking.is_favorite ? 'fill-current' : ''}`} />
+              </button>
+              
+              {!isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-full bg-black/40 backdrop-blur-md text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              )}
+
+              {onDelete && (
+                <button
+                  onClick={onDelete}
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-full bg-black/40 backdrop-blur-md text-white/40 hover:text-red-400 hover:bg-red-500/20 transition-all"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
             {/* Title overlay at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
+            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 z-10">
               {isEditing ? (
                 <div className="space-y-2">
                   <input
@@ -330,49 +362,17 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   {aiData.originalTitle && (
                     <p className="text-sm sm:text-base text-zinc-400 italic drop-shadow-md">{aiData.originalTitle}</p>
                   )}
+                  {/* Inline badges */}
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="px-2 py-0.5 bg-white/10 backdrop-blur-sm rounded text-[10px] font-bold text-white/70 uppercase">{aiData.mediaType}</span>
+                    <span className="px-2 py-0.5 bg-white/10 backdrop-blur-sm rounded text-[10px] font-bold text-white/70 uppercase">{aiData.status}</span>
+                    {tracking.is_favorite && (
+                      <span className="px-2 py-0.5 bg-yellow-500/20 backdrop-blur-sm rounded text-[10px] font-bold text-yellow-400 uppercase flex items-center gap-1">
+                        <Star className="w-2.5 h-2.5 fill-current" /> Favorito
+                      </span>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Badges & Actions bar */}
-          <div className="flex flex-wrap items-center gap-2 px-4 sm:px-6 md:px-8 py-3 bg-zinc-900/50 border-b border-white/[0.04]">
-            <span className="px-2.5 py-1 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded-md text-[10px] font-bold text-zinc-400 uppercase">{aiData.mediaType}</span>
-            <span className="px-2.5 py-1 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded-md text-[10px] font-bold text-zinc-400 uppercase">{aiData.status}</span>
-            {tracking.is_favorite && (
-              <span className="px-2.5 py-1 bg-yellow-500/10 ring-1 ring-yellow-500/30 rounded-md text-[10px] font-bold text-yellow-500 uppercase flex items-center gap-1">
-                <Star className="w-3 h-3 fill-current" /> Favorito
-              </span>
-            )}
-            
-            <div className="flex items-center gap-2 ml-auto">
-              <button
-                onClick={() => handleInputChange('is_favorite', !tracking.is_favorite)}
-                className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl transition-all ${
-                  tracking.is_favorite 
-                    ? 'text-yellow-500' 
-                    : 'text-zinc-500 hover:text-yellow-500'
-                }`}
-              >
-                <Star className={`w-5 h-5 ${tracking.is_favorite ? 'fill-current' : ''}`} />
-              </button>
-              
-              {!isEditing && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl text-zinc-500 hover:text-white transition-all"
-                >
-                  <Edit3 className="w-5 h-5" />
-                </button>
-              )}
-
-              {onDelete && (
-                <button
-                  onClick={onDelete}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-all"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
               )}
             </div>
           </div>
@@ -652,6 +652,33 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   {tracking.status === 'Completado' ? 'COMPLETADO' : 'MARCAR COMO VISTO'}
                 </button>
               )}
+            </div>
+          )}
+
+          {/* ═══ RESEÑA TAB ═══ */}
+          {activeTab === 'resena' && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Rating */}
+              <div>
+                <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Calificación</span>
+                <div className="flex flex-wrap gap-2">
+                  {RATING_OPTIONS.map((opt) => {
+                    const isSelected = tracking.rating === opt;
+                    const label = opt.split(' ')[0];
+                    return (
+                      <button key={opt} onClick={() => handleInputChange('rating', opt)}
+                        className={`flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
+                          isSelected 
+                            ? 'bg-[rgb(var(--card-rgb)/0.15)] border-[rgb(var(--card-rgb)/0.6)] text-[rgb(var(--card-rgb))]' 
+                            : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
+                        }`}>
+                        <Star className={`w-3 h-3 ${isSelected ? 'fill-current' : ''}`} />
+                        <span className="uppercase tracking-wide">{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               {/* Characters */}
               <div>
@@ -690,33 +717,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   </button>
                 </div>
                 <p className="text-[10px] text-zinc-600 mt-1.5 italic">Arrastra para reordenar. Top 5 aparecen destacados.</p>
-              </div>
-            </div>
-          )}
-
-          {/* ═══ RESEÑA TAB ═══ */}
-          {activeTab === 'resena' && (
-            <div className="space-y-6 animate-fade-in">
-              {/* Rating */}
-              <div>
-                <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Calificación</span>
-                <div className="flex flex-wrap gap-2">
-                  {RATING_OPTIONS.map((opt) => {
-                    const isSelected = tracking.rating === opt;
-                    const label = opt.split(' ')[0];
-                    return (
-                      <button key={opt} onClick={() => handleInputChange('rating', opt)}
-                        className={`flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
-                          isSelected 
-                            ? 'bg-[rgb(var(--card-rgb)/0.15)] border-[rgb(var(--card-rgb)/0.6)] text-[rgb(var(--card-rgb))]' 
-                            : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
-                        }`}>
-                        <Star className={`w-3 h-3 ${isSelected ? 'fill-current' : ''}`} />
-                        <span className="uppercase tracking-wide">{label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
 
               {/* Generate Review */}
