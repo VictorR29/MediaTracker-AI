@@ -241,7 +241,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
       )}
 
       {/* Main */}
-      <main className={`pt-4 pb-24 px-4 md:px-8 max-w-7xl mx-auto min-h-screen ${isImmersiveMode ? 'pt-0 px-0 max-w-none' : ''}`}>
+      <main className={`pt-20 pb-24 px-4 md:px-8 md:pt-4 max-w-7xl mx-auto min-h-screen ${isImmersiveMode ? 'pt-0 px-0 max-w-none' : ''}`}>
         <AppRouter
           onOpenDetail={handleOpenDetail}
           onIncrementProgress={handleIncrementProgress}
