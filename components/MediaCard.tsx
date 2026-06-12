@@ -535,104 +535,118 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
           {/* ═══ PROGRESO TAB ═══ */}
           {activeTab === 'progreso' && (
-            <div className="space-y-6 animate-fade-in">
-              {/* Status */}
+            <div className="space-y-5 animate-fade-in">
+              {/* Status - Visual Badges */}
               <div>
-                <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Estado</span>
-                <select value={tracking.status} onChange={(e) => handleInputChange('status', e.target.value)}
-                  className="w-full bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:ring-white/20 appearance-none">
-                  <option value="Sin empezar">Sin empezar</option>
-                  <option value="Viendo/Leyendo">Viendo/Leyendo</option>
-                  <option value="Completado">Completado</option>
-                  <option value="En Pausa">En Pausa</option>
-                  <option value="Descartado">Descartado</option>
-                  <option value="Planeado / Pendiente">Planeado / Pendiente</option>
-                </select>
+                <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Estado</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Sin empezar', 'Viendo/Leyendo', 'Completado', 'En Pausa', 'Descartado', 'Planeado / Pendiente'].map((status) => {
+                    const isActive = tracking.status === status;
+                    const colors: Record<string, string> = {
+                      'Sin empezar': 'border-zinc-600 text-zinc-400',
+                      'Viendo/Leyendo': 'border-blue-500/60 text-blue-400',
+                      'Completado': 'border-green-500/60 text-green-400',
+                      'En Pausa': 'border-yellow-500/60 text-yellow-400',
+                      'Descartado': 'border-red-500/60 text-red-400',
+                      'Planeado / Pendiente': 'border-purple-500/60 text-purple-400',
+                    };
+                    const activeColors: Record<string, string> = {
+                      'Sin empezar': 'bg-zinc-700/50 border-zinc-500 text-white',
+                      'Viendo/Leyendo': 'bg-blue-500/15 border-blue-500 text-blue-400',
+                      'Completado': 'bg-green-500/15 border-green-500 text-green-400',
+                      'En Pausa': 'bg-yellow-500/15 border-yellow-500 text-yellow-400',
+                      'Descartado': 'bg-red-500/15 border-red-500 text-red-400',
+                      'Planeado / Pendiente': 'bg-purple-500/15 border-purple-500 text-purple-400',
+                    };
+                    return (
+                      <button key={status} onClick={() => handleInputChange('status', status)}
+                        className={`px-2 py-2.5 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all ${
+                          isActive ? activeColors[status] : `bg-zinc-900/30 ${colors[status]} opacity-50 hover:opacity-80`
+                        }`}>
+                        {status === 'Viendo/Leyendo' ? 'Viendo' : status === 'Planeado / Pendiente' ? 'Planeado' : status}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Planned Date */}
+              {/* Planned Date - Compact inline */}
               {tracking.status === 'Planeado / Pendiente' && (
-                <div className="bg-[rgb(var(--card-rgb)/0.1)] border border-[rgb(var(--card-rgb)/0.2)] rounded-xl p-4 animate-fade-in">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 text-[rgb(var(--card-rgb))]">
-                      <CalendarClock className="w-4 h-4" />
-                      <span className="text-xs font-bold">¿Cuándo se estrena?</span>
-                    </div>
-                    <input type="date" value={tracking.nextReleaseDate || ''} onChange={(e) => handleInputChange('nextReleaseDate', e.target.value)}
-                      className="bg-zinc-900 ring-1 ring-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-white outline-none" />
-                  </div>
+                <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3 animate-fade-in">
+                  <CalendarClock className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                  <span className="text-xs font-bold text-purple-300">Estreno:</span>
+                  <input type="date" value={tracking.nextReleaseDate || ''} onChange={(e) => handleInputChange('nextReleaseDate', e.target.value)}
+                    className="bg-transparent text-sm text-white outline-none flex-1" />
                 </div>
               )}
 
-              {/* Season & Episode Controls */}
+              {/* Season & Episode - Compact Steppers */}
               {!isMovie && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">
-                        {isReadingContent ? 'Volumen Actual' : 'Temporada Actual'}
-                      </span>
-                      <div className="relative">
-                        <button onClick={() => handleInputChange('currentSeason', Math.max(1, tracking.currentSeason - 1))}
-                          className="absolute left-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-white">
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <input type="number" min={1} max={tracking.totalSeasons} value={tracking.currentSeason}
-                          onChange={(e) => { let val = parseInt(e.target.value) || 1; if (tracking.totalSeasons > 0 && val > tracking.totalSeasons) val = tracking.totalSeasons; handleInputChange('currentSeason', val); }}
-                          className="w-full bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl py-3 text-center text-lg font-bold text-white outline-none" />
-                        <button onClick={() => handleInputChange('currentSeason', tracking.totalSeasons > 0 ? Math.min(tracking.totalSeasons, tracking.currentSeason + 1) : tracking.currentSeason + 1)}
-                          className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-white">
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
+                <div className="space-y-3">
+                  {/* Season stepper */}
+                  <div className="flex items-center gap-3 bg-zinc-900/50 rounded-xl px-4 py-3">
+                    <span className="text-xs font-bold text-zinc-500 uppercase w-24 flex-shrink-0">
+                      {isReadingContent ? 'Vol. Actual' : 'Temporada'}
+                    </span>
+                    <div className="flex items-center gap-2 flex-1 justify-center">
+                      <button onClick={() => handleInputChange('currentSeason', Math.max(1, tracking.currentSeason - 1))}
+                        className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-xl font-black text-white w-12 text-center">{tracking.currentSeason}</span>
+                      <button onClick={() => handleInputChange('currentSeason', tracking.totalSeasons > 0 ? Math.min(tracking.totalSeasons, tracking.currentSeason + 1) : tracking.currentSeason + 1)}
+                        className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
-                    <div>
-                      <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Total {isReadingContent ? 'Vols' : 'Temps'}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-zinc-600 text-sm">de</span>
                       <input type="number" value={tracking.totalSeasons} onChange={(e) => handleInputChange('totalSeasons', parseInt(e.target.value) || 1)}
-                        className="w-full bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl py-3 text-center text-lg font-bold text-white outline-none" />
+                        className="w-12 bg-zinc-800 ring-1 ring-white/[0.06] rounded-lg py-1.5 text-center text-sm font-bold text-white outline-none" />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Capítulos Vistos</span>
-                      <div className="relative">
-                        <button onClick={() => handleInputChange('watchedEpisodes', Math.max(0, tracking.watchedEpisodes - 1))}
-                          className="absolute left-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-white">
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <input type="number" min={0} max={tracking.totalEpisodesInSeason} value={tracking.watchedEpisodes}
-                          onChange={(e) => { let val = parseInt(e.target.value) || 0; if (tracking.totalEpisodesInSeason > 0 && val > tracking.totalEpisodesInSeason) val = tracking.totalEpisodesInSeason; handleInputChange('watchedEpisodes', val); }}
-                          className="w-full bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl py-3 text-center text-lg font-bold text-white outline-none" />
-                        <button onClick={() => handleInputChange('watchedEpisodes', tracking.totalEpisodesInSeason > 0 ? Math.min(tracking.totalEpisodesInSeason, tracking.watchedEpisodes + 1) : tracking.watchedEpisodes + 1)}
-                          className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-white">
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
+                  {/* Episode stepper */}
+                  <div className="flex items-center gap-3 bg-zinc-900/50 rounded-xl px-4 py-3">
+                    <span className="text-xs font-bold text-zinc-500 uppercase w-24 flex-shrink-0">Capítulos</span>
+                    <div className="flex items-center gap-2 flex-1 justify-center">
+                      <button onClick={() => handleInputChange('watchedEpisodes', Math.max(0, tracking.watchedEpisodes - 1))}
+                        className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="text-xl font-black text-white w-12 text-center">{tracking.watchedEpisodes}</span>
+                      <button onClick={() => handleInputChange('watchedEpisodes', tracking.totalEpisodesInSeason > 0 ? Math.min(tracking.totalEpisodesInSeason, tracking.watchedEpisodes + 1) : tracking.watchedEpisodes + 1)}
+                        className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        <Plus className="w-4 h-4" />
+                      </button>
                     </div>
-                    <div>
-                      <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Total Capítulos</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-zinc-600 text-sm">de</span>
                       <input type="number" value={tracking.totalEpisodesInSeason} onChange={(e) => handleInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)}
-                        className="w-full bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl py-3 text-center text-lg font-bold text-white outline-none" />
+                        className="w-12 bg-zinc-800 ring-1 ring-white/[0.06] rounded-lg py-1.5 text-center text-sm font-bold text-white outline-none" />
                     </div>
                   </div>
 
-                  {/* Progress Bar */}
-                  <div>
-                    <div className="flex justify-between text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">
-                      <span>Progreso T.{tracking.currentSeason}</span>
-                      <span>{progressPercent.toFixed(0)}%</span>
+                  {/* Progress Bar - Hero Style */}
+                  <div className="bg-zinc-900/50 rounded-xl px-4 py-4">
+                    <div className="flex items-end justify-between mb-3">
+                      <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Progreso T.{tracking.currentSeason}</span>
+                      <span className="text-2xl font-black" style={{ color: dynamicColor }}>{progressPercent.toFixed(0)}%</span>
                     </div>
-                    <div className="h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
                       <div className="h-full transition-all duration-700 rounded-full"
                         style={{ width: `${progressPercent}%`, background: `linear-gradient(to right, rgb(var(--card-rgb)), rgba(var(--card-rgb), 0.6))` }} />
+                    </div>
+                    <div className="flex justify-between mt-2 text-[10px] text-zinc-600 font-bold">
+                      <span>{tracking.watchedEpisodes} vistos</span>
+                      <span>{Math.max(0, tracking.totalEpisodesInSeason - tracking.watchedEpisodes)} restantes</span>
                     </div>
                   </div>
 
                   {/* Complete Season Button */}
                   {tracking.totalEpisodesInSeason > 0 && tracking.watchedEpisodes >= tracking.totalEpisodesInSeason && (
                     <button onClick={handleNextSeason}
-                      className="w-full py-3 bg-[rgb(var(--card-rgb))] hover:opacity-90 text-white rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all animate-fade-in">
+                      className="w-full py-3.5 bg-[rgb(var(--card-rgb))] hover:opacity-90 text-white rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all animate-fade-in">
                       <CheckCircle2 className="w-4 h-4" />
                       {tracking.currentSeason < tracking.totalSeasons ? `Completar Temporada ${tracking.currentSeason}` : 'Completar Obra'}
                     </button>
@@ -640,15 +654,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 </div>
               )}
 
-              {/* Movie Toggle */}
+              {/* Movie Toggle - Large Visual */}
               {isMovie && (
                 <button onClick={() => handleInputChange('status', tracking.status === 'Completado' ? 'Sin empezar' : 'Completado')}
-                  className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-3 transition-all ring-1 ${
+                  className={`w-full py-5 rounded-xl font-bold text-sm flex items-center justify-center gap-3 transition-all ring-1 ${
                     tracking.status === 'Completado' 
-                      ? 'bg-green-500/10 ring-green-500/30 text-green-500' 
+                      ? 'bg-green-500/15 ring-green-500/40 text-green-400' 
                       : 'bg-zinc-900/50 ring-white/[0.06] text-zinc-300 hover:bg-zinc-800'
                   }`}>
-                  {tracking.status === 'Completado' ? <CheckCircle2 className="w-5 h-5" /> : <PlayCircle className="w-5 h-5" />}
+                  {tracking.status === 'Completado' ? <CheckCircle2 className="w-6 h-6" /> : <PlayCircle className="w-6 h-6" />}
                   {tracking.status === 'Completado' ? 'COMPLETADO' : 'MARCAR COMO VISTO'}
                 </button>
               )}
