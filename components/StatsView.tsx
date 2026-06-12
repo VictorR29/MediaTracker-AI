@@ -55,22 +55,16 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         className="p-2 text-zinc-400 hover:text-white bg-[#1C1C1F] hover:bg-white/[0.08] rounded-lg ring-1 ring-white/[0.06] transition-all duration-150 flex items-center gap-2 text-xs font-medium flex-shrink-0 active:scale-[0.97]"
         style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
       >
-          <Settings className="w-4 h-4" />
-          <span className="hidden sm:inline">Configurar</span>
-        </button>
+        <Settings className="w-4 h-4" />
+        <span className="hidden sm:inline">Configurar</span>
+      </button>
       </div>
 
-      {/* Personal Recap */}
-      <PersonalRecap stats={stats} />
+      {/* 1. HERO — Ranking Banner */}
+      <RankingBanner stats={stats} />
 
-      {/* Obsession Tracker */}
-      <ObsessionTracker stats={stats} />
-
-      {/* Consumption Distribution */}
-      <ConsumptionDistribution stats={stats} />
-
-      {/* KPIs Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 2. RESUMEN — KPIs Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard
           title="Total Obras"
           value={stats.total}
@@ -104,11 +98,17 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
         />
       </div>
 
-      {/* Charts Row */}
-      <ChartsRow stats={stats} />
+      {/* 3. TIEMPO — Personal Recap */}
+      <PersonalRecap stats={stats} />
 
-      {/* Ranking Banner */}
-      <RankingBanner stats={stats} />
+      {/* 4. OBSESIONES — Top 3 */}
+      <ObsessionTracker stats={stats} />
+
+      {/* 5. TU PERFIL — Distribución + Gráficos */}
+      <div className="space-y-4 md:space-y-6">
+        <ConsumptionDistribution stats={stats} />
+        <ChartsRow stats={stats} />
+      </div>
 
       {/* Settings Modal */}
       <SettingsModal
