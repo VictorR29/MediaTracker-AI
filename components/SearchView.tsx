@@ -8,6 +8,7 @@ import { useUIStore } from '../stores/useUIStore';
 import { MediaItem } from '../types';
 import { searchMediaInfo } from '../services/geminiService';
 import { SearchBar } from './SearchBar';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { MediaCard } from './MediaCard';
 
 interface SearchViewProps {
@@ -29,6 +30,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
   const [noResultBaseQuery, setNoResultBaseQuery] = useState<string | null>(null);
   const [variantIndex, setVariantIndex] = useState(0);
+  const typeModalRef = useFocusTrap<HTMLDivElement>(isManualTypeSelectorOpen, () => setManualTypeSelectorOpen(false));
 
   // Consume navigation state from recommendation flow
   useEffect(() => {
@@ -264,7 +266,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
 
       {/* Manual Type Selector Modal */}
       {isManualTypeSelectorOpen && (
-        <div className="fixed inset-0 z-[100] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+        <div ref={typeModalRef} role="dialog" aria-modal="true" aria-label="Crear obra manualmente" className="fixed inset-0 z-[100] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-[#111113] ring-1 ring-white/[0.06] rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
         <div className="p-6 ring-1 ring-white/[0.06] ring-b flex justify-between items-center">
               <h3 className="text-xl font-bold text-white flex items-center gap-2">

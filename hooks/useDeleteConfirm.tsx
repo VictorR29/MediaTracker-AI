@@ -3,6 +3,7 @@ import { AlertTriangle, Trash2 } from 'lucide-react';
 import { MediaItem } from '../types';
 import { useLibraryStore } from '../stores/useLibraryStore';
 import { useToast } from '../context/ToastContext';
+import { useFocusTrap } from './useFocusTrap';
 
 interface DeleteConfirmState {
   itemToDelete: MediaItem | null;
@@ -47,14 +48,15 @@ export const useDeleteConfirm = (onAfterDelete?: () => void): DeleteConfirmState
   }, [itemToDelete, showToast, onAfterDelete]);
 
   const DeleteModal: React.FC = () => {
+    const modalRef = useFocusTrap<HTMLDivElement>(!!itemToDelete, cancelDelete);
     if (!itemToDelete) return null;
     return (
-      <div className="fixed inset-0 z-[100] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" className="fixed inset-0 z-[100] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
         <div className="bg-[#111113] ring-1 ring-white/[0.06] rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-fade-in-up">
           <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
             <AlertTriangle className="w-8 h-8 text-red-500" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">¿Eliminar Obra?</h3>
+          <h3 id="delete-modal-title" className="text-xl font-bold text-white mb-2">¿Eliminar Obra?</h3>
           <p className="text-sm text-zinc-400 mb-6">
             Estás a punto de borrar <span className="text-white font-bold">"{itemToDelete.aiData.title}"</span>.
             <br />Esta acción es irreversible y perderás todo tu progreso.

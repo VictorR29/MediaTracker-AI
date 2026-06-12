@@ -6,10 +6,12 @@ import {
 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { useAuthStore } from '../stores/useAuthStore';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export const MobileMenuSheet: React.FC = () => {
   const { isMobileMenuOpen, setMobileMenuOpen, setSettingsOpen } = useUIStore();
   const username = useAuthStore(s => s.userProfile?.username);
+  const sheetRef = useFocusTrap<HTMLDivElement>(isMobileMenuOpen, () => setMobileMenuOpen(false));
 
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -19,15 +21,6 @@ export const MobileMenuSheet: React.FC = () => {
     }
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
-
-  useEffect(() => {
-    if (!isMobileMenuOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileMenuOpen(false);
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [isMobileMenuOpen, setMobileMenuOpen]);
 
   if (!isMobileMenuOpen) return null;
 
@@ -42,7 +35,7 @@ export const MobileMenuSheet: React.FC = () => {
   };
 
   return createPortal(
-    <div className="md:hidden fixed inset-0 z-[100] animate-fade-in">
+    <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Menú" className="md:hidden fixed inset-0 z-[100] animate-fade-in">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-zinc-950/80 backdrop-blur-md"

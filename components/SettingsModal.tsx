@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { saveMediaItem, deleteMediaItem } from '../services/storage';
 import { hashPassword } from '../utils/password';
 import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2 } from 'lucide-react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const catalogInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
   const [isDragging, setIsDragging] = useState(false);
 
   // --- STORAGE STATS CALCULATION ---
@@ -297,7 +299,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="settings-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
         <div className="bg-[#111113] ring-1 ring-white/[0.06] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row h-[600px] md:h-auto md:max-h-[85vh] relative">
             
             <button 
@@ -309,7 +311,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             {/* Sidebar */}
             <div className="w-full md:w-64 bg-zinc-900/50 border-b md:border-b-0 md:border-r border-white/10 p-4 md:p-6 flex flex-col gap-2 flex-shrink-0">
-                <h2 className="text-xl font-bold text-white mb-4 px-2">Configuración</h2>
+                <h2 id="settings-title" className="text-xl font-bold text-white mb-4 px-2">Configuración</h2>
                 
                 <button 
                   onClick={() => setActiveTab('profile')}

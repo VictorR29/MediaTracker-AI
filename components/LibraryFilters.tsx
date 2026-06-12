@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, ArrowUpDown, Tags, Filter, X, Check, Star, LayoutGrid, GalleryVerticalEnd } from 'lucide-react';
 import { RATING_OPTIONS } from '../types';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export interface FilterState {
   query: string;
@@ -24,6 +25,7 @@ interface LibraryFiltersProps {
 
 export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChange, availableGenres, viewMode, onToggleViewMode }) => {
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
+  const modalRef = useFocusTrap<HTMLDivElement>(isMobileModalOpen, () => setIsMobileModalOpen(false));
 
   const handleChange = (key: keyof FilterState, value: any) => {
     onChange({ ...filters, [key]: value });
@@ -189,6 +191,10 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
     {/* Mobile Filter Modal — rendered via Portal to body to escape any stacking context */}
     {isMobileModalOpen && createPortal(
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Filtros"
         className="md:hidden"
         style={{
           position: 'fixed',

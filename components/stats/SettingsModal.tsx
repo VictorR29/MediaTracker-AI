@@ -1,6 +1,7 @@
 import React from 'react';
 import { Timer, X, Save } from 'lucide-react';
 import { DurationPreferences } from './StatsData';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -17,13 +18,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   durations,
   onDurationChange
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
     <div className="bg-[#111113] ring-1 ring-white/[0.06] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
       <div className="flex items-center justify-between p-4 ring-1 ring-white/[0.06] bg-[#18181B]">
-        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+        <h3 id="settings-modal-title" className="text-lg font-bold text-white flex items-center gap-2">
           <Timer className="w-5 h-5 text-white" /> Configurar Tiempos
         </h3>
         <button onClick={onClose} className="text-zinc-400 hover:text-white">
