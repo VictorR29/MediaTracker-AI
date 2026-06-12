@@ -293,18 +293,6 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
             )}
           </div>
         </div>
-
-        {/* Hovered stat — shows on hover (desktop) or tap (mobile) */}
-        {hoveredAxis && (
-          <div className="mt-4 text-center animate-fade-in">
-            <p className="text-base md:text-sm font-bold text-white">
-              {hoveredAxis}
-            </p>
-            <p className="text-xs text-zinc-400 font-mono">
-              {(emotions.find(([l]) => l === hoveredAxis)?.[1] ?? 0).toFixed(0)} minutos invertidos
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
