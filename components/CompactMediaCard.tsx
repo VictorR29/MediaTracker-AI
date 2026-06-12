@@ -167,6 +167,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
   const [imageLoaded, setImageLoaded] = useState(false);
   const [justFavorited, setJustFavorited] = useState(false);
   const [justIncremented, setJustIncremented] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   // Auto-extract color from cover image when no real primaryColor exists
@@ -212,7 +213,7 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 
   const handleQuickAction = (e: React.MouseEvent) => { e.stopPropagation(); onIncrement(item); setJustIncremented(true); setTimeout(() => setJustIncremented(false), 350); };
   const handleFavoriteClick = (e: React.MouseEvent) => { e.stopPropagation(); onToggleFavorite?.(item); setJustFavorited(true); setTimeout(() => setJustFavorited(false), 400); };
-  const handleDeleteClick = (e: React.MouseEvent) => { e.stopPropagation(); onDelete?.(item); };
+  const handleDeleteClick = (e: React.MouseEvent) => { e.stopPropagation(); setIsDeleting(true); setTimeout(() => onDelete?.(item), 250); };
 
   const statusStyle = (() => {
     switch (trackingData.status) {
@@ -247,7 +248,7 @@ return (
 		onMouseLeave={() => setIsHovered(false)}
 		className={`group relative rounded-2xl ring-1 ring-white/[0.06] p-1 bg-[#111113] w-full cursor-pointer
 		md:hover:scale-[1.02] transition-shadow duration-500 ease-spring
-		${showEntrance ? 'animate-stagger-in' : 'opacity-0'}`}
+		${isDeleting ? 'animate-delete-exit' : showEntrance ? 'animate-stagger-in' : 'opacity-0'}`}
  style={{
   '--card-rgb': dynamicRgb,
         contentVisibility: 'auto',

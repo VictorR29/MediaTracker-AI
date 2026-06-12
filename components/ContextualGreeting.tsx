@@ -259,11 +259,11 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
             <Icon className="w-6 h-6" style={{ color: accentHex }} />
           </div>
           <div>
-            <p className="text-white text-lg md:text-xl font-semibold tracking-tight leading-tight">
+            <p className="text-white text-xl md:text-2xl font-extrabold tracking-tight leading-tight" style={{ letterSpacing: '-0.02em' }}>
               {greeting.text}
             </p>
             {greeting.subtext && (
-              <p className="text-zinc-400 text-sm md:text-base mt-1 font-medium leading-relaxed">
+              <p className="text-zinc-400 text-sm mt-1.5 font-medium leading-relaxed">
                 {greeting.subtext}
               </p>
             )}
