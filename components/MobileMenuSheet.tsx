@@ -48,7 +48,7 @@ export const MobileMenuSheet: React.FC = () => {
           <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">{username}</h2>
           <button
             onClick={() => setMobileMenuOpen(false)}
-            className="p-1.5 text-zinc-500 hover:text-white hover:bg-white/[0.06] rounded-full transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/[0.06] rounded-full transition-colors"
             aria-label="Cerrar menú"
           >
             <X className="w-4 h-4" />

@@ -33,7 +33,7 @@ const ReflectionColumnInner: React.FC<ReflectionColumnProps> = ({
             <button
               key={opt}
               onClick={() => onInputChange('rating', opt)}
-              className={`flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected ? 'bg-[rgb(var(--card-rgb)/0.15)] border-[rgb(var(--card-rgb)/0.6)] text-[rgb(var(--card-rgb))] shadow-[0_0_12px_rgba(var(--card-rgb),0.15)]' : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}`}
+              className={`flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected ? 'bg-[rgb(var(--card-rgb)/0.15)] border-[rgb(var(--card-rgb)/0.6)] text-[rgb(var(--card-rgb))] shadow-[0_0_12px_rgba(var(--card-rgb),0.15)]' : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}`}
             >
               <Star className={`w-3 h-3 ${isSelected ? 'fill-current' : ''}`} />
               <span className="uppercase tracking-wide">{label}</span>

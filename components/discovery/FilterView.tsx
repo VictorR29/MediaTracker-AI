@@ -87,7 +87,7 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                 <button
                   key={type.value}
                   onClick={() => onSelectType(type.value)}
-                  className={`flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected
+                  className={`flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected
                     ? 'text-white shadow-lg'
                     : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
                   }`}
@@ -228,7 +228,7 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                 <button
                   key={mood.label}
                   onClick={() => onToggleMood(isSelected ? null : mood.label)}
-                  className={`flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected
+                  className={`flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected
                     ? 'bg-white/10 border-white/30 text-white shadow-[0_0_12px_rgba(255,255,255,0.1)]'
                     : 'bg-zinc-900/40 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
                   }`}

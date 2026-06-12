@@ -126,7 +126,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
                   <div className="relative">
                     <button
                       onClick={() => onInputChange('currentSeason', Math.max(1, tracking.currentSeason - 1))}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 text-zinc-500 hover:text-white"
+                      className="absolute left-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-white"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -142,7 +142,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
                     />
                     <button
                       onClick={() => onInputChange('currentSeason', tracking.totalSeasons > 0 ? Math.min(tracking.totalSeasons, tracking.currentSeason + 1) : tracking.currentSeason + 1)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-zinc-500 hover:text-white"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-white"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -165,7 +165,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
                   <div className="relative">
                     <button
                       onClick={() => onInputChange('watchedEpisodes', Math.max(0, tracking.watchedEpisodes - 1))}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 text-zinc-500 hover:text-white"
+                      className="absolute left-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-white"
                     >
                       <Minus className="w-3 h-3 xl:w-4 xl:h-4" />
                     </button>
@@ -181,7 +181,7 @@ const NarrativeColumnInner: React.FC<NarrativeColumnProps> = ({
                     />
                     <button
                       onClick={() => onInputChange('watchedEpisodes', tracking.totalEpisodesInSeason > 0 ? Math.min(tracking.totalEpisodesInSeason, tracking.watchedEpisodes + 1) : tracking.watchedEpisodes + 1)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-zinc-500 hover:text-white"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-white"
                     >
                       <Plus className="w-3 h-3 xl:w-4 xl:h-4" />
                     </button>

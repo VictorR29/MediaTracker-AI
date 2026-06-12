@@ -129,7 +129,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
         <span className="px-3 py-1.5 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded text-xs font-bold text-zinc-400 uppercase">{aiData.mediaType}</span>
         <span className="px-3 py-1.5 bg-zinc-800/80 ring-1 ring-white/[0.06] rounded text-xs font-bold text-zinc-400 uppercase">{aiData.status}</span>
           {!isEditing && (
-            <button onClick={onToggleEdit} className="p-1.5 text-zinc-500 hover:text-white transition-colors" title="Editar detalles">
+            <button onClick={onToggleEdit} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-500 hover:text-white transition-colors" title="Editar detalles">
               <Edit3 className="w-5 h-5" />
             </button>
           )}
@@ -205,7 +205,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
                 placeholder="Añadir género..."
                 className="flex-1 bg-zinc-900 ring-1 ring-white/[0.06] rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:ring-white/20"
               />
-              <button onClick={onAddGenre} className="bg-zinc-800 hover:bg-[rgb(var(--card-rgb))] p-1.5 rounded-lg ring-1 ring-white/[0.06] text-white transition-colors">
+              <button onClick={onAddGenre} className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-zinc-800 hover:bg-[rgb(var(--card-rgb))] rounded-lg ring-1 ring-white/[0.06] text-white transition-colors">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
@@ -236,7 +236,7 @@ const IdentityColumnInner: React.FC<IdentityColumnProps> = ({
                 <a href={link.url} target="_blank" rel="noreferrer" className="text-[rgb(var(--card-rgb))] hover:text-white truncate flex items-center gap-3 flex-1 text-xs xl:text-sm">
                   <LinkIcon className="w-3 h-3 opacity-50" /> {link.title || 'Enlace'}
                 </a>
-                <button onClick={() => onRemoveCustomLink(link.id)} className="p-1.5 text-zinc-600 hover:text-red-500 transition-colors">
+                <button onClick={() => onRemoveCustomLink(link.id)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-600 hover:text-red-500 transition-colors">
                   <X className="w-3 h-3" />
                 </button>
               </div>
