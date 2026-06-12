@@ -16,6 +16,37 @@ interface CharacterEntry {
   character: { name: string; image?: string };
 }
 
+// Image compression helper (same as cover images)
+const compressImage = (base64Str: string, maxWidth: number = 200, quality: number = 0.7): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        const newBase64 = canvas.toDataURL('image/webp', quality);
+        resolve(newBase64);
+      } else {
+        resolve(base64Str);
+      }
+    };
+    img.onerror = () => resolve(base64Str);
+  });
+};
+
 export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const updateItem = useLibraryStore(state => state.updateItem);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -40,10 +71,12 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const updateCharacterImage = useCallback(async (mediaId: string, imageUrl: string) => {
     setUploadingId(mediaId);
     try {
+      // Compress image before saving (same as cover images)
+      const compressed = await compressImage(imageUrl);
       const item = library.find(i => i.id === mediaId);
       if (item) {
         const updatedChars = [...item.trackingData.favoriteCharacters];
-        updatedChars[0] = { ...updatedChars[0], image: imageUrl };
+        updatedChars[0] = { ...updatedChars[0], image: compressed };
         await updateItem({ ...item, trackingData: { ...item.trackingData, favoriteCharacters: updatedChars } });
       }
     } catch (err) {
