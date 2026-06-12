@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Crosshair } from 'lucide-react';
 import { StatsData } from './StatsData';
 
@@ -57,6 +57,11 @@ function getShortLabel(label: string): string {
 
 export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
   const [hoveredAxis, setHoveredAxis] = useState<string | null>(null);
+
+  // Toggle for mobile (tap to select, tap again to deselect)
+  const handleDotClick = useCallback((label: string) => {
+    setHoveredAxis(prev => prev === label ? null : label);
+  }, []);
 
   // Get top emotions sorted by time
   const emotions = useMemo(() => {
@@ -161,7 +166,7 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
         <div className="flex justify-center">
           <svg
             viewBox={`0 0 ${size} ${size}`}
-            className="w-full max-w-[300px] md:max-w-[350px]"
+            className="w-full max-w-[280px] md:max-w-[380px]"
           >
             {/* Grid rings */}
             {gridRings.map((points, i) => (
@@ -201,22 +206,23 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
               }}
             />
 
-            {/* Data points (dots) */}
+            {/* Data points (dots) — clickable for mobile */}
             {dotPoints.map((p, i) => (
               <circle
                 key={i}
                 cx={p.x}
                 cy={p.y}
-                r={hoveredAxis === p.label ? 6 : 4}
+                r={hoveredAxis === p.label ? 7 : 5}
                 fill={RADAR_COLOR}
                 stroke="#18181B"
                 strokeWidth="2"
                 className="transition-all duration-200 cursor-pointer"
                 onMouseEnter={() => setHoveredAxis(p.label)}
                 onMouseLeave={() => setHoveredAxis(null)}
+                onClick={() => handleDotClick(p.label)}
                 style={{
                   filter: hoveredAxis === p.label
-                    ? `drop-shadow(0 0 8px ${RADAR_COLOR})`
+                    ? `drop-shadow(0 0 10px ${RADAR_COLOR})`
                     : 'none',
                 }}
               />
@@ -225,17 +231,17 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
             {/* Center dot */}
             <circle cx={center} cy={center} r="3" fill={RADAR_COLOR} opacity="0.5" />
 
-            {/* Labels */}
+            {/* Labels — hidden on mobile, visible on desktop */}
             {labelPositions.map((lp, i) => {
               const isHovered = hoveredAxis === lp.fullLabel;
               return (
-                <g key={i}>
+                <g key={i} className="hidden md:block">
                   <text
                     x={lp.x}
                     y={lp.y}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    className="text-[10px] md:text-xs font-bold pointer-events-none select-none"
+                    className="text-xs font-bold pointer-events-none select-none"
                     fill={isHovered ? '#ffffff' : LABEL_COLOR}
                     style={{
                       filter: isHovered ? `drop-shadow(0 0 4px ${RADAR_COLOR})` : 'none',
@@ -250,10 +256,10 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
           </svg>
         </div>
 
-        {/* Hovered stat */}
+        {/* Hovered stat — shows on hover (desktop) or tap (mobile) */}
         {hoveredAxis && (
           <div className="mt-4 text-center animate-fade-in">
-            <p className="text-sm font-bold text-white">
+            <p className="text-base md:text-sm font-bold text-white">
               {hoveredAxis}
             </p>
             <p className="text-xs text-zinc-400 font-mono">
@@ -262,30 +268,36 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
           </div>
         )}
 
-        {/* Legend (bottom) */}
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
+        {/* Legend — interactive like pie chart, always visible */}
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
           {emotions.map(([label, time], i) => {
             const percent = maxTime > 0 ? (time / maxTime) * 100 : 0;
+            const isActive = hoveredAxis === label;
             return (
-              <div
+              <button
                 key={label}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium transition-all cursor-default ${
-                  hoveredAxis === label
-                    ? 'bg-white/10 text-white ring-1 ring-white/20'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
+                onClick={() => handleDotClick(label)}
                 onMouseEnter={() => setHoveredAxis(label)}
                 onMouseLeave={() => setHoveredAxis(null)}
+                className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all duration-200 ${
+                  isActive
+                    ? 'bg-white/10 ring-1 ring-white/20 text-white translate-x-1'
+                    : 'bg-white/[0.02] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 ring-1 ring-transparent'
+                }`}
               >
                 <div
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{
-                    backgroundColor: RADAR_COLOR,
-                    opacity: 0.3 + (percent / 100) * 0.7,
-                  }}
+                  className={`w-3 h-3 rounded-full flex-shrink-0 transition-all duration-200 ${isActive ? 'scale-125 ring-2 ring-white/30' : ''}`}
+                  style={{ backgroundColor: RADAR_COLOR, opacity: 0.3 + (percent / 100) * 0.7 }}
                 />
-                <span className="truncate max-w-[80px]">{getShortLabel(label)}</span>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xs font-bold truncate ${isActive ? 'text-white' : ''}`}>
+                    {getShortLabel(label)}
+                  </p>
+                  <p className="text-[10px] text-zinc-500 font-mono">
+                    {time.toFixed(0)}min
+                  </p>
+                </div>
+              </button>
             );
           })}
         </div>
