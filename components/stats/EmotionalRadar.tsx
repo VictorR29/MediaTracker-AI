@@ -162,98 +162,136 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
           </span>
         </div>
 
-        {/* Radar Chart */}
-        <div className="flex justify-center">
-          <svg
-            viewBox={`0 0 ${size} ${size}`}
-            className="w-full max-w-[280px] md:max-w-[380px]"
-          >
-            {/* Grid rings */}
-            {gridRings.map((points, i) => (
+        {/* Radar Chart + Stats — two columns on desktop, stacked on mobile */}
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+          {/* Left: Radar SVG */}
+          <div className="flex justify-center flex-shrink-0">
+            <svg
+              viewBox={`0 0 ${size} ${size}`}
+              className="w-full max-w-[280px] md:max-w-[320px]"
+            >
+              {/* Grid rings */}
+              {gridRings.map((points, i) => (
+                <polygon
+                  key={i}
+                  points={points}
+                  fill="none"
+                  stroke={GRID_COLOR}
+                  strokeWidth="1"
+                />
+              ))}
+
+              {/* Axis lines */}
+              {axisLines.map((line, i) => (
+                <line
+                  key={i}
+                  x1={center}
+                  y1={center}
+                  x2={line.x2}
+                  y2={line.y2}
+                  stroke={GRID_COLOR}
+                  strokeWidth="1"
+                />
+              ))}
+
+              {/* Data polygon - fill */}
               <polygon
-                key={i}
-                points={points}
-                fill="none"
-                stroke={GRID_COLOR}
-                strokeWidth="1"
-              />
-            ))}
-
-            {/* Axis lines */}
-            {axisLines.map((line, i) => (
-              <line
-                key={i}
-                x1={center}
-                y1={center}
-                x2={line.x2}
-                y2={line.y2}
-                stroke={GRID_COLOR}
-                strokeWidth="1"
-              />
-            ))}
-
-            {/* Data polygon - fill */}
-            <polygon
-              points={polygonPoints}
-              fill={RADAR_BG}
-              stroke={RADAR_COLOR}
-              strokeWidth="2"
-              className="transition-all duration-300"
-              style={{
-                filter: hoveredAxis
-                  ? 'drop-shadow(0 0 8px rgba(167, 139, 250, 0.4))'
-                  : 'drop-shadow(0 0 4px rgba(167, 139, 250, 0.2))',
-              }}
-            />
-
-            {/* Data points (dots) — clickable for mobile */}
-            {dotPoints.map((p, i) => (
-              <circle
-                key={i}
-                cx={p.x}
-                cy={p.y}
-                r={hoveredAxis === p.label ? 7 : 5}
-                fill={RADAR_COLOR}
-                stroke="#18181B"
+                points={polygonPoints}
+                fill={RADAR_BG}
+                stroke={RADAR_COLOR}
                 strokeWidth="2"
-                className="transition-all duration-200 cursor-pointer"
-                onMouseEnter={() => setHoveredAxis(p.label)}
-                onMouseLeave={() => setHoveredAxis(null)}
-                onClick={() => handleDotClick(p.label)}
+                className="transition-all duration-300"
                 style={{
-                  filter: hoveredAxis === p.label
-                    ? `drop-shadow(0 0 10px ${RADAR_COLOR})`
-                    : 'none',
+                  filter: hoveredAxis
+                    ? 'drop-shadow(0 0 8px rgba(167, 139, 250, 0.4))'
+                    : 'drop-shadow(0 0 4px rgba(167, 139, 250, 0.2))',
                 }}
               />
-            ))}
 
-            {/* Center dot */}
-            <circle cx={center} cy={center} r="3" fill={RADAR_COLOR} opacity="0.5" />
+              {/* Data points (dots) — clickable for mobile */}
+              {dotPoints.map((p, i) => (
+                <circle
+                  key={i}
+                  cx={p.x}
+                  cy={p.y}
+                  r={hoveredAxis === p.label ? 7 : 5}
+                  fill={RADAR_COLOR}
+                  stroke="#18181B"
+                  strokeWidth="2"
+                  className="transition-all duration-200 cursor-pointer"
+                  onMouseEnter={() => setHoveredAxis(p.label)}
+                  onMouseLeave={() => setHoveredAxis(null)}
+                  onClick={() => handleDotClick(p.label)}
+                  style={{
+                    filter: hoveredAxis === p.label
+                      ? `drop-shadow(0 0 10px ${RADAR_COLOR})`
+                      : 'none',
+                  }}
+                />
+              ))}
 
-            {/* Labels — hidden on mobile, visible on desktop */}
-            {labelPositions.map((lp, i) => {
-              const isHovered = hoveredAxis === lp.fullLabel;
-              return (
-                <g key={i} className="hidden md:block">
-                  <text
-                    x={lp.x}
-                    y={lp.y}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    className="text-xs font-bold pointer-events-none select-none"
-                    fill={isHovered ? '#ffffff' : LABEL_COLOR}
-                    style={{
-                      filter: isHovered ? `drop-shadow(0 0 4px ${RADAR_COLOR})` : 'none',
-                      transition: 'all 0.2s',
-                    }}
+              {/* Center dot */}
+              <circle cx={center} cy={center} r="3" fill={RADAR_COLOR} opacity="0.5" />
+            </svg>
+          </div>
+
+          {/* Right: Legend + Stats */}
+          <div className="flex-1 w-full min-w-0">
+            {/* Legend — interactive grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {emotions.map(([label, time], i) => {
+                const percent = maxTime > 0 ? (time / maxTime) * 100 : 0;
+                const isActive = hoveredAxis === label;
+                return (
+                  <button
+                    key={label}
+                    onClick={() => handleDotClick(label)}
+                    onMouseEnter={() => setHoveredAxis(label)}
+                    onMouseLeave={() => setHoveredAxis(null)}
+                    className={`flex items-center gap-2 p-2.5 rounded-xl text-left transition-all duration-200 ${
+                      isActive
+                        ? 'bg-white/10 ring-1 ring-white/20 text-white translate-x-1'
+                        : 'bg-white/[0.02] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 ring-1 ring-transparent'
+                    }`}
                   >
-                    {lp.label}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
+                    <div
+                      className={`w-3 h-3 rounded-full flex-shrink-0 transition-all duration-200 ${isActive ? 'scale-125 ring-2 ring-white/30' : ''}`}
+                      style={{ backgroundColor: RADAR_COLOR, opacity: 0.3 + (percent / 100) * 0.7 }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-xs font-bold truncate ${isActive ? 'text-white' : ''}`}>
+                        {getShortLabel(label)}
+                      </p>
+                      <p className="text-[10px] text-zinc-500 font-mono">
+                        {time.toFixed(0)}min
+                      </p>
+                    </div>
+                    {/* Bar indicator */}
+                    <div className="w-12 h-1.5 bg-white/5 rounded-full overflow-hidden flex-shrink-0 hidden sm:block">
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${percent}%`,
+                          backgroundColor: RADAR_COLOR,
+                          opacity: isActive ? 1 : 0.5,
+                        }}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Hovered stat detail */}
+            {hoveredAxis && (
+              <div className="mt-4 p-3 bg-white/[0.03] rounded-xl ring-1 ring-white/[0.06] text-center animate-fade-in">
+                <p className="text-base font-bold text-white">{hoveredAxis}</p>
+                <p className="text-xs text-zinc-400 font-mono mt-1">
+                  {(emotions.find(([l]) => l === hoveredAxis)?.[1] ?? 0).toFixed(0)} minutos invertidos
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Hovered stat — shows on hover (desktop) or tap (mobile) */}
