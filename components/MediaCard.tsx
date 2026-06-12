@@ -595,7 +595,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                       </button>
                       <div className="flex items-baseline gap-1">
                         <span className="text-3xl font-black text-white">{tracking.currentSeason}</span>
-                        <span className="text-zinc-600 text-sm font-bold">/ {tracking.totalSeasons}</span>
+                        <span className="text-zinc-600 text-sm font-bold">/</span>
+                        <input type="number" min={1} value={tracking.totalSeasons} 
+                          onChange={(e) => handleInputChange('totalSeasons', parseInt(e.target.value) || 1)}
+                          className="w-10 bg-zinc-800/50 rounded px-1 py-0.5 text-sm font-bold text-zinc-400 text-center outline-none focus:text-white focus:ring-1 focus:ring-white/20" />
                       </div>
                       <button onClick={() => handleInputChange('currentSeason', tracking.totalSeasons > 0 ? Math.min(tracking.totalSeasons, tracking.currentSeason + 1) : tracking.currentSeason + 1)}
                         className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
@@ -614,7 +617,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                       </button>
                       <div className="flex items-baseline gap-1">
                         <span className="text-3xl font-black text-white">{tracking.watchedEpisodes}</span>
-                        <span className="text-zinc-600 text-sm font-bold">/ {tracking.totalEpisodesInSeason}</span>
+                        <span className="text-zinc-600 text-sm font-bold">/</span>
+                        <input type="number" min={0} value={tracking.totalEpisodesInSeason} 
+                          onChange={(e) => handleInputChange('totalEpisodesInSeason', parseInt(e.target.value) || 0)}
+                          className="w-10 bg-zinc-800/50 rounded px-1 py-0.5 text-sm font-bold text-zinc-400 text-center outline-none focus:text-white focus:ring-1 focus:ring-white/20" />
                       </div>
                       <button onClick={() => handleInputChange('watchedEpisodes', tracking.totalEpisodesInSeason > 0 ? Math.min(tracking.totalEpisodesInSeason, tracking.watchedEpisodes + 1) : tracking.watchedEpisodes + 1)}
                         className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
