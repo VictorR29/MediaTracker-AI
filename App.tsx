@@ -214,21 +214,22 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
           <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
             <button
               onClick={() => setSettingsOpen(true)}
+              aria-label="Configuración"
               className="hidden md:flex p-2 text-zinc-400 hover:text-white hover:bg-white/[0.06] rounded-full transition-colors"
-              title="Configuración"
             >
               <Settings className="w-5 h-5" />
             </button>
             <button
               onClick={() => useAuthStore.getState().logout()}
+              aria-label="Cerrar sesión"
               className="hidden md:flex p-2 text-zinc-400 hover:text-red-400 hover:bg-white/[0.06] rounded-full transition-colors"
-              title="Cerrar sesión"
             >
               <LogOut className="w-5 h-5" />
             </button>
             {/* Mobile: single "more" button that opens the menu sheet */}
             <button
               onClick={() => setMobileMenuOpen(true)}
+              aria-label="Abrir menú"
               className="md:hidden p-2 text-zinc-400 hover:text-white hover:bg-white/[0.06] rounded-full transition-colors"
               title="Menú"
               aria-label="Abrir menú"
@@ -279,7 +280,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
         }}
       >
         {/* Biblioteca */}
-        <button onClick={() => handleNavClick('/')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/' || currentPath.startsWith('/item/') ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
+        <button onClick={() => handleNavClick('/')} aria-label="Biblioteca" className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/' || currentPath.startsWith('/item/') ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
           <LayoutGrid
             className="w-5 h-5"
             style={currentPath === '/' || currentPath.startsWith('/item/')
@@ -290,7 +291,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
         </button>
 
         {/* Deseos */}
-        <button onClick={() => handleNavClick('/wishlist')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/wishlist' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
+        <button onClick={() => handleNavClick('/wishlist')} aria-label="Deseos" className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/wishlist' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
           <Bookmark
             className="w-5 h-5"
             style={currentPath === '/wishlist'
@@ -301,7 +302,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
         </button>
 
         {/* Añadir (+) */}
-        <button onClick={() => handleNavClick('/add')} className="flex flex-col items-center gap-1 p-2 min-w-[60px]">
+        <button onClick={() => handleNavClick('/add')} aria-label="Añadir obra" className="flex flex-col items-center gap-1 p-2 min-w-[60px]">
           <div
             className={`bg-white text-zinc-900 p-3 rounded-full -mt-8 ring-4 ring-[#09090B] transition-transform active:scale-95 ${currentPath === '/add' ? 'ring-white/50' : ''}`}
             style={{
@@ -313,7 +314,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
         </button>
 
         {/* Descubrir */}
-        <button onClick={() => handleNavClick('/discover')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/discover' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
+        <button onClick={() => handleNavClick('/discover')} aria-label="Descubrir" className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/discover' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
           <Compass
             className="w-5 h-5"
             style={currentPath === '/discover'
@@ -324,7 +325,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
         </button>
 
         {/* Stats */}
-        <button onClick={() => handleNavClick('/stats')} className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/stats' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
+        <button onClick={() => handleNavClick('/stats')} aria-label="Estadísticas" className={`flex flex-col items-center gap-1 p-2 min-w-[60px] ${currentPath === '/stats' ? 'text-white' : 'text-zinc-500'} transition-colors duration-300 ease-spring`}>
           <BarChart2
             className="w-5 h-5"
             style={currentPath === '/stats'

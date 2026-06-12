@@ -245,6 +245,7 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
 
         <button
           onClick={onGoBack}
+          aria-label="Volver a filtros"
           className="pointer-events-auto bg-[#111113]/80 hover:bg-[#1C1C1F]/80 backdrop-blur-xl text-white px-4 py-2 rounded-full text-xs font-bold transition-all ring-1 ring-white/[0.08] flex items-center gap-2 shadow-lg animate-fade-in-up hover:scale-105 active:scale-[0.97]"
           style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
         >

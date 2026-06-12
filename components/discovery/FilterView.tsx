@@ -139,7 +139,7 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                       return (
   <div key={seedId} className="inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-white/20 ring-1 ring-white/[0.06] rounded-full text-xs font-bold text-white shadow-sm">
     <span className="truncate max-w-[150px]">{item.aiData.title}</span>
-    <button onClick={() => onToggleSeed(seedId)} className="p-0.5 hover:bg-white/40 rounded-full">
+    <button onClick={() => onToggleSeed(seedId)} aria-label={`Quitar ${item?.aiData.title || 'semilla'}`} className="p-0.5 hover:bg-white/40 rounded-full">
                             <X className="w-3 h-3" />
                           </button>
                         </div>

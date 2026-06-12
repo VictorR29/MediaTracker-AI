@@ -309,8 +309,8 @@ return (
           {onToggleFavorite && (
             <button
               onClick={handleFavoriteClick}
+              aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
               className={`p-2 rounded-full bg-black/70 hover:bg-white text-white hover:text-yellow-500 border border-white/10 active:scale-95 ${isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} ${justFavorited ? 'animate-fav-bounce' : ''}`}
-              title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
             >
               <Star className={`w-4 h-4 ${isFavorite ? 'fill-current text-yellow-400' : ''}`} />
             </button>
@@ -318,8 +318,8 @@ return (
           {onDelete && (
             <button
               onClick={handleDeleteClick}
+              aria-label="Eliminar obra"
               className="p-2 rounded-full bg-black/70 text-white hover:bg-red-600 hover:text-white border border-white/10 active:scale-95 opacity-0 group-hover:opacity-100"
-              title="Eliminar"
             >
               <Trash2 className="w-4 h-4" />
             </button>
