@@ -6,14 +6,16 @@ import { useToast } from '../context/ToastContext';
 
 interface DeleteConfirmState {
   itemToDelete: MediaItem | null;
+  pendingDeleteId: string | null;
   requestDelete: (item: MediaItem) => void;
-  confirmDelete: () => Promise<void>;
+  confirmDelete: () => void;
   cancelDelete: () => void;
   DeleteModal: React.FC;
 }
 
 export const useDeleteConfirm = (onAfterDelete?: () => void): DeleteConfirmState => {
   const [itemToDelete, setItemToDelete] = useState<MediaItem | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const requestDelete = useCallback((item: MediaItem) => {
@@ -24,17 +26,24 @@ export const useDeleteConfirm = (onAfterDelete?: () => void): DeleteConfirmState
     setItemToDelete(null);
   }, []);
 
-  const confirmDelete = useCallback(async () => {
+  const confirmDelete = useCallback(() => {
     if (!itemToDelete) return;
-    try {
-      await useLibraryStore.getState().removeItem(itemToDelete.id);
-      showToast("Obra eliminada permanentemente", "info");
-      onAfterDelete?.();
-    } catch (e) {
-      showToast("Error al eliminar", "error");
-    } finally {
-      setItemToDelete(null);
-    }
+    // Close modal immediately, start exit animation
+    const id = itemToDelete.id;
+    setItemToDelete(null);
+    setPendingDeleteId(id);
+    // Remove from store after animation completes (250ms matches deleteExit keyframe)
+    setTimeout(async () => {
+      try {
+        await useLibraryStore.getState().removeItem(id);
+        showToast("Obra eliminada permanentemente", "info");
+        onAfterDelete?.();
+      } catch (e) {
+        showToast("Error al eliminar", "error");
+      } finally {
+        setPendingDeleteId(null);
+      }
+    }, 260);
   }, [itemToDelete, showToast, onAfterDelete]);
 
   const DeleteModal: React.FC = () => {
@@ -69,5 +78,5 @@ export const useDeleteConfirm = (onAfterDelete?: () => void): DeleteConfirmState
     );
   };
 
-  return { itemToDelete, requestDelete, confirmDelete, cancelDelete, DeleteModal };
+  return { itemToDelete, pendingDeleteId, requestDelete, confirmDelete, cancelDelete, DeleteModal };
 };

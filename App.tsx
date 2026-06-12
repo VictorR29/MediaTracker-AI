@@ -41,7 +41,7 @@ const {
   const lastScrollYRef = useRef(0);
 
   // Custom hooks
-  const { DeleteModal, requestDelete } = useDeleteConfirm(() => {
+  const { DeleteModal, requestDelete, pendingDeleteId } = useDeleteConfirm(() => {
     if (location.pathname.startsWith('/item/')) navigate('/');
   });
   const dataHandlers = useDataHandlers();
@@ -159,6 +159,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
           onIncrementProgress={handleIncrementProgress}
           onToggleFavorite={handleToggleFavorite}
           onRequestDelete={requestDelete}
+          pendingDeleteId={pendingDeleteId}
           onUpdateItem={handleUpdateItem}
           onRecommendationSelect={handleRecommendationSelect}
           onImportBackup={dataHandlers.handleImportBackup}
@@ -246,6 +247,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
           onIncrementProgress={handleIncrementProgress}
           onToggleFavorite={handleToggleFavorite}
           onRequestDelete={requestDelete}
+          pendingDeleteId={pendingDeleteId}
           onUpdateItem={handleUpdateItem}
           onRecommendationSelect={handleRecommendationSelect}
           onImportBackup={dataHandlers.handleImportBackup}

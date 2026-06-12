@@ -15,6 +15,7 @@ interface LibraryViewProps {
   onIncrementProgress: (item: MediaItem) => void;
   onToggleFavorite: (item: MediaItem) => void;
   onRequestDelete: (item: MediaItem) => void;
+  pendingDeleteId?: string | null;
 }
 
 export const LibraryView: React.FC<LibraryViewProps> = ({
@@ -22,6 +23,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onIncrementProgress,
   onToggleFavorite,
   onRequestDelete,
+  pendingDeleteId,
 }) => {
   // Stagger entrance trigger — increments on mount or filter/view change
   const [staggerTrigger, setStaggerTrigger] = React.useState(0);
@@ -106,6 +108,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               onIncrement={onIncrementProgress}
               onToggleFavorite={onToggleFavorite}
               onDelete={onRequestDelete}
+              isPendingDelete={item.id === pendingDeleteId}
               staggerIndex={index}
               staggerTrigger={staggerTrigger}
               // Only first 8 cards get mount stagger; rest use IntersectionObserver

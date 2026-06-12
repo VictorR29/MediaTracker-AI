@@ -28,6 +28,7 @@ interface AppRouterProps {
   onIncrementProgress: (item: MediaItem) => void;
   onToggleFavorite: (item: MediaItem) => void;
   onRequestDelete: (item: MediaItem) => void;
+  pendingDeleteId?: string | null;
   onUpdateItem: (item: MediaItem) => void;
   onRecommendationSelect: (title: string, type: string) => void;
   onImportBackup: (file: File) => void;
@@ -41,6 +42,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
   onIncrementProgress,
   onToggleFavorite,
   onRequestDelete,
+  pendingDeleteId,
   onUpdateItem,
   onRecommendationSelect,
   onImportBackup,
@@ -86,6 +88,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
             onIncrementProgress={onIncrementProgress}
             onToggleFavorite={onToggleFavorite}
             onRequestDelete={onRequestDelete}
+            pendingDeleteId={pendingDeleteId}
           />
         </RouteSuspense>
       } />
@@ -109,6 +112,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
             onIncrementProgress={onIncrementProgress}
             onToggleFavorite={onToggleFavorite}
             onRequestDelete={onRequestDelete}
+            pendingDeleteId={pendingDeleteId}
           />
         </RouteSuspense>
       } />

@@ -12,6 +12,7 @@ interface CompactMediaCardProps {
   onIncrement: (item: MediaItem) => void;
   onToggleFavorite?: (item: MediaItem) => void;
   onDelete?: (item: MediaItem) => void;
+  isPendingDelete?: boolean;
   // Stagger entrance animation (mount/filter change)
   staggerIndex?: number;
   staggerTrigger?: number;
@@ -49,7 +50,7 @@ const getSharedObserver = () => {
   return sharedObserver;
 };
 
-export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ id, item, onClick, onIncrement, onToggleFavorite, onDelete, staggerIndex = 0, staggerTrigger = 0, useMountStagger = true }) => {
+export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ id, item, onClick, onIncrement, onToggleFavorite, onDelete, isPendingDelete = false, staggerIndex = 0, staggerTrigger = 0, useMountStagger = true }) => {
   const { aiData, trackingData } = item;
   const isFavorite = trackingData.is_favorite || false;
 
@@ -247,7 +248,7 @@ return (
 		onMouseLeave={() => setIsHovered(false)}
 		className={`group relative rounded-2xl ring-1 ring-white/[0.06] p-1 bg-[#111113] w-full cursor-pointer
 		md:hover:scale-[1.02] transition-shadow duration-500 ease-spring
-		${showEntrance ? 'animate-stagger-in' : 'opacity-0'}`}
+		${isPendingDelete ? 'animate-delete-exit' : showEntrance ? 'animate-stagger-in' : 'opacity-0'}`}
  style={{
   '--card-rgb': dynamicRgb,
         contentVisibility: 'auto',
