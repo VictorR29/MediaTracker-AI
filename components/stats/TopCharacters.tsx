@@ -129,7 +129,7 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
                     <img
                       src={entry.coverImage}
                       alt=""
-                      className="w-full h-full object-cover scale-110 blur-xl brightness-50"
+                      className="w-full h-full object-cover scale-110 blur-md brightness-50"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
