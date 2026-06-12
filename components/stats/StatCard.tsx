@@ -26,7 +26,7 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, co
           {title}
         </p>
         <p
-          className="text-2xl md:text-3xl font-bold text-white font-mono mb-1 truncate"
+          className="text-2xl md:text-3xl font-semibold text-white font-mono mb-1 truncate"
           style={{ letterSpacing: '0.02em', textShadow: `0 0 20px ${accentColor}40` }}
           title={String(value)}
         >
