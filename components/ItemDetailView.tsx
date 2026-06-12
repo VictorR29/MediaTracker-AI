@@ -52,7 +52,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({ onUpdateItem, on
         onDelete={() => onRequestDelete(item)}
         username={userProfile?.username}
         apiKey={userProfile?.apiKey}
-        isNew={false}
+        isNew={!item.aiData.title}
       />
     </div>
   );
