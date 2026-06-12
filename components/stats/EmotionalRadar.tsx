@@ -163,12 +163,12 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
         </div>
 
         {/* Radar Chart + Stats — two columns on desktop, stacked on mobile */}
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+        <div className="flex flex-col md:flex-row items-center md:items-stretch gap-6 md:gap-10">
           {/* Left: Radar SVG */}
-          <div className="flex justify-center flex-shrink-0">
+          <div className="flex justify-center flex-shrink-0 md:flex-1 md:flex md:items-center md:justify-center">
             <svg
               viewBox={`0 0 ${size} ${size}`}
-              className="w-full max-w-[280px] md:max-w-[320px]"
+              className="w-full max-w-[280px] md:w-[360px] md:h-auto"
             >
               {/* Grid rings */}
               {gridRings.map((points, i) => (
@@ -236,14 +236,14 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
           </div>
 
           {/* Right: Legend + Stats */}
-          <div className="flex-1 w-full min-w-0">
+          <div className="flex-1 w-full min-w-0 md:flex md:flex-col md:justify-center">
             {/* Hovered stat — header above legend */}
             {hoveredAxis && (
-              <div className="mb-3 p-3 md:p-4 bg-white/[0.04] rounded-xl ring-1 ring-white/[0.08] flex items-center gap-3 animate-fade-in">
-                <div className="w-2 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: RADAR_COLOR }} />
+              <div className="mb-3 p-3 md:p-5 md:mb-4 md:bg-gradient-to-r md:from-violet-500/[0.08] md:to-transparent md:rounded-2xl md:ring-1 md:ring-violet-500/[0.15] bg-white/[0.04] rounded-xl ring-1 ring-white/[0.08] flex items-center gap-3 animate-fade-in">
+                <div className="w-2 h-8 md:h-10 rounded-full flex-shrink-0 md:shadow-[0_0_12px_rgba(167,139,250,0.4)]" style={{ backgroundColor: RADAR_COLOR }} />
                 <div className="min-w-0">
-                  <p className="text-sm md:text-base font-bold text-white truncate">{hoveredAxis}</p>
-                  <p className="text-xs text-zinc-400 font-mono">
+                  <p className="text-sm md:text-lg font-bold text-white truncate">{hoveredAxis}</p>
+                  <p className="text-xs md:text-sm text-zinc-400 font-mono">
                     {(emotions.find(([l]) => l === hoveredAxis)?.[1] ?? 0).toFixed(0)} minutos invertidos
                   </p>
                 </div>
@@ -251,7 +251,7 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
             )}
 
             {/* Legend — interactive grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-2 gap-2 md:gap-2.5">
               {emotions.map(([label, time], i) => {
                 const percent = maxTime > 0 ? (time / maxTime) * 100 : 0;
                 const isActive = hoveredAxis === label;
@@ -261,9 +261,9 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
                     onClick={() => handleDotClick(label)}
                     onMouseEnter={() => setHoveredAxis(label)}
                     onMouseLeave={() => setHoveredAxis(null)}
-                    className={`flex items-center gap-2 p-2.5 rounded-xl text-left transition-all duration-200 ${
+                    className={`flex items-center gap-2 p-2.5 md:p-3 rounded-xl text-left transition-all duration-200 ${
                       isActive
-                        ? 'bg-white/10 ring-1 ring-white/20 text-white translate-x-1'
+                        ? 'bg-white/10 md:bg-white/[0.06] ring-1 ring-white/20 text-white translate-x-1 md:shadow-lg md:shadow-violet-500/5'
                         : 'bg-white/[0.02] hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 ring-1 ring-transparent'
                     }`}
                   >
@@ -272,15 +272,15 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
                       style={{ backgroundColor: RADAR_COLOR, opacity: 0.3 + (percent / 100) * 0.7 }}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className={`text-xs font-bold truncate ${isActive ? 'text-white' : ''}`}>
+                      <p className={`text-xs md:text-sm font-bold truncate ${isActive ? 'text-white' : ''}`}>
                         {getShortLabel(label)}
                       </p>
-                      <p className="text-[10px] text-zinc-500 font-mono">
+                      <p className="text-[10px] md:text-xs text-zinc-500 font-mono">
                         {time.toFixed(0)}min
                       </p>
                     </div>
                     {/* Bar indicator */}
-                    <div className="w-12 h-1.5 bg-white/5 rounded-full overflow-hidden flex-shrink-0 hidden sm:block">
+                    <div className="w-12 md:w-16 h-1.5 bg-white/5 rounded-full overflow-hidden flex-shrink-0 hidden sm:block">
                       <div
                         className="h-full rounded-full transition-all duration-300"
                         style={{
