@@ -65,11 +65,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   // Handlers
   const handleInputChange = (field: keyof UserTrackingData, value: any, shouldSave = true) => {
     const isProgressUpdate = field === 'watchedEpisodes' || field === 'currentSeason' || field === 'status';
-    const updated = {
+    let updated = {
       ...localData,
       lastInteraction: isProgressUpdate ? Date.now() : localData.lastInteraction,
       trackingData: { ...localData.trackingData, [field]: value }
     };
+    // Auto-set totalEpisodesInSeason when increasing watchedEpisodes and total is 0
+    if (field === 'watchedEpisodes' && value > 0 && updated.trackingData.totalEpisodesInSeason === 0) {
+      updated.trackingData = { ...updated.trackingData, totalEpisodesInSeason: value };
+    }
     setLocalData(updated);
     if (!isEditing && shouldSave) onUpdate(updated);
   };
