@@ -640,8 +640,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                       <span className="text-2xl font-black" style={{ color: dynamicColor }}>{progressPercent.toFixed(0)}%</span>
                     </div>
                     <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
-                      <div className="h-full transition-all duration-700 rounded-full"
-                        style={{ width: `${progressPercent}%`, background: `linear-gradient(to right, rgb(var(--card-rgb)), rgba(var(--card-rgb), 0.6))` }} />
+                      <div 
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${progressPercent}%`,
+                          background: dynamicColor
+                        }} 
+                      />
                     </div>
                     <div className="flex justify-between mt-2 text-[10px] text-zinc-600 font-bold">
                       <span>{tracking.watchedEpisodes} vistos</span>
