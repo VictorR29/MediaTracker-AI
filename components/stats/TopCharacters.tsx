@@ -79,14 +79,6 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
       character: item.trackingData.favoriteCharacters[0],
     }));
 
-  // Debug log
-  console.log('[TopCharacters] library size:', library.length, 'characters found:', characters.length);
-  console.log('[TopCharacters] first 3 items favoriteCharacters:', library.slice(0, 3).map(i => ({
-    title: i.aiData.title,
-    chars: i.trackingData.favoriteCharacters,
-    charsType: typeof i.trackingData.favoriteCharacters?.[0]
-  })));
-
   const updateCharacterImage = useCallback(async (mediaId: string, imageUrl: string) => {
     setUploadingId(mediaId);
     try {

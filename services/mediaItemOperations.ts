@@ -85,11 +85,11 @@ export const processImageToBase64 = (file: File): Promise<string> => {
  * Reorders an array by moving an element from one index to another.
  * Pure function — returns a new array.
  */
-export const reorderCharacters = (
-  list: string[],
+export const reorderCharacters = <T>(
+  list: T[],
   fromIndex: number,
   toIndex: number
-): string[] => {
+): T[] => {
   const result = [...list];
   const [moved] = result.splice(fromIndex, 1);
   result.splice(toIndex, 0, moved);

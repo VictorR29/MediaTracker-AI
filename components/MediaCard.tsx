@@ -344,13 +344,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <div className="space-y-2">
                   <input
                     value={aiData.title}
-                    onChange={(e) => onAIDataChange('title', e.target.value)}
+                    onChange={(e) => handleAIDataChange('title', e.target.value)}
                     className="w-full bg-black/40 backdrop-blur-sm ring-1 ring-white/10 rounded-xl px-4 py-3 text-2xl sm:text-3xl font-black text-white outline-none focus:ring-white/20 placeholder:text-white/30"
                     placeholder="Título de la obra"
                   />
                   <input
                     value={aiData.originalTitle || ''}
-                    onChange={(e) => onAIDataChange('originalTitle', e.target.value)}
+                    onChange={(e) => handleAIDataChange('originalTitle', e.target.value)}
                     className="w-full bg-black/40 backdrop-blur-sm ring-1 ring-white/10 rounded-xl px-4 py-2 text-sm text-zinc-300 italic outline-none focus:ring-white/20 placeholder:text-white/20"
                     placeholder="Título original (opcional)"
                   />
@@ -421,7 +421,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 {isEditing ? (
                   <textarea
                     value={aiData.synopsis}
-                    onChange={(e) => onAIDataChange('synopsis', e.target.value)}
+                    onChange={(e) => handleAIDataChange('synopsis', e.target.value)}
                     className="w-full h-40 bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl p-4 text-zinc-300 text-sm outline-none focus:ring-white/20 leading-relaxed resize-none"
                   />
                 ) : (
@@ -434,7 +434,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <div>
                   <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Estreno</span>
                   {isEditing ? (
-                    <input type="date" value={aiData.releaseDate || ''} onChange={(e) => onAIDataChange('releaseDate', e.target.value)}
+                    <input type="date" value={aiData.releaseDate || ''} onChange={(e) => handleAIDataChange('releaseDate', e.target.value)}
                       className="w-full bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-white/20" />
                   ) : (
                     <span className="text-sm text-zinc-300 font-mono">{aiData.releaseDate || '----'}</span>
@@ -443,7 +443,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <div>
                   <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Final</span>
                   {isEditing ? (
-                    <input type="date" value={aiData.endDate || ''} onChange={(e) => onAIDataChange('endDate', e.target.value)}
+                    <input type="date" value={aiData.endDate || ''} onChange={(e) => handleAIDataChange('endDate', e.target.value)}
                       className="w-full bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-white/20" />
                   ) : (
                     <span className="text-sm text-zinc-300 font-mono">{aiData.endDate || '----'}</span>
@@ -481,7 +481,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   <Layout className="w-3.5 h-3.5" /> Estructura
                 </span>
                 {isEditing ? (
-                  <textarea value={aiData.totalContent || ''} onChange={(e) => onAIDataChange('totalContent', e.target.value)}
+                  <textarea value={aiData.totalContent || ''} onChange={(e) => handleAIDataChange('totalContent', e.target.value)}
                     className="w-full bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl p-3 text-xs text-white outline-none focus:ring-white/20 min-h-[80px] resize-none"
                     placeholder={"Ej: 2 Temporadas\n- Temp 1: 12 Caps"} />
                 ) : (
