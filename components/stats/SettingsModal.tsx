@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Timer, X, Save } from 'lucide-react';
 import { DurationPreferences } from './StatsData';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
@@ -21,7 +22,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const modalRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
     <div className="bg-[#111113] ring-1 ring-white/[0.06] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
       <div className="flex items-center justify-between p-4 ring-1 ring-white/[0.06] bg-[#18181B]">
@@ -98,6 +99,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </button>
       </div>
     </div>
-    </div>
+    </div>,
+    document.body
   );
 };
