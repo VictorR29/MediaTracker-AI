@@ -576,11 +576,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
               {/* Planned Date - Compact inline */}
               {tracking.status === 'Planeado / Pendiente' && (
-                <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3 animate-fade-in">
-                  <CalendarClock className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                  <span className="text-xs font-bold text-purple-300">Estreno:</span>
-                  <input type="date" value={tracking.nextReleaseDate || ''} onChange={(e) => handleInputChange('nextReleaseDate', e.target.value)}
-                    className="bg-transparent text-sm text-white outline-none flex-1" />
+                <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 animate-fade-in">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CalendarClock className="w-4 h-4 text-purple-400" />
+                    <span className="text-xs font-bold text-purple-300 uppercase tracking-widest">Fecha de Estreno</span>
+                  </div>
+                  <input type="date" value={tracking.nextReleaseDate || ''} 
+                    onChange={(e) => handleInputChange('nextReleaseDate', e.target.value)}
+                    className="w-full bg-zinc-900/50 ring-1 ring-purple-500/30 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-purple-500/50" />
                 </div>
               )}
 
