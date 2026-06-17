@@ -502,23 +502,19 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                       <a href={link.url} target="_blank" rel="noreferrer" className="text-[rgb(var(--card-rgb))] hover:text-white truncate flex items-center gap-2 flex-1 text-xs">
                         <LinkIcon className="w-3 h-3 opacity-50" /> {link.title || 'Enlace'}
                       </a>
-                      {isEditing && (
-                        <button onClick={() => handleRemoveCustomLink(link.id)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-600 hover:text-red-500">
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  {isEditing && (
-                    <div className="flex gap-2">
-                      <input placeholder="Pegar URL..." value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddCustomLink()}
-                        className="flex-1 bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl px-3 py-2 text-white text-xs outline-none focus:ring-white/20" />
-                      <button onClick={handleAddCustomLink} className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-zinc-800 hover:bg-[rgb(var(--card-rgb))] rounded-xl ring-1 ring-white/[0.06] text-white transition-colors">
-                        <Plus className="w-4 h-4" />
+                      <button onClick={() => handleRemoveCustomLink(link.id)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-600 hover:text-red-500">
+                        <X className="w-3 h-3" />
                       </button>
                     </div>
-                  )}
+                  ))}
+                  <div className="flex gap-2">
+                    <input placeholder="Pegar URL..." value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddCustomLink()}
+                      className="flex-1 bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl px-3 py-2 text-white text-xs outline-none focus:ring-white/20" />
+                    <button onClick={handleAddCustomLink} className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-zinc-800 hover:bg-[rgb(var(--card-rgb))] rounded-xl ring-1 ring-white/[0.06] text-white transition-colors">
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
