@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Camera, User, Crown, Link, Upload, X } from 'lucide-react';
 import { MediaItem } from '../../types';
 import { useLibraryStore } from '../../stores/useLibraryStore';
+import { useToast } from '../../context/ToastContext';
 
 interface TopCharactersProps {
   library: MediaItem[];
@@ -20,6 +21,7 @@ interface CharacterEntry {
 const compressImage = (base64Str: string, maxWidth: number = 200, quality: number = 0.7): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.src = base64Str;
     img.onload = () => {
       let width = img.width;
@@ -36,9 +38,14 @@ const compressImage = (base64Str: string, maxWidth: number = 200, quality: numbe
       
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(img, 0, 0, width, height);
-        const newBase64 = canvas.toDataURL('image/webp', quality);
-        resolve(newBase64);
+        try {
+          ctx.drawImage(img, 0, 0, width, height);
+          const newBase64 = canvas.toDataURL('image/webp', quality);
+          resolve(newBase64);
+        } catch {
+          // Canvas tainted by CORS — fall back to original URL
+          resolve(base64Str);
+        }
       } else {
         resolve(base64Str);
       }
@@ -49,6 +56,7 @@ const compressImage = (base64Str: string, maxWidth: number = 200, quality: numbe
 
 export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const updateItem = useLibraryStore(state => state.updateItem);
+  const { showToast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -89,14 +97,16 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
         const updatedChars = [...item.trackingData.favoriteCharacters];
         updatedChars[0] = { ...updatedChars[0], image: compressed };
         await updateItem({ ...item, trackingData: { ...item.trackingData, favoriteCharacters: updatedChars } });
+        showToast("Imagen del personaje actualizada", "success");
       }
     } catch (err) {
       console.error('Failed to update character image:', err);
+      showToast("Error al guardar imagen", "error");
     }
     setUploadingId(null);
     setEditingId(null);
     setUrlInput('');
-  }, [library, updateItem]);
+  }, [library, updateItem, showToast]);
 
   const handleFileUpload = useCallback(async (mediaId: string, file: File) => {
     setUploadingId(mediaId);
