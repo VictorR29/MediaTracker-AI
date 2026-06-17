@@ -1,6 +1,6 @@
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, User, Crown, Link, Upload, X } from 'lucide-react';
+import { Camera, User, Crown, Link, Upload, X, Shuffle } from 'lucide-react';
 import { MediaItem } from '../../types';
 import { useLibraryStore } from '../../stores/useLibraryStore';
 import { useToast } from '../../context/ToastContext';
@@ -62,23 +62,12 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
 
-  // Rating order for sorting
-  const ratingOrder: Record<string, number> = {
-    'God Tier': 1,
-    'Excelente': 2,
-    'Muy Bueno': 3,
-    'Bueno': 4,
-    'Regular': 5,
-    'Malo': 6,
-  };
-
-  // Collect top 1 character from each work, sorted by rating
-  const characters: CharacterEntry[] = library
+  // Collect top 1 character from each work
+  const baseCharacters: CharacterEntry[] = library
     .filter(item => {
       const chars = item.trackingData.favoriteCharacters;
       return chars && chars.length > 0 && chars[0]?.name;
     })
-    .sort((a, b) => (ratingOrder[a.trackingData.rating] || 99) - (ratingOrder[b.trackingData.rating] || 99))
     .map(item => ({
       mediaId: item.id,
       mediaTitle: item.aiData.title,
@@ -86,6 +75,38 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
       primaryColor: item.aiData.primaryColor,
       character: item.trackingData.favoriteCharacters[0],
     }));
+
+  // Shuffle key increments when library changes → triggers re-shuffle
+  const shuffleKey = useMemo(() => library.length + library.reduce((acc, i) => acc + (i.trackingData.watchedEpisodes || 0), 0), [library]);
+
+  // Fisher-Yates shuffle
+  const shuffleArray = <T,>(arr: T[]): T[] => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
+  // Shuffled characters state
+  const [shuffledChars, setShuffledChars] = useState<CharacterEntry[]>([]);
+  const [lastShuffleKey, setLastShuffleKey] = useState<number>(shuffleKey);
+
+  // Auto-shuffle when library changes
+  const characters = useMemo(() => {
+    if (shuffleKey !== lastShuffleKey) {
+      const shuffled = shuffleArray(baseCharacters);
+      setShuffledChars(shuffled);
+      setLastShuffleKey(shuffleKey);
+      return shuffled;
+    }
+    return shuffledChars.length > 0 ? shuffledChars : baseCharacters;
+  }, [shuffleKey, lastShuffleKey, baseCharacters, shuffledChars]);
+
+  const handleShuffle = () => {
+    setShuffledChars(shuffleArray(baseCharacters));
+  };
 
   const updateCharacterImage = useCallback(async (mediaId: string, imageUrl: string) => {
     setUploadingId(mediaId);
@@ -151,14 +172,23 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
         style={{ borderTop: '1px solid rgba(234, 179, 8, 0.3)' }}
       >
         {/* Header */}
-        <div className="flex items-center gap-2 mb-4">
-          <Crown
-            className="w-4 h-4"
-            style={{ color: '#eab308', filter: 'drop-shadow(0 0 6px rgba(234, 179, 8, 0.5))' }}
-          />
-          <span className="text-xs font-extrabold uppercase text-zinc-400" style={{ letterSpacing: '0.1em' }}>
-            Top Personajes
-          </span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Crown
+              className="w-4 h-4"
+              style={{ color: '#eab308', filter: 'drop-shadow(0 0 6px rgba(234, 179, 8, 0.5))' }}
+            />
+            <span className="text-xs font-extrabold uppercase text-zinc-400" style={{ letterSpacing: '0.1em' }}>
+              Top Personajes
+            </span>
+          </div>
+          <button
+            onClick={handleShuffle}
+            className="p-2 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
+            title="Reordenar"
+          >
+            <Shuffle className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Scrollable gallery */}
