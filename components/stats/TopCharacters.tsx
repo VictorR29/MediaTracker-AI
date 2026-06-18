@@ -72,13 +72,12 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
     return ['Todos', ...Array.from(genreSet).sort()];
   }, [library]);
 
-  // Collect top 1 character from each work, filtered by genre
+  // Collect top 1 character from each work (no genre filter here)
   const baseCharacters: CharacterEntry[] = library
     .filter(item => {
       const chars = item.trackingData.favoriteCharacters;
       return chars && chars.length > 0 && chars[0]?.name;
     })
-    .filter(item => activeGenre === 'Todos' || item.aiData.genres?.includes(activeGenre))
     .map(item => ({
       mediaId: item.id,
       mediaTitle: item.aiData.title,
@@ -104,8 +103,8 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const [shuffledChars, setShuffledChars] = useState<CharacterEntry[]>([]);
   const [lastShuffleKey, setLastShuffleKey] = useState<number>(shuffleKey);
 
-  // Auto-shuffle when library changes
-  const characters = useMemo(() => {
+  // Auto-shuffle when library changes, then filter by genre
+  const allShuffled = useMemo(() => {
     if (shuffleKey !== lastShuffleKey) {
       const shuffled = shuffleArray(baseCharacters);
       setShuffledChars(shuffled);
@@ -114,6 +113,15 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
     }
     return shuffledChars.length > 0 ? shuffledChars : baseCharacters;
   }, [shuffleKey, lastShuffleKey, baseCharacters, shuffledChars]);
+
+  const characters = useMemo(() => {
+    if (activeGenre === 'Todos') return allShuffled;
+    // Need genres from library to filter
+    return allShuffled.filter(c => {
+      const item = library.find(i => i.id === c.mediaId);
+      return item?.aiData.genres?.includes(activeGenre);
+    });
+  }, [allShuffled, activeGenre, library]);
 
   const handleShuffle = () => {
     setShuffledChars(shuffleArray(baseCharacters));

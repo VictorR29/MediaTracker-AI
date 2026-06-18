@@ -219,7 +219,7 @@ export const CharactersView: React.FC = () => {
   return (
     <div className="bg-[#09090B] min-h-screen">
       {/* Fixed header */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-[#09090B]/90 backdrop-blur-md border-b border-white/[0.06]">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-[#09090B]/95 backdrop-blur-md border-b border-white/[0.06]">
         <div className="flex items-center justify-between px-4 py-3">
           <button
             onClick={() => navigate(-1)}
@@ -267,7 +267,7 @@ export const CharactersView: React.FC = () => {
       </div>
 
       {/* Genre filter bar */}
-      <div className="pt-[120px] px-4 pb-4">
+      <div className="pt-[110px] px-4 pb-4">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
           {genres.map(genre => (
             <button
