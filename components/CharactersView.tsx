@@ -190,13 +190,21 @@ export const CharactersView: React.FC = () => {
   const handleShuffle = () => {
     if (isShuffling) return;
     setIsShuffling(true);
-    // Animate out, shuffle, animate in
+    // Save current background as "old" for crossfade
+    const oldBg = characters[trendingIndex]?.coverImage || null;
+    // Step 1: Start crossfade — old bg fades out, new bg fades in
+    setBgFaded(false);
+    // Step 2: After fade out completes, swap data
     setTimeout(() => {
-      setShuffledChars(shuffleArray(allCharacters));
+      const shuffled = shuffleArray(allCharacters);
+      setShuffledChars(shuffled);
+      prevBgRef.current = oldBg;
       setTrendingIndex(0);
-      setShuffleKey(k => k + 1);
+      // Step 3: Fade new background in
+      setTimeout(() => setBgFaded(true), 50);
+      // Step 4: Fade card in
       setTimeout(() => setIsShuffling(false), 400);
-    }, 400);
+    }, 500);
   };
 
   // Image upload handlers
@@ -607,7 +615,7 @@ export const CharactersView: React.FC = () => {
           {/* Blurred cover background — crossfade */}
           <div className="absolute inset-0 overflow-hidden">
             {/* Previous background — fading out */}
-            {prevBgRef.current && prevBgRef.current !== (characters[trendingIndex]?.coverImage || null) && (
+            {(isShuffling || prevBgRef.current !== (characters[trendingIndex]?.coverImage || null)) && prevBgRef.current && (
               <img
                 src={prevBgRef.current}
                 alt=""
