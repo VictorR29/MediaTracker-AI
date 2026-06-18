@@ -550,7 +550,7 @@ export const CharactersView: React.FC = () => {
       {/* Trending card view — Discovery/ImmersiveView double-bezel pattern */}
       {viewMode === 'trending' && characters.length > 0 && (
         <div
-          className="fixed inset-0 z-40 bg-[#09090B] overflow-hidden touch-none flex flex-col items-center justify-center"
+          className="fixed inset-0 z-[60] bg-[#09090B] overflow-hidden touch-none flex flex-col items-center justify-center"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -614,7 +614,7 @@ export const CharactersView: React.FC = () => {
                 <div className="absolute inset-0 bg-black/40" />
 
                 {/* Content — justify-between spreads across full card height */}
-                <div className="relative z-10 flex flex-col items-center h-full justify-between py-2">
+                <div className="relative z-10 flex flex-col items-center h-full justify-between p-0">
                   {/* Top: upload button (absolute top-right) */}
                   <button
                     onClick={() => setEditingId(characters[trendingIndex]?.mediaId)}
