@@ -15,7 +15,12 @@ interface CharacterEntry {
   genres: string[];
 }
 
-// Image compression helper (same as cover images)
+interface CharacterWithRank extends CharacterEntry {
+  rankInWork: number;
+  totalInWork: number;
+}
+
+// Image compression helper
 const compressImage = (base64Str: string, maxWidth: number = 200, quality: number = 0.7): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -41,7 +46,6 @@ const compressImage = (base64Str: string, maxWidth: number = 200, quality: numbe
           const newBase64 = canvas.toDataURL('image/webp', quality);
           resolve(newBase64);
         } catch {
-          // Canvas tainted by CORS — fall back to original URL
           resolve(base64Str);
         }
       } else {
@@ -62,18 +66,14 @@ const shuffleArray = <T,>(arr: T[]): T[] => {
   return a;
 };
 
-// Ranking badge component
-const RankingBadge: React.FC<{ rank: number }> = ({ rank }) => {
-  const config = {
-    1: { bg: 'bg-gradient-to-br from-yellow-400 to-amber-600', text: 'TOP 1', icon: '👑' },
-    2: { bg: 'bg-gradient-to-br from-zinc-300 to-zinc-500', text: 'TOP 2', icon: '🥈' },
-    3: { bg: 'bg-gradient-to-br from-amber-600 to-amber-800', text: 'TOP 3', icon: '🥉' },
-  };
-  const { bg, text } = config[rank as keyof typeof config] || config[1];
-
+// Per-work rank badge
+const WorkRankBadge: React.FC<{ rank: number; total: number }> = ({ rank, total }) => {
+  if (total <= 1) return null;
   return (
-    <div className={`absolute top-2 left-2 z-20 ${bg} px-2 py-1 rounded-full flex items-center gap-1 shadow-lg`}>
-      <span className="text-[10px] font-black text-white tracking-wider">{text}</span>
+    <div className="absolute bottom-2 right-2 z-20 bg-yellow-500/90 backdrop-blur-sm px-1.5 py-0.5 rounded-md shadow-lg">
+      <span className="text-[9px] font-black text-black tracking-wider">
+        {rank}/{total}
+      </span>
     </div>
   );
 };
@@ -93,9 +93,9 @@ export const CharactersView: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
-  // Touch handling for swipe
-  const touchStartRef = useRef<number | null>(null);
-  const touchEndRef = useRef<number | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchEndRef = useRef<{ x: number; y: number } | null>(null);
 
   // Collect all genres from library
   const genres = useMemo(() => {
@@ -131,11 +131,9 @@ export const CharactersView: React.FC = () => {
     [library]
   );
 
-  // Shuffled characters state
   const [shuffledChars, setShuffledChars] = useState<CharacterEntry[]>([]);
   const [lastShuffleKey, setLastShuffleKey] = useState<number>(shuffleKey);
 
-  // Auto-shuffle when library changes
   const allCharacters = useMemo(() => {
     if (shuffleKey !== lastShuffleKey) {
       const shuffled = shuffleArray(baseCharacters);
@@ -151,6 +149,22 @@ export const CharactersView: React.FC = () => {
     if (activeGenre === 'Todos') return allCharacters;
     return allCharacters.filter(c => c.genres.includes(activeGenre));
   }, [allCharacters, activeGenre]);
+
+  // Per-work ranking: group by mediaId, assign ranks
+  const charactersWithRank = useMemo(() => {
+    const workMap = new Map<string, number>();
+    return characters.map(c => {
+      const count = workMap.get(c.mediaId) || 0;
+      workMap.set(c.mediaId, count + 1);
+      return { ...c, rankInWork: count + 1, totalInWork: 0 };
+    });
+  }, [characters]);
+
+  const charactersWithTotal = useMemo(() => {
+    const totals = new Map<string, number>();
+    charactersWithRank.forEach(c => totals.set(c.mediaId, (totals.get(c.mediaId) || 0) + 1));
+    return charactersWithRank.map(c => ({ ...c, totalInWork: totals.get(c.mediaId) || 1 }));
+  }, [charactersWithRank]);
 
   // Progress calculation
   const totalWorks = library.length;
@@ -227,6 +241,21 @@ export const CharactersView: React.FC = () => {
     }
   };
 
+  // 3D Tilt effect
+  const applyTilt = useCallback((clientX: number, clientY: number, isActive: boolean) => {
+    if (!cardRef.current) return;
+    if (!isActive) {
+      cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+      return;
+    }
+    const { left, top, width, height } = cardRef.current.getBoundingClientRect();
+    const x = (clientX - left) / width;
+    const y = (clientY - top) / height;
+    const tiltX = (0.5 - y) * 15;
+    const tiltY = (x - 0.5) * 15;
+    cardRef.current.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.02)`;
+  }, []);
+
   // Trending view navigation
   const goToNextCard = useCallback(() => {
     if (isTransitioning || characters.length === 0) return;
@@ -248,22 +277,40 @@ export const CharactersView: React.FC = () => {
     }, 200);
   }, [isTransitioning, characters.length]);
 
-  // Touch handlers for swipe
+  // Touch handlers for swipe + tilt
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartRef.current = e.touches[0].clientX;
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    touchEndRef.current = { x: touch.clientX, y: touch.clientY };
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndRef.current = e.touches[0].clientX;
+    const touch = e.touches[0];
+    touchEndRef.current = { x: touch.clientX, y: touch.clientY };
+
+    // Apply tilt on touch move
+    if (!touchStartRef.current) return;
+    const dx = Math.abs(touch.clientX - touchStartRef.current.x);
+    const dy = Math.abs(touch.clientY - touchStartRef.current.y);
+    // Only tilt if not primarily horizontal swipe
+    if (dx < 50 || dy > dx) {
+      applyTilt(touch.clientX, touch.clientY, true);
+    }
   };
 
   const handleTouchEnd = () => {
-    if (touchStartRef.current === null || touchEndRef.current === null) return;
-    const distance = touchStartRef.current - touchEndRef.current;
+    if (!touchStartRef.current || !touchEndRef.current) return;
+
+    const dx = touchStartRef.current.x - touchEndRef.current.x;
+    const dy = Math.abs(touchStartRef.current.y - touchEndRef.current.y);
     const minSwipeDistance = 50;
 
-    if (Math.abs(distance) >= minSwipeDistance) {
-      if (distance > 0) {
+    // Reset tilt
+    applyTilt(0, 0, false);
+
+    // Only swipe if horizontal distance is dominant
+    if (Math.abs(dx) >= minSwipeDistance && Math.abs(dx) > dy) {
+      if (dx > 0) {
         goToNextCard();
       } else {
         goToPrevCard();
@@ -274,6 +321,15 @@ export const CharactersView: React.FC = () => {
     touchEndRef.current = null;
   };
 
+  // Mouse handlers for desktop tilt
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    applyTilt(e.clientX, e.clientY, true);
+  }, [applyTilt]);
+
+  const handleMouseLeave = useCallback(() => {
+    applyTilt(0, 0, false);
+  }, [applyTilt]);
+
   // Reset trending index when characters change
   useEffect(() => {
     if (trendingIndex >= characters.length) {
@@ -283,98 +339,100 @@ export const CharactersView: React.FC = () => {
 
   return (
     <div className="bg-[#09090B] min-h-screen">
-      {/* Fixed header - below app's top nav */}
-      <div className="fixed top-[60px] left-0 right-0 z-50 bg-[#09090B]/95 backdrop-blur-md border-b border-white/[0.06]">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 -ml-2 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-
-          <div className="flex items-center gap-2">
-            <Crown
-              className="w-5 h-5"
-              style={{ color: '#eab308', filter: 'drop-shadow(0 0 6px rgba(234, 179, 8, 0.5))' }}
-            />
-            <h1 className="text-lg font-bold text-white tracking-tight">
-              Colección de Personajes
-            </h1>
-          </div>
-
-          {/* View mode toggle */}
-          <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-1">
+      {/* Fixed header - only in grid mode */}
+      {viewMode === 'grid' && (
+        <div className="fixed top-[60px] left-0 right-0 z-50 bg-[#09090B]/95 backdrop-blur-md border-b border-white/[0.06]">
+          <div className="flex items-center justify-between px-4 py-3">
             <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-zinc-700 text-white'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-              title="Vista de cuadrícula"
+              onClick={() => navigate(-1)}
+              className="p-2 -ml-2 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
             >
-              <LayoutGrid className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" />
             </button>
+
+            <div className="flex items-center gap-2">
+              <Crown
+                className="w-5 h-5"
+                style={{ color: '#eab308', filter: 'drop-shadow(0 0 6px rgba(234, 179, 8, 0.5))' }}
+              />
+              <h1 className="text-lg font-bold text-white tracking-tight">
+                Colección de Personajes
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-md transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-zinc-700 text-white'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+                title="Vista de cuadrícula"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('trending')}
+                className={`p-1.5 rounded-md transition-colors ${
+                  viewMode === 'trending'
+                    ? 'bg-zinc-700 text-white'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+                title="Vista trending"
+              >
+                <CreditCard className="w-4 h-4" />
+              </button>
+            </div>
+
             <button
-              onClick={() => setViewMode('trending')}
-              className={`p-1.5 rounded-md transition-colors ${
-                viewMode === 'trending'
-                  ? 'bg-zinc-700 text-white'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-              title="Vista trending"
+              onClick={handleShuffle}
+              className="p-2 -mr-2 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
+              title="Reordenar"
             >
-              <CreditCard className="w-4 h-4" />
+              <Shuffle className="w-5 h-5" />
             </button>
           </div>
 
-          <button
-            onClick={handleShuffle}
-            className="p-2 -mr-2 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
-            title="Reordenar"
-          >
-            <Shuffle className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Progress bar */}
-        <div className="px-4 pb-3">
-          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
-            <span>{discoveredWorks} de {totalWorks} descubiertos</span>
-            <span>{Math.round(progressPercent)}%</span>
-          </div>
-          <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500 ease-out"
-              style={{
-                width: `${progressPercent}%`,
-                background: `linear-gradient(90deg, ${dynamicColor}, ${dynamicColor}88)`,
-                boxShadow: `0 0 8px ${dynamicColor}66`,
-              }}
-            />
+          <div className="px-4 pb-3">
+            <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
+              <span>{discoveredWorks} de {totalWorks} descubiertos</span>
+              <span>{Math.round(progressPercent)}%</span>
+            </div>
+            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500 ease-out"
+                style={{
+                  width: `${progressPercent}%`,
+                  background: `linear-gradient(90deg, ${dynamicColor}, ${dynamicColor}88)`,
+                  boxShadow: `0 0 8px ${dynamicColor}66`,
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Genre filter bar */}
-      <div className="pt-[180px] px-4 pb-4">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
-          {genres.map(genre => (
-            <button
-              key={genre}
-              onClick={() => setActiveGenre(genre)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
-                activeGenre === genre
-                  ? 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/40'
-                  : 'bg-zinc-800/50 text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              {genre}
-            </button>
-          ))}
+      {/* Genre filter bar - only in grid mode */}
+      {viewMode === 'grid' && (
+        <div className="pt-[180px] px-4 pb-4">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+            {genres.map(genre => (
+              <button
+                key={genre}
+                onClick={() => setActiveGenre(genre)}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  activeGenre === genre
+                    ? 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/40'
+                    : 'bg-zinc-800/50 text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                {genre}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Character cards grid */}
       {viewMode === 'grid' && (
@@ -390,7 +448,7 @@ export const CharactersView: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {characters.map((entry, idx) => {
+              {charactersWithTotal.map((entry, idx) => {
                 const cardKey = `${entry.mediaId}-${entry.character.name}`;
                 const isUploading = uploadingId === entry.mediaId;
                 const hasImage = !!entry.character.image;
@@ -406,10 +464,8 @@ export const CharactersView: React.FC = () => {
                       boxShadow: `0 0 15px ${cardColor}33`,
                     }}
                   >
-                    {/* Ranking badge for top 3 */}
-                    {idx < 3 && <RankingBadge rank={idx + 1} />}
+                    <WorkRankBadge rank={entry.rankInWork} total={entry.totalInWork} />
 
-                    {/* Background: blurred cover */}
                     <div className="absolute inset-0">
                       {entry.coverImage ? (
                         <img
@@ -423,9 +479,7 @@ export const CharactersView: React.FC = () => {
                       <div className="absolute inset-0 bg-black/40" />
                     </div>
 
-                    {/* Content */}
                     <div className="relative z-10 flex flex-col items-center justify-center p-5 pt-6 min-h-[220px]">
-                      {/* Character image or initial */}
                       {hasImage ? (
                         <div
                           className="w-20 h-20 rounded-full overflow-hidden ring-2 shadow-lg mb-3"
@@ -446,17 +500,14 @@ export const CharactersView: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Character name */}
                       <p className="text-sm font-bold text-white text-center truncate w-full px-1">
                         {entry.character.name}
                       </p>
 
-                      {/* Work title */}
                       <p className="text-[10px] text-zinc-400 text-center truncate w-full px-1 mt-1">
                         {entry.mediaTitle}
                       </p>
 
-                      {/* Genre tags */}
                       <div className="flex flex-wrap justify-center gap-1 mt-2">
                         {entry.genres.slice(0, 2).map(genre => (
                           <span
@@ -472,7 +523,6 @@ export const CharactersView: React.FC = () => {
                         ))}
                       </div>
 
-                      {/* Upload button */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -483,7 +533,6 @@ export const CharactersView: React.FC = () => {
                         <Camera className="w-3.5 h-3.5 text-white" />
                       </button>
 
-                      {/* Loading state */}
                       {isUploading && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
                           <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -498,15 +547,23 @@ export const CharactersView: React.FC = () => {
         </div>
       )}
 
-      {/* Trending card view */}
+      {/* Trending card view - CLEAN fullscreen */}
       {viewMode === 'trending' && characters.length > 0 && (
         <div
-          className="fixed inset-0 z-40 bg-[#09090B]"
+          className="fixed inset-0 z-40 bg-[#09090B] flex flex-col items-center justify-center"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Full-screen blurred background */}
+          {/* Close button - top left */}
+          <button
+            onClick={() => setViewMode('grid')}
+            className="absolute top-4 left-4 z-50 p-2 bg-black/50 rounded-full backdrop-blur-sm hover:bg-black/70 transition-colors"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+
+          {/* Blurred background */}
           <div className="absolute inset-0 overflow-hidden">
             {characters[trendingIndex]?.coverImage ? (
               <img
@@ -521,9 +578,9 @@ export const CharactersView: React.FC = () => {
             <div className="absolute inset-0 bg-black/60" />
           </div>
 
-          {/* Large centered card */}
+          {/* Card container with tilt */}
           <div
-            className={`absolute inset-0 flex items-center justify-center p-6 transition-all duration-200 ${
+            className={`relative z-10 w-full max-w-sm mx-4 transition-all duration-200 ${
               isTransitioning
                 ? slideDirection === 'left'
                   ? 'opacity-0 -translate-x-8'
@@ -532,11 +589,16 @@ export const CharactersView: React.FC = () => {
             }`}
           >
             <div
-              className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
+              ref={cardRef}
+              className="relative w-full rounded-3xl overflow-hidden shadow-2xl"
               style={{
-                height: '80vh',
+                height: 'auto',
                 boxShadow: `0 0 30px ${characters[trendingIndex]?.primaryColor || dynamicColor}44`,
+                transformStyle: 'preserve-3d',
+                transition: 'transform 0.1s ease-out',
               }}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
             >
               {/* Card background */}
               <div className="absolute inset-0">
@@ -552,27 +614,19 @@ export const CharactersView: React.FC = () => {
                 <div className="absolute inset-0 bg-black/50" />
               </div>
 
-              {/* Ranking badge */}
-              {trendingIndex < 3 && (
-                <div className="absolute top-4 left-4 z-20">
-                  <RankingBadge rank={trendingIndex + 1} />
-                </div>
-              )}
-
               {/* Upload button */}
               <button
                 onClick={() => setEditingId(characters[trendingIndex]?.mediaId)}
-                className="absolute top-4 right-4 z-20 p-2 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
+                className="absolute top-3 right-3 z-20 p-2 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
               >
-                <Camera className="w-5 h-5 text-white" />
+                <Camera className="w-4 h-4 text-white" />
               </button>
 
               {/* Card content */}
-              <div className="relative z-10 flex flex-col items-center justify-center h-full p-8">
-                {/* Character image */}
+              <div className="relative z-10 flex flex-col items-center justify-center p-6 pt-8 pb-8">
                 {characters[trendingIndex]?.character.image ? (
                   <div
-                    className="w-40 h-40 rounded-full overflow-hidden ring-4 shadow-2xl mb-6"
+                    className="w-28 h-28 rounded-full overflow-hidden ring-3 shadow-2xl mb-4"
                     style={{ borderColor: `${characters[trendingIndex]?.primaryColor || dynamicColor}88` }}
                   >
                     <img
@@ -583,31 +637,28 @@ export const CharactersView: React.FC = () => {
                   </div>
                 ) : (
                   <div
-                    className="w-40 h-40 rounded-full bg-white/10 ring-4 shadow-2xl flex items-center justify-center mb-6"
+                    className="w-28 h-28 rounded-full bg-white/10 ring-3 shadow-2xl flex items-center justify-center mb-4"
                     style={{ borderColor: `${characters[trendingIndex]?.primaryColor || dynamicColor}88` }}
                   >
-                    <span className="text-5xl font-bold text-white/80">
+                    <span className="text-4xl font-bold text-white/80">
                       {characters[trendingIndex]?.character.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
                 )}
 
-                {/* Character name */}
-                <h2 className="text-3xl font-black text-white text-center mb-2 tracking-tight">
+                <h2 className="text-2xl font-black text-white text-center mb-1 tracking-tight">
                   {characters[trendingIndex]?.character.name}
                 </h2>
 
-                {/* Work title */}
-                <p className="text-lg text-zinc-300 text-center mb-6">
+                <p className="text-sm text-zinc-300 text-center mb-4">
                   {characters[trendingIndex]?.mediaTitle}
                 </p>
 
-                {/* Genre tags */}
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-wrap justify-center gap-1.5">
                   {characters[trendingIndex]?.genres.slice(0, 3).map(genre => (
                     <span
                       key={genre}
-                      className="px-3 py-1 rounded-full text-xs font-bold uppercase"
+                      className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase"
                       style={{
                         background: `${characters[trendingIndex]?.primaryColor || dynamicColor}33`,
                         color: characters[trendingIndex]?.primaryColor || dynamicColor,
@@ -621,17 +672,14 @@ export const CharactersView: React.FC = () => {
             </div>
           </div>
 
-          {/* Tap zones */}
-          <div className="absolute inset-0 z-30 flex pointer-events-none">
-            {/* Left zone - previous */}
+          {/* Tap zones for swipe */}
+          <div className="absolute inset-0 z-20 flex pointer-events-none">
             <button
               onClick={goToPrevCard}
               className="w-1/3 h-full pointer-events-auto opacity-0"
               aria-label="Previous character"
             />
-            {/* Middle zone - no action */}
             <div className="w-1/3 h-full" />
-            {/* Right zone - next */}
             <button
               onClick={goToNextCard}
               className="w-1/3 h-full pointer-events-auto opacity-0"
@@ -639,22 +687,12 @@ export const CharactersView: React.FC = () => {
             />
           </div>
 
-          {/* Counter indicator */}
-          <div className="absolute bottom-8 left-0 right-0 z-40 flex items-center justify-center">
-            <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full">
-              <p className="text-sm font-bold text-white">
-                {trendingIndex + 1} <span className="text-zinc-400">/</span> {characters.length}
-              </p>
-            </div>
+          {/* Counter - small, semi-transparent, at very bottom */}
+          <div className="absolute bottom-4 left-0 right-0 z-30 flex items-center justify-center">
+            <p className="text-xs font-bold text-white/50">
+              {trendingIndex + 1} <span className="text-white/30">/</span> {characters.length}
+            </p>
           </div>
-
-          {/* Back to grid button */}
-          <button
-            onClick={() => setViewMode('grid')}
-            className="absolute top-4 left-4 z-40 p-2 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
-          >
-            <LayoutGrid className="w-5 h-5 text-white" />
-          </button>
         </div>
       )}
 
@@ -676,7 +714,6 @@ export const CharactersView: React.FC = () => {
                 </button>
               </div>
 
-              {/* File upload option */}
               <button
                 onClick={() => {
                   const id = editingId;
@@ -694,7 +731,6 @@ export const CharactersView: React.FC = () => {
                 </div>
               </button>
 
-              {/* URL input option */}
               <div className="flex items-center gap-2">
                 <div className="flex-1 relative">
                   <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
