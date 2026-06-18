@@ -148,13 +148,13 @@ export const CharactersView: React.FC = () => {
     setShuffledChars(shuffleArray(allCharacters));
   };
 
-  const toggleFlip = (mediaId: string) => {
+  const toggleFlip = (cardKey: string) => {
     setFlippedCards(prev => {
       const next = new Set(prev);
-      if (next.has(mediaId)) {
-        next.delete(mediaId);
+      if (next.has(cardKey)) {
+        next.delete(cardKey);
       } else {
-        next.add(mediaId);
+        next.add(cardKey);
       }
       return next;
     });
@@ -267,7 +267,7 @@ export const CharactersView: React.FC = () => {
       </div>
 
       {/* Genre filter bar */}
-      <div className="pt-[100px] px-4 pb-4">
+      <div className="pt-[120px] px-4 pb-4">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
           {genres.map(genre => (
             <button
@@ -299,7 +299,8 @@ export const CharactersView: React.FC = () => {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {characters.map((entry, idx) => {
-              const isFlipped = flippedCards.has(entry.mediaId);
+              const cardKey = `${entry.mediaId}-${entry.character.name}`;
+              const isFlipped = flippedCards.has(cardKey);
               const isUploading = uploadingId === entry.mediaId;
               const hasImage = !!entry.character.image;
               const initial = entry.character.name.charAt(0).toUpperCase();
@@ -307,13 +308,13 @@ export const CharactersView: React.FC = () => {
 
               return (
                 <div
-                  key={`${entry.mediaId}-${entry.character.name}`}
+                  key={cardKey}
                   className="relative cursor-pointer"
                   style={{
                     perspective: '1000px',
                     animation: `staggerIn 0.4s ease-out ${idx * 0.06}s both`,
                   }}
-                  onClick={() => toggleFlip(entry.mediaId)}
+                  onClick={() => toggleFlip(cardKey)}
                 >
                   <div
                     className="relative w-full transition-transform duration-500"
@@ -407,7 +408,7 @@ export const CharactersView: React.FC = () => {
 
                     {/* Back face */}
                     <div
-                      className="absolute inset-0 aspect-[3/4] rounded-xl overflow-hidden ring-1 p-4 flex flex-col justify-between"
+                      className="absolute inset-0 aspect-[3/4] rounded-xl overflow-hidden ring-1 p-5 flex flex-col justify-between"
                       style={{
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
@@ -424,15 +425,15 @@ export const CharactersView: React.FC = () => {
                       />
 
                       {/* Work info */}
-                      <div className="pt-2">
-                        <p className="text-xs font-bold text-white mb-2 truncate">{entry.mediaTitle}</p>
+                      <div className="pt-3">
+                        <p className="text-sm font-bold text-white mb-3 leading-tight">{entry.mediaTitle}</p>
 
                         {/* Genres */}
-                        <div className="flex flex-wrap gap-1 mb-3">
+                        <div className="flex flex-wrap gap-1.5 mb-4">
                           {entry.genres.slice(0, 4).map(genre => (
                             <span
                               key={genre}
-                              className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase"
+                              className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase"
                               style={{
                                 background: `${cardColor}22`,
                                 color: cardColor,
@@ -445,18 +446,14 @@ export const CharactersView: React.FC = () => {
                       </div>
 
                       {/* Bottom info */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-[10px] text-zinc-400">
-                          <span className="font-semibold text-zinc-300">Personaje:</span>
-                          <span className="truncate">{entry.character.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] text-zinc-400">
-                          <span className="font-semibold text-zinc-300">Obra:</span>
-                          <span className="truncate">{entry.mediaTitle}</span>
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-2 text-xs text-zinc-400">
+                          <span className="font-semibold text-zinc-300 flex-shrink-0">Personaje:</span>
+                          <span className="leading-tight">{entry.character.name}</span>
                         </div>
 
                         {/* Tap to flip hint */}
-                        <p className="text-[9px] text-zinc-600 text-center pt-1">
+                        <p className="text-[10px] text-zinc-600 text-center pt-2">
                           Toca para voltear
                         </p>
                       </div>
