@@ -94,6 +94,7 @@ export const CharactersView: React.FC = () => {
   const [trendingIndex, setTrendingIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
+  const [isShuffling, setIsShuffling] = useState(false);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -184,7 +185,14 @@ export const CharactersView: React.FC = () => {
   const dynamicColor = characters.length > 0 && characters[0].primaryColor ? characters[0].primaryColor : '#eab308';
 
   const handleShuffle = () => {
-    setShuffledChars(shuffleArray(allCharacters));
+    if (isShuffling) return;
+    setIsShuffling(true);
+    // Animate out, shuffle, animate in
+    setTimeout(() => {
+      setShuffledChars(shuffleArray(allCharacters));
+      setTrendingIndex(0);
+      setTimeout(() => setIsShuffling(false), 400);
+    }, 400);
   };
 
   // Image upload handlers
@@ -598,12 +606,14 @@ export const CharactersView: React.FC = () => {
 
           {/* CARD — simple absolute positioning */}
           <div
-            className={`absolute left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-6 transition-opacity duration-200 ${
-              isTransitioning
-                ? `opacity-0 ${slideDirection === 'left' ? '-translate-x-[calc(50%+2rem)]' : 'translate-x-[calc(-50%-2rem)]'}`
-                : 'opacity-100'
+            className={`absolute left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-6 transition-all duration-200 ${
+              isShuffling
+                ? 'opacity-0 scale-90 rotate-3'
+                : isTransitioning
+                  ? `opacity-0 ${slideDirection === 'left' ? '-translate-x-[calc(50%+2rem)]' : 'translate-x-[calc(-50%-2rem)]'}`
+                  : 'opacity-100 scale-100 rotate-0'
             }`}
-            style={{ top: '10vh', height: '72vh' }}
+            style={{ top: '12vh', height: '72vh' }}
           >
             {/* The actual card — double-bezel: outer ring + inner content */}
             <div
