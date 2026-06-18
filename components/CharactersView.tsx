@@ -86,9 +86,28 @@ const CardContent: React.FC<{
   dynamicColor: string;
   onUpload: () => void;
   workChars: CharacterEntry[];
-}> = ({ char, dynamicColor, onUpload, workChars }) => {
+  showCover?: boolean;
+}> = ({ char, dynamicColor, onUpload, workChars, showCover }) => {
   if (!char) return null;
   const color = char.primaryColor || dynamicColor;
+
+  // Front face: show cover image prominently
+  if (showCover) {
+    return (
+      <div className="relative z-10 flex flex-col items-center justify-center h-full">
+        <button onClick={onUpload} className="absolute top-4 right-4 z-20 p-2 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors">
+          <Camera className="w-4 h-4 text-white" />
+        </button>
+        {char.coverImage ? (
+          <img src={char.coverImage} alt="" className="w-full h-full object-cover rounded-[calc(2rem-0.375rem)]" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[calc(2rem-0.375rem)]" />
+        )}
+      </div>
+    );
+  }
+
+  // Back face: show character
   const hasImage = !!char.character.image;
   const initial = char.character.name.charAt(0).toUpperCase();
   const rankEntry = workChars.find(c => c.mediaId === char.mediaId && c.character.name === char.character.name);
@@ -691,23 +710,17 @@ export const CharactersView: React.FC = () => {
               transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
               style={{ transformStyle: 'preserve-3d' }}
             >
-              {/* FRONT FACE — current character */}
+              {/* FRONT FACE — cover image */}
               <div
                 className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
                 style={{ backfaceVisibility: 'hidden' }}
               >
                 <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
-                  {characters[trendingIndex]?.coverImage ? (
-                    <img src={characters[trendingIndex].coverImage} alt="" className="absolute inset-0 w-full h-full object-cover scale-110 blur-md brightness-[0.35]" />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900" />
-                  )}
-                  <div className="absolute inset-0 bg-black/40" />
-                  <CardContent char={characters[trendingIndex]} dynamicColor={dynamicColor} onUpload={() => setEditingId(characters[trendingIndex]?.mediaId)} workChars={charactersWithTotal} />
+                  <CardContent char={characters[trendingIndex]} dynamicColor={dynamicColor} onUpload={() => setEditingId(characters[trendingIndex]?.mediaId)} workChars={charactersWithTotal} showCover />
                 </div>
               </div>
 
-              {/* BACK FACE — prev character (visible mid-flip) */}
+              {/* BACK FACE — character (revealed on flip) */}
               <div
                 className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
                 style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
