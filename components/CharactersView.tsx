@@ -95,6 +95,7 @@ export const CharactersView: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
   const [isShuffling, setIsShuffling] = useState(false);
+  const [shuffleKey, setShuffleKey] = useState(0);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -193,6 +194,7 @@ export const CharactersView: React.FC = () => {
     setTimeout(() => {
       setShuffledChars(shuffleArray(allCharacters));
       setTrendingIndex(0);
+      setShuffleKey(k => k + 1);
       setTimeout(() => setIsShuffling(false), 400);
     }, 400);
   };
@@ -357,18 +359,16 @@ export const CharactersView: React.FC = () => {
     return () => setImmersiveMode(false);
   }, [viewMode, setImmersiveMode]);
 
-  // Crossfade background on character change
+  // Crossfade background on character change or shuffle
   useEffect(() => {
     const currentBg = characters[trendingIndex]?.coverImage || null;
-    if (currentBg !== prevBgRef.current) {
-      setBgFaded(false);
-      const timer = setTimeout(() => {
-        prevBgRef.current = currentBg;
-        setBgFaded(true);
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [trendingIndex, characters]);
+    setBgFaded(false);
+    const timer = setTimeout(() => {
+      prevBgRef.current = currentBg;
+      setBgFaded(true);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [trendingIndex, shuffleKey, characters]);
 
   return (
     <div className="bg-[#09090B] min-h-screen">
