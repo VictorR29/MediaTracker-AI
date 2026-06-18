@@ -573,6 +573,14 @@ export const CharactersView: React.FC = () => {
             <X className="w-5 h-5 text-white" />
           </button>
 
+          {/* Shuffle button */}
+          <button
+            onClick={handleShuffle}
+            className="fixed top-4 right-4 z-[100] p-2.5 bg-white/20 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors ring-1 ring-white/20 pointer-events-auto"
+          >
+            <Shuffle className="w-5 h-5 text-white" />
+          </button>
+
           {/* Blurred cover background */}
           <div className="absolute inset-0 overflow-hidden">
             {characters[trendingIndex]?.coverImage ? (
@@ -588,15 +596,15 @@ export const CharactersView: React.FC = () => {
             <div className="absolute inset-0 bg-black/60" />
           </div>
 
-          {/* CARD — centered in viewport */}
-          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-            <div
-              className={`w-full max-w-md px-6 h-[72vh] pointer-events-auto -mt-[11vh] transition-opacity duration-200 ${
-                isTransitioning
-                  ? `opacity-0 ${slideDirection === 'left' ? '-translate-x-8' : 'translate-x-8'}`
-                  : 'opacity-100'
-              }`}
-            >
+          {/* CARD — simple absolute positioning */}
+          <div
+            className={`absolute left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-6 transition-opacity duration-200 ${
+              isTransitioning
+                ? `opacity-0 ${slideDirection === 'left' ? '-translate-x-[calc(50%+2rem)]' : 'translate-x-[calc(-50%-2rem)]'}`
+                : 'opacity-100'
+            }`}
+            style={{ top: '3vh', height: '72vh' }}
+          >
             {/* The actual card — double-bezel: outer ring + inner content */}
             <div
               ref={cardRef}
@@ -708,7 +716,6 @@ export const CharactersView: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
           </div>
 
           {/* Tap zones for swipe */}
