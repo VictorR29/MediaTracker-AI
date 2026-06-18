@@ -560,12 +560,12 @@ export const CharactersView: React.FC = () => {
       {/* Trending card view — Discovery/ImmersiveView double-bezel pattern */}
       {viewMode === 'trending' && characters.length > 0 && (
         <div
-          className="fixed inset-0 z-[60] bg-[#09090B] overflow-hidden touch-none flex flex-col items-center justify-center"
+          className="fixed inset-0 z-[60] bg-[#09090B] overflow-hidden touch-none"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Close button — top-left of outer container */}
+          {/* Close button */}
           <button
             onClick={() => setViewMode('grid')}
             className="absolute top-4 left-4 z-[70] p-2.5 bg-white/20 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors ring-1 ring-white/20"
