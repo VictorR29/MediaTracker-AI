@@ -4,6 +4,7 @@ import { ArrowLeft, Crown, Shuffle, Filter, Camera, Link, Upload, X, LayoutGrid,
 import { MediaItem } from '../types';
 import { useLibraryStore } from '../stores/useLibraryStore';
 import { useToast } from '../context/ToastContext';
+import { useUIStore } from '../stores/useUIStore';
 import { createPortal } from 'react-dom';
 
 interface CharacterEntry {
@@ -82,6 +83,7 @@ export const CharactersView: React.FC = () => {
   const library = useLibraryStore(state => state.library);
   const updateItem = useLibraryStore(state => state.updateItem);
   const { showToast } = useToast();
+  const { setImmersiveMode } = useUIStore();
   const navigate = useNavigate();
 
   const [activeGenre, setActiveGenre] = useState<string>('Todos');
@@ -336,6 +338,14 @@ export const CharactersView: React.FC = () => {
       setTrendingIndex(0);
     }
   }, [characters.length, trendingIndex]);
+
+  // Toggle immersive mode to hide app header + bottom nav in trending view
+  useEffect(() => {
+    if (viewMode === 'trending') {
+      setImmersiveMode(true);
+    }
+    return () => setImmersiveMode(false);
+  }, [viewMode, setImmersiveMode]);
 
   return (
     <div className="bg-[#09090B] min-h-screen">
@@ -614,7 +624,7 @@ export const CharactersView: React.FC = () => {
                 <div className="absolute inset-0 bg-black/40" />
 
                 {/* Content — justify-between spreads across full card height */}
-                <div className="relative z-10 flex flex-col items-center h-full justify-between p-0">
+                <div className="relative z-10 flex flex-col items-center h-full justify-between">
                   {/* Top: upload button (absolute top-right) */}
                   <button
                     onClick={() => setEditingId(characters[trendingIndex]?.mediaId)}
