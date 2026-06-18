@@ -168,6 +168,7 @@ export const CharactersView: React.FC = () => {
   const [isShuffling, setIsShuffling] = useState(false);
   const [bgVersion, setBgVersion] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isFading, setIsFading] = useState(false);
   const prevCharRef = useRef<CharacterEntry | null>(null);
   const nextCharRef = useRef<CharacterEntry | null>(null);
 
@@ -262,19 +263,25 @@ export const CharactersView: React.FC = () => {
   const handleShuffle = () => {
     if (isShuffling) return;
     setIsShuffling(true);
-    prevCharRef.current = characters[trendingIndex];
     const shuffled = shuffleArray(allCharacters);
     nextCharRef.current = shuffled[0] || null;
     setBgVersion(v => v + 1);
+    // Phase 1: flip to show cover
     setIsFlipped(true);
-    // Swap data ONLY after flip completes (no mid-flip re-render)
+    // Phase 2: after flip completes, fade out → swap → fade in
     setTimeout(() => {
-      setShuffledChars(shuffled);
-      setTrendingIndex(0);
-      setIsFlipped(false);
-      prevCharRef.current = null;
-      nextCharRef.current = null;
-      setIsShuffling(false);
+      setIsFading(true);
+      setTimeout(() => {
+        setShuffledChars(shuffled);
+        setTrendingIndex(0);
+        setIsFlipped(false);
+        prevCharRef.current = null;
+        nextCharRef.current = null;
+        setTimeout(() => {
+          setIsFading(false);
+          setIsShuffling(false);
+        }, 50);
+      }, 250);
     }, 650);
   };
 
@@ -692,7 +699,7 @@ export const CharactersView: React.FC = () => {
           {/* CARD — 3D flip with tilt */}
           <div
             className="absolute left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-6"
-            style={{ top: '12vh', height: '72vh' }}
+            style={{ top: '12vh', height: '72vh', opacity: isFading ? 0 : 1, transition: 'opacity 0.25s ease-in-out' }}
           >
             <div
               ref={cardRef}
