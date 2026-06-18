@@ -624,14 +624,14 @@ export const CharactersView: React.FC = () => {
               <img
                 src={`${characters[trendingIndex].coverImage}?v=${bgVersion}`}
                 alt=""
-                className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-30"
+                className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-[0.45]"
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-zinc-950" />
             )}
             {/* Black overlay — fades in during shuffle, fades out to reveal new bg */}
             <div
-              className="absolute inset-0 bg-black transition-opacity duration-500"
+              className="absolute inset-0 bg-black/80 transition-opacity duration-500"
               style={{ opacity: bgFaded ? 0 : 1 }}
             />
           </div>
