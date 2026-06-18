@@ -193,36 +193,22 @@ export const CharactersView: React.FC = () => {
     setIsShuffling(true);
     const currentBg = characters[trendingIndex]?.coverImage || null;
     setBgOld(currentBg);
-    // Show old bg, hide new bg
+    // Phase 1: Fade card out + fade entire bg to black (400ms)
     setBgFaded(false);
-    // Phase 1: Fade out card only
     setTimeout(() => {
+      // Phase 2: At black point, swap data + change bg image
       const shuffled = shuffleArray(allCharacters);
       setShuffledChars(shuffled);
       setTrendingIndex(0);
-      const newBgUrl = shuffled[0]?.coverImage || null;
-      if (newBgUrl && newBgUrl !== currentBg) {
-        // Preload new bg — old bg stays visible during load
-        const img = new Image();
-        img.onload = () => {
-          setBgVersion(v => v + 1);
-          // Crossfade complete — new bg visible, old bg hidden
-          setTimeout(() => setBgFaded(true), 50);
-          setTimeout(() => {
-            setIsShuffling(false);
-            setBgOld(null);
-          }, 600);
-        };
-        img.src = newBgUrl;
-      } else {
-        setBgVersion(v => v + 1);
-        setTimeout(() => setBgFaded(true), 50);
-        setTimeout(() => {
-          setIsShuffling(false);
-          setBgOld(null);
-        }, 300);
-      }
-    }, 400);
+      setBgVersion(v => v + 1);
+      // Phase 3: Reveal new bg from black (400ms)
+      setTimeout(() => setBgFaded(true), 100);
+      // Phase 4: Show card
+      setTimeout(() => {
+        setIsShuffling(false);
+        setBgOld(null);
+      }, 500);
+    }, 450);
   };
 
   // Image upload handlers
@@ -632,27 +618,22 @@ export const CharactersView: React.FC = () => {
             <Shuffle className="w-5 h-5 text-white" />
           </button>
 
-          {/* Blurred cover background — crossfade */}
+          {/* Blurred cover background — fade to black transition */}
           <div className="absolute inset-0 overflow-hidden">
-            {/* Old background — fading out during shuffle */}
-            {bgOld && (
-              <img
-                src={bgOld}
-                alt=""
-                className={`absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-30 transition-opacity duration-500 ${bgFaded ? 'opacity-0' : 'opacity-100'}`}
-              />
-            )}
-            {/* Current background — fading in */}
             {characters[trendingIndex]?.coverImage ? (
               <img
                 src={`${characters[trendingIndex].coverImage}?v=${bgVersion}`}
                 alt=""
-                className={`absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-30 transition-opacity duration-500 ${bgFaded ? 'opacity-100' : 'opacity-0'}`}
+                className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-30"
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-zinc-950" />
             )}
-            <div className="absolute inset-0 bg-black/60" />
+            {/* Black overlay — fades in during shuffle, fades out to reveal new bg */}
+            <div
+              className="absolute inset-0 bg-black transition-opacity duration-500"
+              style={{ opacity: bgFaded ? 0 : 1 }}
+            />
           </div>
 
           {/* CARD — simple absolute positioning */}
