@@ -101,7 +101,7 @@ export const CharactersView: React.FC = () => {
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const touchEndRef = useRef<{ x: number; y: number } | null>(null);
   const prevBgRef = useRef<string | null>(null);
-  const [bgFaded, setBgFaded] = useState(true);
+  const [bgFaded, setBgFaded] = useState(true); // true = new bg visible, old bg hidden
   const [bgOld, setBgOld] = useState<string | null>(null);
 
   // Collect all genres from library
@@ -133,23 +133,23 @@ export const CharactersView: React.FC = () => {
   }, [library]);
 
   // Shuffle key for re-shuffling
-  const shuffleKey = useMemo(
+  const libraryChangeKey = useMemo(
     () => library.length + library.reduce((acc, i) => acc + (i.trackingData.watchedEpisodes || 0), 0),
     [library]
   );
 
   const [shuffledChars, setShuffledChars] = useState<CharacterEntry[]>([]);
-  const [lastShuffleKey, setLastShuffleKey] = useState<number>(shuffleKey);
+  const [lastShuffleKey, setLastShuffleKey] = useState<number>(libraryChangeKey);
 
   const allCharacters = useMemo(() => {
-    if (shuffleKey !== lastShuffleKey) {
+    if (libraryChangeKey !== lastShuffleKey) {
       const shuffled = shuffleArray(baseCharacters);
       setShuffledChars(shuffled);
-      setLastShuffleKey(shuffleKey);
+      setLastShuffleKey(libraryChangeKey);
       return shuffled;
     }
     return shuffledChars.length > 0 ? shuffledChars : baseCharacters;
-  }, [shuffleKey, lastShuffleKey, baseCharacters, shuffledChars]);
+  }, [libraryChangeKey, lastShuffleKey, baseCharacters, shuffledChars]);
 
   // Filter characters by genre
   const characters = useMemo(() => {
@@ -191,25 +191,24 @@ export const CharactersView: React.FC = () => {
   const handleShuffle = () => {
     if (isShuffling) return;
     setIsShuffling(true);
-    // Save current bg as old layer
+    // Save current bg
     const currentBg = characters[trendingIndex]?.coverImage || null;
     setBgOld(currentBg);
-    // Fade out
+    // Phase 1: Hide new bg, show old bg (crossfade start)
     setBgFaded(false);
     setTimeout(() => {
-      // Swap data
+      // Phase 2: Swap data — old bg is visible, new bg is hidden
       const shuffled = shuffleArray(allCharacters);
       setShuffledChars(shuffled);
       setTrendingIndex(0);
-      // Force new bg to be different URL (cache-bust)
       setBgVersion(v => v + 1);
-      // Fade in new bg
-      setTimeout(() => setBgFaded(true), 50);
-      // Show card
+      // Phase 3: Show new bg, hide old bg (crossfade end)
+      setTimeout(() => setBgFaded(true), 100);
+      // Phase 4: Show card, cleanup
       setTimeout(() => {
         setIsShuffling(false);
         setBgOld(null);
-      }, 500);
+      }, 600);
     }, 500);
   };
 
