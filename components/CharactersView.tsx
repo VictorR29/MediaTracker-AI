@@ -169,6 +169,7 @@ export const CharactersView: React.FC = () => {
   const [bgVersion, setBgVersion] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const prevCharRef = useRef<CharacterEntry | null>(null);
+  const nextCharRef = useRef<CharacterEntry | null>(null);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -262,18 +263,22 @@ export const CharactersView: React.FC = () => {
     if (isShuffling) return;
     setIsShuffling(true);
     prevCharRef.current = characters[trendingIndex];
+    // Pre-calculate next character for back face
+    const shuffled = shuffleArray(allCharacters);
+    nextCharRef.current = shuffled[0] || null;
     setBgVersion(v => v + 1);
     // Flip card to 180
     setIsFlipped(true);
-    // At midpoint (card edge-on), swap data
+    // At midpoint, commit the data
     setTimeout(() => {
-      setShuffledChars(shuffleArray(allCharacters));
+      setShuffledChars(shuffled);
       setTrendingIndex(0);
     }, 300);
     // After full rotation, flip back to 0 for next time
     setTimeout(() => {
       setIsFlipped(false);
       prevCharRef.current = null;
+      nextCharRef.current = null;
       setIsShuffling(false);
     }, 700);
   };
@@ -726,13 +731,13 @@ export const CharactersView: React.FC = () => {
                 </div>
               </div>
 
-              {/* BACK FACE — cover (revealed on flip) */}
+              {/* BACK FACE — cover of next character (revealed on flip) */}
               <div
                 className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
                 style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
               >
                 <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
-                  <CardContent char={characters[trendingIndex]} dynamicColor={dynamicColor} onUpload={() => {}} workChars={charactersWithTotal} showCover />
+                  <CardContent char={nextCharRef.current} dynamicColor={dynamicColor} onUpload={() => {}} workChars={charactersWithTotal} showCover />
                 </div>
               </div>
             </motion.div>
