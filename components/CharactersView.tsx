@@ -590,7 +590,7 @@ export const CharactersView: React.FC = () => {
 
           {/* CARD WRAPPER — fixed height, centers card */}
           <div
-            className={`relative w-full max-w-md h-[75vh] flex items-center justify-center z-10 transition-all duration-200 ${
+            className={`relative w-full max-w-md h-[68vh] flex items-center justify-center z-10 transition-all duration-200 ${
               isTransitioning
                 ? slideDirection === 'left'
                   ? 'opacity-0 -translate-x-8'
