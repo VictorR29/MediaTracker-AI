@@ -603,7 +603,7 @@ export const CharactersView: React.FC = () => {
                 ? `opacity-0 ${slideDirection === 'left' ? '-translate-x-[calc(50%+2rem)]' : 'translate-x-[calc(-50%-2rem)]'}`
                 : 'opacity-100'
             }`}
-            style={{ top: '8vh', height: '72vh' }}
+            style={{ top: '10vh', height: '72vh' }}
           >
             {/* The actual card — double-bezel: outer ring + inner content */}
             <div
