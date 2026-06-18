@@ -191,25 +191,38 @@ export const CharactersView: React.FC = () => {
   const handleShuffle = () => {
     if (isShuffling) return;
     setIsShuffling(true);
-    // Save current bg
     const currentBg = characters[trendingIndex]?.coverImage || null;
     setBgOld(currentBg);
-    // Phase 1: Hide new bg, show old bg (crossfade start)
+    // Show old bg, hide new bg
     setBgFaded(false);
+    // Phase 1: Fade out card only
     setTimeout(() => {
-      // Phase 2: Swap data — old bg is visible, new bg is hidden
       const shuffled = shuffleArray(allCharacters);
       setShuffledChars(shuffled);
       setTrendingIndex(0);
-      setBgVersion(v => v + 1);
-      // Phase 3: Show new bg, hide old bg (crossfade end)
-      setTimeout(() => setBgFaded(true), 100);
-      // Phase 4: Show card, cleanup
-      setTimeout(() => {
-        setIsShuffling(false);
-        setBgOld(null);
-      }, 600);
-    }, 500);
+      const newBgUrl = shuffled[0]?.coverImage || null;
+      if (newBgUrl && newBgUrl !== currentBg) {
+        // Preload new bg — old bg stays visible during load
+        const img = new Image();
+        img.onload = () => {
+          setBgVersion(v => v + 1);
+          // Crossfade complete — new bg visible, old bg hidden
+          setTimeout(() => setBgFaded(true), 50);
+          setTimeout(() => {
+            setIsShuffling(false);
+            setBgOld(null);
+          }, 600);
+        };
+        img.src = newBgUrl;
+      } else {
+        setBgVersion(v => v + 1);
+        setTimeout(() => setBgFaded(true), 50);
+        setTimeout(() => {
+          setIsShuffling(false);
+          setBgOld(null);
+        }, 300);
+      }
+    }, 400);
   };
 
   // Image upload handlers
