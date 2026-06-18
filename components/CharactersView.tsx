@@ -69,7 +69,6 @@ export const CharactersView: React.FC = () => {
   const navigate = useNavigate();
 
   const [activeGenre, setActiveGenre] = useState<string>('Todos');
-  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [uploadingId, setUploadingId] = useState<string | null>(null);
@@ -148,18 +147,6 @@ export const CharactersView: React.FC = () => {
     setShuffledChars(shuffleArray(allCharacters));
   };
 
-  const toggleFlip = (cardKey: string) => {
-    setFlippedCards(prev => {
-      const next = new Set(prev);
-      if (next.has(cardKey)) {
-        next.delete(cardKey);
-      } else {
-        next.add(cardKey);
-      }
-      return next;
-    });
-  };
-
   // Image upload handlers
   const updateCharacterImage = async (mediaId: string, imageUrl: string) => {
     setUploadingId(mediaId);
@@ -218,8 +205,8 @@ export const CharactersView: React.FC = () => {
 
   return (
     <div className="bg-[#09090B] min-h-screen">
-      {/* Fixed header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[#09090B]/95 backdrop-blur-md border-b border-white/[0.06]">
+      {/* Fixed header - below app's top nav */}
+      <div className="fixed top-[60px] left-0 right-0 z-50 bg-[#09090B]/95 backdrop-blur-md border-b border-white/[0.06]">
         <div className="flex items-center justify-between px-4 py-3">
           <button
             onClick={() => navigate(-1)}
@@ -267,7 +254,7 @@ export const CharactersView: React.FC = () => {
       </div>
 
       {/* Genre filter bar */}
-      <div className="pt-[110px] px-4 pb-4">
+      <div className="pt-[180px] px-4 pb-4">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
           {genres.map(genre => (
             <button
@@ -300,7 +287,6 @@ export const CharactersView: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {characters.map((entry, idx) => {
               const cardKey = `${entry.mediaId}-${entry.character.name}`;
-              const isFlipped = flippedCards.has(cardKey);
               const isUploading = uploadingId === entry.mediaId;
               const hasImage = !!entry.character.image;
               const initial = entry.character.name.charAt(0).toUpperCase();
@@ -309,155 +295,91 @@ export const CharactersView: React.FC = () => {
               return (
                 <div
                   key={cardKey}
-                  className="relative cursor-pointer"
+                  className="relative rounded-2xl overflow-hidden group"
                   style={{
-                    perspective: '1000px',
                     animation: `staggerIn 0.4s ease-out ${idx * 0.06}s both`,
                   }}
-                  onClick={() => toggleFlip(cardKey)}
                 >
-                  <div
-                    className="relative w-full transition-transform duration-500"
-                    style={{
-                      transformStyle: 'preserve-3d',
-                      transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                    }}
-                  >
-                    {/* Front face */}
-                    <div
-                      className="relative aspect-[3/4] rounded-xl overflow-hidden ring-1"
-                      style={{
-                        backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden',
-                        boxShadow: `0 0 20px ${cardColor}22, inset 0 1px 0 rgba(255,255,255,0.05)`,
-                        borderColor: `${cardColor}44`,
-                      }}
-                    >
-                      {/* Background: blurred cover */}
-                      <div className="absolute inset-0">
-                        {entry.coverImage ? (
-                          <img
-                            src={entry.coverImage}
-                            alt=""
-                            className="w-full h-full object-cover scale-110 blur-md brightness-50"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
-                        )}
-                        <div className="absolute inset-0 bg-black/40" />
-                      </div>
-
-                      {/* Top accent line */}
-                      <div
-                        className="absolute top-0 left-0 right-0 h-1"
-                        style={{ background: `linear-gradient(90deg, transparent, ${cardColor}, transparent)` }}
+                  {/* Background: blurred cover */}
+                  <div className="absolute inset-0">
+                    {entry.coverImage ? (
+                      <img
+                        src={entry.coverImage}
+                        alt=""
+                        className="w-full h-full object-cover scale-110 blur-md brightness-50"
                       />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
+                    )}
+                    <div className="absolute inset-0 bg-black/40" />
+                  </div>
 
-                      {/* Content */}
-                      <div className="relative z-10 flex flex-col items-center justify-center h-full p-4 pt-6">
-                        {/* Character image or initial */}
-                        {hasImage ? (
-                          <div
-                            className="w-24 h-24 rounded-full overflow-hidden ring-2 shadow-lg mb-3"
-                            style={{ borderColor: `${cardColor}66` }}
-                          >
-                            <img
-                              src={entry.character.image}
-                              alt={entry.character.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ) : (
-                          <div
-                            className="w-24 h-24 rounded-full bg-white/10 ring-2 shadow-lg flex items-center justify-center mb-3"
-                            style={{ borderColor: `${cardColor}66` }}
-                          >
-                            <span className="text-3xl font-bold text-white/80">{initial}</span>
-                          </div>
-                        )}
+                  {/* Content */}
+                  <div className="relative z-10 flex flex-col items-center justify-center p-5 pt-6 min-h-[220px]">
+                    {/* Character image or initial */}
+                    {hasImage ? (
+                      <div
+                        className="w-20 h-20 rounded-full overflow-hidden ring-2 shadow-lg mb-3"
+                        style={{ borderColor: `${cardColor}66` }}
+                      >
+                        <img
+                          src={entry.character.image}
+                          alt={entry.character.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        className="w-20 h-20 rounded-full bg-white/10 ring-2 shadow-lg flex items-center justify-center mb-3"
+                        style={{ borderColor: `${cardColor}66` }}
+                      >
+                        <span className="text-2xl font-bold text-white/80">{initial}</span>
+                      </div>
+                    )}
 
-                        {/* Character name */}
-                        <p className="text-sm font-bold text-white text-center truncate w-full px-1">
-                          {entry.character.name}
-                        </p>
+                    {/* Character name */}
+                    <p className="text-sm font-bold text-white text-center truncate w-full px-1">
+                      {entry.character.name}
+                    </p>
 
-                        {/* Work title */}
-                        <p className="text-[10px] text-zinc-400 text-center truncate w-full px-1 mt-1">
-                          {entry.mediaTitle}
-                        </p>
+                    {/* Work title */}
+                    <p className="text-[10px] text-zinc-400 text-center truncate w-full px-1 mt-1">
+                      {entry.mediaTitle}
+                    </p>
 
-                        {/* Upload button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingId(entry.mediaId);
+                    {/* Genre tags */}
+                    <div className="flex flex-wrap justify-center gap-1 mt-2">
+                      {entry.genres.slice(0, 2).map(genre => (
+                        <span
+                          key={genre}
+                          className="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase"
+                          style={{
+                            background: `${cardColor}22`,
+                            color: cardColor,
                           }}
-                          className="absolute top-3 right-3 p-1.5 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
                         >
-                          <Camera className="w-3.5 h-3.5 text-white" />
-                        </button>
-
-                        {/* Loading state */}
-                        {isUploading && (
-                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
-                            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          </div>
-                        )}
-                      </div>
+                          {genre}
+                        </span>
+                      ))}
                     </div>
 
-                    {/* Back face */}
-                    <div
-                      className="absolute inset-0 aspect-[3/4] rounded-xl overflow-hidden ring-1 p-5 flex flex-col justify-between"
-                      style={{
-                        backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden',
-                        transform: 'rotateY(180deg)',
-                        background: `linear-gradient(135deg, ${cardColor}22, #1C1C1F)`,
-                        borderColor: `${cardColor}44`,
-                        boxShadow: `0 0 20px ${cardColor}22`,
+                    {/* Upload button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingId(entry.mediaId);
                       }}
+                      className="absolute top-3 right-3 p-1.5 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
                     >
-                      {/* Top accent */}
-                      <div
-                        className="absolute top-0 left-0 right-0 h-1"
-                        style={{ background: `linear-gradient(90deg, transparent, ${cardColor}, transparent)` }}
-                      />
+                      <Camera className="w-3.5 h-3.5 text-white" />
+                    </button>
 
-                      {/* Work info */}
-                      <div className="pt-3">
-                        <p className="text-sm font-bold text-white mb-3 leading-tight">{entry.mediaTitle}</p>
-
-                        {/* Genres */}
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {entry.genres.slice(0, 4).map(genre => (
-                            <span
-                              key={genre}
-                              className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase"
-                              style={{
-                                background: `${cardColor}22`,
-                                color: cardColor,
-                              }}
-                            >
-                              {genre}
-                            </span>
-                          ))}
-                        </div>
+                    {/* Loading state */}
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       </div>
-
-                      {/* Bottom info */}
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-2 text-xs text-zinc-400">
-                          <span className="font-semibold text-zinc-300 flex-shrink-0">Personaje:</span>
-                          <span className="leading-tight">{entry.character.name}</span>
-                        </div>
-
-                        {/* Tap to flip hint */}
-                        <p className="text-[10px] text-zinc-600 text-center pt-2">
-                          Toca para voltear
-                        </p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               );

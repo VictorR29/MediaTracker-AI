@@ -180,9 +180,7 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
     }
   }, [urlInput, editingId, updateCharacterImage]);
 
-  if (characters.length === 0) {
-    return null;
-  }
+  const hasNoGenreMatch = characters.length === 0 && baseCharacters.length > 0;
 
   return (
     <div className="bg-[#111113] ring-1 ring-white/[0.06] p-1 rounded-2xl shadow-lg overflow-hidden">
@@ -238,6 +236,11 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
         )}
 
         {/* Scrollable gallery */}
+        {hasNoGenreMatch ? (
+          <div className="py-8 text-center">
+            <p className="text-zinc-500 text-xs">No hay personajes en este género</p>
+          </div>
+        ) : (
         <div
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
@@ -319,6 +322,7 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
             );
           })}
         </div>
+        )}
       </div>
 
       {/* Image upload modal */}
