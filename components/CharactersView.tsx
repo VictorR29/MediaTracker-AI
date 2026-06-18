@@ -547,15 +547,15 @@ export const CharactersView: React.FC = () => {
         </div>
       )}
 
-      {/* Trending card view - CLEAN fullscreen */}
+      {/* Trending card view — Discovery/ImmersiveView double-bezel pattern */}
       {viewMode === 'trending' && characters.length > 0 && (
         <div
-          className="fixed inset-0 z-40 bg-[#09090B] flex flex-col items-center justify-center"
+          className="fixed inset-0 z-40 bg-[#09090B] overflow-hidden touch-none flex flex-col items-center justify-center"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Close button - top left */}
+          {/* Close button — top-left of outer container */}
           <button
             onClick={() => setViewMode('grid')}
             className="absolute top-4 left-4 z-50 p-2 bg-black/50 rounded-full backdrop-blur-sm hover:bg-black/70 transition-colors"
@@ -563,7 +563,7 @@ export const CharactersView: React.FC = () => {
             <X className="w-5 h-5 text-white" />
           </button>
 
-          {/* Blurred background */}
+          {/* Blurred cover background */}
           <div className="absolute inset-0 overflow-hidden">
             {characters[trendingIndex]?.coverImage ? (
               <img
@@ -578,9 +578,9 @@ export const CharactersView: React.FC = () => {
             <div className="absolute inset-0 bg-black/60" />
           </div>
 
-          {/* Card container with tilt */}
+          {/* CARD WRAPPER — fixed height, centers card */}
           <div
-            className={`relative z-10 w-full max-w-sm mx-4 transition-all duration-200 ${
+            className={`relative w-full max-w-md h-[75vh] flex items-center justify-center z-10 transition-all duration-200 ${
               isTransitioning
                 ? slideDirection === 'left'
                   ? 'opacity-0 -translate-x-8'
@@ -588,85 +588,118 @@ export const CharactersView: React.FC = () => {
                 : 'opacity-100 translate-x-0'
             }`}
           >
+            {/* The actual card — double-bezel: outer ring + inner content */}
             <div
               ref={cardRef}
-              className="relative w-full rounded-3xl overflow-hidden shadow-2xl"
+              className="relative w-[90%] h-full rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06] cursor-pointer"
               style={{
-                height: '78vh',
-                boxShadow: `0 0 30px ${characters[trendingIndex]?.primaryColor || dynamicColor}44`,
                 transformStyle: 'preserve-3d',
                 transition: 'transform 0.1s ease-out',
               }}
               onMouseMove={handleMouseMove}
               onMouseLeave={handleMouseLeave}
             >
-              {/* Card background */}
-              <div className="absolute inset-0">
+              {/* Inner content area with blurred cover background */}
+              <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
+                {/* Blurred cover image as card background */}
                 {characters[trendingIndex]?.coverImage ? (
                   <img
                     src={characters[trendingIndex].coverImage}
                     alt=""
-                    className="w-full h-full object-cover scale-110 blur-md brightness-50"
+                    className="absolute inset-0 w-full h-full object-cover scale-110 blur-md brightness-[0.35]"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900" />
                 )}
-                <div className="absolute inset-0 bg-black/50" />
-              </div>
+                <div className="absolute inset-0 bg-black/40" />
 
-              {/* Upload button */}
-              <button
-                onClick={() => setEditingId(characters[trendingIndex]?.mediaId)}
-                className="absolute top-3 right-3 z-20 p-2 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
-              >
-                <Camera className="w-4 h-4 text-white" />
-              </button>
-
-              {/* Card content */}
-              <div className="relative z-10 flex flex-col items-center justify-center p-6 pt-8 pb-8">
-                {characters[trendingIndex]?.character.image ? (
-                  <div
-                    className="w-28 h-28 rounded-full overflow-hidden ring-3 shadow-2xl mb-4"
-                    style={{ borderColor: `${characters[trendingIndex]?.primaryColor || dynamicColor}88` }}
-                  >
-                    <img
-                      src={characters[trendingIndex].character.image}
-                      alt={characters[trendingIndex].character.name}
-                      className="w-full h-full object-cover"
-                    />
+                {/* Content — justify-between spreads across full card height */}
+                <div className="relative z-10 flex flex-col items-center h-full justify-between py-10">
+                  {/* Top: upload button (absolute top-right) */}
+                  <div className="w-full px-4">
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => setEditingId(characters[trendingIndex]?.mediaId)}
+                        className="p-2 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
+                      >
+                        <Camera className="w-4 h-4 text-white" />
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <div
-                    className="w-28 h-28 rounded-full bg-white/10 ring-3 shadow-2xl flex items-center justify-center mb-4"
-                    style={{ borderColor: `${characters[trendingIndex]?.primaryColor || dynamicColor}88` }}
-                  >
-                    <span className="text-4xl font-bold text-white/80">
-                      {characters[trendingIndex]?.character.name.charAt(0).toUpperCase()}
-                    </span>
+
+                  {/* Upper area: character image (large circle) */}
+                  <div className="flex items-center justify-center">
+                    {characters[trendingIndex]?.character.image ? (
+                      <div
+                        className="w-36 h-36 rounded-full overflow-hidden ring-4 shadow-2xl"
+                        style={{
+                          borderColor: `${characters[trendingIndex]?.primaryColor || dynamicColor}88`,
+                          boxShadow: `0 0 40px ${characters[trendingIndex]?.primaryColor || dynamicColor}44`,
+                        }}
+                      >
+                        <img
+                          src={characters[trendingIndex].character.image}
+                          alt={characters[trendingIndex].character.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        className="w-36 h-36 rounded-full bg-white/10 ring-4 shadow-2xl flex items-center justify-center"
+                        style={{
+                          borderColor: `${characters[trendingIndex]?.primaryColor || dynamicColor}88`,
+                          boxShadow: `0 0 40px ${characters[trendingIndex]?.primaryColor || dynamicColor}44`,
+                        }}
+                      >
+                        <span className="text-5xl font-bold text-white/80">
+                          {characters[trendingIndex]?.character.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
 
-                <h2 className="text-2xl font-black text-white text-center mb-1 tracking-tight">
-                  {characters[trendingIndex]?.character.name}
-                </h2>
+                  {/* Middle: character name + work title */}
+                  <div className="text-center px-6">
+                    <h2 className="text-2xl font-black text-white tracking-tight mb-1">
+                      {characters[trendingIndex]?.character.name}
+                    </h2>
+                    <p className="text-sm text-zinc-300">
+                      {characters[trendingIndex]?.mediaTitle}
+                    </p>
+                  </div>
 
-                <p className="text-sm text-zinc-300 text-center mb-4">
-                  {characters[trendingIndex]?.mediaTitle}
-                </p>
+                  {/* Lower middle: genre tags */}
+                  <div className="flex flex-wrap justify-center gap-1.5 px-6">
+                    {characters[trendingIndex]?.genres.slice(0, 3).map(genre => (
+                      <span
+                        key={genre}
+                        className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                        style={{
+                          background: `${characters[trendingIndex]?.primaryColor || dynamicColor}33`,
+                          color: characters[trendingIndex]?.primaryColor || dynamicColor,
+                        }}
+                      >
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
 
-                <div className="flex flex-wrap justify-center gap-1.5">
-                  {characters[trendingIndex]?.genres.slice(0, 3).map(genre => (
-                    <span
-                      key={genre}
-                      className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase"
-                      style={{
-                        background: `${characters[trendingIndex]?.primaryColor || dynamicColor}33`,
-                        color: characters[trendingIndex]?.primaryColor || dynamicColor,
-                      }}
-                    >
-                      {genre}
-                    </span>
-                  ))}
+                  {/* Bottom: ranking badge */}
+                  {characters[trendingIndex] && (() => {
+                    const char = characters[trendingIndex];
+                    const workChars = charactersWithTotal.filter(c => c.mediaId === char.mediaId);
+                    const rankEntry = workChars.find(c => c.character.name === char.character.name);
+                    if (rankEntry && rankEntry.totalInWork > 1) {
+                      return (
+                        <div className="bg-yellow-500/90 backdrop-blur-sm px-3 py-1 rounded-full">
+                          <span className="text-xs font-black text-black tracking-wider">
+                            {rankEntry.rankInWork}/{rankEntry.totalInWork}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return <div />;
+                  })()}
                 </div>
               </div>
             </div>
@@ -687,7 +720,7 @@ export const CharactersView: React.FC = () => {
             />
           </div>
 
-          {/* Counter - small, semi-transparent, at very bottom */}
+          {/* Counter — absolute bottom of outer container */}
           <div className="absolute bottom-4 left-0 right-0 z-30 flex items-center justify-center">
             <p className="text-xs font-bold text-white/50">
               {trendingIndex + 1} <span className="text-white/30">/</span> {characters.length}
