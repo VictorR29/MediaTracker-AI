@@ -102,6 +102,7 @@ export const CharactersView: React.FC = () => {
   const touchEndRef = useRef<{ x: number; y: number } | null>(null);
   const prevBgRef = useRef<string | null>(null);
   const [bgFaded, setBgFaded] = useState(true);
+  const [bgOld, setBgOld] = useState<string | null>(null);
 
   // Collect all genres from library
   const genres = useMemo(() => {
@@ -190,20 +191,23 @@ export const CharactersView: React.FC = () => {
   const handleShuffle = () => {
     if (isShuffling) return;
     setIsShuffling(true);
-    // Save current background as "old" for crossfade
-    const oldBg = characters[trendingIndex]?.coverImage || null;
-    // Step 1: Start crossfade — old bg fades out, new bg fades in
+    // Save current bg as old layer
+    const currentBg = characters[trendingIndex]?.coverImage || null;
+    setBgOld(currentBg);
+    // Fade out: card + old bg
     setBgFaded(false);
-    // Step 2: After fade out completes, swap data
     setTimeout(() => {
+      // Swap data while both layers exist
       const shuffled = shuffleArray(allCharacters);
       setShuffledChars(shuffled);
-      prevBgRef.current = oldBg;
       setTrendingIndex(0);
-      // Step 3: Fade new background in
+      // Fade in: new bg
       setTimeout(() => setBgFaded(true), 50);
-      // Step 4: Fade card in
-      setTimeout(() => setIsShuffling(false), 400);
+      // Show card
+      setTimeout(() => {
+        setIsShuffling(false);
+        setBgOld(null);
+      }, 500);
     }, 500);
   };
 
@@ -367,16 +371,18 @@ export const CharactersView: React.FC = () => {
     return () => setImmersiveMode(false);
   }, [viewMode, setImmersiveMode]);
 
-  // Crossfade background on character change or shuffle
+  // Crossfade background on character change (normal navigation)
   useEffect(() => {
+    if (isShuffling) return; // handled by handleShuffle
     const currentBg = characters[trendingIndex]?.coverImage || null;
-    setBgFaded(false);
-    const timer = setTimeout(() => {
+    if (currentBg !== prevBgRef.current) {
+      setBgOld(prevBgRef.current);
+      setBgFaded(false);
       prevBgRef.current = currentBg;
-      setBgFaded(true);
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [trendingIndex, shuffleKey, characters]);
+      const timer = setTimeout(() => setBgFaded(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [trendingIndex, characters, isShuffling]);
 
   return (
     <div className="bg-[#09090B] min-h-screen">
@@ -614,12 +620,12 @@ export const CharactersView: React.FC = () => {
 
           {/* Blurred cover background — crossfade */}
           <div className="absolute inset-0 overflow-hidden">
-            {/* Previous background — fading out */}
-            {(isShuffling || prevBgRef.current !== (characters[trendingIndex]?.coverImage || null)) && prevBgRef.current && (
+            {/* Old background — fading out during shuffle */}
+            {bgOld && (
               <img
-                src={prevBgRef.current}
+                src={bgOld}
                 alt=""
-                className={`absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-30 transition-opacity duration-700 ${bgFaded ? 'opacity-0' : 'opacity-100'}`}
+                className={`absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-30 transition-opacity duration-500 ${bgFaded ? 'opacity-0' : 'opacity-100'}`}
               />
             )}
             {/* Current background — fading in */}
@@ -627,7 +633,7 @@ export const CharactersView: React.FC = () => {
               <img
                 src={characters[trendingIndex].coverImage}
                 alt=""
-                className={`absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-30 transition-opacity duration-700 ${bgFaded ? 'opacity-100' : 'opacity-0'}`}
+                className={`absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-30 transition-opacity duration-500 ${bgFaded ? 'opacity-100' : 'opacity-0'}`}
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-zinc-950" />
