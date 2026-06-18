@@ -720,12 +720,7 @@ export const CharactersView: React.FC = () => {
             />
           </div>
 
-          {/* Counter — absolute bottom of outer container */}
-          <div className="absolute bottom-4 left-0 right-0 z-30 flex items-center justify-center">
-            <p className="text-xs font-bold text-white/50">
-              {trendingIndex + 1} <span className="text-white/30">/</span> {characters.length}
-            </p>
-          </div>
+
         </div>
       )}
 
