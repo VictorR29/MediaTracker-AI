@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Crown, Shuffle, Filter, Camera, Link, Upload, X } from 'lucide-react';
+import { ArrowLeft, Crown, Shuffle, Filter, Camera, Link, Upload, X, LayoutGrid, CreditCard } from 'lucide-react';
 import { MediaItem } from '../types';
 import { useLibraryStore } from '../stores/useLibraryStore';
 import { useToast } from '../context/ToastContext';
@@ -62,6 +62,22 @@ const shuffleArray = <T,>(arr: T[]): T[] => {
   return a;
 };
 
+// Ranking badge component
+const RankingBadge: React.FC<{ rank: number }> = ({ rank }) => {
+  const config = {
+    1: { bg: 'bg-gradient-to-br from-yellow-400 to-amber-600', text: 'TOP 1', icon: '👑' },
+    2: { bg: 'bg-gradient-to-br from-zinc-300 to-zinc-500', text: 'TOP 2', icon: '🥈' },
+    3: { bg: 'bg-gradient-to-br from-amber-600 to-amber-800', text: 'TOP 3', icon: '🥉' },
+  };
+  const { bg, text } = config[rank as keyof typeof config] || config[1];
+
+  return (
+    <div className={`absolute top-2 left-2 z-20 ${bg} px-2 py-1 rounded-full flex items-center gap-1 shadow-lg`}>
+      <span className="text-[10px] font-black text-white tracking-wider">{text}</span>
+    </div>
+  );
+};
+
 export const CharactersView: React.FC = () => {
   const library = useLibraryStore(state => state.library);
   const updateItem = useLibraryStore(state => state.updateItem);
@@ -72,6 +88,14 @@ export const CharactersView: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'trending'>('grid');
+  const [trendingIndex, setTrendingIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
+
+  // Touch handling for swipe
+  const touchStartRef = useRef<number | null>(null);
+  const touchEndRef = useRef<number | null>(null);
 
   // Collect all genres from library
   const genres = useMemo(() => {
@@ -203,6 +227,60 @@ export const CharactersView: React.FC = () => {
     }
   };
 
+  // Trending view navigation
+  const goToNextCard = useCallback(() => {
+    if (isTransitioning || characters.length === 0) return;
+    setIsTransitioning(true);
+    setSlideDirection('left');
+    setTimeout(() => {
+      setTrendingIndex(prev => (prev + 1) % characters.length);
+      setTimeout(() => setIsTransitioning(false), 50);
+    }, 200);
+  }, [isTransitioning, characters.length]);
+
+  const goToPrevCard = useCallback(() => {
+    if (isTransitioning || characters.length === 0) return;
+    setIsTransitioning(true);
+    setSlideDirection('right');
+    setTimeout(() => {
+      setTrendingIndex(prev => (prev - 1 + characters.length) % characters.length);
+      setTimeout(() => setIsTransitioning(false), 50);
+    }, 200);
+  }, [isTransitioning, characters.length]);
+
+  // Touch handlers for swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartRef.current === null || touchEndRef.current === null) return;
+    const distance = touchStartRef.current - touchEndRef.current;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(distance) >= minSwipeDistance) {
+      if (distance > 0) {
+        goToNextCard();
+      } else {
+        goToPrevCard();
+      }
+    }
+
+    touchStartRef.current = null;
+    touchEndRef.current = null;
+  };
+
+  // Reset trending index when characters change
+  useEffect(() => {
+    if (trendingIndex >= characters.length) {
+      setTrendingIndex(0);
+    }
+  }, [characters.length, trendingIndex]);
+
   return (
     <div className="bg-[#09090B] min-h-screen">
       {/* Fixed header - below app's top nav */}
@@ -223,6 +301,32 @@ export const CharactersView: React.FC = () => {
             <h1 className="text-lg font-bold text-white tracking-tight">
               Colección de Personajes
             </h1>
+          </div>
+
+          {/* View mode toggle */}
+          <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-md transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-zinc-700 text-white'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+              title="Vista de cuadrícula"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('trending')}
+              className={`p-1.5 rounded-md transition-colors ${
+                viewMode === 'trending'
+                  ? 'bg-zinc-700 text-white'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+              title="Vista trending"
+            >
+              <CreditCard className="w-4 h-4" />
+            </button>
           </div>
 
           <button
@@ -273,120 +377,286 @@ export const CharactersView: React.FC = () => {
       </div>
 
       {/* Character cards grid */}
-      <div className="px-4 pb-8">
-        {characters.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-full bg-zinc-800/50 flex items-center justify-center mb-4">
-              <Filter className="w-8 h-8 text-zinc-600" />
+      {viewMode === 'grid' && (
+        <div className="px-4 pb-8">
+          {characters.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-16 h-16 rounded-full bg-zinc-800/50 flex items-center justify-center mb-4">
+                <Filter className="w-8 h-8 text-zinc-600" />
+              </div>
+              <p className="text-zinc-500 text-sm max-w-xs">
+                Agregá personajes a tus obras para ver tu colección
+              </p>
             </div>
-            <p className="text-zinc-500 text-sm max-w-xs">
-              Agregá personajes a tus obras para ver tu colección
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {characters.map((entry, idx) => {
-              const cardKey = `${entry.mediaId}-${entry.character.name}`;
-              const isUploading = uploadingId === entry.mediaId;
-              const hasImage = !!entry.character.image;
-              const initial = entry.character.name.charAt(0).toUpperCase();
-              const cardColor = entry.primaryColor || dynamicColor;
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {characters.map((entry, idx) => {
+                const cardKey = `${entry.mediaId}-${entry.character.name}`;
+                const isUploading = uploadingId === entry.mediaId;
+                const hasImage = !!entry.character.image;
+                const initial = entry.character.name.charAt(0).toUpperCase();
+                const cardColor = entry.primaryColor || dynamicColor;
 
-              return (
-                <div
-                  key={cardKey}
-                  className="relative rounded-2xl overflow-hidden group"
-                  style={{
-                    animation: `staggerIn 0.4s ease-out ${idx * 0.06}s both`,
-                  }}
-                >
-                  {/* Background: blurred cover */}
-                  <div className="absolute inset-0">
-                    {entry.coverImage ? (
-                      <img
-                        src={entry.coverImage}
-                        alt=""
-                        className="w-full h-full object-cover scale-110 blur-md brightness-50"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
-                    )}
-                    <div className="absolute inset-0 bg-black/40" />
-                  </div>
+                return (
+                  <div
+                    key={cardKey}
+                    className="relative rounded-2xl overflow-hidden group cursor-pointer active:scale-95 transition-transform"
+                    style={{
+                      animation: `staggerIn 0.4s ease-out ${idx * 0.06}s both`,
+                      boxShadow: `0 0 15px ${cardColor}33`,
+                    }}
+                  >
+                    {/* Ranking badge for top 3 */}
+                    {idx < 3 && <RankingBadge rank={idx + 1} />}
 
-                  {/* Content */}
-                  <div className="relative z-10 flex flex-col items-center justify-center p-5 pt-6 min-h-[220px]">
-                    {/* Character image or initial */}
-                    {hasImage ? (
-                      <div
-                        className="w-20 h-20 rounded-full overflow-hidden ring-2 shadow-lg mb-3"
-                        style={{ borderColor: `${cardColor}66` }}
-                      >
+                    {/* Background: blurred cover */}
+                    <div className="absolute inset-0">
+                      {entry.coverImage ? (
                         <img
-                          src={entry.character.image}
-                          alt={entry.character.name}
-                          className="w-full h-full object-cover"
+                          src={entry.coverImage}
+                          alt=""
+                          className="w-full h-full object-cover scale-110 blur-md brightness-50"
                         />
-                      </div>
-                    ) : (
-                      <div
-                        className="w-20 h-20 rounded-full bg-white/10 ring-2 shadow-lg flex items-center justify-center mb-3"
-                        style={{ borderColor: `${cardColor}66` }}
-                      >
-                        <span className="text-2xl font-bold text-white/80">{initial}</span>
-                      </div>
-                    )}
-
-                    {/* Character name */}
-                    <p className="text-sm font-bold text-white text-center truncate w-full px-1">
-                      {entry.character.name}
-                    </p>
-
-                    {/* Work title */}
-                    <p className="text-[10px] text-zinc-400 text-center truncate w-full px-1 mt-1">
-                      {entry.mediaTitle}
-                    </p>
-
-                    {/* Genre tags */}
-                    <div className="flex flex-wrap justify-center gap-1 mt-2">
-                      {entry.genres.slice(0, 2).map(genre => (
-                        <span
-                          key={genre}
-                          className="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase"
-                          style={{
-                            background: `${cardColor}22`,
-                            color: cardColor,
-                          }}
-                        >
-                          {genre}
-                        </span>
-                      ))}
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
+                      )}
+                      <div className="absolute inset-0 bg-black/40" />
                     </div>
 
-                    {/* Upload button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingId(entry.mediaId);
-                      }}
-                      className="absolute top-3 right-3 p-1.5 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
-                    >
-                      <Camera className="w-3.5 h-3.5 text-white" />
-                    </button>
+                    {/* Content */}
+                    <div className="relative z-10 flex flex-col items-center justify-center p-5 pt-6 min-h-[220px]">
+                      {/* Character image or initial */}
+                      {hasImage ? (
+                        <div
+                          className="w-20 h-20 rounded-full overflow-hidden ring-2 shadow-lg mb-3"
+                          style={{ borderColor: `${cardColor}66` }}
+                        >
+                          <img
+                            src={entry.character.image}
+                            alt={entry.character.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          className="w-20 h-20 rounded-full bg-white/10 ring-2 shadow-lg flex items-center justify-center mb-3"
+                          style={{ borderColor: `${cardColor}66` }}
+                        >
+                          <span className="text-2xl font-bold text-white/80">{initial}</span>
+                        </div>
+                      )}
 
-                    {/* Loading state */}
-                    {isUploading && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
-                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      {/* Character name */}
+                      <p className="text-sm font-bold text-white text-center truncate w-full px-1">
+                        {entry.character.name}
+                      </p>
+
+                      {/* Work title */}
+                      <p className="text-[10px] text-zinc-400 text-center truncate w-full px-1 mt-1">
+                        {entry.mediaTitle}
+                      </p>
+
+                      {/* Genre tags */}
+                      <div className="flex flex-wrap justify-center gap-1 mt-2">
+                        {entry.genres.slice(0, 2).map(genre => (
+                          <span
+                            key={genre}
+                            className="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase"
+                            style={{
+                              background: `${cardColor}22`,
+                              color: cardColor,
+                            }}
+                          >
+                            {genre}
+                          </span>
+                        ))}
                       </div>
-                    )}
+
+                      {/* Upload button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingId(entry.mediaId);
+                        }}
+                        className="absolute top-3 right-3 p-1.5 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-white" />
+                      </button>
+
+                      {/* Loading state */}
+                      {isUploading && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                          <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Trending card view */}
+      {viewMode === 'trending' && characters.length > 0 && (
+        <div
+          className="fixed inset-0 z-40 bg-[#09090B]"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Full-screen blurred background */}
+          <div className="absolute inset-0 overflow-hidden">
+            {characters[trendingIndex]?.coverImage ? (
+              <img
+                src={characters[trendingIndex].coverImage}
+                alt=""
+                className="w-full h-full object-cover scale-110 blur-xl brightness-30"
+                key={trendingIndex}
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950" />
+            )}
+            <div className="absolute inset-0 bg-black/60" />
           </div>
-        )}
-      </div>
+
+          {/* Large centered card */}
+          <div
+            className={`absolute inset-0 flex items-center justify-center p-6 transition-all duration-200 ${
+              isTransitioning
+                ? slideDirection === 'left'
+                  ? 'opacity-0 -translate-x-8'
+                  : 'opacity-0 translate-x-8'
+                : 'opacity-100 translate-x-0'
+            }`}
+          >
+            <div
+              className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
+              style={{
+                height: '80vh',
+                boxShadow: `0 0 30px ${characters[trendingIndex]?.primaryColor || dynamicColor}44`,
+              }}
+            >
+              {/* Card background */}
+              <div className="absolute inset-0">
+                {characters[trendingIndex]?.coverImage ? (
+                  <img
+                    src={characters[trendingIndex].coverImage}
+                    alt=""
+                    className="w-full h-full object-cover scale-110 blur-md brightness-50"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
+                )}
+                <div className="absolute inset-0 bg-black/50" />
+              </div>
+
+              {/* Ranking badge */}
+              {trendingIndex < 3 && (
+                <div className="absolute top-4 left-4 z-20">
+                  <RankingBadge rank={trendingIndex + 1} />
+                </div>
+              )}
+
+              {/* Upload button */}
+              <button
+                onClick={() => setEditingId(characters[trendingIndex]?.mediaId)}
+                className="absolute top-4 right-4 z-20 p-2 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
+              >
+                <Camera className="w-5 h-5 text-white" />
+              </button>
+
+              {/* Card content */}
+              <div className="relative z-10 flex flex-col items-center justify-center h-full p-8">
+                {/* Character image */}
+                {characters[trendingIndex]?.character.image ? (
+                  <div
+                    className="w-40 h-40 rounded-full overflow-hidden ring-4 shadow-2xl mb-6"
+                    style={{ borderColor: `${characters[trendingIndex]?.primaryColor || dynamicColor}88` }}
+                  >
+                    <img
+                      src={characters[trendingIndex].character.image}
+                      alt={characters[trendingIndex].character.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="w-40 h-40 rounded-full bg-white/10 ring-4 shadow-2xl flex items-center justify-center mb-6"
+                    style={{ borderColor: `${characters[trendingIndex]?.primaryColor || dynamicColor}88` }}
+                  >
+                    <span className="text-5xl font-bold text-white/80">
+                      {characters[trendingIndex]?.character.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Character name */}
+                <h2 className="text-3xl font-black text-white text-center mb-2 tracking-tight">
+                  {characters[trendingIndex]?.character.name}
+                </h2>
+
+                {/* Work title */}
+                <p className="text-lg text-zinc-300 text-center mb-6">
+                  {characters[trendingIndex]?.mediaTitle}
+                </p>
+
+                {/* Genre tags */}
+                <div className="flex flex-wrap justify-center gap-2">
+                  {characters[trendingIndex]?.genres.slice(0, 3).map(genre => (
+                    <span
+                      key={genre}
+                      className="px-3 py-1 rounded-full text-xs font-bold uppercase"
+                      style={{
+                        background: `${characters[trendingIndex]?.primaryColor || dynamicColor}33`,
+                        color: characters[trendingIndex]?.primaryColor || dynamicColor,
+                      }}
+                    >
+                      {genre}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tap zones */}
+          <div className="absolute inset-0 z-30 flex pointer-events-none">
+            {/* Left zone - previous */}
+            <button
+              onClick={goToPrevCard}
+              className="w-1/3 h-full pointer-events-auto opacity-0"
+              aria-label="Previous character"
+            />
+            {/* Middle zone - no action */}
+            <div className="w-1/3 h-full" />
+            {/* Right zone - next */}
+            <button
+              onClick={goToNextCard}
+              className="w-1/3 h-full pointer-events-auto opacity-0"
+              aria-label="Next character"
+            />
+          </div>
+
+          {/* Counter indicator */}
+          <div className="absolute bottom-8 left-0 right-0 z-40 flex items-center justify-center">
+            <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full">
+              <p className="text-sm font-bold text-white">
+                {trendingIndex + 1} <span className="text-zinc-400">/</span> {characters.length}
+              </p>
+            </div>
+          </div>
+
+          {/* Back to grid button */}
+          <button
+            onClick={() => setViewMode('grid')}
+            className="absolute top-4 left-4 z-40 p-2 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
+          >
+            <LayoutGrid className="w-5 h-5 text-white" />
+          </button>
+        </div>
+      )}
 
       {/* Image upload modal */}
       {editingId &&
