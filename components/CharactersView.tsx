@@ -670,11 +670,21 @@ export const CharactersView: React.FC = () => {
             <div className="absolute inset-0 bg-black/40" />
           </div>
 
-          {/* CARD — 3D flip */}
+          {/* CARD — 3D flip with tilt */}
           <div
             className="absolute left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-6"
-            style={{ top: '12vh', height: '72vh', perspective: '1200px' }}
+            style={{ top: '12vh', height: '72vh' }}
           >
+            <div
+              ref={cardRef}
+              className="relative w-full h-full"
+              style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
             <motion.div
               className="relative w-full h-full"
               animate={{ rotateY: isFlipped ? 180 : 0 }}
@@ -713,6 +723,7 @@ export const CharactersView: React.FC = () => {
                 </div>
               </div>
             </motion.div>
+            </div>
           </div>
 
           {/* Tap zones for swipe */}
