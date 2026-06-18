@@ -568,7 +568,7 @@ export const CharactersView: React.FC = () => {
           {/* Close button — top-left of outer container */}
           <button
             onClick={() => setViewMode('grid')}
-            className="absolute top-4 left-4 z-50 p-2 bg-black/50 rounded-full backdrop-blur-sm hover:bg-black/70 transition-colors"
+            className="absolute top-4 left-4 z-[70] p-2.5 bg-white/20 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors ring-1 ring-white/20"
           >
             <X className="w-5 h-5 text-white" />
           </button>
