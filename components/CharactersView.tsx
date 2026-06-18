@@ -588,20 +588,21 @@ export const CharactersView: React.FC = () => {
             <div className="absolute inset-0 bg-black/60" />
           </div>
 
-          {/* CARD WRAPPER — fixed height, centers card */}
-          <div
-            className={`relative w-full max-w-md h-[68vh] flex items-center justify-center z-10 transition-all duration-200 ${
-              isTransitioning
-                ? slideDirection === 'left'
-                  ? 'opacity-0 -translate-x-8'
-                  : 'opacity-0 translate-x-8'
-                : 'opacity-100 translate-x-0'
-            }`}
-          >
+          {/* CARD — centered in viewport */}
+          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+            <div
+              className={`w-full max-w-md px-6 h-[65vh] pointer-events-auto transition-all duration-200 ${
+                isTransitioning
+                  ? slideDirection === 'left'
+                    ? 'opacity-0 -translate-x-8'
+                    : 'opacity-0 translate-x-8'
+                  : 'opacity-100 translate-x-0'
+              }`}
+            >
             {/* The actual card — double-bezel: outer ring + inner content */}
             <div
               ref={cardRef}
-              className="relative w-[90%] h-full rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06] cursor-pointer"
+              className="relative w-full h-full rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06] cursor-pointer"
               style={{
                 transformStyle: 'preserve-3d',
                 transition: 'transform 0.1s ease-out',
@@ -623,8 +624,8 @@ export const CharactersView: React.FC = () => {
                 )}
                 <div className="absolute inset-0 bg-black/40" />
 
-                {/* Content — justify-between spreads across full card height */}
-                <div className="relative z-10 flex flex-col items-center h-full justify-between">
+                {/* Content — centered with gap */}
+                <div className="relative z-10 flex flex-col items-center h-full justify-center gap-6">
                   {/* Top: upload button (absolute top-right) */}
                   <button
                     onClick={() => setEditingId(characters[trendingIndex]?.mediaId)}
@@ -709,6 +710,7 @@ export const CharactersView: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
           </div>
 
           {/* Tap zones for swipe */}
