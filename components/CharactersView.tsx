@@ -614,7 +614,7 @@ export const CharactersView: React.FC = () => {
                 <div className="absolute inset-0 bg-black/40" />
 
                 {/* Content — justify-between spreads across full card height */}
-                <div className="relative z-10 flex flex-col items-center h-full justify-between pt-6 pb-6">
+                <div className="relative z-10 flex flex-col items-center h-full justify-between py-2">
                   {/* Top: upload button (absolute top-right) */}
                   <button
                     onClick={() => setEditingId(characters[trendingIndex]?.mediaId)}
