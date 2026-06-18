@@ -614,18 +614,14 @@ export const CharactersView: React.FC = () => {
                 <div className="absolute inset-0 bg-black/40" />
 
                 {/* Content — justify-between spreads across full card height */}
-                <div className="relative z-10 flex flex-col items-center h-full justify-between py-10">
+                <div className="relative z-10 flex flex-col items-center h-full justify-between pt-6 pb-6">
                   {/* Top: upload button (absolute top-right) */}
-                  <div className="w-full px-4">
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => setEditingId(characters[trendingIndex]?.mediaId)}
-                        className="p-2 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
-                      >
-                        <Camera className="w-4 h-4 text-white" />
-                      </button>
-                    </div>
-                  </div>
+                  <button
+                    onClick={() => setEditingId(characters[trendingIndex]?.mediaId)}
+                    className="absolute top-4 right-4 z-20 p-2 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
+                  >
+                    <Camera className="w-4 h-4 text-white" />
+                  </button>
 
                   {/* Upper area: character image (large circle) */}
                   <div className="flex items-center justify-center">
