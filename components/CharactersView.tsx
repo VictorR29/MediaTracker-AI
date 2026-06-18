@@ -592,7 +592,7 @@ export const CharactersView: React.FC = () => {
               ref={cardRef}
               className="relative w-full rounded-3xl overflow-hidden shadow-2xl"
               style={{
-                height: 'auto',
+                height: '78vh',
                 boxShadow: `0 0 30px ${characters[trendingIndex]?.primaryColor || dynamicColor}44`,
                 transformStyle: 'preserve-3d',
                 transition: 'transform 0.1s ease-out',
