@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Crown, Shuffle, Filter, Camera, Link, Upload, X, LayoutGrid, CreditCard } from 'lucide-react';
 import { MediaItem } from '../types';
 import { useLibraryStore } from '../stores/useLibraryStore';
@@ -100,9 +101,6 @@ export const CharactersView: React.FC = () => {
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const touchEndRef = useRef<{ x: number; y: number } | null>(null);
-  const prevBgRef = useRef<string | null>(null);
-  const [bgFaded, setBgFaded] = useState(true); // true = new bg visible, old bg hidden
-  const [bgOld, setBgOld] = useState<string | null>(null);
 
   // Collect all genres from library
   const genres = useMemo(() => {
@@ -191,24 +189,12 @@ export const CharactersView: React.FC = () => {
   const handleShuffle = () => {
     if (isShuffling) return;
     setIsShuffling(true);
-    const currentBg = characters[trendingIndex]?.coverImage || null;
-    setBgOld(currentBg);
-    // Phase 1: Fade card out + fade entire bg to black (400ms)
-    setBgFaded(false);
+    setBgVersion(v => v + 1);
     setTimeout(() => {
-      // Phase 2: At black point, swap data + change bg image
-      const shuffled = shuffleArray(allCharacters);
-      setShuffledChars(shuffled);
+      setShuffledChars(shuffleArray(allCharacters));
       setTrendingIndex(0);
-      setBgVersion(v => v + 1);
-      // Phase 3: Reveal new bg from black (400ms)
-      setTimeout(() => setBgFaded(true), 100);
-      // Phase 4: Show card
-      setTimeout(() => {
-        setIsShuffling(false);
-        setBgOld(null);
-      }, 500);
-    }, 450);
+      setTimeout(() => setIsShuffling(false), 500);
+    }, 300);
   };
 
   // Image upload handlers
@@ -370,19 +356,6 @@ export const CharactersView: React.FC = () => {
     }
     return () => setImmersiveMode(false);
   }, [viewMode, setImmersiveMode]);
-
-  // Crossfade background on character change (normal navigation)
-  useEffect(() => {
-    if (isShuffling) return; // handled by handleShuffle
-    const currentBg = characters[trendingIndex]?.coverImage || null;
-    if (currentBg !== prevBgRef.current) {
-      setBgOld(prevBgRef.current);
-      setBgFaded(false);
-      prevBgRef.current = currentBg;
-      const timer = setTimeout(() => setBgFaded(true), 50);
-      return () => clearTimeout(timer);
-    }
-  }, [trendingIndex, characters, isShuffling]);
 
   return (
     <div className="bg-[#09090B] min-h-screen">
@@ -618,22 +591,21 @@ export const CharactersView: React.FC = () => {
             <Shuffle className="w-5 h-5 text-white" />
           </button>
 
-          {/* Blurred cover background — fade to black transition */}
+          {/* Blurred cover background — Framer Motion crossfade */}
           <div className="absolute inset-0 overflow-hidden">
-            {characters[trendingIndex]?.coverImage ? (
-              <img
-                src={`${characters[trendingIndex].coverImage}?v=${bgVersion}`}
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={`${characters[trendingIndex]?.character.name}-${bgVersion}`}
+                src={characters[trendingIndex]?.coverImage || ''}
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-[0.45]"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
               />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-zinc-950" />
-            )}
-            {/* Black overlay — fades in during shuffle, fades out to reveal new bg */}
-            <div
-              className="absolute inset-0 bg-black/80 transition-opacity duration-500"
-              style={{ opacity: bgFaded ? 0 : 1 }}
-            />
+            </AnimatePresence>
+            <div className="absolute inset-0 bg-black/40" />
           </div>
 
           {/* CARD — simple absolute positioning */}
