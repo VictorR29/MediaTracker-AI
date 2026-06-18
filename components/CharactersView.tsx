@@ -263,24 +263,19 @@ export const CharactersView: React.FC = () => {
     if (isShuffling) return;
     setIsShuffling(true);
     prevCharRef.current = characters[trendingIndex];
-    // Pre-calculate next character for back face
     const shuffled = shuffleArray(allCharacters);
     nextCharRef.current = shuffled[0] || null;
     setBgVersion(v => v + 1);
-    // Flip card to 180
     setIsFlipped(true);
-    // At midpoint, commit the data
+    // Swap data ONLY after flip completes (no mid-flip re-render)
     setTimeout(() => {
       setShuffledChars(shuffled);
       setTrendingIndex(0);
-    }, 300);
-    // After full rotation, flip back to 0 for next time
-    setTimeout(() => {
       setIsFlipped(false);
       prevCharRef.current = null;
       nextCharRef.current = null;
       setIsShuffling(false);
-    }, 700);
+    }, 650);
   };
 
   // Image upload handlers
