@@ -591,12 +591,10 @@ export const CharactersView: React.FC = () => {
           {/* CARD — centered in viewport */}
           <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
             <div
-              className={`w-full max-w-md px-6 h-[72vh] pointer-events-auto -mt-[11vh] transition-all duration-200 ${
+              className={`w-full max-w-md px-6 h-[72vh] pointer-events-auto -mt-[11vh] transition-opacity duration-200 ${
                 isTransitioning
-                  ? slideDirection === 'left'
-                    ? 'opacity-0 -translate-x-8'
-                    : 'opacity-0 translate-x-8'
-                  : 'opacity-100 translate-x-0'
+                  ? `opacity-0 ${slideDirection === 'left' ? '-translate-x-8' : 'translate-x-8'}`
+                  : 'opacity-100'
               }`}
             >
             {/* The actual card — double-bezel: outer ring + inner content */}
