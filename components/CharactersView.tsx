@@ -589,9 +589,9 @@ export const CharactersView: React.FC = () => {
           </div>
 
           {/* CARD — centered in viewport */}
-          <div className="absolute inset-0 z-10 flex items-start justify-center pointer-events-none pt-[16vh]">
+          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
             <div
-              className={`w-full max-w-md px-6 h-[65vh] pointer-events-auto transition-all duration-200 ${
+              className={`w-full max-w-md px-6 h-[65vh] pointer-events-auto -mt-[4vh] transition-all duration-200 ${
                 isTransitioning
                   ? slideDirection === 'left'
                     ? 'opacity-0 -translate-x-8'
