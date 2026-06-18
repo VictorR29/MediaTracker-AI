@@ -95,7 +95,7 @@ export const CharactersView: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
   const [isShuffling, setIsShuffling] = useState(false);
-  const [shuffleKey, setShuffleKey] = useState(0);
+  const [bgVersion, setBgVersion] = useState(0);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -194,14 +194,16 @@ export const CharactersView: React.FC = () => {
     // Save current bg as old layer
     const currentBg = characters[trendingIndex]?.coverImage || null;
     setBgOld(currentBg);
-    // Fade out: card + old bg
+    // Fade out
     setBgFaded(false);
     setTimeout(() => {
-      // Swap data while both layers exist
+      // Swap data
       const shuffled = shuffleArray(allCharacters);
       setShuffledChars(shuffled);
       setTrendingIndex(0);
-      // Fade in: new bg
+      // Force new bg to be different URL (cache-bust)
+      setBgVersion(v => v + 1);
+      // Fade in new bg
       setTimeout(() => setBgFaded(true), 50);
       // Show card
       setTimeout(() => {
@@ -631,7 +633,7 @@ export const CharactersView: React.FC = () => {
             {/* Current background — fading in */}
             {characters[trendingIndex]?.coverImage ? (
               <img
-                src={characters[trendingIndex].coverImage}
+                src={`${characters[trendingIndex].coverImage}?v=${bgVersion}`}
                 alt=""
                 className={`absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-30 transition-opacity duration-500 ${bgFaded ? 'opacity-100' : 'opacity-0'}`}
               />
