@@ -99,6 +99,8 @@ export const CharactersView: React.FC = () => {
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const touchEndRef = useRef<{ x: number; y: number } | null>(null);
+  const prevBgRef = useRef<string | null>(null);
+  const [bgFaded, setBgFaded] = useState(true);
 
   // Collect all genres from library
   const genres = useMemo(() => {
@@ -355,6 +357,19 @@ export const CharactersView: React.FC = () => {
     return () => setImmersiveMode(false);
   }, [viewMode, setImmersiveMode]);
 
+  // Crossfade background on character change
+  useEffect(() => {
+    const currentBg = characters[trendingIndex]?.coverImage || null;
+    if (currentBg !== prevBgRef.current) {
+      setBgFaded(false);
+      const timer = setTimeout(() => {
+        prevBgRef.current = currentBg;
+        setBgFaded(true);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [trendingIndex, characters]);
+
   return (
     <div className="bg-[#09090B] min-h-screen">
       {/* Fixed header - only in grid mode */}
@@ -589,17 +604,25 @@ export const CharactersView: React.FC = () => {
             <Shuffle className="w-5 h-5 text-white" />
           </button>
 
-          {/* Blurred cover background */}
+          {/* Blurred cover background — crossfade */}
           <div className="absolute inset-0 overflow-hidden">
+            {/* Previous background — fading out */}
+            {prevBgRef.current && prevBgRef.current !== (characters[trendingIndex]?.coverImage || null) && (
+              <img
+                src={prevBgRef.current}
+                alt=""
+                className={`absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-30 transition-opacity duration-700 ${bgFaded ? 'opacity-0' : 'opacity-100'}`}
+              />
+            )}
+            {/* Current background — fading in */}
             {characters[trendingIndex]?.coverImage ? (
               <img
                 src={characters[trendingIndex].coverImage}
                 alt=""
-                className="w-full h-full object-cover scale-110 blur-xl brightness-30"
-                key={trendingIndex}
+                className={`absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-30 transition-opacity duration-700 ${bgFaded ? 'opacity-100' : 'opacity-0'}`}
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950" />
+              <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-zinc-950" />
             )}
             <div className="absolute inset-0 bg-black/60" />
           </div>
