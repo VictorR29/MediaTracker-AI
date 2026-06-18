@@ -12,6 +12,7 @@ const SearchView = lazy(() => import('./SearchView').then(m => ({ default: m.Sea
 const ItemDetailView = lazy(() => import('./ItemDetailView').then(m => ({ default: m.ItemDetailView })));
 const DiscoveryView = lazy(() => import('./DiscoveryView').then(m => ({ default: m.DiscoveryView })));
 const StatsView = lazy(() => import('./StatsView').then(m => ({ default: m.StatsView })));
+const CharactersView = lazy(() => import('./CharactersView').then(m => ({ default: m.CharactersView })));
 
 const RouteSuspense: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <Suspense fallback={
@@ -133,6 +134,11 @@ export const AppRouter: React.FC<AppRouterProps> = ({
             userProfile={userProfile}
             onUpdateProfile={updateProfile}
           />
+        </RouteSuspense>
+      } />
+      <Route path="/characters" element={
+        <RouteSuspense>
+          <CharactersView library={library} />
         </RouteSuspense>
       } />
       <Route path="*" element={<Navigate to="/" replace />} />

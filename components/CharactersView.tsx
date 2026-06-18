@@ -1,0 +1,535 @@
+import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Crown, Shuffle, Filter, Camera, Link, Upload, X } from 'lucide-react';
+import { MediaItem } from '../types';
+import { useLibraryStore } from '../stores/useLibraryStore';
+import { useToast } from '../context/ToastContext';
+import { createPortal } from 'react-dom';
+
+interface CharacterEntry {
+  mediaId: string;
+  mediaTitle: string;
+  coverImage?: string;
+  primaryColor?: string;
+  character: { name: string; image?: string };
+  genres: string[];
+}
+
+// Image compression helper (same as cover images)
+const compressImage = (base64Str: string, maxWidth: number = 200, quality: number = 0.7): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = base64Str;
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        try {
+          ctx.drawImage(img, 0, 0, width, height);
+          const newBase64 = canvas.toDataURL('image/webp', quality);
+          resolve(newBase64);
+        } catch {
+          // Canvas tainted by CORS — fall back to original URL
+          resolve(base64Str);
+        }
+      } else {
+        resolve(base64Str);
+      }
+    };
+    img.onerror = () => resolve(base64Str);
+  });
+};
+
+// Fisher-Yates shuffle
+const shuffleArray = <T,>(arr: T[]): T[] => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+export const CharactersView: React.FC = () => {
+  const library = useLibraryStore(state => state.library);
+  const updateItem = useLibraryStore(state => state.updateItem);
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+
+  const [activeGenre, setActiveGenre] = useState<string>('Todos');
+  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [urlInput, setUrlInput] = useState('');
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+
+  // Collect all genres from library
+  const genres = useMemo(() => {
+    const genreSet = new Set<string>();
+    library.forEach(item => item.aiData.genres?.forEach(g => genreSet.add(g)));
+    return ['Todos', ...Array.from(genreSet).sort()];
+  }, [library]);
+
+  // Collect all characters from works
+  const baseCharacters: CharacterEntry[] = useMemo(() => {
+    return library
+      .filter(item => {
+        const chars = item.trackingData.favoriteCharacters;
+        return chars && chars.length > 0 && chars[0]?.name;
+      })
+      .flatMap(item =>
+        item.trackingData.favoriteCharacters
+          .filter(char => char.name)
+          .map(char => ({
+            mediaId: item.id,
+            mediaTitle: item.aiData.title,
+            coverImage: item.aiData.coverImage,
+            primaryColor: item.aiData.primaryColor,
+            character: char,
+            genres: item.aiData.genres || [],
+          }))
+      );
+  }, [library]);
+
+  // Shuffle key for re-shuffling
+  const shuffleKey = useMemo(
+    () => library.length + library.reduce((acc, i) => acc + (i.trackingData.watchedEpisodes || 0), 0),
+    [library]
+  );
+
+  // Shuffled characters state
+  const [shuffledChars, setShuffledChars] = useState<CharacterEntry[]>([]);
+  const [lastShuffleKey, setLastShuffleKey] = useState<number>(shuffleKey);
+
+  // Auto-shuffle when library changes
+  const allCharacters = useMemo(() => {
+    if (shuffleKey !== lastShuffleKey) {
+      const shuffled = shuffleArray(baseCharacters);
+      setShuffledChars(shuffled);
+      setLastShuffleKey(shuffleKey);
+      return shuffled;
+    }
+    return shuffledChars.length > 0 ? shuffledChars : baseCharacters;
+  }, [shuffleKey, lastShuffleKey, baseCharacters, shuffledChars]);
+
+  // Filter characters by genre
+  const characters = useMemo(() => {
+    if (activeGenre === 'Todos') return allCharacters;
+    return allCharacters.filter(c => c.genres.includes(activeGenre));
+  }, [allCharacters, activeGenre]);
+
+  // Progress calculation
+  const totalWorks = library.length;
+  const discoveredWorks = useMemo(() => {
+    const discovered = new Set<string>();
+    library.forEach(item => {
+      if (item.trackingData.favoriteCharacters?.length > 0) {
+        discovered.add(item.id);
+      }
+    });
+    return discovered.size;
+  }, [library]);
+
+  const progressPercent = totalWorks > 0 ? (discoveredWorks / totalWorks) * 100 : 0;
+  const dynamicColor = characters.length > 0 && characters[0].primaryColor ? characters[0].primaryColor : '#eab308';
+
+  const handleShuffle = () => {
+    setShuffledChars(shuffleArray(allCharacters));
+  };
+
+  const toggleFlip = (mediaId: string) => {
+    setFlippedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(mediaId)) {
+        next.delete(mediaId);
+      } else {
+        next.add(mediaId);
+      }
+      return next;
+    });
+  };
+
+  // Image upload handlers
+  const updateCharacterImage = async (mediaId: string, imageUrl: string) => {
+    setUploadingId(mediaId);
+    try {
+      const compressed = await compressImage(imageUrl);
+      const item = library.find(i => i.id === mediaId);
+      if (item) {
+        const updatedChars = [...item.trackingData.favoriteCharacters];
+        const charIndex = updatedChars.findIndex(c => c.image === undefined || c.image === '');
+        if (charIndex >= 0) {
+          updatedChars[charIndex] = { ...updatedChars[charIndex], image: compressed };
+        } else if (updatedChars.length > 0) {
+          updatedChars[0] = { ...updatedChars[0], image: compressed };
+        }
+        await updateItem({
+          ...item,
+          trackingData: { ...item.trackingData, favoriteCharacters: updatedChars },
+        });
+        showToast('Imagen del personaje actualizada', 'success');
+      }
+    } catch (err) {
+      console.error('Failed to update character image:', err);
+      showToast('Error al guardar imagen', 'error');
+    }
+    setUploadingId(null);
+    setEditingId(null);
+    setUrlInput('');
+  };
+
+  const handleFileUpload = (mediaId: string, file: File) => {
+    setUploadingId(mediaId);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target?.result as string;
+      await updateCharacterImage(mediaId, base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const triggerFileUpload = (mediaId: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) handleFileUpload(mediaId, file);
+    };
+    input.click();
+  };
+
+  const handleUrlSubmit = () => {
+    if (urlInput.trim() && editingId) {
+      updateCharacterImage(editingId, urlInput.trim());
+    }
+  };
+
+  return (
+    <div className="bg-[#09090B] min-h-screen">
+      {/* Fixed header */}
+      <div className="fixed top-0 left-0 right-0 z-40 bg-[#09090B]/90 backdrop-blur-md border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 -ml-2 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+
+          <div className="flex items-center gap-2">
+            <Crown
+              className="w-5 h-5"
+              style={{ color: '#eab308', filter: 'drop-shadow(0 0 6px rgba(234, 179, 8, 0.5))' }}
+            />
+            <h1 className="text-lg font-bold text-white tracking-tight">
+              Colección de Personajes
+            </h1>
+          </div>
+
+          <button
+            onClick={handleShuffle}
+            className="p-2 -mr-2 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
+            title="Reordenar"
+          >
+            <Shuffle className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Progress bar */}
+        <div className="px-4 pb-3">
+          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
+            <span>{discoveredWorks} de {totalWorks} descubiertos</span>
+            <span>{Math.round(progressPercent)}%</span>
+          </div>
+          <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500 ease-out"
+              style={{
+                width: `${progressPercent}%`,
+                background: `linear-gradient(90deg, ${dynamicColor}, ${dynamicColor}88)`,
+                boxShadow: `0 0 8px ${dynamicColor}66`,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Genre filter bar */}
+      <div className="pt-[100px] px-4 pb-4">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+          {genres.map(genre => (
+            <button
+              key={genre}
+              onClick={() => setActiveGenre(genre)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                activeGenre === genre
+                  ? 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/40'
+                  : 'bg-zinc-800/50 text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {genre}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Character cards grid */}
+      <div className="px-4 pb-8">
+        {characters.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-16 h-16 rounded-full bg-zinc-800/50 flex items-center justify-center mb-4">
+              <Filter className="w-8 h-8 text-zinc-600" />
+            </div>
+            <p className="text-zinc-500 text-sm max-w-xs">
+              Agregá personajes a tus obras para ver tu colección
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {characters.map((entry, idx) => {
+              const isFlipped = flippedCards.has(entry.mediaId);
+              const isUploading = uploadingId === entry.mediaId;
+              const hasImage = !!entry.character.image;
+              const initial = entry.character.name.charAt(0).toUpperCase();
+              const cardColor = entry.primaryColor || dynamicColor;
+
+              return (
+                <div
+                  key={`${entry.mediaId}-${entry.character.name}`}
+                  className="relative cursor-pointer"
+                  style={{
+                    perspective: '1000px',
+                    animation: `staggerIn 0.4s ease-out ${idx * 0.06}s both`,
+                  }}
+                  onClick={() => toggleFlip(entry.mediaId)}
+                >
+                  <div
+                    className="relative w-full transition-transform duration-500"
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                    }}
+                  >
+                    {/* Front face */}
+                    <div
+                      className="relative aspect-[3/4] rounded-xl overflow-hidden ring-1"
+                      style={{
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        boxShadow: `0 0 20px ${cardColor}22, inset 0 1px 0 rgba(255,255,255,0.05)`,
+                        borderColor: `${cardColor}44`,
+                      }}
+                    >
+                      {/* Background: blurred cover */}
+                      <div className="absolute inset-0">
+                        {entry.coverImage ? (
+                          <img
+                            src={entry.coverImage}
+                            alt=""
+                            className="w-full h-full object-cover scale-110 blur-md brightness-50"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
+                        )}
+                        <div className="absolute inset-0 bg-black/40" />
+                      </div>
+
+                      {/* Top accent line */}
+                      <div
+                        className="absolute top-0 left-0 right-0 h-1"
+                        style={{ background: `linear-gradient(90deg, transparent, ${cardColor}, transparent)` }}
+                      />
+
+                      {/* Content */}
+                      <div className="relative z-10 flex flex-col items-center justify-center h-full p-4 pt-6">
+                        {/* Character image or initial */}
+                        {hasImage ? (
+                          <div
+                            className="w-24 h-24 rounded-full overflow-hidden ring-2 shadow-lg mb-3"
+                            style={{ borderColor: `${cardColor}66` }}
+                          >
+                            <img
+                              src={entry.character.image}
+                              alt={entry.character.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className="w-24 h-24 rounded-full bg-white/10 ring-2 shadow-lg flex items-center justify-center mb-3"
+                            style={{ borderColor: `${cardColor}66` }}
+                          >
+                            <span className="text-3xl font-bold text-white/80">{initial}</span>
+                          </div>
+                        )}
+
+                        {/* Character name */}
+                        <p className="text-sm font-bold text-white text-center truncate w-full px-1">
+                          {entry.character.name}
+                        </p>
+
+                        {/* Work title */}
+                        <p className="text-[10px] text-zinc-400 text-center truncate w-full px-1 mt-1">
+                          {entry.mediaTitle}
+                        </p>
+
+                        {/* Upload button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingId(entry.mediaId);
+                          }}
+                          className="absolute top-3 right-3 p-1.5 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
+                        >
+                          <Camera className="w-3.5 h-3.5 text-white" />
+                        </button>
+
+                        {/* Loading state */}
+                        {isUploading && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Back face */}
+                    <div
+                      className="absolute inset-0 aspect-[3/4] rounded-xl overflow-hidden ring-1 p-4 flex flex-col justify-between"
+                      style={{
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)',
+                        background: `linear-gradient(135deg, ${cardColor}22, #1C1C1F)`,
+                        borderColor: `${cardColor}44`,
+                        boxShadow: `0 0 20px ${cardColor}22`,
+                      }}
+                    >
+                      {/* Top accent */}
+                      <div
+                        className="absolute top-0 left-0 right-0 h-1"
+                        style={{ background: `linear-gradient(90deg, transparent, ${cardColor}, transparent)` }}
+                      />
+
+                      {/* Work info */}
+                      <div className="pt-2">
+                        <p className="text-xs font-bold text-white mb-2 truncate">{entry.mediaTitle}</p>
+
+                        {/* Genres */}
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {entry.genres.slice(0, 4).map(genre => (
+                            <span
+                              key={genre}
+                              className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase"
+                              style={{
+                                background: `${cardColor}22`,
+                                color: cardColor,
+                              }}
+                            >
+                              {genre}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Bottom info */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[10px] text-zinc-400">
+                          <span className="font-semibold text-zinc-300">Personaje:</span>
+                          <span className="truncate">{entry.character.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-zinc-400">
+                          <span className="font-semibold text-zinc-300">Obra:</span>
+                          <span className="truncate">{entry.mediaTitle}</span>
+                        </div>
+
+                        {/* Tap to flip hint */}
+                        <p className="text-[9px] text-zinc-600 text-center pt-1">
+                          Toca para voltear
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Image upload modal */}
+      {editingId &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <div className="bg-[#1C1C1F] rounded-2xl p-6 w-full max-w-sm ring-1 ring-white/10 shadow-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">Imagen del Personaje</h3>
+                <button
+                  onClick={() => {
+                    setEditingId(null);
+                    setUrlInput('');
+                  }}
+                  className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-zinc-400" />
+                </button>
+              </div>
+
+              {/* File upload option */}
+              <button
+                onClick={() => {
+                  const id = editingId;
+                  setEditingId(null);
+                  if (id) triggerFileUpload(id);
+                }}
+                className="w-full flex items-center gap-3 p-4 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl ring-1 ring-white/[0.08] transition-colors mb-3"
+              >
+                <div className="p-2 bg-violet-500/20 rounded-lg">
+                  <Upload className="w-5 h-5 text-violet-400" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-white">Subir archivo</p>
+                  <p className="text-xs text-zinc-400">JPG, PNG, GIF</p>
+                </div>
+              </button>
+
+              {/* URL input option */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <input
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+                    placeholder="https://..."
+                    className="w-full bg-zinc-900 ring-1 ring-white/[0.06] rounded-xl pl-9 pr-4 py-3 text-sm text-white outline-none focus:ring-white/20 placeholder:text-zinc-600"
+                  />
+                </div>
+                <button
+                  onClick={handleUrlSubmit}
+                  disabled={!urlInput.trim()}
+                  className="px-4 py-3 bg-violet-600 hover:bg-violet-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-xl font-medium transition-colors"
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+};

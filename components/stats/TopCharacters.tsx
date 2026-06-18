@@ -1,6 +1,7 @@
 import React, { useRef, useCallback, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, User, Crown, Link, Upload, X, Shuffle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Camera, User, Crown, Link, Upload, X, Shuffle, ArrowRight } from 'lucide-react';
 import { MediaItem } from '../../types';
 import { useLibraryStore } from '../../stores/useLibraryStore';
 import { useToast } from '../../context/ToastContext';
@@ -57,17 +58,27 @@ const compressImage = (base64Str: string, maxWidth: number = 200, quality: numbe
 export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const updateItem = useLibraryStore(state => state.updateItem);
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
+  const [activeGenre, setActiveGenre] = useState<string>('Todos');
 
-  // Collect top 1 character from each work
+  // Collect genres from library
+  const genres = useMemo(() => {
+    const genreSet = new Set<string>();
+    library.forEach(item => item.aiData.genres?.forEach(g => genreSet.add(g)));
+    return ['Todos', ...Array.from(genreSet).sort()];
+  }, [library]);
+
+  // Collect top 1 character from each work, filtered by genre
   const baseCharacters: CharacterEntry[] = library
     .filter(item => {
       const chars = item.trackingData.favoriteCharacters;
       return chars && chars.length > 0 && chars[0]?.name;
     })
+    .filter(item => activeGenre === 'Todos' || item.aiData.genres?.includes(activeGenre))
     .map(item => ({
       mediaId: item.id,
       mediaTitle: item.aiData.title,
@@ -182,14 +193,41 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
               Top Personajes
             </span>
           </div>
-          <button
-            onClick={handleShuffle}
-            className="p-2 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
-            title="Reordenar"
-          >
-            <Shuffle className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate('/characters')}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/10 transition-all"
+            >
+              Ver Colección <ArrowRight className="w-3 h-3" />
+            </button>
+            <button
+              onClick={handleShuffle}
+              className="p-2 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
+              title="Reordenar"
+            >
+              <Shuffle className="w-4 h-4" />
+            </button>
+          </div>
         </div>
+
+        {/* Genre filter */}
+        {genres.length > 2 && (
+          <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide mb-4" style={{ scrollbarWidth: 'none' }}>
+            {genres.map(genre => (
+              <button
+                key={genre}
+                onClick={() => setActiveGenre(genre)}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  activeGenre === genre
+                    ? 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/40'
+                    : 'bg-zinc-800/50 text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                {genre}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Scrollable gallery */}
         <div
@@ -197,7 +235,7 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
           className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {characters.map((entry) => {
+          {characters.map((entry, idx) => {
             const isUploading = uploadingId === entry.mediaId;
             const hasImage = !!entry.character.image;
             const initial = entry.character.name.charAt(0).toUpperCase();
@@ -206,6 +244,9 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
               <div
                 key={entry.mediaId}
                 className="relative flex-shrink-0 w-40 h-56 snap-start rounded-2xl overflow-hidden group"
+                style={{
+                  animation: `staggerIn 0.4s ease-out ${idx * 0.08}s both`,
+                }}
               >
                 {/* Background: blurred cover */}
                 <div className="absolute inset-0">
