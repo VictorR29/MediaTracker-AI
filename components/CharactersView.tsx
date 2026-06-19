@@ -296,8 +296,6 @@ export const CharactersView: React.FC = () => {
     setTimeout(() => {
       setFrontData(next);
       setBackData(next);
-      setBackLayer0(next);
-      setBackLayer1(next);
       setShuffledChars(shuffled);
       setTrendingIndex(0);
       setBgChar(next);
@@ -432,13 +430,13 @@ export const CharactersView: React.FC = () => {
     // Reset tilt
     applyTilt(0, 0, false);
 
-    // Only swipe if horizontal distance is dominant
-    if (Math.abs(dx) >= minSwipeDistance && Math.abs(dx) > dy) {
-      if (dx > 0) {
-        goToNextCard();
-      } else {
-        goToPrevCard();
-      }
+    // If it was a tap (not a swipe), toggle flip
+    if (Math.abs(dx) < minSwipeDistance && dy < minSwipeDistance) {
+      handleFlip();
+    } else if (Math.abs(dx) >= minSwipeDistance && Math.abs(dx) > dy) {
+      // Swipe
+      if (dx > 0) goToNextCard();
+      else goToPrevCard();
     }
 
     touchStartRef.current = null;
