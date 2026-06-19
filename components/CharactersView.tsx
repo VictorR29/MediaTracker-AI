@@ -264,29 +264,23 @@ export const CharactersView: React.FC = () => {
     if (isShuffling) return;
     setIsShuffling(true);
     const shuffled = shuffleArray(allCharacters);
-    // Snapshot: remember who's showing NOW (for background stability)
-    const currentChar = displayedRef.current;
-    // Phase 1: flip to show cover (0 → 180) — background stays as current character
+    // Phase 1: flip to show cover (0 → 180) — nothing changes yet
     setIsFlipped(true);
-    // Phase 2: at 650ms, card is at 180° (front hidden) — swap card data safely
+    // Phase 2: at 700ms, flip back (180 → 0) — card shows frozen old character
+    setTimeout(() => {
+      setIsFlipped(false);
+    }, 700);
+    // Phase 3: at 750ms, card is stable at 0° — NOW swap everything
     setTimeout(() => {
       setShuffledChars(shuffled);
       setTrendingIndex(0);
       const next = shuffled[0] || null;
       setDisplayed(next);
       displayedRef.current = next;
-    }, 650);
-    // Phase 3: at 700ms, flip back (180 → 0) — front reveals new character
-    // Phase 4: at 800ms, background crossfades to new character's cover
-    setTimeout(() => {
-      setIsFlipped(false);
-      setTimeout(() => {
-        const next = shuffled[0] || null;
-        setBgChar(next);
-        setBgVersion(v => v + 1);
-        setIsShuffling(false);
-      }, 100);
-    }, 700);
+      setBgChar(next);
+      setBgVersion(v => v + 1);
+      setIsShuffling(false);
+    }, 750);
   };
 
   // Image upload handlers
