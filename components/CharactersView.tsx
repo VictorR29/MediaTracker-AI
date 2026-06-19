@@ -168,7 +168,6 @@ export const CharactersView: React.FC = () => {
   const [isShuffling, setIsShuffling] = useState(false);
   const [bgVersion, setBgVersion] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isFading, setIsFading] = useState(false);
   const [displayed, setDisplayed] = useState<CharacterEntry | null>(null);
 
   const cardRef = useRef<HTMLDivElement>(null);
@@ -265,24 +264,21 @@ export const CharactersView: React.FC = () => {
     setIsShuffling(true);
     const shuffled = shuffleArray(allCharacters);
     setBgVersion(v => v + 1);
-    // Phase 1: flip to show cover (both faces show CURRENT character)
+    // Phase 1: flip to show cover (0 → 180)
     setIsFlipped(true);
-    // Phase 2: after flip, fade → swap → fade back
+    // Phase 2: at 650ms, card is at 180° (front hidden) — swap data safely
     setTimeout(() => {
-      setIsFading(true);
-      setTimeout(() => {
-        setShuffledChars(shuffled);
-        setTrendingIndex(0);
-        const next = shuffled[0] || null;
-        setDisplayed(next);
-        displayedRef.current = next;
-        setIsFlipped(false);
-        setTimeout(() => {
-          setIsFading(false);
-          setIsShuffling(false);
-        }, 50);
-      }, 250);
+      setShuffledChars(shuffled);
+      setTrendingIndex(0);
+      const next = shuffled[0] || null;
+      setDisplayed(next);
+      displayedRef.current = next;
     }, 650);
+    // Phase 3: at 700ms, flip back (180 → 0) — front face reveals new character
+    setTimeout(() => {
+      setIsFlipped(false);
+      setIsShuffling(false);
+    }, 700);
   };
 
   // Image upload handlers
@@ -699,7 +695,7 @@ export const CharactersView: React.FC = () => {
           {/* CARD — 3D flip with tilt */}
           <div
             className="absolute left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-6"
-            style={{ top: '12vh', height: '72vh', opacity: isFading ? 0 : 1, transition: 'opacity 0.25s ease-in-out' }}
+            style={{ top: '12vh', height: '72vh' }}
           >
             <div
               ref={cardRef}
