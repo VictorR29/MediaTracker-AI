@@ -8,6 +8,23 @@ import { useToast } from '../context/ToastContext';
 import { useUIStore } from '../stores/useUIStore';
 import { createPortal } from 'react-dom';
 
+// Memoized background — never re-renders with the card
+const BackgroundImage = React.memo(({ src }: { src: string | undefined }) => {
+  if (!src) return null;
+  return (
+    <motion.img
+      key={src}
+      src={src}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      className="absolute inset-0 w-full h-full object-cover"
+      style={{ filter: 'blur(60px) brightness(0.35)' }}
+    />
+  );
+});
+BackgroundImage.displayName = 'BackgroundImage';
+
 interface CharacterEntry {
   mediaId: string;
   mediaTitle: string;
@@ -178,6 +195,12 @@ export const CharactersView: React.FC = () => {
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const touchEndRef = useRef<{ x: number; y: number } | null>(null);
+  const shuffleState = useRef<{
+    next: CharacterEntry | null;
+    nextBackIdx: 0 | 1;
+    shuffled: CharacterEntry[];
+    phase: 'idle' | 'going-to-180' | 'going-to-0';
+  }>({ next: null, nextBackIdx: 0, shuffled: [], phase: 'idle' });
 
   // Collect all genres from library
   const genres = useMemo(() => {
@@ -263,40 +286,38 @@ export const CharactersView: React.FC = () => {
   const progressPercent = totalWorks > 0 ? (discoveredWorks / totalWorks) * 100 : 0;
   const dynamicColor = characters.length > 0 && characters[0].primaryColor ? characters[0].primaryColor : '#eab308';
 
-  const handleShuffle = () => {
+  const handleShuffle = useCallback(() => {
     if (isShuffling || characters.length === 0) return;
-    setIsShuffling(true);
     const shuffled = shuffleArray(allCharacters);
     const next = shuffled[0] || null;
-    if (!next) { setIsShuffling(false); return; }
+    if (!next) return;
     const nextBackIdx = activeBack === 0 ? 1 : 0;
-
-    // FASE 1: Flip to 180° — back stays visible, nothing changes
+    shuffleState.current = { next, nextBackIdx, shuffled, phase: 'going-to-180' };
+    setIsShuffling(true);
     setIsFlipped(true);
+  }, [isShuffling, characters.length, allCharacters, activeBack]);
 
-    // FASE 2: At 300ms (~180°) — front hidden, prepare inactive back layer
-    setTimeout(() => {
-      setFrontData(next);
-      if (nextBackIdx === 0) setBackLayer0(next);
-      else setBackLayer1(next);
-    }, 300);
-
-    // FASE 3: At 600ms (180°) — swap active back, flip back
-    setTimeout(() => {
-      setActiveBack(nextBackIdx);
+  const handleFlipComplete = useCallback(() => {
+    const s = shuffleState.current;
+    if (s.phase === 'going-to-180') {
+      // At 180°: front hidden, back visible — update front + prepare inactive back layer
+      setFrontData(s.next);
+      if (s.nextBackIdx === 0) setBackLayer0(s.next);
+      else setBackLayer1(s.next);
+      setActiveBack(s.nextBackIdx);
+      s.phase = 'going-to-0';
       setIsFlipped(false);
-    }, 600);
-
-    // FASE 4: At 1200ms (0°) — sync state
-    setTimeout(() => {
-      setShuffledChars(shuffled);
+    } else if (s.phase === 'going-to-0') {
+      // At 0°: front visible — sync state, delay background update
+      setShuffledChars(s.shuffled);
       setTrendingIndex(0);
-      setBackData(next);
-      setBgChar(next);
-      setBgVersion(v => v + 1);
+      setBackData(s.next);
+      setTimeout(() => setBgChar(s.next), 300);
+      setTimeout(() => setBgVersion(v => v + 1), 300);
       setIsShuffling(false);
-    }, 1200);
-  };
+      s.phase = 'idle';
+    }
+  }, []);
 
   // Image upload handlers
   const updateCharacterImage = async (mediaId: string, imageUrl: string) => {
@@ -692,20 +713,9 @@ export const CharactersView: React.FC = () => {
             <Shuffle className="w-5 h-5 text-white" />
           </button>
 
-          {/* Blurred cover background — Framer Motion crossfade */}
+          {/* Blurred cover background — memoized, never re-renders with card */}
           <div className="absolute inset-0 overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={`${bgChar?.character.name}-${bgVersion}`}
-                src={bgChar?.coverImage || ''}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-[0.45]"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-              />
-            </AnimatePresence>
+            <BackgroundImage src={bgChar?.coverImage} />
             <div className="absolute inset-0 bg-black/40" />
           </div>
 
@@ -729,11 +739,12 @@ export const CharactersView: React.FC = () => {
               animate={{ rotateY: isFlipped ? 180 : 0 }}
               transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
               style={{ transformStyle: 'preserve-3d' }}
+              onAnimationComplete={handleFlipComplete}
             >
               {/* FRONT FACE — character */}
               <div
                 className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
-                style={{ backfaceVisibility: 'hidden' }}
+                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'translateZ(2px)' }}
               >
                 <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
                   {frontData?.coverImage ? (
@@ -746,22 +757,22 @@ export const CharactersView: React.FC = () => {
                 </div>
               </div>
 
-              {/* BACK FACE — double buffer, imgs permanentes */}
+              {/* BACK FACE — double buffer */}
               <div
                 className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
-                style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg) translateZ(2px)' }}
               >
                 <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
-                  {/* Layer 0 — img permanente */}
-                  <div className="absolute inset-0" style={{ opacity: activeBack === 0 ? 1 : 0, zIndex: activeBack === 0 ? 2 : 1 }}>
+                  {/* Layer 0 — permanente */}
+                  <div className="absolute inset-0" style={{ opacity: activeBack === 0 ? 1 : 0, visibility: activeBack === 0 ? 'visible' : 'hidden', zIndex: activeBack === 0 ? 2 : 1 }}>
                     {backLayer0?.coverImage ? (
                       <img src={backLayer0.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover rounded-[calc(2rem-0.375rem)]" />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[calc(2rem-0.375rem)]" />
                     )}
                   </div>
-                  {/* Layer 1 — img permanente */}
-                  <div className="absolute inset-0" style={{ opacity: activeBack === 1 ? 1 : 0, zIndex: activeBack === 1 ? 2 : 1 }}>
+                  {/* Layer 1 — permanente */}
+                  <div className="absolute inset-0" style={{ opacity: activeBack === 1 ? 1 : 0, visibility: activeBack === 1 ? 'visible' : 'hidden', zIndex: activeBack === 1 ? 2 : 1 }}>
                     {backLayer1?.coverImage ? (
                       <img src={backLayer1.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover rounded-[calc(2rem-0.375rem)]" />
                     ) : (
