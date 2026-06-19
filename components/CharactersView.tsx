@@ -167,9 +167,7 @@ export const CharactersView: React.FC = () => {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
   const [isShuffling, setIsShuffling] = useState(false);
   const [bgVersion, setBgVersion] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
   const [isFading, setIsFading] = useState(false);
-  const prevCharRef = useRef<CharacterEntry | null>(null);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -264,22 +262,17 @@ export const CharactersView: React.FC = () => {
     setIsShuffling(true);
     const shuffled = shuffleArray(allCharacters);
     setBgVersion(v => v + 1);
-    // Phase 1: flip to show current cover
-    setIsFlipped(true);
-    // Phase 2: fade out → swap → fade in with new character
+    // Fade out current card
+    setIsFading(true);
     setTimeout(() => {
-      setIsFading(true);
+      setShuffledChars(shuffled);
+      setTrendingIndex(0);
+      // Fade in new card
       setTimeout(() => {
-        setShuffledChars(shuffled);
-        setTrendingIndex(0);
-        setIsFlipped(false);
-        prevCharRef.current = null;
-        setTimeout(() => {
-          setIsFading(false);
-          setIsShuffling(false);
-        }, 50);
-      }, 250);
-    }, 650);
+        setIsFading(false);
+        setIsShuffling(false);
+      }, 50);
+    }, 250);
   };
 
   // Image upload handlers
@@ -708,17 +701,8 @@ export const CharactersView: React.FC = () => {
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-            <motion.div
-              className="relative w-full h-full"
-              animate={{ rotateY: isFlipped ? 180 : 0 }}
-              transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-              style={{ transformStyle: 'preserve-3d' }}
-            >
-              {/* FRONT FACE — character */}
-              <div
-                className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
-                style={{ backfaceVisibility: 'hidden' }}
-              >
+              {/* Single card face — crossfades on shuffle */}
+              <div className="relative w-full h-full rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]">
                 <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
                   {characters[trendingIndex]?.coverImage ? (
                     <img src={characters[trendingIndex].coverImage} alt="" className="absolute inset-0 w-full h-full object-cover scale-110 blur-md brightness-[0.35]" />
@@ -729,17 +713,6 @@ export const CharactersView: React.FC = () => {
                   <CardContent char={characters[trendingIndex]} dynamicColor={dynamicColor} onUpload={() => setEditingId(characters[trendingIndex]?.mediaId)} workChars={charactersWithTotal} />
                 </div>
               </div>
-
-              {/* BACK FACE — current character's cover */}
-              <div
-                className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
-                style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-              >
-                <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
-                  <CardContent char={characters[trendingIndex]} dynamicColor={dynamicColor} onUpload={() => {}} workChars={charactersWithTotal} showCover />
-                </div>
-              </div>
-            </motion.div>
             </div>
           </div>
 
