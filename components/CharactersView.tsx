@@ -170,6 +170,8 @@ export const CharactersView: React.FC = () => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [frontData, setFrontData] = useState<CharacterEntry | null>(null);
   const [backData, setBackData] = useState<CharacterEntry | null>(null);
+  const [nextBackData, setNextBackData] = useState<CharacterEntry | null>(null);
+  const [activeBack, setActiveBack] = useState<0 | 1>(0);
   const [bgChar, setBgChar] = useState<CharacterEntry | null>(null);
 
   const cardRef = useRef<HTMLDivElement>(null);
@@ -265,25 +267,36 @@ export const CharactersView: React.FC = () => {
     setIsShuffling(true);
     const shuffled = shuffleArray(allCharacters);
     const next = shuffled[0] || null;
-    // 0° → flip to 180°: NOTHING changes. Back still shows current cover.
+    const nextBackIdx = activeBack === 0 ? 1 : 0;
+
+    // FASE 1: Flip to 180° — back stays visible, nothing changes
     setIsFlipped(true);
-    // At 180°: Back is visible, Front is hidden → update Front (invisible)
+
+    // FASE 2: At 300ms (~180°) — front is hidden, prepare next back layer
     setTimeout(() => {
       setFrontData(next);
-    }, 650);
-    // Flip back to 0°: NOTHING changes. Back still shows old cover.
+      // Set the INACTIVE back layer with new cover (still invisible)
+      if (nextBackIdx === 0) {
+        setBackData(next);
+      } else {
+        setNextBackData(next);
+      }
+    }, 300);
+
+    // FASE 3: At 600ms (reached 180°) — swap active back layer, flip back
     setTimeout(() => {
+      setActiveBack(nextBackIdx);
       setIsFlipped(false);
-    }, 700);
-    // At 0°: Front is visible, Back is hidden → update Back (invisible)
+    }, 600);
+
+    // FASE 4: At 1200ms (reached 0°) — front visible, sync state
     setTimeout(() => {
-      setBackData(next);
       setShuffledChars(shuffled);
       setTrendingIndex(0);
       setBgChar(next);
       setBgVersion(v => v + 1);
       setIsShuffling(false);
-    }, 1350);
+    }, 1200);
   };
 
   // Image upload handlers
@@ -482,7 +495,7 @@ export const CharactersView: React.FC = () => {
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
-                onClick={() => { setViewMode('trending'); setFrontData(characters[0] || null); setBackData(characters[0] || null); setBgChar(characters[0] || null); }}
+                onClick={() => { setViewMode('trending'); setFrontData(characters[0] || null); setBackData(characters[0] || null); setNextBackData(characters[0] || null); setBgChar(characters[0] || null); }}
                 className={`p-1.5 rounded-md transition-colors ${
                   viewMode === 'trending'
                     ? 'bg-zinc-700 text-white'
@@ -734,13 +747,20 @@ export const CharactersView: React.FC = () => {
                 </div>
               </div>
 
-              {/* BACK FACE — cover */}
+              {/* BACK FACE — double buffer */}
               <div
                 className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
                 style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
               >
                 <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
-                  <CardContent char={backData} dynamicColor={dynamicColor} onUpload={() => {}} workChars={charactersWithTotal} showCover />
+                  {/* Layer 0 */}
+                  <div className="absolute inset-0" style={{ opacity: activeBack === 0 ? 1 : 0, zIndex: activeBack === 0 ? 2 : 1 }}>
+                    <CardContent char={backData} dynamicColor={dynamicColor} onUpload={() => {}} workChars={charactersWithTotal} showCover />
+                  </div>
+                  {/* Layer 1 */}
+                  <div className="absolute inset-0" style={{ opacity: activeBack === 1 ? 1 : 0, zIndex: activeBack === 1 ? 2 : 1 }}>
+                    <CardContent char={nextBackData || backData} dynamicColor={dynamicColor} onUpload={() => {}} workChars={charactersWithTotal} showCover />
+                  </div>
                 </div>
               </div>
                 </div>
