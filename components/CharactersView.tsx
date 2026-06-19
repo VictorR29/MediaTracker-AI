@@ -263,7 +263,6 @@ export const CharactersView: React.FC = () => {
     if (isShuffling) return;
     setIsShuffling(true);
     const shuffled = shuffleArray(allCharacters);
-    setBgVersion(v => v + 1);
     // Phase 1: flip to show cover (0 → 180)
     setIsFlipped(true);
     // Phase 2: at 650ms, card is at 180° (front hidden) — swap data safely
@@ -277,6 +276,8 @@ export const CharactersView: React.FC = () => {
     // Phase 3: at 700ms, flip back (180 → 0) — front face reveals new character
     setTimeout(() => {
       setIsFlipped(false);
+      // Phase 4: update background AFTER flip completes (no mid-flip jump)
+      setBgVersion(v => v + 1);
       setIsShuffling(false);
     }, 700);
   };
@@ -679,8 +680,8 @@ export const CharactersView: React.FC = () => {
           <div className="absolute inset-0 overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.img
-                key={`${characters[trendingIndex]?.character.name}-${bgVersion}`}
-                src={characters[trendingIndex]?.coverImage || ''}
+                key={`${displayed?.character.name}-${bgVersion}`}
+                src={displayed?.coverImage || ''}
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-[0.45]"
                 initial={{ opacity: 0 }}
