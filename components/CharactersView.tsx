@@ -169,6 +169,7 @@ export const CharactersView: React.FC = () => {
   const [bgVersion, setBgVersion] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [displayed, setDisplayed] = useState<CharacterEntry | null>(null);
+  const [bgChar, setBgChar] = useState<CharacterEntry | null>(null);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const displayedRef = useRef<CharacterEntry | null>(null);
@@ -265,7 +266,7 @@ export const CharactersView: React.FC = () => {
     const shuffled = shuffleArray(allCharacters);
     // Phase 1: flip to show cover (0 → 180)
     setIsFlipped(true);
-    // Phase 2: at 650ms, card is at 180° (front hidden) — swap data safely
+    // Phase 2: at 650ms, card is at 180° (front hidden) — swap card data safely
     setTimeout(() => {
       setShuffledChars(shuffled);
       setTrendingIndex(0);
@@ -276,7 +277,9 @@ export const CharactersView: React.FC = () => {
     // Phase 3: at 700ms, flip back (180 → 0) — front face reveals new character
     setTimeout(() => {
       setIsFlipped(false);
-      // Phase 4: update background AFTER flip completes (no mid-flip jump)
+      // Phase 4: update background AFTER flip completes
+      const next = shuffled[0] || null;
+      setBgChar(next);
       setBgVersion(v => v + 1);
       setIsShuffling(false);
     }, 700);
@@ -478,7 +481,7 @@ export const CharactersView: React.FC = () => {
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
-                onClick={() => { setViewMode('trending'); setDisplayed(characters[0] || null); displayedRef.current = characters[0] || null; }}
+                onClick={() => { setViewMode('trending'); setDisplayed(characters[0] || null); setBgChar(characters[0] || null); displayedRef.current = characters[0] || null; }}
                 className={`p-1.5 rounded-md transition-colors ${
                   viewMode === 'trending'
                     ? 'bg-zinc-700 text-white'
@@ -680,8 +683,8 @@ export const CharactersView: React.FC = () => {
           <div className="absolute inset-0 overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.img
-                key={`${displayed?.character.name}-${bgVersion}`}
-                src={displayed?.coverImage || ''}
+                key={`${bgChar?.character.name}-${bgVersion}`}
+                src={bgChar?.coverImage || ''}
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-[0.45]"
                 initial={{ opacity: 0 }}
