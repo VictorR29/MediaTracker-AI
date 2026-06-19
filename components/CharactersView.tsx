@@ -170,7 +170,8 @@ export const CharactersView: React.FC = () => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [frontData, setFrontData] = useState<CharacterEntry | null>(null);
   const [backData, setBackData] = useState<CharacterEntry | null>(null);
-  const [nextBackData, setNextBackData] = useState<CharacterEntry | null>(null);
+  const [backLayer0, setBackLayer0] = useState<CharacterEntry | null>(null);
+  const [backLayer1, setBackLayer1] = useState<CharacterEntry | null>(null);
   const [activeBack, setActiveBack] = useState<0 | 1>(0);
   const [bgChar, setBgChar] = useState<CharacterEntry | null>(null);
 
@@ -263,36 +264,34 @@ export const CharactersView: React.FC = () => {
   const dynamicColor = characters.length > 0 && characters[0].primaryColor ? characters[0].primaryColor : '#eab308';
 
   const handleShuffle = () => {
-    if (isShuffling) return;
+    if (isShuffling || characters.length === 0) return;
     setIsShuffling(true);
     const shuffled = shuffleArray(allCharacters);
     const next = shuffled[0] || null;
+    if (!next) { setIsShuffling(false); return; }
     const nextBackIdx = activeBack === 0 ? 1 : 0;
 
     // FASE 1: Flip to 180° — back stays visible, nothing changes
     setIsFlipped(true);
 
-    // FASE 2: At 300ms (~180°) — front is hidden, prepare next back layer
+    // FASE 2: At 300ms (~180°) — front hidden, prepare inactive back layer
     setTimeout(() => {
       setFrontData(next);
-      // Set the INACTIVE back layer with new cover (still invisible)
-      if (nextBackIdx === 0) {
-        setBackData(next);
-      } else {
-        setNextBackData(next);
-      }
+      if (nextBackIdx === 0) setBackLayer0(next);
+      else setBackLayer1(next);
     }, 300);
 
-    // FASE 3: At 600ms (reached 180°) — swap active back layer, flip back
+    // FASE 3: At 600ms (180°) — swap active back, flip back
     setTimeout(() => {
       setActiveBack(nextBackIdx);
       setIsFlipped(false);
     }, 600);
 
-    // FASE 4: At 1200ms (reached 0°) — front visible, sync state
+    // FASE 4: At 1200ms (0°) — sync state
     setTimeout(() => {
       setShuffledChars(shuffled);
       setTrendingIndex(0);
+      setBackData(next);
       setBgChar(next);
       setBgVersion(v => v + 1);
       setIsShuffling(false);
@@ -495,7 +494,7 @@ export const CharactersView: React.FC = () => {
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
-                onClick={() => { setViewMode('trending'); setFrontData(characters[0] || null); setBackData(characters[0] || null); setNextBackData(characters[0] || null); setBgChar(characters[0] || null); }}
+                onClick={() => { setViewMode('trending'); setFrontData(characters[0] || null); setBackLayer0(characters[0] || null); setBackLayer1(characters[0] || null); setBackData(characters[0] || null); setBgChar(characters[0] || null); }}
                 className={`p-1.5 rounded-md transition-colors ${
                   viewMode === 'trending'
                     ? 'bg-zinc-700 text-white'
@@ -747,19 +746,27 @@ export const CharactersView: React.FC = () => {
                 </div>
               </div>
 
-              {/* BACK FACE — double buffer */}
+              {/* BACK FACE — double buffer, imgs permanentes */}
               <div
                 className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
                 style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
               >
                 <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
-                  {/* Layer 0 */}
+                  {/* Layer 0 — img permanente */}
                   <div className="absolute inset-0" style={{ opacity: activeBack === 0 ? 1 : 0, zIndex: activeBack === 0 ? 2 : 1 }}>
-                    <CardContent char={backData} dynamicColor={dynamicColor} onUpload={() => {}} workChars={charactersWithTotal} showCover />
+                    {backLayer0?.coverImage ? (
+                      <img src={backLayer0.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover rounded-[calc(2rem-0.375rem)]" />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[calc(2rem-0.375rem)]" />
+                    )}
                   </div>
-                  {/* Layer 1 */}
+                  {/* Layer 1 — img permanente */}
                   <div className="absolute inset-0" style={{ opacity: activeBack === 1 ? 1 : 0, zIndex: activeBack === 1 ? 2 : 1 }}>
-                    <CardContent char={nextBackData || backData} dynamicColor={dynamicColor} onUpload={() => {}} workChars={charactersWithTotal} showCover />
+                    {backLayer1?.coverImage ? (
+                      <img src={backLayer1.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover rounded-[calc(2rem-0.375rem)]" />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[calc(2rem-0.375rem)]" />
+                    )}
                   </div>
                 </div>
               </div>
