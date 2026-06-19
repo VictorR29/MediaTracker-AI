@@ -167,9 +167,12 @@ export const CharactersView: React.FC = () => {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
   const [isShuffling, setIsShuffling] = useState(false);
   const [bgVersion, setBgVersion] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
   const [isFading, setIsFading] = useState(false);
+  const [displayed, setDisplayed] = useState<CharacterEntry | null>(null);
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const displayedRef = useRef<CharacterEntry | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const touchEndRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -262,17 +265,24 @@ export const CharactersView: React.FC = () => {
     setIsShuffling(true);
     const shuffled = shuffleArray(allCharacters);
     setBgVersion(v => v + 1);
-    // Fade out current card
-    setIsFading(true);
+    // Phase 1: flip to show cover (both faces show CURRENT character)
+    setIsFlipped(true);
+    // Phase 2: after flip, fade → swap → fade back
     setTimeout(() => {
-      setShuffledChars(shuffled);
-      setTrendingIndex(0);
-      // Fade in new card
+      setIsFading(true);
       setTimeout(() => {
-        setIsFading(false);
-        setIsShuffling(false);
-      }, 50);
-    }, 250);
+        setShuffledChars(shuffled);
+        setTrendingIndex(0);
+        const next = shuffled[0] || null;
+        setDisplayed(next);
+        displayedRef.current = next;
+        setIsFlipped(false);
+        setTimeout(() => {
+          setIsFading(false);
+          setIsShuffling(false);
+        }, 50);
+      }, 250);
+    }, 650);
   };
 
   // Image upload handlers
@@ -471,7 +481,7 @@ export const CharactersView: React.FC = () => {
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setViewMode('trending')}
+                onClick={() => { setViewMode('trending'); setDisplayed(characters[0] || null); displayedRef.current = characters[0] || null; }}
                 className={`p-1.5 rounded-md transition-colors ${
                   viewMode === 'trending'
                     ? 'bg-zinc-700 text-white'
@@ -701,18 +711,38 @@ export const CharactersView: React.FC = () => {
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-              {/* Single card face — crossfades on shuffle */}
-              <div className="relative w-full h-full rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]">
+            <motion.div
+              className="relative w-full h-full"
+              animate={{ rotateY: isFlipped ? 180 : 0 }}
+              transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              {/* FRONT FACE — character (always shows CURRENT via `displayed`) */}
+              <div
+                className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
+                style={{ backfaceVisibility: 'hidden' }}
+              >
                 <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
-                  {characters[trendingIndex]?.coverImage ? (
-                    <img src={characters[trendingIndex].coverImage} alt="" className="absolute inset-0 w-full h-full object-cover scale-110 blur-md brightness-[0.35]" />
+                  {displayed?.coverImage ? (
+                    <img src={displayed.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover scale-110 blur-md brightness-[0.35]" />
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900" />
                   )}
                   <div className="absolute inset-0 bg-black/40" />
-                  <CardContent char={characters[trendingIndex]} dynamicColor={dynamicColor} onUpload={() => setEditingId(characters[trendingIndex]?.mediaId)} workChars={charactersWithTotal} />
+                  <CardContent char={displayed} dynamicColor={dynamicColor} onUpload={() => setEditingId(displayed?.mediaId)} workChars={charactersWithTotal} />
                 </div>
               </div>
+
+              {/* BACK FACE — cover (same CURRENT character) */}
+              <div
+                className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
+                style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+              >
+                <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
+                  <CardContent char={displayed} dynamicColor={dynamicColor} onUpload={() => {}} workChars={charactersWithTotal} showCover />
+                </div>
+              </div>
+            </motion.div>
             </div>
           </div>
 
