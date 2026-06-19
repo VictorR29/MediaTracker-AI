@@ -185,22 +185,14 @@ export const CharactersView: React.FC = () => {
   const [isShuffling, setIsShuffling] = useState(false);
   const [bgVersion, setBgVersion] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isFading, setIsFading] = useState(false);
   const [frontData, setFrontData] = useState<CharacterEntry | null>(null);
   const [backData, setBackData] = useState<CharacterEntry | null>(null);
-  const [backLayer0, setBackLayer0] = useState<CharacterEntry | null>(null);
-  const [backLayer1, setBackLayer1] = useState<CharacterEntry | null>(null);
-  const [activeBack, setActiveBack] = useState<0 | 1>(0);
   const [bgChar, setBgChar] = useState<CharacterEntry | null>(null);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const touchEndRef = useRef<{ x: number; y: number } | null>(null);
-  const shuffleState = useRef<{
-    next: CharacterEntry | null;
-    nextBackIdx: 0 | 1;
-    shuffled: CharacterEntry[];
-    phase: 'idle' | 'going-to-180' | 'going-to-0';
-  }>({ next: null, nextBackIdx: 0, shuffled: [], phase: 'idle' });
 
   // Collect all genres from library
   const genres = useMemo(() => {
@@ -286,38 +278,36 @@ export const CharactersView: React.FC = () => {
   const progressPercent = totalWorks > 0 ? (discoveredWorks / totalWorks) * 100 : 0;
   const dynamicColor = characters.length > 0 && characters[0].primaryColor ? characters[0].primaryColor : '#eab308';
 
+  // Flip: tap card to reveal cover of CURRENT character (no data change)
+  const handleFlip = useCallback(() => {
+    if (isShuffling) return;
+    setIsFlipped(prev => !prev);
+  }, [isShuffling]);
+
+  // Shuffle: change character with fade (no flip involved)
   const handleShuffle = useCallback(() => {
     if (isShuffling || characters.length === 0) return;
+    setIsShuffling(true);
     const shuffled = shuffleArray(allCharacters);
     const next = shuffled[0] || null;
-    if (!next) return;
-    const nextBackIdx = activeBack === 0 ? 1 : 0;
-    shuffleState.current = { next, nextBackIdx, shuffled, phase: 'going-to-180' };
-    setIsShuffling(true);
-    setIsFlipped(true);
-  }, [isShuffling, characters.length, allCharacters, activeBack]);
-
-  const handleFlipComplete = useCallback(() => {
-    const s = shuffleState.current;
-    if (s.phase === 'going-to-180') {
-      // At 180°: front hidden, back visible — update front + prepare inactive back layer
-      setFrontData(s.next);
-      if (s.nextBackIdx === 0) setBackLayer0(s.next);
-      else setBackLayer1(s.next);
-      setActiveBack(s.nextBackIdx);
-      s.phase = 'going-to-0';
-      setIsFlipped(false);
-    } else if (s.phase === 'going-to-0') {
-      // At 0°: front visible — sync state, delay background update
-      setShuffledChars(s.shuffled);
+    if (!next) { setIsShuffling(false); return; }
+    // Fade out → swap → fade in
+    setIsFading(true);
+    setTimeout(() => {
+      setFrontData(next);
+      setBackData(next);
+      setBackLayer0(next);
+      setBackLayer1(next);
+      setShuffledChars(shuffled);
       setTrendingIndex(0);
-      setBackData(s.next);
-      setTimeout(() => setBgChar(s.next), 300);
-      setTimeout(() => setBgVersion(v => v + 1), 300);
-      setIsShuffling(false);
-      s.phase = 'idle';
-    }
-  }, []);
+      setBgChar(next);
+      setBgVersion(v => v + 1);
+      setTimeout(() => {
+        setIsFading(false);
+        setIsShuffling(false);
+      }, 50);
+    }, 250);
+  }, [isShuffling, characters.length, allCharacters]);
 
   // Image upload handlers
   const updateCharacterImage = async (mediaId: string, imageUrl: string) => {
@@ -515,7 +505,7 @@ export const CharactersView: React.FC = () => {
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
-                onClick={() => { setViewMode('trending'); setFrontData(characters[0] || null); setBackLayer0(characters[0] || null); setBackLayer1(characters[0] || null); setBackData(characters[0] || null); setBgChar(characters[0] || null); }}
+                onClick={() => { setViewMode('trending'); setFrontData(characters[0] || null); setBackData(characters[0] || null); setBgChar(characters[0] || null); }}
                 className={`p-1.5 rounded-md transition-colors ${
                   viewMode === 'trending'
                     ? 'bg-zinc-700 text-white'
@@ -722,12 +712,13 @@ export const CharactersView: React.FC = () => {
           {/* CARD — 3D flip with tilt */}
           <div
             className="absolute left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-6"
-            style={{ top: '12vh', height: '72vh' }}
+            style={{ top: '12vh', height: '72vh', opacity: isFading ? 0 : 1, transition: 'opacity 0.25s ease-in-out' }}
           >
             <div
               ref={cardRef}
-              className="relative w-full h-full"
+              className="relative w-full h-full cursor-pointer"
               style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
+              onClick={handleFlip}
               onMouseMove={handleMouseMove}
               onMouseLeave={handleMouseLeave}
               onTouchStart={handleTouchStart}
@@ -739,7 +730,6 @@ export const CharactersView: React.FC = () => {
               animate={{ rotateY: isFlipped ? 180 : 0 }}
               transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
               style={{ transformStyle: 'preserve-3d' }}
-              onAnimationComplete={handleFlipComplete}
             >
               {/* FRONT FACE — character */}
               <div
@@ -757,28 +747,17 @@ export const CharactersView: React.FC = () => {
                 </div>
               </div>
 
-              {/* BACK FACE — double buffer */}
+              {/* BACK FACE — cover of CURRENT character */}
               <div
                 className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
                 style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg) translateZ(2px)' }}
               >
                 <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
-                  {/* Layer 0 — permanente */}
-                  <div className="absolute inset-0" style={{ opacity: activeBack === 0 ? 1 : 0, visibility: activeBack === 0 ? 'visible' : 'hidden', zIndex: activeBack === 0 ? 2 : 1 }}>
-                    {backLayer0?.coverImage ? (
-                      <img src={backLayer0.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover rounded-[calc(2rem-0.375rem)]" />
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[calc(2rem-0.375rem)]" />
-                    )}
-                  </div>
-                  {/* Layer 1 — permanente */}
-                  <div className="absolute inset-0" style={{ opacity: activeBack === 1 ? 1 : 0, visibility: activeBack === 1 ? 'visible' : 'hidden', zIndex: activeBack === 1 ? 2 : 1 }}>
-                    {backLayer1?.coverImage ? (
-                      <img src={backLayer1.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover rounded-[calc(2rem-0.375rem)]" />
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[calc(2rem-0.375rem)]" />
-                    )}
-                  </div>
+                  {backData?.coverImage ? (
+                    <img src={backData.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover rounded-[calc(2rem-0.375rem)]" />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[calc(2rem-0.375rem)]" />
+                  )}
                 </div>
               </div>
             </motion.div>
