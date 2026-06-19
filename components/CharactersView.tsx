@@ -87,7 +87,8 @@ const CardContent: React.FC<{
   onUpload: () => void;
   workChars: CharacterEntry[];
   showCover?: boolean;
-}> = ({ char, dynamicColor, onUpload, workChars, showCover }) => {
+  frozenSrc?: string;
+}> = ({ char, dynamicColor, onUpload, workChars, showCover, frozenSrc }) => {
   if (!char) return null;
   const color = char.primaryColor || dynamicColor;
 
@@ -98,8 +99,8 @@ const CardContent: React.FC<{
         <button onClick={onUpload} className="absolute top-4 right-4 z-20 p-2 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors">
           <Camera className="w-4 h-4 text-white" />
         </button>
-        {char.coverImage ? (
-          <img src={char.coverImage} alt="" className="w-full h-full object-cover rounded-[calc(2rem-0.375rem)]" />
+        {frozenSrc || char.coverImage ? (
+          <img src={frozenSrc || char.coverImage || ''} alt="" className="w-full h-full object-cover rounded-[calc(2rem-0.375rem)]" />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[calc(2rem-0.375rem)]" />
         )}
@@ -170,6 +171,9 @@ export const CharactersView: React.FC = () => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [displayed, setDisplayed] = useState<CharacterEntry | null>(null);
   const [bgChar, setBgChar] = useState<CharacterEntry | null>(null);
+  const [frozenFrontSrc, setFrozenFrontSrc] = useState<string>('');
+  const [frozenBackSrc, setFrozenBackSrc] = useState<string>('');
+  const [frozenBgSrc, setFrozenBgSrc] = useState<string>('');
 
   const cardRef = useRef<HTMLDivElement>(null);
   const displayedRef = useRef<CharacterEntry | null>(null);
@@ -264,13 +268,18 @@ export const CharactersView: React.FC = () => {
     if (isShuffling) return;
     setIsShuffling(true);
     const shuffled = shuffleArray(allCharacters);
-    // Phase 1: flip to show cover (0 → 180) — nothing changes yet
+    // Freeze src values BEFORE flip — these won't change during animation
+    const oldCover = displayedRef.current?.coverImage || '';
+    setFrozenFrontSrc(oldCover);
+    setFrozenBackSrc(oldCover);
+    setFrozenBgSrc(bgChar?.coverImage || oldCover);
+    // Phase 1: flip to show cover (0 → 180)
     setIsFlipped(true);
-    // Phase 2: at 700ms, flip back (180 → 0) — card shows frozen old character
+    // Phase 2: at 700ms, flip back (180 → 0)
     setTimeout(() => {
       setIsFlipped(false);
     }, 700);
-    // Phase 3: at 750ms, card is stable at 0° — NOW swap everything
+    // Phase 3: at 750ms, swap everything — new src values take over
     setTimeout(() => {
       setShuffledChars(shuffled);
       setTrendingIndex(0);
@@ -682,7 +691,7 @@ export const CharactersView: React.FC = () => {
             <AnimatePresence mode="wait">
               <motion.img
                 key={`${bgChar?.character.name}-${bgVersion}`}
-                src={bgChar?.coverImage || ''}
+                src={isShuffling ? frozenBgSrc : bgChar?.coverImage || ''}
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl brightness-[0.45]"
                 initial={{ opacity: 0 }}
@@ -721,8 +730,8 @@ export const CharactersView: React.FC = () => {
                 style={{ backfaceVisibility: 'hidden' }}
               >
                 <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
-                  {(isShuffling ? displayedRef.current : displayed)?.coverImage ? (
-                    <img src={(isShuffling ? displayedRef.current : displayed).coverImage} alt="" className="absolute inset-0 w-full h-full object-cover scale-110 blur-md brightness-[0.35]" />
+                  {(isShuffling ? frozenFrontSrc : displayed?.coverImage) ? (
+                    <img src={isShuffling ? frozenFrontSrc : displayed?.coverImage || ''} alt="" className="absolute inset-0 w-full h-full object-cover scale-110 blur-md brightness-[0.35]" />
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900" />
                   )}
@@ -737,7 +746,7 @@ export const CharactersView: React.FC = () => {
                 style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
               >
                 <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
-                  <CardContent char={isShuffling ? displayedRef.current : displayed} dynamicColor={dynamicColor} onUpload={() => {}} workChars={charactersWithTotal} showCover />
+                  <CardContent char={isShuffling ? displayedRef.current : displayed} dynamicColor={dynamicColor} onUpload={() => {}} workChars={charactersWithTotal} showCover frozenSrc={isShuffling ? frozenBackSrc : undefined} />
                 </div>
               </div>
             </motion.div>
