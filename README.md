@@ -6,91 +6,101 @@
 ![Tech](https://img.shields.io/badge/Stack-React_19_%7C_Tailwind_%7C_Gemini_AI-indigo)
 ![PWA](https://img.shields.io/badge/PWA-Installable-purple)
 
-**MediaTracker AI** redefine la gestión de tu biblioteca de entretenimiento personal. No es solo una lista; es una experiencia visual inmersiva y privada para el seguimiento de Anime, Series, Películas, Manhwas y Libros.
+**MediaTracker AI** redefines your personal entertainment library management. It's not just a list — it's an immersive, private visual experience for tracking Anime, Series, Movies, Manhwas, and Books.
 
-Potenciado por **Google Gemini 2.5**, el sistema transforma simples títulos en un ecosistema rico en metadatos, colores dinámicos y recomendaciones emocionales, todo guardado de forma segura en tu dispositivo.
-
----
-
-## ✨ La Experiencia Inmersiva
-
-### 🧠 Descubrimiento IA "Stack"
-Olvídate de las listas estáticas. MediaTracker implementa un sistema de descubrimiento gestual inspirado en interfaces móviles de alta gama:
-- **Navegación por Tarjetas 3D:** Desliza, inclina y explora recomendaciones generadas por IA con físicas realistas y efectos de "barajeo".
-- **Refinamiento por Mood:** ¿Cómo te sientes hoy? Filtra no solo por género, sino por atmósfera emocional (ej. *"🤯 Quiero algo que me vuele la cabeza"* o *"🍿 Algo ligero para desconectar"*).
-- **Fallos Estéticos:** Incluso si la IA no encuentra resultados, la interfaz responde con tarjetas de estado diseñadas para mantener la inmersión.
-
-### 🎨 Diseño Adaptativo & Temas
-La interfaz está viva. Cada vez que abres una obra, la aplicación extrae la paleta de colores dominante de su portada y **adapta toda la UI en tiempo real** (bordes, sombras, gradientes y acentos) para coincidir con la estética del contenido.
-
-### 📊 Biblioteca Inteligente
-- **Auto-Metadatos:** Escribe "Solo Leveling" y la IA completará sinopsis, estado, número de capítulos y portada automáticamente.
-- **Modo Catálogo (Estantería):** Visualiza tu colección en "estanterías" horizontales inteligentes, organizadas por prioridad de visualización y géneros.
-- **Insights Profundos:** Gráficos de distribución de consumo (Visual vs Lectura), ranking de obsesiones y análisis de tu ecosistema de plataformas.
+Powered by **Google Gemini 2.5**, the system transforms simple titles into a rich ecosystem of metadata, dynamic colors, and emotional recommendations, all stored securely on your device.
 
 ---
 
-## 🔒 Privacidad: Tu Data es Tuya
+## ✨ The Immersive Experience
 
-En una era de tracking masivo, MediaTracker toma una postura radical:
-- **Local-First:** Todos tus datos viven en **IndexedDB** dentro de tu navegador. Nada se envía a servidores externos de la app.
-- **Conexión Directa:** Tú provees tu propia API Key de Google Gemini. La conexión es directa entre tu cliente y Google.
-- **Importación/Exportación:** Eres dueño de tus datos. Exporta copias de seguridad completas (JSON) o comparte catálogos públicos sanitizados.
+### 🧠 AI-Powered "Stack" Discovery
+Forget static lists. MediaTracker implements a gestural discovery system inspired by high-end mobile interfaces:
+- **3D Card Navigation:** Swipe, tilt, and explore AI-generated recommendations with realistic physics and shuffle effects.
+- **Mood Refinement:** How are you feeling today? Filter not just by genre, but by emotional atmosphere (e.g., *"🤯 I want something mind-blowing"* or *"🍿 Something light to unwind"*).
+- **Aesthetic Fallbacks:** Even when AI finds no results, the interface responds with designed status cards that maintain immersion.
+
+### 🎨 Adaptive Design & Themes
+The interface is alive. Every time you open a work, the app extracts the dominant color palette from its cover and **adapts the entire UI in real-time** (borders, shadows, gradients, and accents) to match the content's aesthetic.
+
+### 👤 Character Gallery
+A full-screen collector-style view for your favorite characters:
+- **Trending Cards:** Stories-style full-screen cards with 3D tilt, swipe navigation, and tap-to-reveal cover art.
+- **Physical 3D Interaction:** Cards respond to mouse/touch with 22° tilt, dynamic scaling, and light reflection that follows your cursor — like holding a real card.
+- **Smart Shuffle:** Tap the card to reveal the work's cover, use the shuffle button to discover the next character with a smooth crossfade transition.
+- **Per-Work Ranking:** Characters are ranked within their work (1/3, 2/3) when a work has multiple favorites.
+- **Genre Filtering:** Filter characters by genre with animated pill selectors.
+- **Progress Tracking:** Visual progress bar showing discovered characters vs total.
+
+### 📊 Intelligent Library
+- **Auto-Metadata:** Type "Solo Leveling" and AI fills in synopsis, status, chapter count, and cover art automatically.
+- **Shelf Mode:** View your collection on intelligent horizontal "shelves," organized by viewing priority and genres.
+- **Deep Insights:** Consumption distribution charts (Visual vs Reading), obsession rankings, and platform ecosystem analysis.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 🔒 Privacy: Your Data is Yours
 
-Construido con las últimas tecnologías web para un rendimiento nativo:
-
-- **Core:** React 19 (Hooks modernos & optimización de renderizado).
-- **IA:** Google GenAI SDK (`@google/genai` v1.31+).
-- **Estilos:** Tailwind CSS con utilidades personalizadas para Glassmorphism y animaciones 3D.
-- **Persistencia:** IndexedDB wrapper para almacenamiento robusto en el cliente.
-- **Iconografía:** Lucide React.
+In an era of mass tracking, MediaTracker takes a radical stance:
+- **Local-First:** All your data lives in **IndexedDB** in your browser. Nothing is sent to external servers.
+- **Direct Connection:** You provide your own Google Gemini API Key. The connection is direct between your client and Google.
+- **Import/Export:** You own your data. Export complete backups (JSON) or share sanitized public catalogs.
 
 ---
 
-## 🚀 Cómo Empezar
+## 🛠️ Tech Stack
 
-### Prerrequisitos
-Necesitas una **API Key de Google Gemini** (Gratuita).
-👉 [Consíguela en Google AI Studio](https://aistudio.google.com/app/apikey)
+Built with the latest web technologies for native performance:
 
-### Instalación Local
+- **Core:** React 19 (Modern hooks & render optimization).
+- **Animations:** Framer Motion for 3D flips, crossfades, and gesture-driven interactions.
+- **AI:** Google GenAI SDK (`@google/genai` v1.31+).
+- **Styles:** Tailwind CSS with custom utilities for Glassmorphism and 3D animations.
+- **Persistence:** IndexedDB wrapper for robust client-side storage.
+- **Iconography:** Lucide React.
 
-1.  **Clonar el repositorio:**
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+You need a **Google Gemini API Key** (Free).
+👉 [Get one at Google AI Studio](https://aistudio.google.com/app/apikey)
+
+### Local Installation
+
+1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/tu-usuario/mediatracker-ai.git
-    cd mediatracker-ai
+    git clone https://github.com/VictorR29/MediaTracker-AI.git
+    cd MediaTracker-AI
     ```
 
-2.  **Instalar dependencias:**
+2.  **Install dependencies:**
     ```bash
     npm install
     ```
 
-3.  **Iniciar servidor de desarrollo:**
+3.  **Start development server:**
     ```bash
     npm run dev
     ```
 
-4.  **Configuración:** Al abrir la app, completa el *Onboarding* ingresando tu nombre y tu API Key.
+4.  **Configuration:** On first launch, complete the *Onboarding* by entering your name and API Key.
 
-### Uso como App Móvil (PWA)
-MediaTracker está optimizada para tacto y gestos.
-1. Abre la web en Safari (iOS) o Chrome (Android).
-2. Toca "Compartir" -> "Agregar a Inicio".
-3. Disfruta de la experiencia a pantalla completa sin barras de navegador.
-
----
-
-## 🤝 Contribución
-
-Las Pull Requests son bienvenidas. Para cambios mayores, por favor abre primero un issue para discutir lo que te gustaría cambiar.
+### Use as Mobile App (PWA)
+MediaTracker is optimized for touch and gestures.
+1. Open the web app in Safari (iOS) or Chrome (Android).
+2. Tap "Share" -> "Add to Home Screen".
+3. Enjoy the full-screen experience without browser bars.
 
 ---
 
-## 📄 Licencia
+## 🤝 Contributing
 
-Este proyecto está licenciado bajo la **GNU General Public License v3.0**. Consulta el archivo `LICENSE` para más detalles.
+Pull Requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+---
+
+## 📄 License
+
+This project is licensed under the **GNU General Public License v3.0**. See the `LICENSE` file for details.
