@@ -364,18 +364,28 @@ export const CharactersView: React.FC = () => {
   };
 
   // 3D Tilt effect
+  const lightRef = useRef<HTMLDivElement>(null);
   const applyTilt = useCallback((clientX: number, clientY: number, isActive: boolean) => {
     if (!cardRef.current) return;
     if (!isActive) {
-      cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+      cardRef.current.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg) scale(1)';
+      cardRef.current.style.transition = 'transform 0.4s cubic-bezier(0.03, 0.98, 0.52, 0.99)';
+      if (lightRef.current) lightRef.current.style.opacity = '0';
       return;
     }
     const { left, top, width, height } = cardRef.current.getBoundingClientRect();
     const x = (clientX - left) / width;
     const y = (clientY - top) / height;
-    const tiltX = (0.5 - y) * 15;
-    const tiltY = (x - 0.5) * 15;
-    cardRef.current.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.02)`;
+    const tiltX = (0.5 - y) * 22;
+    const tiltY = (x - 0.5) * 22;
+    const scale = 1 + Math.abs(x - 0.5) * 0.04 + Math.abs(y - 0.5) * 0.04;
+    cardRef.current.style.transition = 'transform 0.1s ease-out';
+    cardRef.current.style.transform = `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(${scale})`;
+    // Light reflection follows cursor
+    if (lightRef.current) {
+      lightRef.current.style.opacity = '1';
+      lightRef.current.style.background = `radial-gradient(circle at ${x * 100}% ${y * 100}%, rgba(255,255,255,0.15) 0%, transparent 60%)`;
+    }
   }, []);
 
   // Trending view navigation
@@ -729,6 +739,12 @@ export const CharactersView: React.FC = () => {
               transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
               style={{ transformStyle: 'preserve-3d' }}
             >
+              {/* Light reflection overlay — follows cursor */}
+              <div
+                ref={lightRef}
+                className="absolute inset-0 z-30 pointer-events-none rounded-[2rem] opacity-0 transition-opacity duration-300"
+                style={{ mixBlendMode: 'soft-light' }}
+              />
               {/* FRONT FACE — character */}
               <div
                 className="absolute inset-0 rounded-[2rem] bg-[#111113] p-1.5 ring-1 ring-white/[0.06]"
