@@ -561,7 +561,7 @@ export const CharactersView: React.FC = () => {
               <button
                 key={genre}
                 onClick={() => setActiveGenre(genre)}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                className={`flex-shrink-0 px-3 py-1.5 min-h-[36px] flex items-center rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
                   activeGenre === genre
                     ? 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/40'
                     : 'bg-zinc-800/50 text-zinc-500 hover:text-zinc-300'
@@ -668,7 +668,7 @@ export const CharactersView: React.FC = () => {
                           e.stopPropagation();
                           setEditingId(entry.mediaId);
                         }}
-                        className="absolute top-3 right-3 p-1.5 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
+                        className="absolute top-3 right-3 p-2 min-w-[36px] min-h-[36px] flex items-center justify-center bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
                       >
                         <Camera className="w-3.5 h-3.5 text-white" />
                       </button>

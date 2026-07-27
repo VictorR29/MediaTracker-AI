@@ -66,7 +66,7 @@ export const EmotionalRadar: React.FC<EmotionalRadarProps> = ({ stats }) => {
   // Get top emotions sorted by time
   const emotions = useMemo(() => {
     const entries = Object.entries(stats.emotionConsumption)
-      .sort((a, b) => b[1] - a[1])
+      .sort((a, b) => (b[1] as number) - (a[1] as number))
       .slice(0, MAX_AXES);
     return entries;
   }, [stats.emotionConsumption]);

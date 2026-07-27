@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { computeTasteProfile } from '../tasteProfile';
 import { MediaItem } from '../../types';
 
-const makeItem = (title: string, mediaType: string, rating: string, genres: string[], emotionalTags: string[] = []): MediaItem => ({
+const makeItem = (title: string, mediaType: 'Anime' | 'Serie' | 'Pelicula' | 'Manhwa' | 'Manga' | 'Comic' | 'Libro' | 'Otro', rating: string, genres: string[], emotionalTags: string[] = []): MediaItem => ({
   id: title.toLowerCase().replace(/\s/g, '-'),
   aiData: { title, mediaType, synopsis: '', genres, status: 'Finalizado', totalContent: '', coverDescription: '', coverImage: '', sourceUrls: [], primaryColor: '#c084fc' },
   trackingData: { status: 'Completado', currentSeason: 1, totalSeasons: 1, watchedEpisodes: 12, totalEpisodesInSeason: 12, is_favorite: false, rating, emotionalTags, comment: '', customLinks: [], favoriteCharacters: [], recommendedBy: '' },

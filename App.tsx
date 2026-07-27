@@ -232,7 +232,6 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
               aria-label="Abrir menú"
               className="md:hidden p-2 text-zinc-400 hover:text-white hover:bg-white/[0.06] rounded-full transition-colors"
               title="Menú"
-              aria-label="Abrir menú"
             >
               <MoreVertical className="w-5 h-5" />
             </button>
@@ -270,7 +269,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
 
       {/* Mobile Bottom Nav — Frosted Glass + Dynamic Tint */}
       <nav
-        className={`md:hidden fixed bottom-0 w-full pb-safe pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-200 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}
+        className={`md:hidden fixed bottom-0 w-full pb-[env(safe-area-inset-bottom,0px)] pt-2 px-1 flex justify-around items-center z-40 transition-transform duration-200 ${isImmersiveMode || !isBottomNavVisible ? 'translate-y-full' : 'translate-y-0'}`}
         style={{
           background: `linear-gradient(to top, rgba(9,9,11,0.92) 0%, rgba(24,24,27,0.78) 100%)`,
           backdropFilter: 'blur(40px) saturate(1.8)',
@@ -287,7 +286,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
               ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb},0.50))` }
               : undefined}
           />
-          <span className="text-[9px] font-bold">Biblio</span>
+          <span className="text-[11px] font-bold">Biblio</span>
         </button>
 
         {/* Deseos */}
@@ -298,7 +297,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
               ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb},0.50))` }
               : undefined}
           />
-          <span className="text-[9px] font-bold">Deseos</span>
+          <span className="text-[11px] font-bold">Deseos</span>
         </button>
 
         {/* Añadir (+) */}
@@ -310,7 +309,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
             }}>
             <PlusCircle className="w-6 h-6" />
           </div>
-          <span className="text-[9px] font-bold opacity-0">Nuevo</span>
+          <span className="text-[11px] font-bold opacity-0">Nuevo</span>
         </button>
 
         {/* Descubrir */}
@@ -321,7 +320,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
               ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb},0.50))` }
               : undefined}
           />
-          <span className="text-[9px] font-bold">Descubrir</span>
+          <span className="text-[11px] font-bold">Descubrir</span>
         </button>
 
         {/* Stats */}
@@ -332,7 +331,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
               ? { filter: `drop-shadow(0 0 6px rgba(${activeColorRgb},0.50))` }
               : undefined}
           />
-          <span className="text-[9px] font-bold">Stats</span>
+          <span className="text-[11px] font-bold">Stats</span>
         </button>
       </nav>
 

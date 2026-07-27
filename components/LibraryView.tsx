@@ -78,7 +78,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   // Trigger stagger re-entrance on filter/view change (mount is handled locally by each card)
   React.useEffect(() => {
     setStaggerTrigger(t => t + 1);
-  }, [view, filters.searchQuery, filters.statusFilter, filters.genreFilter, filters.sortBy]);
+  }, [view, filters.query, filters.status, filters.genre, filters.sortBy]);
 
   return (
     <div>

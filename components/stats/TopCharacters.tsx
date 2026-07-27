@@ -82,11 +82,11 @@ const CharacterCard: React.FC<{
           </div>
         )}
         <p className="text-xs font-bold text-white text-center truncate w-full px-1">{entry.character.name}</p>
-        <p className="text-[9px] text-zinc-400 text-center truncate w-full px-1 mt-0.5">{entry.mediaTitle}</p>
+        <p className="text-[10px] text-zinc-400 text-center truncate w-full px-1 mt-0.5">{entry.mediaTitle}</p>
 
         <button
           onClick={(e) => { e.stopPropagation(); onEdit(entry.mediaId); }}
-          className="absolute top-1.5 right-1.5 p-1 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
+          className="absolute top-1.5 right-1.5 p-2 min-w-[36px] min-h-[36px] flex items-center justify-center bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
         >
           <Camera className="w-3 h-3 text-white" />
         </button>
@@ -340,7 +340,7 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
                 </button>
               </div>
               <button
-                onClick={() => { setEditingId(null); triggerFileUpload(editingId); }}
+                onClick={() => { const id = editingId; setEditingId(null); if (id) triggerFileUpload(id); }}
                 className="w-full flex items-center gap-3 p-4 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl ring-1 ring-white/[0.08] transition-colors mb-3"
               >
                 <div className="p-2 bg-violet-500/20 rounded-lg">

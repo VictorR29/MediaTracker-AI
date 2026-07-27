@@ -10,7 +10,7 @@ let dbInstance: IDBDatabase | null = null;
 
 export const initDB = (): Promise<IDBDatabase> => {
   // Return existing connection if still open
-  if (dbInstance && !dbInstance.closed) {
+  if (dbInstance) {
     return Promise.resolve(dbInstance);
   }
 
@@ -42,7 +42,7 @@ export const initDB = (): Promise<IDBDatabase> => {
 };
 
 export const closeDB = (): void => {
-  if (dbInstance && !dbInstance.closed) {
+  if (dbInstance) {
     dbInstance.close();
     dbInstance = null;
   }

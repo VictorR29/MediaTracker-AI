@@ -20,7 +20,7 @@ describe('useLibraryStore', () => {
   });
 
   it('setFilters updates filters', () => {
-    useLibraryStore.getState().setFilters({ query: 'test' });
+    useLibraryStore.getState().setFilters(prev => ({ ...prev, query: 'test' }));
     expect(useLibraryStore.getState().filters.query).toBe('test');
   });
 

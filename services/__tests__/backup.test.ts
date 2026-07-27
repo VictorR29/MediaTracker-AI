@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseBackupFile, parseCatalogFile, createBackupBlob, createCatalogBlob } from '../backup';
 import { UserProfile, MediaItem } from '../../types';
 
-const mockProfile: UserProfile = { username: 'Vikthor', password: 'abc123:def456' };
+const mockProfile: UserProfile = { username: 'Vikthor', password: 'abc123:def456', accentColor: '#c084fc', apiKey: '' };
 const mockLibrary: MediaItem[] = [{
   id: 'test', aiData: { title: 'Test', mediaType: 'Anime', synopsis: '', genres: [], status: 'Finalizado', totalContent: '', coverDescription: '', coverImage: '', sourceUrls: [], primaryColor: '#c084fc' },
   trackingData: { status: 'Completado', currentSeason: 1, totalSeasons: 1, watchedEpisodes: 1, totalEpisodesInSeason: 1, is_favorite: false, rating: '', emotionalTags: [], comment: '', customLinks: [], favoriteCharacters: [], recommendedBy: '' },

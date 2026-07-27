@@ -310,7 +310,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-1.5 z-20">
               <button
                 onClick={() => handleInputChange('is_favorite', !tracking.is_favorite)}
-                className={`min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-full backdrop-blur-md transition-all ${
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full backdrop-blur-md transition-all ${
                   tracking.is_favorite 
                     ? 'bg-yellow-500/20 text-yellow-400' 
                     : 'bg-black/40 text-white/60 hover:text-yellow-400 hover:bg-yellow-500/20'
@@ -322,7 +322,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-full bg-black/40 backdrop-blur-md text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full bg-black/40 backdrop-blur-md text-white/60 hover:text-white hover:bg-white/10 transition-all"
                 >
                   <Edit3 className="w-4 h-4" />
                 </button>
@@ -331,7 +331,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               {onDelete && (
                 <button
                   onClick={onDelete}
-                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-full bg-black/40 backdrop-blur-md text-white/40 hover:text-red-400 hover:bg-red-500/20 transition-all"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full bg-black/40 backdrop-blur-md text-white/40 hover:text-red-400 hover:bg-red-500/20 transition-all"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -593,7 +593,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     </span>
                     <div className="flex items-center justify-between">
                       <button onClick={() => handleInputChange('currentSeason', Math.max(1, tracking.currentSeason - 1))}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
                         <ChevronLeft className="w-5 h-5" />
                       </button>
                       <div className="flex items-baseline gap-1">
@@ -604,7 +604,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                           className="w-10 bg-zinc-800/50 rounded px-1 py-0.5 text-sm font-bold text-zinc-400 text-center outline-none focus:text-white focus:ring-1 focus:ring-white/20" />
                       </div>
                       <button onClick={() => handleInputChange('currentSeason', tracking.totalSeasons > 0 ? Math.min(tracking.totalSeasons, tracking.currentSeason + 1) : tracking.currentSeason + 1)}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
                         <ChevronRight className="w-5 h-5" />
                       </button>
                     </div>
@@ -615,7 +615,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     <span className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Capítulos Vistos</span>
                     <div className="flex items-center justify-between">
                       <button onClick={() => handleInputChange('watchedEpisodes', Math.max(0, tracking.watchedEpisodes - 1))}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
                         <Minus className="w-5 h-5" />
                       </button>
                       <div className="flex items-baseline gap-1">
@@ -626,7 +626,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                           className="w-10 bg-zinc-800/50 rounded px-1 py-0.5 text-sm font-bold text-zinc-400 text-center outline-none focus:text-white focus:ring-1 focus:ring-white/20" />
                       </div>
                       <button onClick={() => handleInputChange('watchedEpisodes', tracking.totalEpisodesInSeason > 0 ? Math.min(tracking.totalEpisodesInSeason, tracking.watchedEpisodes + 1) : tracking.watchedEpisodes + 1)}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
                         <Plus className="w-5 h-5" />
                       </button>
                     </div>
