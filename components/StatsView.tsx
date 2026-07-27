@@ -9,7 +9,6 @@ import { ConsumptionDistribution } from './stats/ConsumptionDistribution';
 import { StatCard } from './stats/StatCard';
 import { ChartsRow } from './stats/ChartsRow';
 import { RankingBanner } from './stats/RankingBanner';
-import { EmotionalRadar } from './stats/EmotionalRadar';
 import { TopCharacters } from './stats/TopCharacters';
 import { SettingsModal } from './stats/SettingsModal';
 
@@ -106,10 +105,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ library, userProfile, onUp
       {/* 4. OBSESIONES — Top 3 */}
       <ObsessionTracker stats={stats} />
 
-      {/* 5. TU PERFIL — Distribución + Radar + Gráficos + Personajes */}
+      {/* 5. TU PERFIL — Distribución + Gráficos + Personajes */}
       <div className="space-y-4 md:space-y-6">
         <ConsumptionDistribution stats={stats} />
-        <EmotionalRadar stats={stats} />
         <TopCharacters library={library} />
         <ChartsRow stats={stats} />
       </div>

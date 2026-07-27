@@ -1,7 +1,7 @@
-import React, { useRef, useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Camera, User, Crown, Link, Upload, X, Shuffle, ArrowRight } from 'lucide-react';
+import { Camera, Crown, Link, Upload, X, Shuffle, ArrowRight } from 'lucide-react';
 import { MediaItem } from '../../types';
 import { useLibraryStore } from '../../stores/useLibraryStore';
 import { useToast } from '../../context/ToastContext';
@@ -18,7 +18,6 @@ interface CharacterEntry {
   character: { name: string; image?: string };
 }
 
-// Image compression helper (same as cover images)
 const compressImage = (base64Str: string, maxWidth: number = 200, quality: number = 0.7): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -27,24 +26,19 @@ const compressImage = (base64Str: string, maxWidth: number = 200, quality: numbe
     img.onload = () => {
       let width = img.width;
       let height = img.height;
-
       if (width > maxWidth) {
         height = Math.round((height * maxWidth) / width);
         width = maxWidth;
       }
-
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      
       const ctx = canvas.getContext('2d');
       if (ctx) {
         try {
           ctx.drawImage(img, 0, 0, width, height);
-          const newBase64 = canvas.toDataURL('image/webp', quality);
-          resolve(newBase64);
+          resolve(canvas.toDataURL('image/webp', quality));
         } catch {
-          // Canvas tainted by CORS — fall back to original URL
           resolve(base64Str);
         }
       } else {
@@ -55,24 +49,73 @@ const compressImage = (base64Str: string, maxWidth: number = 200, quality: numbe
   });
 };
 
+// Single character card (reused in both rows)
+const CharacterCard: React.FC<{
+  entry: CharacterEntry;
+  onEdit: (mediaId: string) => void;
+  isUploading: boolean;
+}> = ({ entry, onEdit, isUploading }) => {
+  const hasImage = !!entry.character.image;
+  const initial = entry.character.name.charAt(0).toUpperCase();
+
+  return (
+    <div className="relative flex-shrink-0 w-32 h-44 rounded-2xl overflow-hidden group">
+      {/* Background: blurred cover */}
+      <div className="absolute inset-0">
+        {entry.coverImage ? (
+          <img src={entry.coverImage} alt="" className="w-full h-full object-cover scale-110 blur-md brightness-50" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
+        )}
+        <div className="absolute inset-0 bg-black/40" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col items-center justify-center h-full p-2">
+        {hasImage ? (
+          <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-white/20 shadow-lg mb-2">
+            <img src={entry.character.image} alt={entry.character.name} className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="w-16 h-16 rounded-full bg-white/10 ring-2 ring-white/20 shadow-lg flex items-center justify-center mb-2">
+            <span className="text-xl font-bold text-white/80">{initial}</span>
+          </div>
+        )}
+        <p className="text-xs font-bold text-white text-center truncate w-full px-1">{entry.character.name}</p>
+        <p className="text-[9px] text-zinc-400 text-center truncate w-full px-1 mt-0.5">{entry.mediaTitle}</p>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit(entry.mediaId); }}
+          className="absolute top-1.5 right-1.5 p-1 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
+        >
+          <Camera className="w-3 h-3 text-white" />
+        </button>
+
+        {isUploading && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const updateItem = useLibraryStore(state => state.updateItem);
   const { showToast } = useToast();
   const navigate = useNavigate();
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [activeGenre, setActiveGenre] = useState<string>('Todos');
 
-  // Collect genres from library
   const genres = useMemo(() => {
     const genreSet = new Set<string>();
     library.forEach(item => item.aiData.genres?.forEach(g => genreSet.add(g)));
     return ['Todos', ...Array.from(genreSet).sort()];
   }, [library]);
 
-  // Collect top 1 character from each work (no genre filter here)
   const baseCharacters: CharacterEntry[] = library
     .filter(item => {
       const chars = item.trackingData.favoriteCharacters;
@@ -86,10 +129,6 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
       character: item.trackingData.favoriteCharacters[0],
     }));
 
-  // Shuffle key increments when library changes → triggers re-shuffle
-  const shuffleKey = useMemo(() => library.length + library.reduce((acc, i) => acc + (i.trackingData.watchedEpisodes || 0), 0), [library]);
-
-  // Fisher-Yates shuffle
   const shuffleArray = <T,>(arr: T[]): T[] => {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -99,29 +138,20 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
     return a;
   };
 
-  // Shuffled characters state
   const [shuffledChars, setShuffledChars] = useState<CharacterEntry[]>([]);
-  const [lastShuffleKey, setLastShuffleKey] = useState<number>(shuffleKey);
-
-  // Auto-shuffle when library changes, then filter by genre
-  const allShuffled = useMemo(() => {
-    if (shuffleKey !== lastShuffleKey) {
-      const shuffled = shuffleArray(baseCharacters);
-      setShuffledChars(shuffled);
-      setLastShuffleKey(shuffleKey);
-      return shuffled;
-    }
-    return shuffledChars.length > 0 ? shuffledChars : baseCharacters;
-  }, [shuffleKey, lastShuffleKey, baseCharacters, shuffledChars]);
 
   const characters = useMemo(() => {
-    if (activeGenre === 'Todos') return allShuffled;
-    // Need genres from library to filter
-    return allShuffled.filter(c => {
+    const base = shuffledChars.length > 0 ? shuffledChars : baseCharacters;
+    if (activeGenre === 'Todos') return base;
+    return base.filter(c => {
       const item = library.find(i => i.id === c.mediaId);
       return item?.aiData.genres?.includes(activeGenre);
     });
-  }, [allShuffled, activeGenre, library]);
+  }, [shuffledChars, baseCharacters, activeGenre, library]);
+
+  // Split into two rows
+  const row1 = useMemo(() => characters.filter((_, i) => i % 2 === 0), [characters]);
+  const row2 = useMemo(() => characters.filter((_, i) => i % 2 === 1), [characters]);
 
   const handleShuffle = () => {
     setShuffledChars(shuffleArray(baseCharacters));
@@ -130,7 +160,6 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const updateCharacterImage = useCallback(async (mediaId: string, imageUrl: string) => {
     setUploadingId(mediaId);
     try {
-      // Compress image before saving (same as cover images)
       const compressed = await compressImage(imageUrl);
       const item = library.find(i => i.id === mediaId);
       if (item) {
@@ -182,205 +211,171 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
 
   const hasNoGenreMatch = characters.length === 0 && baseCharacters.length > 0;
 
+  // Calculate animation duration based on card count (slower = smoother)
+  const getDuration = (count: number) => Math.max(15, count * 2.5);
+
   return (
-    <div className="bg-[#111113] ring-1 ring-white/[0.06] p-1 rounded-2xl shadow-lg overflow-hidden">
-      <div
-        className="bg-[#18181B] rounded-[calc(1rem-0.25rem)] p-4 md:p-6"
-        style={{ borderTop: '1px solid rgba(234, 179, 8, 0.3)' }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Crown
-              className="w-4 h-4"
-              style={{ color: '#eab308', filter: 'drop-shadow(0 0 6px rgba(234, 179, 8, 0.5))' }}
-            />
-            <span className="text-xs font-extrabold uppercase text-zinc-400" style={{ letterSpacing: '0.1em' }}>
-              Top Personajes
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => navigate('/characters')}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/10 transition-all"
-            >
-              Ver Colección <ArrowRight className="w-3 h-3" />
-            </button>
-            <button
-              onClick={handleShuffle}
-              className="p-2 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
-              title="Reordenar"
-            >
-              <Shuffle className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+    <>
+      <style>{`
+        @keyframes marquee-right {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        @keyframes marquee-left {
+          0% { transform: translateX(-50%); }
+          100% { transform: translateX(0); }
+        }
+        .marquee-row:hover {
+          animation-play-state: paused !important;
+        }
+      `}</style>
 
-        {/* Genre filter */}
-        {genres.length > 2 && (
-          <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide mb-4" style={{ scrollbarWidth: 'none' }}>
-            {genres.map(genre => (
-              <button
-                key={genre}
-                onClick={() => setActiveGenre(genre)}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
-                  activeGenre === genre
-                    ? 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/40'
-                    : 'bg-zinc-800/50 text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                {genre}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Scrollable gallery */}
-        {hasNoGenreMatch ? (
-          <div className="py-8 text-center">
-            <p className="text-zinc-500 text-xs">No hay personajes en este género</p>
-          </div>
-        ) : (
+      <div className="bg-[#111113] ring-1 ring-white/[0.06] p-1 rounded-2xl shadow-lg overflow-hidden">
         <div
-          ref={scrollRef}
-          className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          className="bg-[#18181B] rounded-[calc(1rem-0.25rem)] p-4 md:p-6"
+          style={{ borderTop: '1px solid rgba(234, 179, 8, 0.3)' }}
         >
-          {characters.map((entry, idx) => {
-            const isUploading = uploadingId === entry.mediaId;
-            const hasImage = !!entry.character.image;
-            const initial = entry.character.name.charAt(0).toUpperCase();
-
-            return (
-              <div
-                key={entry.mediaId}
-                className="relative flex-shrink-0 w-40 h-56 snap-start rounded-2xl overflow-hidden group"
-                style={{
-                  animation: `staggerIn 0.4s ease-out ${idx * 0.08}s both`,
-                }}
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Crown className="w-4 h-4" style={{ color: '#eab308', filter: 'drop-shadow(0 0 6px rgba(234, 179, 8, 0.5))' }} />
+              <span className="text-xs font-extrabold uppercase text-zinc-400" style={{ letterSpacing: '0.1em' }}>Top Personajes</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => navigate('/characters')}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/10 transition-all"
               >
-                {/* Background: blurred cover */}
-                <div className="absolute inset-0">
-                  {entry.coverImage ? (
-                    <img
-                      src={entry.coverImage}
-                      alt=""
-                      className="w-full h-full object-cover scale-110 blur-md brightness-50"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
-                  )}
-                  <div className="absolute inset-0 bg-black/40" />
-                </div>
+                Ver Colección <ArrowRight className="w-3 h-3" />
+              </button>
+              <button
+                onClick={handleShuffle}
+                className="p-2 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
+                title="Reordenar"
+              >
+                <Shuffle className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
 
-                {/* Content */}
-                <div className="relative z-10 flex flex-col items-center justify-center h-full p-3">
-                  {/* Character profile */}
-                  {hasImage ? (
-                    <div className="w-20 h-20 rounded-full overflow-hidden ring-2 ring-white/20 shadow-lg mb-3">
-                      <img
-                        src={entry.character.image}
-                        alt={entry.character.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-white/10 ring-2 ring-white/20 shadow-lg flex items-center justify-center mb-3">
-                      <span className="text-2xl font-bold text-white/80">{initial}</span>
-                    </div>
-                  )}
+          {/* Genre filter */}
+          {genres.length > 2 && (
+            <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide mb-4" style={{ scrollbarWidth: 'none' }}>
+              {genres.map(genre => (
+                <button
+                  key={genre}
+                  onClick={() => setActiveGenre(genre)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    activeGenre === genre
+                      ? 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/40'
+                      : 'bg-zinc-800/50 text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {genre}
+                </button>
+              ))}
+            </div>
+          )}
 
-                  {/* Character name */}
-                  <p className="text-sm font-bold text-white text-center truncate w-full px-1">
-                    {entry.character.name}
-                  </p>
-
-                  {/* Work title */}
-                  <p className="text-[10px] text-zinc-400 text-center truncate w-full px-1 mt-1">
-                    {entry.mediaTitle}
-                  </p>
-
-                  {/* Upload button - always visible */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingId(entry.mediaId);
+          {/* Two-row marquee carousel */}
+          {hasNoGenreMatch ? (
+            <div className="py-8 text-center">
+              <p className="text-zinc-500 text-xs">No hay personajes en este género</p>
+            </div>
+          ) : (
+            <div className="space-y-3 overflow-hidden">
+              {/* Row 1 — scrolls right */}
+              {row1.length > 0 && (
+                <div className="overflow-hidden">
+                  <div
+                    className="marquee-row flex gap-3 w-max"
+                    style={{
+                      animation: `marquee-right ${getDuration(row1.length)}s linear infinite`,
                     }}
-                    className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
                   >
-                    <Camera className="w-3.5 h-3.5 text-white" />
-                  </button>
-
-                  {/* Loading state */}
-                  {isUploading && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
-                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    </div>
-                  )}
+                    {[...row1, ...row1].map((entry, idx) => (
+                      <CharacterCard
+                        key={`r1-${entry.mediaId}-${idx}`}
+                        entry={entry}
+                        onEdit={setEditingId}
+                        isUploading={uploadingId === entry.mediaId}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              )}
+
+              {/* Row 2 — scrolls left */}
+              {row2.length > 0 && (
+                <div className="overflow-hidden">
+                  <div
+                    className="marquee-row flex gap-3 w-max"
+                    style={{
+                      animation: `marquee-left ${getDuration(row2.length)}s linear infinite`,
+                    }}
+                  >
+                    {[...row2, ...row2].map((entry, idx) => (
+                      <CharacterCard
+                        key={`r2-${entry.mediaId}-${idx}`}
+                        entry={entry}
+                        onEdit={setEditingId}
+                        isUploading={uploadingId === entry.mediaId}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* Image upload modal */}
+        {editingId && createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <div className="bg-[#1C1C1F] rounded-2xl p-6 w-full max-w-sm ring-1 ring-white/10 shadow-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">Imagen del Personaje</h3>
+                <button onClick={() => { setEditingId(null); setUrlInput(''); }} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+                  <X className="w-5 h-5 text-zinc-400" />
+                </button>
+              </div>
+              <button
+                onClick={() => { setEditingId(null); triggerFileUpload(editingId); }}
+                className="w-full flex items-center gap-3 p-4 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl ring-1 ring-white/[0.08] transition-colors mb-3"
+              >
+                <div className="p-2 bg-violet-500/20 rounded-lg">
+                  <Upload className="w-5 h-5 text-violet-400" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-white">Subir archivo</p>
+                  <p className="text-xs text-zinc-400">JPG, PNG, GIF</p>
+                </div>
+              </button>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <input
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+                    placeholder="https://..."
+                    className="w-full bg-zinc-900 ring-1 ring-white/[0.06] rounded-xl pl-9 pr-4 py-3 text-sm text-white outline-none focus:ring-white/20 placeholder:text-zinc-600"
+                  />
+                </div>
+                <button
+                  onClick={handleUrlSubmit}
+                  disabled={!urlInput.trim()}
+                  className="px-4 py-3 bg-violet-600 hover:bg-violet-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-xl font-medium transition-colors"
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
         )}
       </div>
-
-      {/* Image upload modal */}
-      {editingId && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-[#1C1C1F] rounded-2xl p-6 w-full max-w-sm ring-1 ring-white/10 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">Imagen del Personaje</h3>
-              <button
-                onClick={() => { setEditingId(null); setUrlInput(''); }}
-                className="p-1 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-zinc-400" />
-              </button>
-            </div>
-
-            {/* File upload option */}
-            <button
-              onClick={() => {
-                setEditingId(null);
-                triggerFileUpload(editingId);
-              }}
-              className="w-full flex items-center gap-3 p-4 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl ring-1 ring-white/[0.08] transition-colors mb-3"
-            >
-              <div className="p-2 bg-violet-500/20 rounded-lg">
-                <Upload className="w-5 h-5 text-violet-400" />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-bold text-white">Subir archivo</p>
-                <p className="text-xs text-zinc-400">JPG, PNG, GIF</p>
-              </div>
-            </button>
-
-            {/* URL input option */}
-            <div className="flex items-center gap-2">
-              <div className="flex-1 relative">
-                <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                <input
-                  type="url"
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
-                  placeholder="https://..."
-                  className="w-full bg-zinc-900 ring-1 ring-white/[0.06] rounded-xl pl-9 pr-4 py-3 text-sm text-white outline-none focus:ring-white/20 placeholder:text-zinc-600"
-                />
-              </div>
-              <button
-                onClick={handleUrlSubmit}
-                disabled={!urlInput.trim()}
-                className="px-4 py-3 bg-violet-600 hover:bg-violet-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-xl font-medium transition-colors"
-              >
-                Guardar
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
+    </>
   );
 };
