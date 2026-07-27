@@ -212,7 +212,7 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const hasNoGenreMatch = characters.length === 0 && baseCharacters.length > 0;
 
   // Calculate animation duration based on card count (slower = smoother)
-  const getDuration = (count: number) => Math.max(15, count * 2.5);
+  const getDuration = (count: number) => Math.max(12, count * 1.8);
 
   return (
     <>
