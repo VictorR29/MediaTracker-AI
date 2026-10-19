@@ -190,7 +190,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         onUpdate(newData);
         showToast("Info actualizada", "success");
       } else showToast("Ya está actualizado", "info");
-    } catch (e) { showToast("Error al actualizar", "error"); }
+    } catch (e: any) {
+      console.error("Smart update failed:", e);
+      // Surface the HTTP code instead of a silent generic failure (e.g. an unavailable model)
+      const code = e?.status ?? e?.code;
+      showToast(code ? `Error al actualizar (HTTP ${code})` : "Error al actualizar", "error");
+    }
     finally { setIsUpdatingInfo(false); }
   };
 
@@ -410,14 +415,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             <div className="space-y-6 animate-fade-in">
               {/* Synopsis */}
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                    <FileText className="w-4 h-4" /> Sinopsis
-                  </h3>
-                  <button onClick={handleSmartUpdate} disabled={isUpdatingInfo} className="text-xs text-[rgb(var(--card-rgb))] flex items-center gap-1 font-bold hover:underline">
-                    <RefreshCw className={`w-3 h-3 ${isUpdatingInfo ? 'animate-spin' : ''}`} /> IA
-                  </button>
-                </div>
+                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2 mb-3">
+                  <FileText className="w-4 h-4" /> Sinopsis
+                </h3>
                 {isEditing ? (
                   <textarea
                     value={aiData.synopsis}
@@ -477,9 +477,20 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
               {/* Structure */}
               <div>
-                <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Layout className="w-3.5 h-3.5" /> Estructura
-                </span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                    <Layout className="w-3.5 h-3.5" /> Estructura
+                  </span>
+                  <button
+                    onClick={handleSmartUpdate}
+                    disabled={isUpdatingInfo}
+                    title="Busca en la web los capítulos y fechas más recientes"
+                    className="text-xs text-[rgb(var(--card-rgb))] flex items-center gap-1.5 font-bold hover:underline disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isUpdatingInfo ? 'animate-spin' : ''}`} />
+                    {isUpdatingInfo ? 'BUSCANDO...' : 'ACTUALIZAR'}
+                  </button>
+                </div>
                 {isEditing ? (
                   <textarea value={aiData.totalContent || ''} onChange={(e) => handleAIDataChange('totalContent', e.target.value)}
                     className="w-full bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl p-3 text-xs text-white outline-none focus:ring-white/20 min-h-[80px] resize-none"

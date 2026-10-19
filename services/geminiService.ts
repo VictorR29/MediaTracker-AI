@@ -136,63 +136,81 @@ export const searchMediaInfo = async (query: string, apiKey: string, mediaTypeCo
   }
 };
 
-// NEW: Smart Update Function
+// Update model / thinking budget.
+//
+// Verified against the AI Studio free-tier key (2026-10-19):
+//   - "gemini-2.5-flash-lite" -> HTTP 404 "no longer available to new users".
+//   - "gemini-3.5-flash-lite" / "gemini-3.1-flash-lite" -> HTTP 429, no free quota.
+//   - "gemini-2.5-flash" -> works, and is what the rest of this service already uses.
+//
+// Thinking is the real latency cost here (default run: ~5k thought tokens, 28-65s).
+// Measured on the same prompt: budget 0 -> ~4s but hallucinates season numbers;
+// budget 512 -> ~7s but over-lists every season; budget 1024 -> ~10s with the same
+// clean, concise structure as an unbounded run. Hence 1024.
+const UPDATE_MODEL_ID = "gemini-2.5-flash";
+const UPDATE_THINKING_BUDGET = 1024;
+
+// Smart Update: refreshes structure/status/dates only. Never touches the synopsis.
 export const updateMediaInfo = async (currentData: AIWorkData, apiKey: string): Promise<{ updatedData: Partial<AIWorkData>, hasChanges: boolean }> => {
   const ai = new GoogleGenAI({ apiKey });
-  const modelId = "gemini-2.5-flash";
 
   const prompt = `
-    Act as a media database expert auditor.
+    Act as a media database auditor.
     Target: "${currentData.title}" (${currentData.mediaType}).
 
     Current Data:
     - Status: ${currentData.status}
-    - Total Content: ${currentData.totalContent}
+    - Structure: ${currentData.totalContent}
     - Release Date: ${currentData.releaseDate || 'N/A'}
     - End Date: ${currentData.endDate || 'N/A'}
-    - Current Synopsis: "${currentData.synopsis || ''}"
 
-    Task: Search for the absolute latest status, content count (seasons/episodes) and broadcast dates.
-    Compare with Current Data and apply the matching SCENARIO rule below.
+    Task: search for the latest status, released content count and broadcast dates.
+    Scope: status, structure and dates ONLY. Never return plot text, summaries or a synopsis.
 
-    SCENARIO 1 — Season HAS STARTED since last check:
-    The "Current Data" contains a "Temporada [X] Anunciada" and today is at or past its release date.
-    Action: Merge it into the main season count, remove the "Anunciada" label, list its episodes naturally, and update the total season count in the first line.
-    Example output: "2 Temporadas\\n- Temporada 1: 12 Caps\\n- Temporada 2: 1/12 Caps (En emisión)"
+    STRUCTURE FORMAT — rebuild the WHOLE string every time, never return a diff or a patch:
+    1. Line 1, released seasons only: "[X] Temporadas"
+    2. One line per released season: "- Temporada [N]: [X] Caps"
+    3. Currently airing season (new episodes still coming weekly):
+       "- Temporada [N]: [Released so far]/[Total planned] Caps (En emisión)"
+       Use "?" for an unknown total, e.g. "- Temporada 1: 5/? Caps (En emisión)".
+    4. Officially announced future seasons, last:
+       "Temporada [X] Anunciada:"
+       "- Estreno: [YYYY-MM-DD or season/year]"
 
-    SCENARIO 2 — Season STILL in the future:
-    The "Current Data" contains a "Temporada [X] Anunciada" and today is BEFORE its release date.
-    Action: Keep the "Anunciada" format but update the release date/year if new info is available.
-    Example output: "1 Temporadas\\n- Temporada 1: 12 Caps\\nTemporada 2 Anunciada:\\n- Estreno: 2026-Q4"
+    Rules:
+    - The header count MUST include only seasons already released. A season moves out of
+      "Anunciada" into the numbered list only once its release date has passed; then drop
+      the label and list its episodes as released.
+    - If a season already has "(En emisión)", update only its released episode count.
+    - For non-seasonal media use a single line like "120 Capítulos" or "Duración 1h 57m".
 
-    SCENARIO 3 — Season currently AIRING (was airing before too):
-    A season in "Current Data" already has the "(En emisión)" suffix.
-    Action: Update the [Current] count to the latest released episode count. Keep the "En emisión" label.
-    Example output: "- Temporada 2: 5/12 Caps (En emisión)" (was 3/12 last time)
+    Examples:
+    - Airing season: "2 Temporadas\\n- Temporada 1: 12 Caps\\n- Temporada 2: 5/12 Caps (En emisión)"
+    - Announced season: "1 Temporadas\\n- Temporada 1: 12 Caps\\nTemporada 2 Anunciada:\\n- Estreno: 2026-Q4"
 
-    SCENARIO 4 — Synopsis update:
-    Action: ONLY rewrite the synopsis if:
-      a) Current synopsis is empty, too short (< 50 chars), or placeholder text, OR
-      b) There is a MAJOR plot update (e.g. a new season has started since the last synopsis).
-    Otherwise return null for synopsis.
+    If the current data is already correct, return it unchanged and set hasChanges to false.
+    Never invent episodes, seasons or dates you cannot confirm.
 
     Return a JSON object:
     {
       "status": "The latest correct status",
-      "totalContent": "Vertical format per SCENARIO rules above",
+      "totalContent": "Full structure string in the format above",
       "releaseDate": "YYYY-MM-DD",
       "endDate": "YYYY-MM-DD (or null if ongoing)",
-      "synopsis": "New string ONLY IF SCENARIO 4 rules are met, otherwise null",
       "hasChanges": boolean
     }
+
+    Respond with the JSON object ONLY, no commentary before or after it.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: modelId,
+      model: UPDATE_MODEL_ID,
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
+        // Bounded thinking: without it this call spends ~5k thought tokens (28-65s)
+        thinkingConfig: { thinkingBudget: UPDATE_THINKING_BUDGET },
         // responseMimeType not supported with tools in this context
       },
     });
@@ -201,16 +219,25 @@ export const updateMediaInfo = async (currentData: AIWorkData, apiKey: string): 
     // Use manual extraction since responseMimeType is not used
     const result = extractJSON(text);
 
-    return {
-      updatedData: {
-        status: result.status,
-        totalContent: result.totalContent,
-        releaseDate: result.releaseDate,
-        endDate: result.endDate,
-        ...(result.synopsis ? { synopsis: result.synopsis } : {})
-      },
-      hasChanges: result.hasChanges || !!result.synopsis // Ensure we flag change if synopsis was rewritten
+    const updatedData: Partial<AIWorkData> = {
+      status: result.status,
+      totalContent: result.totalContent,
+      releaseDate: result.releaseDate,
+      // Only overwrite the end date with a concrete value, never with null
+      ...(result.endDate ? { endDate: result.endDate } : {}),
     };
+
+    // Trust the model's flag, but verify against the actual diff as a safety net
+    const changed = (next: unknown, current: unknown): boolean =>
+      next !== undefined && next !== null && String(next).trim() !== String(current ?? '').trim();
+
+    const hasChanges = result.hasChanges === true
+      || changed(updatedData.status, currentData.status)
+      || changed(updatedData.totalContent, currentData.totalContent)
+      || changed(updatedData.releaseDate, currentData.releaseDate)
+      || changed(updatedData.endDate, currentData.endDate);
+
+    return { updatedData, hasChanges };
 
   } catch (error) {
     console.error("Update check failed", error);
