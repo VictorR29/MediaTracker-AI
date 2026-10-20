@@ -4,9 +4,11 @@ import { UserProfile, MediaItem, RATING_TO_SCORE } from '../types';
 import { useToast } from '../context/ToastContext';
 import { saveMediaItem, deleteMediaItem } from '../services/storage';
 import { hashPassword } from '../utils/password';
-import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2 } from 'lucide-react';
+import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2, ChevronRight } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useAniListBackfillStore } from '../stores/useAniListBackfillStore';
+import { useUIStore } from '../stores/useUIStore';
+import { useNavigate } from 'react-router-dom';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -27,6 +29,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const { showToast } = useToast();
   const { summary: backfillSummary, isRunning: isBackfillRunning, current: backfillCurrent, start: startBackfill, cancel: cancelBackfill } = useAniListBackfillStore();
+  const navigate = useNavigate();
+  const setLastOpenedItemId = useUIStore(s => s.setLastOpenedItemId);
+
+  /**
+   * Links the resolver guessed from a close-but-not-exact title. Manual and
+   * exact links are excluded: one is the user's own choice, the other is a
+   * proven coincidence.
+   */
+  const uncertainLinks = useMemo(
+    () =>
+      library
+        .filter(item => item.aiData.mediaType === 'Anime' && item.aiData.anilist?.confidence === 'high')
+        .sort((a, b) => a.aiData.title.localeCompare(b.aiData.title)),
+    [library],
+  );
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'data'>('profile');
   const [username, setUsername] = useState(userProfile.username);
   const [avatarUrl, setAvatarUrl] = useState(userProfile.avatarUrl || '');
@@ -147,6 +164,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (!result) return;
       const hasProblems = result.failed > 0 || result.aborted;
       showToast("Sincronización terminada", hasProblems ? "error" : "success");
+  };
+
+  // The picker lives inside the work card, so fixing a link means going there.
+  const openUncertainLink = (itemId: string) => {
+      onClose();
+      setLastOpenedItemId(itemId);
+      navigate(`/item/${itemId}`);
   };
 
   // --- HELPER: IMAGE COMPRESSION ---
@@ -492,6 +516,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     {backfillSummary.abortReason === 'rate_limit' && ' AniList limitó las consultas. Probá de nuevo en un minuto.'}
                                     {backfillSummary.abortReason === 'cancelled' && ' Cancelado.'}
                                 </p>
+                            )}
+
+                            {uncertainLinks.length > 0 && (
+                                <div className="mt-4 pt-3 border-t border-white/[0.06]">
+                                    <p className="text-[11px] font-semibold text-amber-400/90">
+                                        Vínculos a revisar: {uncertainLinks.length}
+                                    </p>
+                                    <p className="text-[11px] text-zinc-500 mb-2">
+                                        AniList los eligió por parecido, no por coincidencia exacta.
+                                    </p>
+                                    <ul className="max-h-56 overflow-y-auto -mx-2">
+                                        {uncertainLinks.map(item => (
+                                            <li key={item.id}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openUncertainLink(item.id)}
+                                                    className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left hover:bg-zinc-800/60 transition-colors"
+                                                >
+                                                    <span className="flex-1 min-w-0 truncate text-xs text-zinc-300">{item.aiData.title}</span>
+                                                    <span className="shrink-0 text-[10px] text-zinc-600">→</span>
+                                                    <span className="flex-1 min-w-0 truncate text-xs text-zinc-500">
+                                                        {item.aiData.anilist?.season !== undefined ? `T${item.aiData.anilist.season} · ` : ''}
+                                                        {item.aiData.anilist?.matchedTitle}
+                                                    </span>
+                                                    <ChevronRight className="shrink-0 w-3.5 h-3.5 text-zinc-600" />
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             )}
                         </div>
 
