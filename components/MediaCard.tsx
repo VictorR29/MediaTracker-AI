@@ -12,7 +12,8 @@ import {
   PlayCircle, User, Minus, CalendarClock, Trophy, Medal, GripVertical,
   Wand2, MessageSquare, Info, BarChart2, PenTool
 } from 'lucide-react';
-import { EditActionBar } from './media-card';
+import { EditActionBar, AiringBlock } from './media-card';
+import { useAiringSnapshot } from '../hooks/useAiringSnapshot';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -57,7 +58,16 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   }, [item]);
 
   const { aiData, trackingData: tracking } = localData;
-  
+
+  const airing = useAiringSnapshot(localData, {
+    enabled:
+      activeTab === 'progreso' &&
+      aiData.mediaType === 'Anime' &&
+      tracking.status !== 'Descartado' &&
+      !isEditing,
+    onUpdate,
+  });
+
   const rawColor = aiData.primaryColor || '#c084fc';
   const dynamicColor = React.useMemo(() => vibrify(rawColor), [rawColor]);
   const dynamicRgb = React.useMemo(() => hexToRgb(dynamicColor), [dynamicColor]);
@@ -663,6 +673,16 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                       <span>{Math.max(0, tracking.totalEpisodesInSeason - tracking.watchedEpisodes)} restantes</span>
                     </div>
                   </div>
+
+                  <AiringBlock
+                    state={airing.state}
+                    snapshot={airing.snapshot}
+                    season={aiData.anilist?.season}
+                    currentSeason={tracking.currentSeason}
+                    watchedEpisodes={tracking.watchedEpisodes}
+                    totalSeasons={tracking.totalSeasons}
+                    onRetry={airing.refresh}
+                  />
 
                   {/* Complete Season Button */}
                   {tracking.totalEpisodesInSeason > 0 && tracking.watchedEpisodes >= tracking.totalEpisodesInSeason && (
