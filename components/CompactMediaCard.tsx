@@ -4,6 +4,15 @@ import { MediaItem, RATING_TO_SCORE } from '../types';
 import { Plus, Check, Trash2, Star, FastForward } from 'lucide-react';
 import { extractColorFromImage, vibrify, hexToRgb } from './media-card/colorUtils';
 import { useLibraryStore } from '../stores/useLibraryStore';
+import { getTopBanner } from '../utils/topBanner';
+import type { TopBannerKind } from '../utils/topBanner';
+
+const BANNER_TONE_CLASS: Record<TopBannerKind, string> = {
+  return: 'bg-red-600/90',
+  manual: 'bg-purple-600/90',
+  airing: 'bg-emerald-600/90',
+  premiere: 'bg-amber-600/90',
+};
 
 interface CompactMediaCardProps {
   id?: string;
@@ -120,31 +129,18 @@ export const CompactMediaCard: React.FC<CompactMediaCardProps> = React.memo(({ i
 
   const score = RATING_TO_SCORE[trackingData.rating] || 0;
 
-  // Return Date Logic
-  const isPaused = trackingData.status === 'En Pausa';
-  const returnDate = trackingData.scheduledReturnDate;
-  let isReturnDue = false;
-  if (isPaused && returnDate) {
-    const today = new Date().toISOString().split('T')[0];
-    if (today >= returnDate) isReturnDue = true;
-  }
-
-  // Countdown Logic
+  // Return Date + countdown + AniList airing feed one single top banner.
   const isPlanned = trackingData.status === 'Planeado / Pendiente';
-  let countdownText: string | null = null;
-  if (isPlanned && trackingData.nextReleaseDate) {
-    const target = new Date(trackingData.nextReleaseDate);
-    const now = new Date();
-    target.setHours(0, 0, 0, 0);
-    now.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) countdownText = "Estrenado";
-    else if (diffDays === 0) countdownText = "¡Es Hoy!";
-    else if (diffDays === 1) countdownText = "Mañana";
-    else countdownText = `En ${diffDays} días`;
-  }
+  const topBanner = getTopBanner({
+    mediaType: aiData.mediaType,
+    status: trackingData.status,
+    currentSeason: trackingData.currentSeason,
+    nextReleaseDate: trackingData.nextReleaseDate,
+    scheduledReturnDate: trackingData.scheduledReturnDate,
+    anilist: aiData.anilist,
+  });
 
-  const hasTopBanner = isReturnDue || !!countdownText;
+  const hasTopBanner = topBanner !== null;
   const showQuickAction = !isMovie && !isPlanned && trackingData.status === 'Viendo/Leyendo';
 
   // Progress
@@ -262,17 +258,10 @@ return (
       {/* Inner Core — double-bezel */}
       <div className="rounded-[calc(1rem-0.25rem)] overflow-hidden relative flex flex-col bg-[#18181B]" style={{ aspectRatio: '2/3' }}>
 
-        {/* Return Due Banner */}
-        {isReturnDue && (
-          <div className="absolute top-0 left-0 right-0 bg-red-600/90 text-white text-[10px] font-bold px-2 py-1 text-center z-40">
-            ¡Hora de Volver!
-          </div>
-        )}
-
-        {/* Planned Countdown Banner */}
-        {countdownText && (
-          <div className="absolute top-0 left-0 right-0 bg-purple-600/90 text-white text-[10px] font-bold px-2 py-1 text-center z-40">
-            {countdownText}
+        {/* Top Banner — return due, countdown or AniList airing */}
+        {topBanner && (
+          <div className={`absolute top-0 left-0 right-0 text-white text-[10px] font-bold px-2 py-1 text-center z-40 ${BANNER_TONE_CLASS[topBanner.kind]}`}>
+            {topBanner.text}
           </div>
         )}
 
