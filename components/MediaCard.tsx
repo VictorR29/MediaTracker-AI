@@ -677,6 +677,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   <AiringBlock
                     state={airing.state}
                     snapshot={airing.snapshot}
+                    sequel={airing.sequel}
                     season={aiData.anilist?.season}
                     currentSeason={tracking.currentSeason}
                     watchedEpisodes={tracking.watchedEpisodes}

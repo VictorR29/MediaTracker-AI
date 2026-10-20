@@ -15,6 +15,20 @@ export interface AniListAiringSnapshot {
   fetchedAt: number;
 }
 
+export interface AniListSequel {
+  id: number;
+  /** Season number parsed from the sequel title, when the title carries a numeric marker. */
+  season?: number;
+  /** Romaji title of the sequel entry. */
+  title: string;
+  status: AniListMediaStatus;
+  episodes?: number | null;
+  nextEpisode?: number;
+  nextAiringAt?: number;
+  /** Partial premiere date as "YYYY-MM-DD", "YYYY-MM" or "YYYY"; null when unknown. */
+  startDate?: string | null;
+}
+
 export interface AniListData {
   /** AniList Media id. */
   id: number;
@@ -29,6 +43,8 @@ export interface AniListData {
   resolvedAt: number;
   /** Volatile cache; refreshed independently of the match. */
   airing?: AniListAiringSnapshot;
+  /** Directly-related season that is airing or announced. Never replaces `id`. */
+  sequel?: AniListSequel;
 }
 
 export interface AIWorkData {

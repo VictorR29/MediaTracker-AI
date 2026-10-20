@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatAiringDate, formatRelativeAiring, getRemainingEpisodes } from '../airing';
+import { formatAiringDate, formatPremiereDate, formatRelativeAiring, getRemainingEpisodes } from '../airing';
 
 // 2026-12-25T14:16:00Z
 const AIRING_AT = 1798208160;
@@ -85,5 +85,32 @@ describe('getRemainingEpisodes', () => {
 
   it('never returns a negative count', () => {
     expect(getRemainingEpisodes(5, 10)).toBe(0);
+  });
+});
+
+describe('formatPremiereDate', () => {
+  it('renders day, Spanish month and year for a full date', () => {
+    expect(formatPremiereDate('2027-01-04')).toBe('4 ene 2027');
+  });
+
+  it('renders Spanish month and year when the day is unknown', () => {
+    expect(formatPremiereDate('2027-01')).toBe('ene 2027');
+  });
+
+  it('renders the year alone when only the year is known', () => {
+    expect(formatPremiereDate('2027')).toBe('2027');
+  });
+
+  it('returns an empty string for null, undefined and garbage', () => {
+    expect(formatPremiereDate(null)).toBe('');
+    expect(formatPremiereDate(undefined)).toBe('');
+    expect(formatPremiereDate('')).toBe('');
+    expect(formatPremiereDate('not-a-date')).toBe('');
+    expect(formatPremiereDate('2027-13')).toBe('');
+    expect(formatPremiereDate('2027-01-99')).toBe('');
+  });
+
+  it('is locale-independent and always uses Spanish month names', () => {
+    expect(formatPremiereDate('2027-08-15', 'en-US')).toBe('15 ago 2027');
   });
 });

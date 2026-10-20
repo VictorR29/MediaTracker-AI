@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { AniListAiringSnapshot, MediaItem } from '../types';
+import type { AniListAiringSnapshot, AniListSequel, MediaItem } from '../types';
 import {
   AniListError,
   applyAiringSnapshots,
@@ -20,6 +20,7 @@ export interface UseAiringSnapshotArgs {
 export interface UseAiringSnapshotResult {
   state: AiringLoadState;
   snapshot?: AniListAiringSnapshot;
+  sequel?: AniListSequel;
   refresh: () => void;
 }
 
@@ -38,6 +39,7 @@ export function useAiringSnapshot(
 ): UseAiringSnapshotResult {
   const [state, setState] = useState<AiringLoadState>('idle');
   const [snapshot, setSnapshot] = useState<AniListAiringSnapshot | undefined>(undefined);
+  const [sequel, setSequel] = useState<AniListSequel | undefined>(undefined);
   const [attempt, setAttempt] = useState(0);
 
   const itemRef = useRef(item);
@@ -71,6 +73,7 @@ export function useAiringSnapshot(
       if (isAiringSnapshotFresh(existing?.airing)) {
         setState('ready');
         setSnapshot(existing?.airing);
+        setSequel(existing?.sequel);
         return;
       }
 
@@ -85,6 +88,7 @@ export function useAiringSnapshot(
         if (result.status !== 'matched' || !result.match) {
           setState('unmatched');
           setSnapshot(undefined);
+          setSequel(undefined);
           return;
         }
 
@@ -97,6 +101,7 @@ export function useAiringSnapshot(
       if (!anilist) {
         setState('unmatched');
         setSnapshot(undefined);
+        setSequel(undefined);
         return;
       }
 
@@ -107,6 +112,7 @@ export function useAiringSnapshot(
       onUpdateRef.current(withSnapshot);
       setState('ready');
       setSnapshot(withSnapshot.aiData.anilist?.airing);
+      setSequel(withSnapshot.aiData.anilist?.sequel);
     };
 
     void run().catch((error: unknown) => {
@@ -117,6 +123,7 @@ export function useAiringSnapshot(
 
       setState('error');
       setSnapshot(undefined);
+      setSequel(undefined);
     });
 
     return () => {
@@ -128,5 +135,5 @@ export function useAiringSnapshot(
     // same batch request. Freshness is re-checked on every run instead.
   }, [enabled, item.id, attempt]);
 
-  return { state, snapshot, refresh };
+  return { state, snapshot, sequel, refresh };
 }

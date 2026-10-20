@@ -28,6 +28,7 @@ interface MediaNodeFixture {
   status?: string;
   isAdult?: boolean;
   nextAiringEpisode?: { episode: number; airingAt: number } | null;
+  relations?: { edges: unknown[] };
 }
 
 const mediaNode = (fixture: MediaNodeFixture) => ({
@@ -45,6 +46,42 @@ const mediaNode = (fixture: MediaNodeFixture) => ({
   isAdult: fixture.isAdult ?? false,
   coverImage: { medium: `https://img.example/${fixture.id}.jpg` },
   nextAiringEpisode: fixture.nextAiringEpisode ?? null,
+  relations: fixture.relations ?? { edges: [] },
+});
+
+interface RelationNodeFixture {
+  id: number;
+  romaji?: string;
+  english?: string | null;
+  type?: string;
+  format?: string;
+  status?: string;
+  isAdult?: boolean;
+  episodes?: number | null;
+  seasonYear?: number;
+  startDate?: { year?: number | null; month?: number | null; day?: number | null } | null;
+  nextAiringEpisode?: { episode: number; airingAt: number } | null;
+}
+
+const relationNode = (fixture: RelationNodeFixture) => ({
+  id: fixture.id,
+  type: fixture.type ?? 'ANIME',
+  format: fixture.format ?? 'TV',
+  status: fixture.status ?? 'RELEASING',
+  isAdult: fixture.isAdult ?? false,
+  episodes: fixture.episodes === undefined ? 12 : fixture.episodes,
+  seasonYear: fixture.seasonYear ?? 2024,
+  startDate: fixture.startDate ?? null,
+  title: {
+    romaji: fixture.romaji ?? '',
+    english: fixture.english ?? null,
+  },
+  nextAiringEpisode: fixture.nextAiringEpisode ?? null,
+});
+
+const relationEdge = (node: ReturnType<typeof relationNode>, relationType = 'SEQUEL') => ({
+  relationType,
+  node,
 });
 
 const searchPayload = (nodes: ReturnType<typeof mediaNode>[]) => ({ Page: { media: nodes } });
@@ -334,7 +371,8 @@ describe('fetchAiringSnapshots', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    const airing = snapshots.get(1);
+    const details = snapshots.get(1);
+    const airing = details?.snapshot;
     expect(airing).toMatchObject({
       status: 'RELEASING',
       isAiring: true,
@@ -344,9 +382,9 @@ describe('fetchAiringSnapshots', () => {
     });
     expect(typeof airing?.fetchedAt).toBe('number');
 
-    expect(snapshots.get(2)).toMatchObject({ status: 'FINISHED', isAiring: false, totalEpisodes: 12 });
-    expect(snapshots.get(2)?.nextEpisode).toBeUndefined();
-    expect(snapshots.get(3)?.isAiring).toBe(false);
+    expect(snapshots.get(2)?.snapshot).toMatchObject({ status: 'FINISHED', isAiring: false, totalEpisodes: 12 });
+    expect(snapshots.get(2)?.snapshot.nextEpisode).toBeUndefined();
+    expect(snapshots.get(3)?.snapshot.isAiring).toBe(false);
   });
 
   it('chunks more than 50 ids into one request per chunk', async () => {
@@ -398,6 +436,144 @@ describe('fetchAiringSnapshots', () => {
   });
 });
 
+describe('sequel selection', () => {
+  const mediaWith = (edges: unknown[], mediaId = 1) =>
+    jsonResponse(
+      searchPayload([
+        {
+          ...mediaNode({ id: mediaId, status: 'FINISHED' }),
+          relations: { edges },
+        },
+      ]),
+    );
+
+  it('picks a RELEASING sequel and maps its next episode', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mediaWith([
+        relationEdge(
+          relationNode({
+            id: 2,
+            romaji: 'Shingeki no Kyojin Season 2',
+            status: 'RELEASING',
+            episodes: 12,
+            nextAiringEpisode: { episode: 5, airingAt: 1_700_000_000 },
+          }),
+        ),
+      ]),
+    );
+
+    const details = (await fetchAiringSnapshots([1])).get(1);
+
+    expect(details?.snapshot.isAiring).toBe(false);
+    expect(details?.sequel).toMatchObject({
+      id: 2,
+      season: 2,
+      title: 'Shingeki no Kyojin Season 2',
+      status: 'RELEASING',
+      episodes: 12,
+      nextEpisode: 5,
+      nextAiringAt: 1_700_000_000,
+    });
+  });
+
+  it('picks a NOT_YET_RELEASED sequel when no RELEASING sibling exists', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mediaWith([
+        relationEdge(
+          relationNode({
+            id: 3,
+            romaji: 'Kimetsu no Yaiba 2nd Season',
+            status: 'NOT_YET_RELEASED',
+            startDate: { year: 2027, month: 1, day: 4 },
+          }),
+        ),
+      ]),
+    );
+
+    const sequel = (await fetchAiringSnapshots([1])).get(1)?.sequel;
+
+    expect(sequel?.status).toBe('NOT_YET_RELEASED');
+    expect(sequel?.id).toBe(3);
+    expect(sequel?.startDate).toBe('2027-01-04');
+  });
+
+  it('ignores a FINISHED sequel and omits the field entirely', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mediaWith([relationEdge(relationNode({ id: 4, romaji: 'Shingeki no Kyojin Season 2', status: 'FINISHED' }))]),
+    );
+
+    const details = (await fetchAiringSnapshots([1])).get(1);
+
+    expect(details?.sequel).toBeUndefined();
+    expect(details && 'sequel' in details).toBe(false);
+  });
+
+  it('ignores a MOVIE sequel even when it is NOT_YET_RELEASED', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mediaWith([
+        relationEdge(
+          relationNode({ id: 5, romaji: 'Kimetsu no Yaiba Movie', format: 'MOVIE', status: 'NOT_YET_RELEASED' }),
+        ),
+      ]),
+    );
+
+    expect((await fetchAiringSnapshots([1])).get(1)?.sequel).toBeUndefined();
+  });
+
+  it('picks the RELEASING sequel with the soonest airingAt', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mediaWith([
+        relationEdge(
+          relationNode({ id: 6, romaji: 'Show 2nd Season', status: 'RELEASING', nextAiringEpisode: { episode: 3, airingAt: 1_800_000_000 } }),
+        ),
+        relationEdge(
+          relationNode({ id: 7, romaji: 'Show 3rd Season', status: 'RELEASING', nextAiringEpisode: { episode: 1, airingAt: 1_700_000_000 } }),
+        ),
+      ]),
+    );
+
+    const sequel = (await fetchAiringSnapshots([1])).get(1)?.sequel;
+
+    expect(sequel?.id).toBe(7);
+    expect(sequel?.nextAiringAt).toBe(1_700_000_000);
+  });
+
+  it('breaks an exact tie by ascending id', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mediaWith([
+        relationEdge(
+          relationNode({ id: 9, romaji: 'Show 3rd Season', status: 'RELEASING', nextAiringEpisode: { episode: 1, airingAt: 1_700_000_000 } }),
+        ),
+        relationEdge(
+          relationNode({ id: 8, romaji: 'Show 2nd Season', status: 'RELEASING', nextAiringEpisode: { episode: 1, airingAt: 1_700_000_000 } }),
+        ),
+      ]),
+    );
+
+    expect((await fetchAiringSnapshots([1])).get(1)?.sequel?.id).toBe(8);
+  });
+
+  it('ignores a PREQUEL relation', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mediaWith([relationEdge(relationNode({ id: 10, romaji: 'Show 1st Season', status: 'RELEASING' }), 'PREQUEL')]),
+    );
+
+    expect((await fetchAiringSnapshots([1])).get(1)?.sequel).toBeUndefined();
+  });
+
+  it('formats partial start dates as year or year-month', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mediaWith([relationEdge(relationNode({ id: 11, status: 'NOT_YET_RELEASED', startDate: { year: 2027 } }))]),
+    );
+    fetchMock.mockResolvedValueOnce(
+      mediaWith([relationEdge(relationNode({ id: 12, status: 'NOT_YET_RELEASED', startDate: { year: 2027, month: 1 } }))]),
+    );
+
+    expect((await fetchAiringSnapshots([1])).get(1)?.sequel?.startDate).toBe('2027');
+    expect((await fetchAiringSnapshots([1])).get(1)?.sequel?.startDate).toBe('2027-01');
+  });
+});
+
 describe('isAiringSnapshotFresh', () => {
   const snapshot = {
     status: 'RELEASING' as const,
@@ -440,12 +616,14 @@ describe('applyAiringSnapshots', () => {
       [
         21,
         {
-          status: 'RELEASING' as const,
-          isAiring: true,
-          nextEpisode: 4,
-          nextAiringAt: 1_700_000_000,
-          totalEpisodes: 12,
-          fetchedAt: 9_000,
+          snapshot: {
+            status: 'RELEASING' as const,
+            isAiring: true,
+            nextEpisode: 4,
+            nextAiringAt: 1_700_000_000,
+            totalEpisodes: 12,
+            fetchedAt: 9_000,
+          },
         },
       ],
     ]);
@@ -459,14 +637,78 @@ describe('applyAiringSnapshots', () => {
     expect(result.aiData.anilist?.id).toBe(21);
     expect(result.aiData.anilist?.matchedTitle).toBe('Shingeki no Kyojin Season 2');
     expect(result.aiData.anilist?.season).toBe(2);
-    expect(result.aiData.anilist?.airing).toEqual(snapshots.get(21));
+    expect(result.aiData.anilist?.airing).toEqual(snapshots.get(21)?.snapshot);
     // The original item must stay untouched.
     expect(item.aiData.anilist?.airing).toBeUndefined();
   });
 
+  it('persists the sequel alongside the snapshot', () => {
+    const item = makeItem({
+      anilist: {
+        id: 21,
+        season: 1,
+        matchedTitle: 'Shingeki no Kyojin',
+        matchedBy: 'title',
+        confidence: 'exact',
+        resolvedAt: 5_000,
+      },
+    });
+
+    const sequel = {
+      id: 22,
+      season: 2,
+      title: 'Shingeki no Kyojin Season 2',
+      status: 'RELEASING' as const,
+      episodes: 12,
+      nextEpisode: 3,
+      nextAiringAt: 1_700_000_000,
+      startDate: '2027-01-04',
+    };
+
+    const result = applyAiringSnapshots(
+      item,
+      new Map([
+        [21, { snapshot: { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 }, sequel }],
+      ]),
+    );
+
+    expect(result.aiData.anilist?.sequel).toEqual(sequel);
+    expect(result.aiData.anilist?.id).toBe(21);
+  });
+
+  it('deletes a previously persisted sequel when the new details have none', () => {
+    const item = makeItem({
+      anilist: {
+        id: 21,
+        matchedTitle: 'Shingeki no Kyojin',
+        matchedBy: 'title',
+        confidence: 'exact',
+        resolvedAt: 5_000,
+        sequel: {
+          id: 22,
+          season: 2,
+          title: 'Shingeki no Kyojin Season 2',
+          status: 'NOT_YET_RELEASED',
+          startDate: '2027-01-04',
+        },
+      },
+    });
+
+    const result = applyAiringSnapshots(
+      item,
+      new Map([[21, { snapshot: { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 } }]]),
+    );
+
+    expect(result.aiData.anilist?.sequel).toBeUndefined();
+    // A persisted (serialized) item must not resurrect the stale sequel either.
+    expect(JSON.parse(JSON.stringify(result.aiData.anilist))).not.toHaveProperty('sequel');
+  });
+
   it('returns the item unchanged when it has no AniList data', () => {
     const item = makeItem();
-    const snapshots = new Map([[21, { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 }]]);
+    const snapshots = new Map([
+      [21, { snapshot: { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 } }],
+    ]);
 
     expect(applyAiringSnapshots(item, snapshots)).toBe(item);
   });
@@ -481,7 +723,9 @@ describe('applyAiringSnapshots', () => {
         resolvedAt: 5_000,
       },
     });
-    const snapshots = new Map([[999, { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 }]]);
+    const snapshots = new Map([
+      [999, { snapshot: { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 } }],
+    ]);
 
     expect(applyAiringSnapshots(item, snapshots)).toBe(item);
   });

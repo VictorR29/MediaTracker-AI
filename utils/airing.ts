@@ -74,3 +74,37 @@ export function getRemainingEpisodes(nextEpisode?: number, watchedEpisodes?: num
 
   return Math.max(0, nextEpisode - 1 - watchedEpisodes);
 }
+
+// Fixed Spanish short month names. Deliberately not Intl: the output must be
+// identical on every device regardless of the runtime locale.
+const PREMIERE_MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+const DATE_PATTERN = /^(\d{4})(?:-(\d{1,2})(?:-(\d{1,2}))?)?$/;
+
+const isValidMonth = (month: number): boolean => month >= 1 && month <= 12;
+const isValidDay = (day: number): boolean => day >= 1 && day <= 31;
+
+/**
+ * "4 ene 2027" / "ene 2027" / "2027" / '' for "YYYY-MM-DD" | "YYYY-MM" | "YYYY" | null.
+ * Month names are hardcoded so the result is locale-independent; `locale` is
+ * accepted for call-site symmetry and intentionally does not affect the output.
+ */
+export function formatPremiereDate(startDate?: string | null, _locale?: string): string {
+  if (typeof startDate !== 'string') return '';
+
+  const match = DATE_PATTERN.exec(startDate.trim());
+  if (!match) return '';
+
+  const [, yearPart, monthPart, dayPart] = match;
+  if (monthPart === undefined) return yearPart;
+
+  const month = Number.parseInt(monthPart, 10);
+  if (!isValidMonth(month)) return '';
+
+  if (dayPart === undefined) return `${PREMIERE_MONTHS[month - 1]} ${yearPart}`;
+
+  const day = Number.parseInt(dayPart, 10);
+  if (!isValidDay(day)) return '';
+
+  return `${day} ${PREMIERE_MONTHS[month - 1]} ${yearPart}`;
+}

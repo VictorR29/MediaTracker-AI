@@ -1,4 +1,10 @@
-import type { AniListAiringSnapshot, AniListData, AniListMediaStatus, MediaItem } from '../types';
+import type {
+  AniListAiringSnapshot,
+  AniListData,
+  AniListMediaStatus,
+  AniListSequel,
+  MediaItem,
+} from '../types';
 
 export const ANILIST_ENDPOINT = 'https://graphql.anilist.co';
 export const AIRING_TTL_MS = 3 * 60 * 60 * 1000;
@@ -102,6 +108,30 @@ interface MediaTitleNode {
   native?: string | null;
 }
 
+interface PartialDate {
+  year?: number | null;
+  month?: number | null;
+  day?: number | null;
+}
+
+interface RelationNode {
+  id?: number | null;
+  type?: string | null;
+  format?: string | null;
+  status?: AniListMediaStatus | null;
+  episodes?: number | null;
+  seasonYear?: number | null;
+  isAdult?: boolean | null;
+  startDate?: PartialDate | null;
+  title?: MediaTitleNode | null;
+  nextAiringEpisode?: { episode?: number | null; airingAt?: number | null } | null;
+}
+
+interface RelationEdge {
+  relationType?: string | null;
+  node?: RelationNode | null;
+}
+
 interface MediaNode {
   id: number;
   title?: MediaTitleNode | null;
@@ -113,6 +143,7 @@ interface MediaNode {
   isAdult?: boolean | null;
   coverImage?: { medium?: string | null } | null;
   nextAiringEpisode?: { episode?: number | null; airingAt?: number | null } | null;
+  relations?: { edges?: (RelationEdge | null)[] | null } | null;
 }
 
 interface PageResponse {
@@ -198,6 +229,12 @@ query ($ids: [Int]) {
   Page(perPage: 50) {
     media(id_in: $ids, type: ANIME) {
       id status episodes nextAiringEpisode { episode airingAt timeUntilAiring }
+      relations {
+        edges {
+          relationType
+          node { id type format status episodes seasonYear isAdult startDate { year month day } title { romaji english } nextAiringEpisode { episode airingAt } }
+        }
+      }
     }
   }
 }`;
@@ -435,10 +472,107 @@ const chunkIds = (ids: number[], size: number): number[][] => {
   return chunks;
 };
 
-export async function fetchAiringSnapshots(ids: number[]): Promise<Map<number, AniListAiringSnapshot>> {
-  const snapshots = new Map<number, AniListAiringSnapshot>();
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+/**
+ * Partial AniList date -> "YYYY-MM-DD" | "YYYY-MM" | "YYYY" | null.
+ * A day without a month (or a month without a year) cannot be rendered, so it
+ * falls back to the most precise complete prefix instead of guessing.
+ */
+const formatStartDate = (startDate?: PartialDate | null): string | null => {
+  const year = startDate?.year;
+  if (!isFiniteNumber(year)) return null;
+
+  const paddedYear = String(year).padStart(4, '0');
+  const month = startDate?.month;
+  if (!isFiniteNumber(month)) return paddedYear;
+
+  const paddedMonth = String(month).padStart(2, '0');
+  const day = startDate?.day;
+  if (!isFiniteNumber(day)) return `${paddedYear}-${paddedMonth}`;
+
+  return `${paddedYear}-${paddedMonth}-${String(day).padStart(2, '0')}`;
+};
+
+/**
+ * Direct SEQUEL entries that are worth surfacing next to the matched season:
+ * a currently airing season wins over every announced one, adult entries and
+ * movies are excluded because they are not "the next season" of a series.
+ */
+const collectSequelCandidates = (mediaId: number, node: MediaNode): RelationNode[] => {
+  const edges = node.relations?.edges ?? [];
+  const candidates: RelationNode[] = [];
+
+  for (const edge of edges) {
+    if (!edge || edge.relationType !== 'SEQUEL') continue;
+
+    const relation = edge.node;
+    if (!relation || !isFiniteNumber(relation.id) || relation.id === mediaId) continue;
+    if (relation.type !== 'ANIME') continue;
+    if (relation.format === 'MOVIE') continue;
+    if (relation.isAdult === true) continue;
+    if (relation.status !== 'RELEASING' && relation.status !== 'NOT_YET_RELEASED') continue;
+
+    candidates.push(relation);
+  }
+
+  return candidates;
+};
+
+/** Ascending, with missing values last so an announced date never outranks a known one. */
+const compareOptionalAscending = (a: number | null | undefined, b: number | null | undefined): number => {
+  const left = isFiniteNumber(a) ? a : Number.POSITIVE_INFINITY;
+  const right = isFiniteNumber(b) ? b : Number.POSITIVE_INFINITY;
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+};
+
+const pickSequel = (mediaId: number, node: MediaNode): AniListSequel | undefined => {
+  const candidates = collectSequelCandidates(mediaId, node);
+  if (candidates.length === 0) return undefined;
+
+  const releasing = candidates.filter(candidate => candidate.status === 'RELEASING');
+  const pool = releasing.length > 0 ? releasing : candidates;
+
+  const ranked = [...pool].sort((a, b) => {
+    const byAiring = compareOptionalAscending(a.nextAiringEpisode?.airingAt, b.nextAiringEpisode?.airingAt);
+    if (byAiring !== 0) return byAiring;
+
+    const byYear = compareOptionalAscending(a.seasonYear, b.seasonYear);
+    if (byYear !== 0) return byYear;
+
+    return (a.id as number) - (b.id as number);
+  });
+
+  const winner = ranked[0];
+  const title = winner.title?.romaji || winner.title?.english || '';
+  const status = winner.status;
+
+  // `collectSequelCandidates` already narrowed the status to these two values.
+  if (status !== 'RELEASING' && status !== 'NOT_YET_RELEASED') return undefined;
+
+  return {
+    id: winner.id as number,
+    season: parseSeasonNumber(title),
+    title,
+    status,
+    episodes: winner.episodes ?? null,
+    nextEpisode: winner.nextAiringEpisode?.episode ?? undefined,
+    nextAiringAt: winner.nextAiringEpisode?.airingAt ?? undefined,
+    startDate: formatStartDate(winner.startDate),
+  };
+};
+
+export interface AiringDetails {
+  snapshot: AniListAiringSnapshot;
+  sequel?: AniListSequel;
+}
+
+export async function fetchAiringSnapshots(ids: number[]): Promise<Map<number, AiringDetails>> {
+  const details = new Map<number, AiringDetails>();
   const uniqueIds = Array.from(new Set(ids.filter(id => Number.isFinite(id))));
-  if (uniqueIds.length === 0) return snapshots;
+  if (uniqueIds.length === 0) return details;
 
   for (const chunk of chunkIds(uniqueIds, MAX_PAGE_SIZE)) {
     const data = await postGraphQL<PageResponse>(BATCH_AIRING_QUERY, { ids: chunk });
@@ -448,18 +582,23 @@ export async function fetchAiringSnapshots(ids: number[]): Promise<Map<number, A
       if (!node || typeof node.id !== 'number') continue;
 
       const status: AniListMediaStatus = node.status ?? 'FINISHED';
-      snapshots.set(node.id, {
+      const snapshot: AniListAiringSnapshot = {
         status,
         isAiring: status === 'RELEASING',
         nextEpisode: node.nextAiringEpisode?.episode ?? undefined,
         nextAiringAt: node.nextAiringEpisode?.airingAt ?? undefined,
         totalEpisodes: node.episodes ?? null,
         fetchedAt,
-      });
+      };
+
+      const sequel = pickSequel(node.id, node);
+      // `sequel` is omitted entirely when nothing qualifies, so a refresh can
+      // distinguish "no related season" from "not fetched yet".
+      details.set(node.id, sequel ? { snapshot, sequel } : { snapshot });
     }
   }
 
-  return snapshots;
+  return details;
 }
 
 export function isAiringSnapshotFresh(
@@ -485,19 +624,25 @@ export function applyMatchResult(item: MediaItem, result: MatchResult): MediaIte
 
 export function applyAiringSnapshots(
   item: MediaItem,
-  snapshots: Map<number, AniListAiringSnapshot>,
+  snapshots: Map<number, AiringDetails>,
 ): MediaItem {
   const existing = item.aiData.anilist;
   if (!existing) return item;
 
-  const snapshot = snapshots.get(existing.id);
-  if (!snapshot) return item;
+  const details = snapshots.get(existing.id);
+  if (!details) return item;
 
   return {
     ...item,
     aiData: {
       ...item.aiData,
-      anilist: { ...existing, airing: snapshot },
+      anilist: {
+        ...existing,
+        airing: details.snapshot,
+        // Explicit `undefined` drops any persisted sequel so a stale one cannot
+        // survive a refresh that found nothing directly related.
+        sequel: details.sequel,
+      },
     },
   };
 }
