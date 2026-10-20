@@ -15,6 +15,7 @@ import { useUIStore } from './stores/useUIStore';
 import { incrementProgress, toggleFavorite } from './stores/useActions';
 import { useDeleteConfirm } from './hooks/useDeleteConfirm';
 import { useDataHandlers } from './hooks/useDataHandlers';
+import { useAiringAutoRefresh } from './hooks/useAiringAutoRefresh';
 
 import { AppRouter } from './components/AppRouter';
 import { SettingsModal } from './components/SettingsModal';
@@ -32,6 +33,11 @@ const AppInner: React.FC = () => {
   // Stores
   const { userProfile, isAuthenticated, init: initAuth } = useAuthStore();
   const { library, loadLibrary, updateItem, addItem, isRestoring } = useLibraryStore();
+
+  // Refresh airing data once per session, after the library is available and
+  // batched by id: never one request per work.
+  useAiringAutoRefresh(!isRestoring && library.length > 0);
+
 const {
   isImmersiveMode, isBottomNavVisible, showScrollTop,
   isSettingsOpen, setSettingsOpen, setImmersiveMode,
