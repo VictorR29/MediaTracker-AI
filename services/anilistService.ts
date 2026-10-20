@@ -646,3 +646,50 @@ export function applyAiringSnapshots(
     },
   };
 }
+
+// --- Manual linking -----------------------------------------------------------
+
+/**
+ * Builds a user-chosen identity. Never infers anything but the season from the
+ * title: no confidence scoring, no airing snapshot and no sequel.
+ *
+ * `baseTitle` is accepted for call-site symmetry but intentionally unused — a
+ * manual link must never fall back to a local title the user did not pick.
+ */
+export function createManualMatch(candidate: AniListCandidate, baseTitle?: string): AniListData {
+  const title = candidate.romaji || candidate.english || '';
+
+  return {
+    id: candidate.id,
+    season: parseSeasonNumber(title),
+    matchedTitle: candidate.romaji || candidate.english || candidate.native || '',
+    matchedBy: 'manual',
+    confidence: 'manual',
+    resolvedAt: Date.now(),
+  };
+}
+
+/**
+ * Replaces the item's AniList identity with the chosen candidate and attaches a
+ * fresh snapshot. The identity is kept even when the snapshot request fails, so
+ * a network error can never lose the manual link. Never throws.
+ */
+export async function linkAniListCandidate(
+  item: MediaItem,
+  candidate: AniListCandidate,
+): Promise<MediaItem> {
+  // A whole-object replacement drops the previous `airing` and `sequel` instead
+  // of merging them, which is exactly what a re-link must do.
+  const relinked: MediaItem = {
+    ...item,
+    aiData: { ...item.aiData, anilist: createManualMatch(candidate) },
+  };
+
+  try {
+    const snapshots = await fetchAiringSnapshots([candidate.id]);
+    return applyAiringSnapshots(relinked, snapshots);
+  } catch (error) {
+    console.error('Failed to load the AniList snapshot for the manual link', error);
+    return relinked;
+  }
+}

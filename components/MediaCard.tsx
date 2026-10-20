@@ -12,7 +12,7 @@ import {
   PlayCircle, User, Minus, CalendarClock, Trophy, Medal, GripVertical,
   Wand2, MessageSquare, Info, BarChart2, PenTool
 } from 'lucide-react';
-import { EditActionBar, AiringBlock } from './media-card';
+import { EditActionBar, AiringBlock, AniListLinkModal } from './media-card';
 import { useAiringSnapshot } from '../hooks/useAiringSnapshot';
 
 interface MediaCardProps {
@@ -40,6 +40,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const [isUpdatingInfo, setIsUpdatingInfo] = useState(false);
   const [isGeneratingReview, setIsGeneratingReview] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
 
   // Drag & Drop State for Characters
   const dragItem = useRef<number | null>(null);
@@ -676,12 +677,18 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
                   <AiringBlock
                     state={airing.state}
-                    snapshot={airing.snapshot}
-                    sequel={airing.sequel}
+                    snapshot={aiData.anilist?.airing}
+                    sequel={aiData.anilist?.sequel}
                     season={aiData.anilist?.season}
                     currentSeason={tracking.currentSeason}
                     watchedEpisodes={tracking.watchedEpisodes}
                     totalSeasons={tracking.totalSeasons}
+                    matchedTitle={aiData.anilist?.matchedTitle}
+                    showMatchedTitle={
+                      !!aiData.anilist &&
+                      (aiData.anilist.confidence !== 'exact' || aiData.anilist.matchedBy === 'manual')
+                    }
+                    onLink={() => setIsLinkModalOpen(true)}
                     onRetry={airing.refresh}
                   />
 
@@ -837,6 +844,19 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       </div>
 
       {isEditing && <EditActionBar onSave={saveChanges} onCancel={cancelChanges} />}
+
+      <AniListLinkModal
+        isOpen={isLinkModalOpen}
+        item={localData}
+        onClose={() => setIsLinkModalOpen(false)}
+        onSelect={(linked) => {
+          setLocalData(linked);
+          onUpdate(linked);
+          // Force the load state to 'ready' after a manual re-link so a previous
+          // 'unmatched'/'error' state cannot outlive the new identity.
+          airing.refresh();
+        }}
+      />
     </div>
   );
 };

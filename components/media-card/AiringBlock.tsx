@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarClock } from 'lucide-react';
+import { CalendarClock, Link2 } from 'lucide-react';
 import type { AniListAiringSnapshot, AniListMediaStatus, AniListSequel } from '../../types';
 import type { AiringLoadState } from '../../hooks/useAiringSnapshot';
 import { formatAiringDate, formatPremiereDate, formatRelativeAiring, getRemainingEpisodes } from '../../utils/airing';
@@ -14,6 +14,12 @@ interface AiringBlockProps {
   currentSeason: number;
   watchedEpisodes: number;
   totalSeasons: number;
+  /** Title of the AniList entry the item is linked to. */
+  matchedTitle?: string;
+  /** Only the caller knows whether the link deserves a transparency footer. */
+  showMatchedTitle?: boolean;
+  /** Opens the manual link picker. Omitted when the card cannot re-link. */
+  onLink?: () => void;
   onRetry: () => void;
 }
 
@@ -30,6 +36,31 @@ const CARD_CLASS =
 
 const SEQUEL_CARD_CLASS = `${CARD_CLASS} space-y-2`;
 
+const ChangeLinkButton: React.FC<{ onLink?: () => void }> = ({ onLink }) => {
+  if (!onLink) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={onLink}
+      aria-label="Cambiar vínculo"
+      title="Cambiar vínculo"
+      className="min-w-[44px] min-h-[44px] -my-2 -mr-2 flex items-center justify-center text-zinc-500 hover:text-white transition-colors"
+    >
+      <Link2 className="w-4 h-4" />
+    </button>
+  );
+};
+
+const MatchedTitleFooter: React.FC<{ show?: boolean; matchedTitle?: string }> = ({
+  show,
+  matchedTitle,
+}) => {
+  if (!show || !matchedTitle) return null;
+
+  return <p className="text-[10px] text-zinc-600 truncate">Vinculado a {matchedTitle}</p>;
+};
+
 export const AiringBlock: React.FC<AiringBlockProps> = ({
   state,
   snapshot,
@@ -38,6 +69,9 @@ export const AiringBlock: React.FC<AiringBlockProps> = ({
   currentSeason,
   watchedEpisodes,
   totalSeasons,
+  matchedTitle,
+  showMatchedTitle,
+  onLink,
   onRetry,
 }) => {
   const stopPropagation = (event: React.MouseEvent) => event.stopPropagation();
@@ -56,8 +90,17 @@ export const AiringBlock: React.FC<AiringBlockProps> = ({
 
   if (state === 'unmatched') {
     return (
-      <div className={CARD_CLASS} onClick={stopPropagation}>
+      <div className={`${CARD_CLASS} flex items-center justify-between gap-3`} onClick={stopPropagation}>
         <span className="text-xs text-zinc-600">Sin vínculo con AniList</span>
+        {onLink && (
+          <button
+            type="button"
+            onClick={onLink}
+            className="min-w-[44px] min-h-[44px] -my-2 -mr-2 px-2 inline-flex items-center justify-end text-xs font-bold text-zinc-400 hover:text-white transition-colors"
+          >
+            Vincular
+          </button>
+        )}
       </div>
     );
   }
@@ -100,12 +143,14 @@ export const AiringBlock: React.FC<AiringBlockProps> = ({
 
     return (
       <div className="bg-zinc-900/50 rounded-xl px-4 py-4 ring-1 ring-white/[0.06] animate-fade-in space-y-2" onClick={stopPropagation}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">EN EMISIÓN</span>
+            <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">
+              {season !== undefined ? `T${season} EN EMISIÓN` : 'EN EMISIÓN'}
+            </span>
           </span>
-          {season !== undefined && <span className="text-[10px] text-zinc-500">T{season}</span>}
+          <ChangeLinkButton onLink={onLink} />
         </div>
 
         {nextEpisode !== undefined && (
@@ -122,6 +167,8 @@ export const AiringBlock: React.FC<AiringBlockProps> = ({
         )}
 
         {alignment && <p className="text-[10px] text-zinc-500">{alignment}</p>}
+
+        <MatchedTitleFooter show={showMatchedTitle} matchedTitle={matchedTitle} />
       </div>
     );
   }
@@ -145,13 +192,14 @@ export const AiringBlock: React.FC<AiringBlockProps> = ({
 
     return (
       <div className={SEQUEL_CARD_CLASS} onClick={stopPropagation}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">
-              {sequelSeason !== undefined ? `T${sequelSeason} EN EMISIÓN` : 'NUEVA TEMPORADA EN EMISIÓN'}
+              {sequelSeason !== undefined ? `T${sequelSeason} EN EMISIÓN` : 'EN EMISIÓN'}
             </span>
           </span>
+          <ChangeLinkButton onLink={onLink} />
         </div>
 
         {sequelSeason === undefined && sequel.title && (
@@ -172,6 +220,8 @@ export const AiringBlock: React.FC<AiringBlockProps> = ({
         )}
 
         {alignment && <p className="text-[10px] text-zinc-500">{alignment}</p>}
+
+        <MatchedTitleFooter show={showMatchedTitle} matchedTitle={matchedTitle} />
       </div>
     );
   }
@@ -182,13 +232,14 @@ export const AiringBlock: React.FC<AiringBlockProps> = ({
 
     return (
       <div className={SEQUEL_CARD_CLASS} onClick={stopPropagation}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-400" />
             <span className="text-amber-400 text-[10px] font-bold uppercase tracking-widest">
               {sequelSeason !== undefined ? `T${sequelSeason} ANUNCIADA` : 'NUEVA TEMPORADA ANUNCIADA'}
             </span>
           </span>
+          <ChangeLinkButton onLink={onLink} />
         </div>
 
         {sequelSeason === undefined && sequel.title && (
@@ -201,17 +252,36 @@ export const AiringBlock: React.FC<AiringBlockProps> = ({
             <span>Estrena el {premiere}</span>
           </div>
         )}
+
+        <MatchedTitleFooter show={showMatchedTitle} matchedTitle={matchedTitle} />
       </div>
     );
   }
 
   // A finished series has nothing to add here: the block is about what is coming.
-  if (snapshot.status === 'FINISHED') return null;
+  if (snapshot.status === 'FINISHED') {
+    // A finished entry has nothing to air, but a low-confidence or manual link is
+    // exactly the case the user needs to be able to correct.
+    if (!showMatchedTitle || !onLink) return null;
+
+    return (
+      <div className={CARD_CLASS} onClick={stopPropagation}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <MatchedTitleFooter show matchedTitle={matchedTitle} />
+          </div>
+          <ChangeLinkButton onLink={onLink} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={CARD_CLASS} onClick={stopPropagation}>
       <span className="text-xs text-zinc-600">
         {FINAL_STATUS_COPY[snapshot.status] ?? 'Emisión finalizada'}
       </span>
+      <MatchedTitleFooter show={showMatchedTitle} matchedTitle={matchedTitle} />
     </div>
   );
 };

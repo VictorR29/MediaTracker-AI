@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { AniListAiringSnapshot, AniListSequel, MediaItem } from '../types';
+import type { MediaItem } from '../types';
 import {
   AniListError,
   applyAiringSnapshots,
@@ -19,8 +19,6 @@ export interface UseAiringSnapshotArgs {
 
 export interface UseAiringSnapshotResult {
   state: AiringLoadState;
-  snapshot?: AniListAiringSnapshot;
-  sequel?: AniListSequel;
   refresh: () => void;
 }
 
@@ -29,6 +27,8 @@ export interface UseAiringSnapshotResult {
  * warm for the current session.
  *
  * - The match is persisted as soon as it is found, even if the snapshot request fails.
+ * - The block renders the snapshot from the persisted item, so this hook only
+ *   owns the load state; there is no local copy that could go stale.
  * - `item` and `onUpdate` are read through refs so a parent re-render cannot
  *   retrigger the effect; only the explicit dependency list below can.
  * - `refresh()` bumps an attempt counter to retry after an error.
@@ -38,8 +38,6 @@ export function useAiringSnapshot(
   { enabled, onUpdate }: Omit<UseAiringSnapshotArgs, 'item'>,
 ): UseAiringSnapshotResult {
   const [state, setState] = useState<AiringLoadState>('idle');
-  const [snapshot, setSnapshot] = useState<AniListAiringSnapshot | undefined>(undefined);
-  const [sequel, setSequel] = useState<AniListSequel | undefined>(undefined);
   const [attempt, setAttempt] = useState(0);
 
   const itemRef = useRef(item);
@@ -72,8 +70,6 @@ export function useAiringSnapshot(
 
       if (isAiringSnapshotFresh(existing?.airing)) {
         setState('ready');
-        setSnapshot(existing?.airing);
-        setSequel(existing?.sequel);
         return;
       }
 
@@ -87,8 +83,6 @@ export function useAiringSnapshot(
 
         if (result.status !== 'matched' || !result.match) {
           setState('unmatched');
-          setSnapshot(undefined);
-          setSequel(undefined);
           return;
         }
 
@@ -100,8 +94,6 @@ export function useAiringSnapshot(
       const anilist = working.aiData.anilist;
       if (!anilist) {
         setState('unmatched');
-        setSnapshot(undefined);
-        setSequel(undefined);
         return;
       }
 
@@ -111,8 +103,6 @@ export function useAiringSnapshot(
       const withSnapshot = applyAiringSnapshots(working, snapshots);
       onUpdateRef.current(withSnapshot);
       setState('ready');
-      setSnapshot(withSnapshot.aiData.anilist?.airing);
-      setSequel(withSnapshot.aiData.anilist?.sequel);
     };
 
     void run().catch((error: unknown) => {
@@ -122,8 +112,6 @@ export function useAiringSnapshot(
       console.error('Failed to load the AniList airing snapshot', reason);
 
       setState('error');
-      setSnapshot(undefined);
-      setSequel(undefined);
     });
 
     return () => {
@@ -135,5 +123,5 @@ export function useAiringSnapshot(
     // same batch request. Freshness is re-checked on every run instead.
   }, [enabled, item.id, attempt]);
 
-  return { state, snapshot, sequel, refresh };
+  return { state, refresh };
 }

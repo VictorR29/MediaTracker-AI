@@ -8,11 +8,14 @@ import {
   __setThrottleForTests,
   applyAiringSnapshots,
   applyMatchResult,
+  createManualMatch,
   fetchAiringSnapshots,
   isAiringSnapshotFresh,
+  linkAniListCandidate,
   resolveAniListMatch,
   searchAniListCandidates,
 } from '../anilistService';
+import type { AniListCandidate } from '../anilistService';
 
 // --- Fixtures -----------------------------------------------------------------
 
@@ -785,5 +788,141 @@ describe('applyMatchResult', () => {
         ],
       }),
     ).toBe(item);
+  });
+});
+
+// --- Manual linking -----------------------------------------------------------
+
+const makeCandidate = (overrides: Partial<AniListCandidate> = {}): AniListCandidate => ({
+  id: 16498,
+  romaji: 'Shingeki no Kyojin',
+  synonyms: [],
+  status: 'FINISHED',
+  isAdult: false,
+  ...overrides,
+});
+
+describe('createManualMatch', () => {
+  it('builds a manual identity and infers only the season from the title', () => {
+    const match = createManualMatch(makeCandidate({ id: 42, romaji: 'Kimetsu no Yaiba 2nd Season' }));
+
+    expect(match).toMatchObject({
+      id: 42,
+      season: 2,
+      matchedTitle: 'Kimetsu no Yaiba 2nd Season',
+      matchedBy: 'manual',
+      confidence: 'manual',
+    });
+    expect(typeof match.resolvedAt).toBe('number');
+    expect(match).not.toHaveProperty('airing');
+    expect(match).not.toHaveProperty('sequel');
+  });
+
+  it('falls back to the english title, then to the native title', () => {
+    expect(createManualMatch(makeCandidate({ romaji: '', english: 'Attack on Titan' })).matchedTitle).toBe(
+      'Attack on Titan',
+    );
+
+    const nativeOnly = createManualMatch(
+      makeCandidate({ romaji: '', english: undefined, native: '進撃の巨人' }),
+    );
+    expect(nativeOnly.matchedTitle).toBe('進撃の巨人');
+    expect(nativeOnly.season).toBeUndefined();
+  });
+});
+
+describe('linkAniListCandidate', () => {
+  it('persists the manual identity and attaches the fresh snapshot', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        searchPayload([
+          mediaNode({
+            id: 77,
+            romaji: 'Bleach',
+            status: 'RELEASING',
+            nextAiringEpisode: { episode: 3, airingAt: 1_700_000_000 },
+          }),
+        ]),
+      ),
+    );
+
+    const linked = await linkAniListCandidate(makeItem(), makeCandidate({ id: 77, romaji: 'Bleach' }));
+
+    expect(linked.aiData.anilist).toMatchObject({
+      id: 77,
+      matchedTitle: 'Bleach',
+      matchedBy: 'manual',
+      confidence: 'manual',
+    });
+    expect(linked.aiData.anilist?.airing).toMatchObject({
+      status: 'RELEASING',
+      isAiring: true,
+      nextEpisode: 3,
+      nextAiringAt: 1_700_000_000,
+    });
+  });
+
+  it('drops the previous airing and sequel when the item is re-linked', async () => {
+    const item = makeItem({
+      anilist: {
+        id: 21,
+        season: 1,
+        matchedTitle: 'Shingeki no Kyojin',
+        matchedBy: 'title',
+        confidence: 'exact',
+        resolvedAt: 1_000,
+        airing: {
+          status: 'RELEASING',
+          isAiring: true,
+          nextEpisode: 9,
+          nextAiringAt: 1_700_000_000,
+          totalEpisodes: 24,
+          fetchedAt: 2_000,
+        },
+        sequel: {
+          id: 22,
+          season: 2,
+          title: 'Shingeki no Kyojin Season 2',
+          status: 'NOT_YET_RELEASED',
+        },
+      },
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(searchPayload([mediaNode({ id: 77, romaji: 'Bleach', status: 'FINISHED' })])),
+    );
+
+    const linked = await linkAniListCandidate(item, makeCandidate({ id: 77, romaji: 'Bleach' }));
+
+    expect(linked.aiData.anilist?.id).toBe(77);
+    expect(linked.aiData.anilist?.matchedTitle).toBe('Bleach');
+    expect(linked.aiData.anilist?.airing).toMatchObject({ status: 'FINISHED', isAiring: false });
+    expect(linked.aiData.anilist?.airing?.nextEpisode).toBeUndefined();
+    expect(linked.aiData.anilist?.sequel).toBeUndefined();
+    // A serialized item must not resurrect the stale sequel either.
+    expect(JSON.parse(JSON.stringify(linked.aiData.anilist))).not.toHaveProperty('sequel');
+    // The original item stays untouched.
+    expect(item.aiData.anilist?.id).toBe(21);
+    expect(item.aiData.anilist?.sequel?.id).toBe(22);
+  });
+
+  it('keeps the manual identity when the snapshot request fails', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    try {
+      const linked = await linkAniListCandidate(makeItem(), makeCandidate({ id: 88, romaji: 'Bleach' }));
+
+      expect(linked.aiData.anilist).toMatchObject({
+        id: 88,
+        matchedTitle: 'Bleach',
+        matchedBy: 'manual',
+        confidence: 'manual',
+      });
+      expect(linked.aiData.anilist?.airing).toBeUndefined();
+      expect(errorSpy).toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 });
