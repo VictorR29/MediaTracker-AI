@@ -1,5 +1,36 @@
 
 
+export type AniListMediaStatus = 'FINISHED' | 'RELEASING' | 'NOT_YET_RELEASED' | 'CANCELLED' | 'HIATUS';
+
+export interface AniListAiringSnapshot {
+  status: AniListMediaStatus;
+  /** Convenience flag: true only when status === 'RELEASING'. Single source of truth for UI and selectors. */
+  isAiring: boolean;
+  /** Episode number, absolute WITHIN this AniList entry (usually one cour/season). */
+  nextEpisode?: number;
+  /** Unix seconds (AniList `airingAt`). Convert with `new Date(airingAt * 1000)` for local time. */
+  nextAiringAt?: number;
+  totalEpisodes?: number | null;
+  /** Unix ms when this snapshot was fetched. Used for TTL. */
+  fetchedAt: number;
+}
+
+export interface AniListData {
+  /** AniList Media id. */
+  id: number;
+  /** Season/cour number this entry represents, when confidently inferable from the matched title. */
+  season?: number;
+  /** Romaji title of the matched entry (transparency/debug). */
+  matchedTitle: string;
+  /** Which local field produced the match. */
+  matchedBy: 'title' | 'originalTitle' | 'manual';
+  confidence: 'exact' | 'high' | 'manual';
+  /** Unix ms. */
+  resolvedAt: number;
+  /** Volatile cache; refreshed independently of the match. */
+  airing?: AniListAiringSnapshot;
+}
+
 export interface AIWorkData {
   title: string;
   originalTitle?: string;
@@ -15,6 +46,7 @@ export interface AIWorkData {
   releaseDate?: string; // New: Release year or date
   endDate?: string; // New: End year or date
   franchise_link?: string; // New: Internal Linked Franchise Identifier (e.g. "Demon Slayer" for the movie)
+  anilist?: AniListData; // Optional AniList match + volatile airing cache
 }
 
 export interface UserTrackingData {
