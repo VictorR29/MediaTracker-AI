@@ -6,6 +6,7 @@ import { saveMediaItem, deleteMediaItem } from '../services/storage';
 import { hashPassword } from '../utils/password';
 import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2 } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useAniListBackfillStore } from '../stores/useAniListBackfillStore';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     isOpen, onClose, userProfile, onUpdateProfile, onImportBackup, onExportBackup, onImportCatalog, onExportCatalog, onClearLibrary, library = [], onLibraryUpdate
 }) => {
   const { showToast } = useToast();
+  const { summary: backfillSummary, isRunning: isBackfillRunning, current: backfillCurrent, start: startBackfill, cancel: cancelBackfill } = useAniListBackfillStore();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'data'>('profile');
   const [username, setUsername] = useState(userProfile.username);
   const [avatarUrl, setAvatarUrl] = useState(userProfile.avatarUrl || '');
@@ -134,6 +136,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           onClose();
           showToast("Biblioteca eliminada por completo.", "warning");
       }
+  };
+
+  // --- ANILIST BACKFILL ---
+  const handleAniListBackfill = async () => {
+      if (isBackfillRunning) return;
+      showToast("Sincronizando con AniList…", "info");
+      await startBackfill();
+      const result = useAniListBackfillStore.getState().summary;
+      if (!result) return;
+      const hasProblems = result.failed > 0 || result.aborted;
+      showToast("Sincronización terminada", hasProblems ? "error" : "success");
   };
 
   // --- HELPER: IMAGE COMPRESSION ---
@@ -427,6 +440,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         </button>
                                     )}
                                 </div>
+                            )}
+                        </div>
+
+                        {/* AniList Section */}
+                        <div>
+                            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <RefreshCw className="w-3.5 h-3.5" /> AniList
+                            </h3>
+                            <p className="text-xs text-zinc-500 mb-3">
+                                Vincula tus animes y guarda el estado de emisión. Se ejecuta por tandas y retoma donde quedó.
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleAniListBackfill}
+                                    disabled={isBackfillRunning}
+                                    className="flex-1 px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl text-sm text-white font-medium transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <RefreshCw className={`w-4 h-4 text-violet-400 ${isBackfillRunning ? 'animate-spin' : ''}`} />
+                                    Sincronizar biblioteca
+                                </button>
+                                {isBackfillRunning && (
+                                    <button
+                                        onClick={cancelBackfill}
+                                        className="px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl text-sm text-zinc-300 font-medium transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                )}
+                            </div>
+
+                            {isBackfillRunning && backfillSummary && (
+                                <div className="mt-3 space-y-1.5">
+                                    <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-violet-500 transition-all duration-300"
+                                            style={{ width: `${backfillSummary.total > 0 ? (backfillSummary.done / backfillSummary.total) * 100 : 0}%` }}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3 text-[11px] text-zinc-500">
+                                        <span>{backfillSummary.done}/{backfillSummary.total}</span>
+                                        {backfillCurrent && <span className="truncate">{backfillCurrent}</span>}
+                                    </div>
+                                </div>
+                            )}
+
+                            {!isBackfillRunning && backfillSummary && (
+                                <p className="text-[11px] text-zinc-500 mt-2">
+                                    {backfillSummary.aborted && 'Interrumpido: '}
+                                    Vinculados {backfillSummary.matched} · Sin match {backfillSummary.unmatched} · Errores {backfillSummary.failed} · Al día {backfillSummary.skipped}
+                                    {backfillSummary.abortReason === 'rate_limit' && ' AniList limitó las consultas. Probá de nuevo en un minuto.'}
+                                    {backfillSummary.abortReason === 'cancelled' && ' Cancelado.'}
+                                </p>
                             )}
                         </div>
 
