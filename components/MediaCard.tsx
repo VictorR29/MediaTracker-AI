@@ -12,7 +12,7 @@ import {
   PlayCircle, User, Minus, CalendarClock, Trophy, Medal, GripVertical,
   Wand2, MessageSquare, Info, BarChart2, PenTool
 } from 'lucide-react';
-import { EditActionBar, AiringBlock, AniListLinkModal } from './media-card';
+import { EditActionBar, AiringBlock, AniListLinkModal, AniListLinkRow } from './media-card';
 import { useAiringSnapshot } from '../hooks/useAiringSnapshot';
 
 interface MediaCardProps {
@@ -675,6 +675,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     </div>
                   </div>
 
+                  {aiData.mediaType === 'Anime' && tracking.status !== 'Descartado' && !isEditing && (
+                    <AniListLinkRow
+                      identity={aiData.anilist}
+                      state={airing.state}
+                      onLink={() => setIsLinkModalOpen(true)}
+                    />
+                  )}
+
                   <AiringBlock
                     state={airing.state}
                     snapshot={aiData.anilist?.airing}
@@ -683,12 +691,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     currentSeason={tracking.currentSeason}
                     watchedEpisodes={tracking.watchedEpisodes}
                     totalSeasons={tracking.totalSeasons}
-                    matchedTitle={aiData.anilist?.matchedTitle}
-                    showMatchedTitle={
-                      !!aiData.anilist &&
-                      (aiData.anilist.confidence !== 'exact' || aiData.anilist.matchedBy === 'manual')
-                    }
-                    onLink={() => setIsLinkModalOpen(true)}
                     onRetry={airing.refresh}
                   />
 
