@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { MediaItem } from '../types';
 import { saveMediaItem, getLibrary, deleteMediaItem, clearLibrary as clearLib } from '../services/storage';
 import { FilterState } from '../components/LibraryFilters';
+import { getGenres } from '../utils/genres';
 
 interface LibraryState {
   library: MediaItem[];
@@ -114,7 +115,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       filtered = filtered.filter(i => i.trackingData.rating === filters.rating);
     }
     if (filters.genre !== 'All') {
-      filtered = filtered.filter(i => (i.aiData.genres || []).some(g => g.toLowerCase() === filters.genre.toLowerCase()));
+      filtered = filtered.filter(i => getGenres(i).some(g => g.toLowerCase() === filters.genre.toLowerCase()));
     }
     if (filters.onlyFavorites) {
       filtered = filtered.filter(i => i.trackingData.is_favorite);
@@ -133,6 +134,6 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
 
   getAvailableGenres: () => {
     const { library } = get();
-    return Array.from(new Set(library.flatMap(i => i.aiData.genres || []).map(g => g.toLowerCase())));
+    return Array.from(new Set(library.flatMap(i => getGenres(i)).map(g => g.toLowerCase())));
   },
 }));

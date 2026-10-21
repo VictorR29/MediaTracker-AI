@@ -42,6 +42,8 @@ export interface AniListCandidate {
   status: AniListMediaStatus;
   coverImage?: string;
   isAdult: boolean;
+  /** Canonical AniList genres (English enum values). */
+  genres: string[];
 }
 
 export interface MatchResult {
@@ -142,6 +144,7 @@ interface MediaNode {
   status?: AniListMediaStatus | null;
   isAdult?: boolean | null;
   coverImage?: { medium?: string | null } | null;
+  genres?: string[] | null;
   nextAiringEpisode?: { episode?: number | null; airingAt?: number | null } | null;
   relations?: { edges?: (RelationEdge | null)[] | null } | null;
 }
@@ -218,7 +221,7 @@ const SEARCH_QUERY = `
 query ($search: String, $perPage: Int) {
   Page(perPage: $perPage) {
     media(search: $search, type: ANIME, sort: SEARCH_MATCH) {
-      id title { romaji english native } synonyms format seasonYear
+      id title { romaji english native } synonyms format seasonYear genres
       startDate { year month day } episodes status isAdult coverImage { medium }
     }
   }
@@ -228,7 +231,7 @@ const BATCH_AIRING_QUERY = `
 query ($ids: [Int]) {
   Page(perPage: 50) {
     media(id_in: $ids, type: ANIME) {
-      id status episodes nextAiringEpisode { episode airingAt timeUntilAiring }
+      id status episodes genres nextAiringEpisode { episode airingAt timeUntilAiring }
       relations {
         edges {
           relationType
@@ -252,6 +255,7 @@ const toCandidate = (node: MediaNode): AniListCandidate => ({
   status: node.status ?? 'FINISHED',
   coverImage: node.coverImage?.medium ?? undefined,
   isAdult: node.isAdult === true,
+  genres: Array.isArray(node.genres) ? node.genres : [],
 });
 
 export async function searchAniListCandidates(
@@ -450,6 +454,7 @@ export async function resolveAniListMatch(item: MediaItem): Promise<MatchResult>
       matchedBy: source,
       confidence: topScore === 100 ? 'exact' : 'high',
       resolvedAt: Date.now(),
+      genres: winner.genres,
     };
 
     return { status: 'matched', match };
@@ -567,6 +572,8 @@ const pickSequel = (mediaId: number, node: MediaNode): AniListSequel | undefined
 export interface AiringDetails {
   snapshot: AniListAiringSnapshot;
   sequel?: AniListSequel;
+  /** Extra media fields carried by the same response. Absent when not fetched. */
+  meta?: { genres: string[] };
 }
 
 export async function fetchAiringSnapshots(ids: number[]): Promise<Map<number, AiringDetails>> {
@@ -592,9 +599,10 @@ export async function fetchAiringSnapshots(ids: number[]): Promise<Map<number, A
       };
 
       const sequel = pickSequel(node.id, node);
+      const meta = { genres: Array.isArray(node.genres) ? node.genres : [] };
       // `sequel` is omitted entirely when nothing qualifies, so a refresh can
       // distinguish "no related season" from "not fetched yet".
-      details.set(node.id, sequel ? { snapshot, sequel } : { snapshot });
+      details.set(node.id, sequel ? { snapshot, sequel, meta } : { snapshot, meta });
     }
   }
 
@@ -639,6 +647,8 @@ export function applyAiringSnapshots(
       anilist: {
         ...existing,
         airing: details.snapshot,
+        // A refresh without meta must never wipe genres stored by a previous one.
+        genres: details.meta?.genres ?? existing.genres,
         // Explicit `undefined` drops any persisted sequel so a stale one cannot
         // survive a refresh that found nothing directly related.
         sequel: details.sequel,
@@ -651,7 +661,9 @@ export function applyAiringSnapshots(
 
 /**
  * Builds a user-chosen identity. Never infers anything but the season from the
- * title: no confidence scoring, no airing snapshot and no sequel.
+ * title: no confidence scoring, no airing snapshot and no sequel. Canonical
+ * genres are copied verbatim from the candidate so a fresh link renders correct
+ * genres without waiting for the next refresh.
  *
  * `baseTitle` is accepted for call-site symmetry but intentionally unused — a
  * manual link must never fall back to a local title the user did not pick.
@@ -666,6 +678,7 @@ export function createManualMatch(candidate: AniListCandidate, baseTitle?: strin
     matchedBy: 'manual',
     confidence: 'manual',
     resolvedAt: Date.now(),
+    genres: Array.isArray(candidate.genres) ? candidate.genres : [],
   };
 }
 

@@ -1,6 +1,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { MediaItem, UserProfile, EMOTIONAL_TAGS_OPTIONS, parseAccentToHex } from '../types';
+import { getGenres } from '../utils/genres';
 import { Sparkles, Coffee, Sun, Moon, Film, Tv, BookOpen, PenTool, Zap, Heart, Clock, Star, Hourglass, Bookmark, Feather, Image as ImageIcon, Clapperboard, AlertCircle, AlertTriangle, Frown, CloudRain, PlayCircle, CheckCircle2, PauseCircle, CalendarClock } from 'lucide-react';
 
 interface ContextualGreetingProps {
@@ -79,7 +80,7 @@ export const ContextualGreeting: React.FC<ContextualGreetingProps> = ({ userProf
     const negativeEmotion = negativeEmotionTag?.contextual || 'ese problema';
 
     // [Clave de Trama / Género]
-    const genres = focusWork.aiData.genres || [];
+    const genres = getGenres(focusWork);
     const plotKey = pickRandom(genres) || 'esta historia';
 
     // [Calificación]

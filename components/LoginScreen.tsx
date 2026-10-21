@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Lock, ArrowRight, User, Sparkles, Unlock } from 'lucide-react';
 import { MediaItem, EMOTIONAL_TAGS_OPTIONS, parseAccentToRgb, parseAccentToHex } from '../types';
+import { getGenres } from '../utils/genres';
 
 interface LoginScreenProps {
   onUnlock: (password: string) => Promise<boolean>;
@@ -52,7 +53,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onUnlock, username, av
     const status = focusWork.trackingData.status;
     
     // Random Genre
-    const genres = focusWork.aiData.genres || [];
+    const genres = getGenres(focusWork);
     const genre = pickRandom(genres) || 'esta historia';
     
     // Random Character

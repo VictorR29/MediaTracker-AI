@@ -45,6 +45,8 @@ export interface AniListData {
   airing?: AniListAiringSnapshot;
   /** Directly-related season that is airing or announced. Never replaces `id`. */
   sequel?: AniListSequel;
+  /** Canonical AniList genres: English enum values as returned by the API. */
+  genres?: string[];
 }
 
 export interface AIWorkData {

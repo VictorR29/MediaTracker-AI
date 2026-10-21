@@ -30,6 +30,7 @@ interface MediaNodeFixture {
   episodes?: number | null;
   status?: string;
   isAdult?: boolean;
+  genres?: string[];
   nextAiringEpisode?: { episode: number; airingAt: number } | null;
   relations?: { edges: unknown[] };
 }
@@ -48,6 +49,7 @@ const mediaNode = (fixture: MediaNodeFixture) => ({
   status: fixture.status ?? 'FINISHED',
   isAdult: fixture.isAdult ?? false,
   coverImage: { medium: `https://img.example/${fixture.id}.jpg` },
+  genres: fixture.genres ?? [],
   nextAiringEpisode: fixture.nextAiringEpisode ?? null,
   relations: fixture.relations ?? { edges: [] },
 });
@@ -577,6 +579,18 @@ describe('sequel selection', () => {
   });
 });
 
+describe('fetchAiringSnapshots meta', () => {
+  it('carries the canonical genres of the matched node', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(searchPayload([mediaNode({ id: 1, genres: ['Action', 'Drama', 'Sci-Fi'] })])),
+    );
+
+    const details = (await fetchAiringSnapshots([1])).get(1);
+
+    expect(details?.meta).toEqual({ genres: ['Action', 'Drama', 'Sci-Fi'] });
+  });
+});
+
 describe('isAiringSnapshotFresh', () => {
   const snapshot = {
     status: 'RELEASING' as const,
@@ -707,6 +721,55 @@ describe('applyAiringSnapshots', () => {
     expect(JSON.parse(JSON.stringify(result.aiData.anilist))).not.toHaveProperty('sequel');
   });
 
+  it('writes genres from the snapshot meta', () => {
+    const item = makeItem({
+      anilist: {
+        id: 21,
+        matchedTitle: 'Shingeki no Kyojin',
+        matchedBy: 'title',
+        confidence: 'exact',
+        resolvedAt: 5_000,
+        genres: ['Action'],
+      },
+    });
+
+    const result = applyAiringSnapshots(
+      item,
+      new Map([
+        [
+          21,
+          {
+            snapshot: { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 },
+            meta: { genres: ['Action', 'Drama', 'Sci-Fi'] },
+          },
+        ],
+      ]),
+    );
+
+    expect(result.aiData.anilist?.genres).toEqual(['Action', 'Drama', 'Sci-Fi']);
+    expect(result.aiData.genres).toEqual(['Action']);
+  });
+
+  it('keeps stored genres when the details carry no meta', () => {
+    const item = makeItem({
+      anilist: {
+        id: 21,
+        matchedTitle: 'Shingeki no Kyojin',
+        matchedBy: 'title',
+        confidence: 'exact',
+        resolvedAt: 5_000,
+        genres: ['Action', 'Drama'],
+      },
+    });
+
+    const result = applyAiringSnapshots(
+      item,
+      new Map([[21, { snapshot: { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 } }]]),
+    );
+
+    expect(result.aiData.anilist?.genres).toEqual(['Action', 'Drama']);
+  });
+
   it('returns the item unchanged when it has no AniList data', () => {
     const item = makeItem();
     const snapshots = new Map([
@@ -784,6 +847,7 @@ describe('applyMatchResult', () => {
             synonyms: [],
             status: 'FINISHED',
             isAdult: false,
+            genres: [],
           },
         ],
       }),
@@ -799,6 +863,7 @@ const makeCandidate = (overrides: Partial<AniListCandidate> = {}): AniListCandid
   synonyms: [],
   status: 'FINISHED',
   isAdult: false,
+  genres: [],
   ...overrides,
 });
 

@@ -1,6 +1,7 @@
 
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { MediaItem, normalizeGenre } from '../types';
+import { getGenres } from '../utils/genres';
 import { PlayCircle, Star, Tv, BookOpen, Clapperboard, ChevronRight, ChevronLeft, Info, Eye, Compass, Clock, FileText, Film, Book } from 'lucide-react';
 
 interface CatalogViewProps {
@@ -206,7 +207,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
         remainingItems.sort((a, b) => (b.lastInteraction || 0) - (a.lastInteraction || 0));
 
         remainingItems.forEach(item => {
-            const genres = item.aiData?.genres || []; // Safe access with optional chaining
+            const genres = getGenres(item);
             const primaryGenre = genres.length > 0 ? normalizeGenre(genres[0]) : 'otros';
             if (!genreBuckets[primaryGenre]) genreBuckets[primaryGenre] = [];
             genreBuckets[primaryGenre].push(item);
@@ -223,7 +224,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ library, onOpenDetail 
                 const unmoveableItems: MediaItem[] = [];
                 overflowItems.forEach(item => {
                     let moved = false;
-                    const genres = item.aiData?.genres || []; // Safe access
+                    const genres = getGenres(item);
                     for (let i = 1; i < genres.length; i++) {
                         const candidateGenre = normalizeGenre(genres[i]);
                         const candidateBucket = genreBuckets[candidateGenre] || [];

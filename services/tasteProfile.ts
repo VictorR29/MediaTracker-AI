@@ -4,6 +4,7 @@
  * Licensed under the GNU General Public License v3.0
  */
 import { MediaItem, RATING_TO_SCORE } from '../types';
+import { getGenres } from '../utils/genres';
 
 /**
  * Computes a taste profile from the user's library for discovery recommendations.
@@ -23,7 +24,7 @@ export const computeTasteProfile = (
 
   const collectProfile = (item: MediaItem) => {
     liked.push(item.aiData.title);
-    item.aiData.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
+    getGenres(item).forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
     // Weight emotions by rating score — God Tier emotions count more
     const weight = Math.max(1, (RATING_TO_SCORE[item.trackingData.rating] || 5) / 5);
     (item.trackingData.emotionalTags || []).forEach(tag => {

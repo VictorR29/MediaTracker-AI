@@ -1,4 +1,5 @@
 import { MediaItem, RATING_TO_SCORE, normalizeGenre } from '../../types';
+import { getGenres } from '../../utils/genres';
 
 // --- Type Definitions ---
 
@@ -108,7 +109,7 @@ export function computeStats(library: MediaItem[], durations: DurationPreference
   // Genre Distribution (Count based) - Normalized
   const genreCount: Record<string, number> = {};
   library.forEach(item => {
-    const genres = item.aiData?.genres || [];
+    const genres = getGenres(item);
     genres.forEach(g => {
       const normalizedKey = normalizeGenre(g);
       genreCount[normalizedKey] = (genreCount[normalizedKey] || 0) + 1;
@@ -143,7 +144,7 @@ export function computeStats(library: MediaItem[], durations: DurationPreference
 
       // God Tier Genre Logic
       if (r.startsWith('God Tier')) {
-        const genres = item.aiData?.genres || [];
+        const genres = getGenres(item);
         genres.forEach(g => {
           const normalizedKey = normalizeGenre(g);
           godTierGenres[normalizedKey] = (godTierGenres[normalizedKey] || 0) + 1;
@@ -264,7 +265,7 @@ export function computeStats(library: MediaItem[], durations: DurationPreference
 
       // --- Distribution Logic (Strict Normalization) ---
       if (itemTime > 0) {
-        const genres = item.aiData?.genres || [];
+        const genres = getGenres(item);
         genres.forEach(g => {
           const normalized = normalizeGenre(g);
           const label = toTitleCase(normalized);

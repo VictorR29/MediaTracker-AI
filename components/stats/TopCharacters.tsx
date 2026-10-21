@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Crown, Link, Upload, X, Shuffle, ArrowRight } from 'lucide-react';
 import { MediaItem } from '../../types';
+import { getGenres } from '../../utils/genres';
 import { useLibraryStore } from '../../stores/useLibraryStore';
 import { useToast } from '../../context/ToastContext';
 
@@ -112,7 +113,7 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
 
   const genres = useMemo(() => {
     const genreSet = new Set<string>();
-    library.forEach(item => item.aiData.genres?.forEach(g => genreSet.add(g)));
+    library.forEach(item => getGenres(item).forEach(g => genreSet.add(g)));
     return ['Todos', ...Array.from(genreSet).sort()];
   }, [library]);
 
@@ -145,7 +146,7 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
     if (activeGenre === 'Todos') return base;
     return base.filter(c => {
       const item = library.find(i => i.id === c.mediaId);
-      return item?.aiData.genres?.includes(activeGenre);
+      return item ? getGenres(item).includes(activeGenre) : false;
     });
   }, [shuffledChars, baseCharacters, activeGenre, library]);
 

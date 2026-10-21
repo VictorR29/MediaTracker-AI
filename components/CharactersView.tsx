@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Crown, Shuffle, Filter, Camera, Link, Upload, X, LayoutGrid, CreditCard } from 'lucide-react';
 import { MediaItem } from '../types';
+import { getGenres } from '../utils/genres';
 import { useLibraryStore } from '../stores/useLibraryStore';
 import { useToast } from '../context/ToastContext';
 import { useUIStore } from '../stores/useUIStore';
@@ -197,7 +198,7 @@ export const CharactersView: React.FC = () => {
   // Collect all genres from library
   const genres = useMemo(() => {
     const genreSet = new Set<string>();
-    library.forEach(item => item.aiData.genres?.forEach(g => genreSet.add(g)));
+    library.forEach(item => getGenres(item).forEach(g => genreSet.add(g)));
     return ['Todos', ...Array.from(genreSet).sort()];
   }, [library]);
 
@@ -217,7 +218,7 @@ export const CharactersView: React.FC = () => {
             coverImage: item.aiData.coverImage,
             primaryColor: item.aiData.primaryColor,
             character: char,
-            genres: item.aiData.genres || [],
+            genres: getGenres(item),
           }))
       );
   }, [library]);
