@@ -4,10 +4,11 @@ import { UserProfile, MediaItem, RATING_TO_SCORE } from '../types';
 import { useToast } from '../context/ToastContext';
 import { saveMediaItem, deleteMediaItem } from '../services/storage';
 import { hashPassword } from '../utils/password';
-import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2, ChevronRight } from 'lucide-react';
+import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2, ChevronRight, Copy } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useAniListBackfillStore } from '../stores/useAniListBackfillStore';
 import { useUIStore } from '../stores/useUIStore';
+import { auditLibrary } from '../services/libraryAudit';
 import { useNavigate } from 'react-router-dom';
 
 interface SettingsModalProps {
@@ -44,6 +45,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .sort((a, b) => a.aiData.title.localeCompare(b.aiData.title)),
     [library],
   );
+  /**
+   * Duplicate audit over the library already in memory. Pure and synchronous:
+   * no request, no effect and nothing stored. AniList-id groups are hard
+   * findings, title groups are only a hint to review.
+   */
+  const duplicateGroups = useMemo(() => {
+    const report = auditLibrary(library);
+    return [...report.byAniListId, ...report.byTitle];
+  }, [library]);
+
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'data'>('profile');
   const [username, setUsername] = useState(userProfile.username);
   const [avatarUrl, setAvatarUrl] = useState(userProfile.avatarUrl || '');
@@ -546,6 +557,60 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         ))}
                                     </ul>
                                 </div>
+                            )}
+                        </div>
+
+                        {/* Duplicate Audit Section */}
+                        <div>
+                            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <Copy className="w-3.5 h-3.5" /> Duplicados
+                            </h3>
+
+                            {duplicateGroups.length === 0 ? (
+                                <p className="text-xs text-zinc-500">
+                                    Tu biblioteca está ordenada: no hay duplicados.
+                                </p>
+                            ) : (
+                                <>
+                                    <p className="text-[11px] font-semibold text-amber-400/90">
+                                        A revisar: {duplicateGroups.length} grupos · {duplicateGroups.reduce((total, group) => total + group.items.length, 0)} obras
+                                    </p>
+                                    <p className="text-[11px] text-zinc-500 mb-2">
+                                        Mismo ID de AniList es un dato firme. Mismo título es solo una pista para revisar, no una prueba.
+                                    </p>
+                                    <div className="space-y-3 max-h-72 overflow-y-auto -mx-2 px-2">
+                                        {duplicateGroups.map(group => (
+                                            <div key={`${group.reason}:${group.key}`}>
+                                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1 truncate">
+                                                    {group.reason === 'anilist-id'
+                                                        ? `Mismo ID de AniList · ${group.key}`
+                                                        : `Mismo título · ${group.key}`}
+                                                </p>
+                                                <ul className="-mx-2">
+                                                    {group.items.map(item => (
+                                                        <li key={item.id}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openUncertainLink(item.id)}
+                                                                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left hover:bg-zinc-800/60 transition-colors"
+                                                            >
+                                                                <span className="flex-1 min-w-0 truncate text-xs text-zinc-300">{item.aiData.title || 'Sin título'}</span>
+                                                                <span className="shrink-0 text-[10px] text-zinc-600">→</span>
+                                                                <span className="flex-1 min-w-0 truncate text-xs text-zinc-500">
+                                                                    {item.aiData.anilist ? `AniList ${item.aiData.anilist.id}` : 'Sin vincular'}
+                                                                </span>
+                                                                <ChevronRight className="shrink-0 w-3.5 h-3.5 text-zinc-600" />
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-[11px] text-zinc-500 mt-2">
+                                        Nada se elimina automáticamente. Temporadas distintas pueden compartir título.
+                                    </p>
+                                </>
                             )}
                         </div>
 
