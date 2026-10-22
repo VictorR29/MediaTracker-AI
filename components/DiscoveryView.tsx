@@ -8,6 +8,7 @@ import { FilterView } from './discovery/FilterView';
 import { ImmersiveView } from './discovery/ImmersiveView';
 import { MOOD_OPTIONS } from './discovery/constants';
 import { getMoodGenres, toAniListDeckCard } from './discovery/deck';
+import { useSynopsisTranslation } from './discovery/useSynopsisTranslation';
 import type { AniListDeckCard, DeckCard } from './discovery/types';
 
 /** Cards revealed per batch. The engine returns up to 50, so one deck holds 2-3 rounds. */
@@ -62,6 +63,24 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   const { topGenres, likedTitles, excludedTitles, topEmotions } = useMemo(
     () => computeTasteProfile(library, selectedType, selectedSeeds),
     [library, selectedType, selectedSeeds]
+  );
+
+  // --- LOGIC: On-demand Spanish synopses ---
+  // `recommendations` is state on purpose: `displayCards` below is a new array on
+  // every render, and feeding it to the hook would restart its effect forever.
+  const translations = useSynopsisTranslation(recommendations, currentIndex, apiKey);
+
+  // Cards handed to the deck carry the Spanish synopsis when one is cached.
+  // `onAddAniList` receives these cards, so an item added here stores the Spanish
+  // text at add time; `anilistService` never writes `synopsis` on its daily sync,
+  // so that translation survives the refresh.
+  const displayCards = useMemo(
+    () => recommendations.map(card =>
+      card.kind === 'anilist' && translations[card.anilistId]
+        ? { ...card, synopsis: translations[card.anilistId] }
+        : card
+    ),
+    [recommendations, translations],
   );
 
   // --- ACTIONS ---
@@ -231,7 +250,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   if (viewMode === 'immersive') {
     return (
       <ImmersiveView
-        recommendations={recommendations}
+        recommendations={displayCards}
         currentIndex={currentIndex}
         onSetCurrentIndex={setCurrentIndex}
         isLoading={isLoading}

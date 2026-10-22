@@ -144,13 +144,18 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
   }, [swipeDirection]);
 
   // Warm the next cover so advancing does not show an empty frame.
-  useEffect(() => {
+  // Preload by URL, not by array identity: a synopsis translation replaces the
+  // card object, and depending on `recommendations` would re-run this needlessly.
+  const nextCoverImage = useMemo(() => {
     const next = recommendations[currentIndex + 1];
-    if (next?.kind === 'anilist' && next.coverImage) {
-      const preload = new Image();
-      preload.src = next.coverImage;
-    }
+    return next?.kind === 'anilist' ? next.coverImage : undefined;
   }, [recommendations, currentIndex]);
+
+  useEffect(() => {
+    if (!nextCoverImage) return;
+    const preload = new Image();
+    preload.src = nextCoverImage;
+  }, [nextCoverImage]);
 
   /**
    * Primary sheet action. AniList cards are added straight to the library and
