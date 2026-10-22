@@ -6,6 +6,7 @@ import { Onboarding } from './Onboarding';
 import { LoginScreen } from './LoginScreen';
 import { LoadingOverlay } from './LoadingOverlay';
 import { MediaItem } from '../types';
+import type { AniListDeckCard } from './discovery/types';
 
 const LibraryView = lazy(() => import('./LibraryView').then(m => ({ default: m.LibraryView })));
 const SearchView = lazy(() => import('./SearchView').then(m => ({ default: m.SearchView })));
@@ -32,6 +33,7 @@ interface AppRouterProps {
   pendingDeleteId?: string | null;
   onUpdateItem: (item: MediaItem) => void;
   onRecommendationSelect: (title: string, type: string) => void;
+  onAddDiscoveryItem?: (card: AniListDeckCard) => Promise<void> | void;
   onImportBackup: (file: File) => void;
   isRestoring: boolean;
   onToggleImmersive: (v: boolean) => void;
@@ -46,6 +48,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
   pendingDeleteId,
   onUpdateItem,
   onRecommendationSelect,
+  onAddDiscoveryItem,
   onImportBackup,
   isRestoring,
   onToggleImmersive,
@@ -123,6 +126,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
             library={library}
             apiKey={userProfile.apiKey}
             onSelectRecommendation={onRecommendationSelect}
+            onAddAniList={onAddDiscoveryItem}
             onToggleImmersive={onToggleImmersive}
           />
         </RouteSuspense>

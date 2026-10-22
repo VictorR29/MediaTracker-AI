@@ -461,3 +461,48 @@ describe('fetchDiscoveryDeck cache and errors', () => {
     );
   });
 });
+
+// --- Paging -------------------------------------------------------------------
+
+describe('fetchDiscoveryDeck paging', () => {
+  it('sends page 1 by default and the requested page afterwards', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(genrePayload([media({ id: 10, romaji: 'First', english: 'First' })])))
+      .mockResolvedValueOnce(jsonResponse(genrePayload([media({ id: 11, romaji: 'Second', english: 'Second' })])));
+
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'] }));
+    expect(requestBody(0).variables.page).toBe(1);
+
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], page: 2 }));
+    expect(requestBody(1).variables.page).toBe(2);
+  });
+
+  it('does not re-harvest seed recommendations on later pages', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(genrePayload([media({ id: 20, romaji: 'Deep Cut', english: 'Deep Cut' })])),
+    );
+
+    const deck = await fetchDiscoveryDeck(
+      makeRequest({ seeds: [{ anilistId: 1, title: 'Seed' }], fallbackGenres: ['Action'], page: 2 }),
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(requestBody(0).query).not.toContain('recommendations');
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([20]);
+  });
+
+  it('keeps one cache entry per page', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(genrePayload([media({ id: 30, romaji: 'Page One', english: 'Page One' })])))
+      .mockResolvedValueOnce(jsonResponse(genrePayload([media({ id: 31, romaji: 'Page Two', english: 'Page Two' })])));
+
+    const first = await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'] }));
+    const second = await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], page: 2 }));
+    const firstAgain = await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'] }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(first[0].anilistId).toBe(30);
+    expect(second[0].anilistId).toBe(31);
+    expect(firstAgain[0].anilistId).toBe(30);
+  });
+});

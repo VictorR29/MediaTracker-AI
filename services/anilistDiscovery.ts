@@ -49,6 +49,12 @@ export interface DiscoveryRequest {
   excludeTitles: string[];
   moodGenres?: string[];
   limit?: number;
+  /**
+   * Page of the popularity-sorted genre pool. Seed recommendations are always
+   * read from their first page; this only moves the pool underneath, which is
+   * how a deck asks for genuinely new cards once it ran out.
+   */
+  page?: number;
 }
 
 // --- Tuning -------------------------------------------------------------------
@@ -134,8 +140,8 @@ query ($seedIds: [Int], $perSeed: Int) {
  * `format_not: [MUSIC]` is rejected with a validation error.
  */
 const buildGenrePoolQuery = (withGenres: boolean): string => `
-query (${withGenres ? '$genres: [String], ' : ''}$excluded: [Int], $perPage: Int) {
-  Page(perPage: $perPage) {
+query (${withGenres ? '$genres: [String], ' : ''}$excluded: [Int], $perPage: Int, $page: Int) {
+  Page(page: $page, perPage: $perPage) {
     media(
       type: ANIME,
       ${withGenres ? 'genre_in: $genres,' : ''}
@@ -163,6 +169,11 @@ const toPositiveId = (value: unknown): number | null => {
 const clampLimit = (value?: number): number => {
   if (!isFiniteNumber(value)) return DEFAULT_LIMIT;
   return Math.min(MAX_LIMIT, Math.max(1, Math.trunc(value)));
+};
+
+const clampPage = (value?: number): number => {
+  if (!isFiniteNumber(value)) return 1;
+  return Math.max(1, Math.trunc(value));
 };
 
 /** Lowercase, strip diacritics, collapse non-alphanumerics to one space, trim. */
@@ -386,6 +397,7 @@ interface NormalizedRequest {
   excludeIds: number[];
   excludeTitles: string[];
   limit: number;
+  page: number;
 }
 
 const normalizeSeeds = (seeds: DiscoveryRequest['seeds']): { anilistId: number; title: string }[] => {
@@ -438,6 +450,7 @@ const normalizeRequest = (request: DiscoveryRequest): NormalizedRequest => {
     excludeIds: uniqueSortedIds(request.excludeAniListIds),
     excludeTitles: uniqueNormalizedTitles(request.excludeTitles),
     limit: clampLimit(request.limit),
+    page: clampPage(request.page),
   };
 };
 
@@ -451,6 +464,7 @@ const buildCacheKey = (request: NormalizedRequest): string =>
     excludeIds: request.excludeIds,
     excludeTitles: request.excludeTitles,
     limit: request.limit,
+    page: request.page,
   });
 
 // --- Cache --------------------------------------------------------------------
@@ -518,11 +532,13 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
   const cached = discoveryCache.get(cacheKey);
   if (cached) return cached.map(cloneCandidate);
 
-  const { seeds, fallbackGenres, moodGenres, excludeIds, excludeTitles, limit } = normalized;
+  const { seeds, fallbackGenres, moodGenres, excludeIds, excludeTitles, limit, page } = normalized;
 
   const pool = new Map<number, AggregatedEntry>();
 
-  if (seeds.length > 0) {
+  // Seed recommendations are not paged, so they are only harvested once: a
+  // later page continues the genre pool instead of repeating the same picks.
+  if (seeds.length > 0 && page === 1) {
     const data = await postGraphQL<SeedsPageResponse>(SEEDS_QUERY, {
       seedIds: seeds.map(seed => seed.anilistId),
       perSeed: Math.min(MAX_LIMIT, seeds.length),
@@ -544,6 +560,7 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
     const variables: Record<string, unknown> = {
       excluded: excludeIds,
       perPage: limit,
+      page,
     };
     // An empty `genre_in` returns an empty page, so the clause is omitted instead.
     if (withGenres) variables.genres = fallbackGenres;

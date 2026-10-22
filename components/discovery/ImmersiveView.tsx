@@ -1,16 +1,19 @@
 import React, { useRef, useMemo, useEffect } from 'react';
-import { RecommendationResult } from '../../services/geminiService';
 import { getColorData } from './constants';
-import { GenerativeCard, LoadingCard, NoResultsCard, EndCard, InfoSheet } from './DiscoveryCards';
+import { formatCardMeta } from './deck';
+import type { AniListDeckCard, DeckCard } from './types';
+import { AniListCard, GenerativeCard, LoadingCard, NoResultsCard, EndCard, InfoSheet } from './DiscoveryCards';
 import { Sparkles, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 
 export interface ImmersiveViewProps {
-  recommendations: RecommendationResult[];
+  recommendations: DeckCard[];
   currentIndex: number;
   onSetCurrentIndex: (index: number | ((prev: number) => number)) => void;
   isLoading: boolean;
   selectedMood: string | null;
   onSelectRecommendation: (title: string, type: string) => void;
+  onAddAniList?: (card: AniListDeckCard) => Promise<void> | void;
+  isExhausted?: boolean;
   onLoadMore: () => void;
   onGoBack: () => void;
 }
@@ -22,17 +25,23 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
   isLoading,
   selectedMood,
   onSelectRecommendation,
+  onAddAniList,
+  isExhausted = false,
   onLoadMore,
   onGoBack,
 }) => {
   const [isInfoOpen, setIsInfoOpen] = React.useState(false);
   const [swipeDirection, setSwipeDirection] = React.useState<'up' | 'down' | null>(null);
+  const [isAdding, setIsAdding] = React.useState(false);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number>(0);
 
   const isEndCard = recommendations.length > 0 && currentIndex === recommendations.length;
   const currentCard = recommendations[currentIndex];
+  const isAniListCard = currentCard?.kind === 'anilist';
+  // A deck never mixes both sources, so one member is enough to identify it.
+  const isAniListDeck = recommendations.some(card => card.kind === 'anilist');
   const cardColors = currentCard ? getColorData(currentCard.title) : { bg: 'from-zinc-700 to-zinc-800', shadow: '#000000' };
 
   // 3D Tilt — Direct DOM manipulation for 60fps
@@ -134,6 +143,39 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
     }
   }, [swipeDirection]);
 
+  // Warm the next cover so advancing does not show an empty frame.
+  useEffect(() => {
+    const next = recommendations[currentIndex + 1];
+    if (next?.kind === 'anilist' && next.coverImage) {
+      const preload = new Image();
+      preload.src = next.coverImage;
+    }
+  }, [recommendations, currentIndex]);
+
+  /**
+   * Primary sheet action. AniList cards are added straight to the library and
+   * advance; AI cards keep their existing search hand-off untouched.
+   */
+  const handleSelect = async () => {
+    if (!currentCard) return;
+
+    if (currentCard.kind !== 'anilist') {
+      onSelectRecommendation(currentCard.title, currentCard.mediaType);
+      setIsInfoOpen(false);
+      return;
+    }
+
+    if (isAdding) return;
+    setIsAdding(true);
+    try {
+      await onAddAniList?.(currentCard);
+      setIsInfoOpen(false);
+      handleNext();
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   // Background style
   const bgStyle = useMemo(() => {
     if (isLoading || recommendations.length === 0) return { background: '#09090B' };
@@ -190,16 +232,28 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
             onTouchEnd={handleTouchEnd}
           >
             {isEndCard ? (
-              <EndCard onLoadMore={onLoadMore} onGoBack={onGoBack} />
+              <EndCard
+                onLoadMore={onLoadMore}
+                onGoBack={onGoBack}
+                count={recommendations.length}
+                loadMoreLabel={isAniListDeck ? 'Ver más' : undefined}
+                canLoadMore={isAniListDeck ? !isExhausted : true}
+              />
             ) : (
               <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
-                <GenerativeCard title={currentCard.title} type={currentCard.mediaType} />
+                {currentCard.kind === 'anilist' ? (
+                  <AniListCard card={currentCard} />
+                ) : (
+                  <GenerativeCard title={currentCard.title} type={currentCard.mediaType} />
+                )}
+                {currentCard.kind !== 'anilist' && (
                 <div className="absolute bottom-6 left-0 right-0 text-center transition-opacity duration-300 pointer-events-none" style={{ opacity: isInfoOpen ? 0 : 1 }}>
                   <p className="text-xs font-extrabold text-white/60 flex items-center justify-center gap-2 bg-[#09090B]/30 backdrop-blur-md py-1 px-3 rounded-full mx-auto w-fit uppercase" style={{ letterSpacing: '0.1em' }}>
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
                     Toca para detalles
                   </p>
                 </div>
+                )}
               </div>
             )}
           </div>
@@ -260,12 +314,14 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
         <InfoSheet
           card={currentCard}
           selectedMood={selectedMood}
+          eyebrow={isAniListCard ? 'Recomendación de AniList' : 'Recomendación IA'}
+          meta={isAniListCard ? formatCardMeta(currentCard) : undefined}
+          actionLabel={isAniListCard ? 'Agregar' : 'Buscar obra'}
+          actionVariant={isAniListCard ? 'add' : 'search'}
+          isBusy={isAdding}
           isOpen={isInfoOpen}
           onClose={() => setIsInfoOpen(false)}
-          onSelect={() => {
-            onSelectRecommendation(currentCard.title, currentCard.mediaType);
-            setIsInfoOpen(false);
-          }}
+          onSelect={handleSelect}
           onNext={handleNext}
         />
       )}

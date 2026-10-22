@@ -1,0 +1,182 @@
+import { describe, it, expect } from 'vitest';
+import { ANILIST_GENRES } from '../../../services/anilistDiscovery';
+import type { DiscoveryCandidate } from '../../../services/anilistDiscovery';
+import { MOOD_OPTIONS } from '../constants';
+import {
+  MOOD_GENRES,
+  formatCardMeta,
+  formatReason,
+  getMoodGenres,
+  toAniListDeckCard,
+} from '../deck';
+import type { AniListDeckCard } from '../types';
+
+const deckCard = (overrides: Partial<AniListDeckCard> = {}): AniListDeckCard => ({
+  kind: 'anilist',
+  anilistId: 1,
+  title: 'Cowboy Bebop',
+  mediaType: 'Anime',
+  synopsis: '',
+  reason: '',
+  genres: [],
+  ...overrides,
+});
+
+const candidate = (overrides: Partial<DiscoveryCandidate> = {}): DiscoveryCandidate => ({
+  anilistId: 16498,
+  title: 'Attack on Titan',
+  alternateTitle: 'Shingeki no Kyojin',
+  coverImage: 'https://img.example/16498.jpg',
+  color: '#3b4a6b',
+  genres: ['Action', 'Drama', 'Fantasy'],
+  format: 'TV',
+  episodes: 25,
+  status: 'FINISHED',
+  seasonYear: 2013,
+  synopsis: 'Humanity fights for survival behind giant walls.',
+  recommendedBy: ['Death Note', 'Code Geass'],
+  votes: 120,
+  popularity: 900000,
+  ...overrides,
+});
+
+describe('MOOD_GENRES', () => {
+  it('maps every mood label to canonical AniList genres', () => {
+    for (const option of MOOD_OPTIONS) {
+      const genres = MOOD_GENRES[option.label];
+      expect(genres, `missing mapping for "${option.label}"`).toBeDefined();
+      expect(genres.length).toBeGreaterThan(0);
+
+      for (const genre of genres) {
+        expect(ANILIST_GENRES, `"${genre}" is not canonical`).toContain(genre);
+      }
+    }
+  });
+
+  it('does not invent labels that are missing from MOOD_OPTIONS', () => {
+    const labels = new Set(MOOD_OPTIONS.map(option => option.label));
+    for (const key of Object.keys(MOOD_GENRES)) {
+      expect(labels).toContain(key);
+    }
+  });
+
+  it('keeps the documented mapping for each mood', () => {
+    expect(MOOD_GENRES['Quiero algo que me vuele la cabeza']).toEqual(['Mystery', 'Psychological', 'Thriller']);
+    expect(MOOD_GENRES['Algo ligero para ver sin pensar']).toEqual(['Comedy', 'Slice of Life']);
+    expect(MOOD_GENRES['Busco una historia que me rompa el corazón']).toEqual(['Drama', 'Romance']);
+    expect(MOOD_GENRES['Necesito adrenalina pura y emoción']).toEqual(['Action', 'Thriller']);
+    expect(MOOD_GENRES['Algo que me transporte a otro mundo']).toEqual(['Fantasy', 'Sci-Fi', 'Adventure']);
+    expect(MOOD_GENRES['Quiero aprender o reflexionar sobre la vida']).toEqual(['Slice of Life', 'Drama', 'Psychological']);
+    expect(MOOD_GENRES['Quiero sentir tensión y un poco de miedo']).toEqual(['Horror', 'Thriller', 'Mystery']);
+    expect(MOOD_GENRES['Algo crudo, oscuro y realista']).toEqual(['Drama', 'Thriller', 'Psychological']);
+  });
+});
+
+describe('getMoodGenres', () => {
+  it('returns the genres of every known mood', () => {
+    for (const option of MOOD_OPTIONS) {
+      expect(getMoodGenres(option.label)).toEqual([...MOOD_GENRES[option.label]]);
+    }
+  });
+
+  it('returns an empty list for null, undefined or unknown labels', () => {
+    expect(getMoodGenres(null)).toEqual([]);
+    expect(getMoodGenres(undefined)).toEqual([]);
+    expect(getMoodGenres('')).toEqual([]);
+    expect(getMoodGenres('Algo que no existe')).toEqual([]);
+  });
+
+  it('returns a copy so callers cannot mutate the mapping', () => {
+    const genres = getMoodGenres('Necesito adrenalina pura y emoción');
+    genres.push('Ecchi');
+    expect(getMoodGenres('Necesito adrenalina pura y emoción')).toEqual(['Action', 'Thriller']);
+  });
+});
+
+describe('formatReason', () => {
+  it('returns an empty string when nothing recommended the title', () => {
+    expect(formatReason([])).toBe('');
+    expect(formatReason(['', '   '])).toBe('');
+  });
+
+  it('formats a single source', () => {
+    expect(formatReason(['Death Note'])).toBe('Recomendada por fans de Death Note');
+  });
+
+  it('formats two sources', () => {
+    expect(formatReason(['Death Note', 'Code Geass'])).toBe('Recomendada por fans de Death Note y Code Geass');
+  });
+
+  it('summarizes three sources as one extra', () => {
+    expect(formatReason(['Death Note', 'Code Geass', 'Monster'])).toBe(
+      'Recomendada por fans de Death Note, Code Geass y 1 más',
+    );
+  });
+
+  it('summarizes four sources as two extra', () => {
+    expect(formatReason(['Death Note', 'Code Geass', 'Monster', 'Steins;Gate'])).toBe(
+      'Recomendada por fans de Death Note, Code Geass y 2 más',
+    );
+  });
+});
+
+describe('formatCardMeta', () => {
+  it('joins format, year and episodes for a TV series', () => {
+    expect(formatCardMeta(deckCard({ format: 'TV', seasonYear: 2013, episodes: 25 }))).toBe('TV · 2013 · 25 eps');
+  });
+
+  it('renders a movie without an episode count', () => {
+    expect(formatCardMeta(deckCard({ format: 'MOVIE', seasonYear: 2019 }))).toBe('Película · 2019');
+  });
+
+  it('returns an empty string when the card has nothing but a title', () => {
+    expect(formatCardMeta(deckCard())).toBe('');
+  });
+
+  it('translates known formats and falls back to the raw value', () => {
+    expect(formatCardMeta(deckCard({ format: 'TV_SHORT' }))).toBe('TV corto');
+    expect(formatCardMeta(deckCard({ format: 'SPECIAL' }))).toBe('Especial');
+    expect(formatCardMeta(deckCard({ format: 'MUSIC' }))).toBe('MUSIC');
+  });
+
+  it('drops a zero or missing episode count', () => {
+    expect(formatCardMeta(deckCard({ format: 'OVA', episodes: 0 }))).toBe('OVA');
+    expect(formatCardMeta(deckCard({ format: 'ONA' }))).toBe('ONA');
+  });
+});
+
+describe('toAniListDeckCard', () => {
+  it('maps every candidate field onto the deck card', () => {
+    expect(toAniListDeckCard(candidate())).toEqual({
+      kind: 'anilist',
+      anilistId: 16498,
+      title: 'Attack on Titan',
+      alternateTitle: 'Shingeki no Kyojin',
+      mediaType: 'Anime',
+      synopsis: 'Humanity fights for survival behind giant walls.',
+      reason: 'Recomendada por fans de Death Note y Code Geass',
+      coverImage: 'https://img.example/16498.jpg',
+      color: '#3b4a6b',
+      genres: ['Action', 'Drama', 'Fantasy'],
+      format: 'TV',
+      episodes: 25,
+      seasonYear: 2013,
+      status: 'FINISHED',
+    });
+  });
+
+  it('always reports the Anime media type', () => {
+    expect(toAniListDeckCard(candidate({ format: 'MOVIE' })).mediaType).toBe('Anime');
+  });
+
+  it('builds the reason from an empty recommendedBy list', () => {
+    expect(toAniListDeckCard(candidate({ recommendedBy: [] })).reason).toBe('');
+  });
+
+  it('copies genres instead of sharing the candidate array', () => {
+    const source = candidate();
+    const card = toAniListDeckCard(source);
+    card.genres.push('Ecchi');
+    expect(source.genres).toEqual(['Action', 'Drama', 'Fantasy']);
+  });
+});
