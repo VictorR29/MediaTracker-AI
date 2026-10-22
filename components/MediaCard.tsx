@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem, UserTrackingData, AIWorkData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { updateMediaInfo, generateReviewSummary } from '../services/geminiService';
-import { computeNextSeason, createCustomLink, processImageToBase64, reorderCharacters } from '../services/mediaItemOperations';
+import { computeNextSeason, createCustomLink, mergeCharacters, processImageToBase64, reorderCharacters } from '../services/mediaItemOperations';
 import { useToast } from '../context/ToastContext';
 import { extractColorFromImage, hexToRgb, vibrify } from './media-card/colorUtils';
 import {
@@ -10,9 +10,9 @@ import {
   Plus, Layout, Globe, Upload, Image as ImageIcon,
   FileText, RefreshCw, CheckCircle2, ChevronLeft, ChevronRight,
   PlayCircle, User, Minus, CalendarClock, Trophy, Medal, GripVertical,
-  Wand2, MessageSquare, Info, BarChart2, PenTool
+  Wand2, MessageSquare, Info, BarChart2, PenTool, Users
 } from 'lucide-react';
-import { EditActionBar, AiringBlock, AniListLinkModal, AniListLinkRow } from './media-card';
+import { EditActionBar, AiringBlock, AniListLinkModal, AniListLinkRow, CharacterPickerModal } from './media-card';
 import { useAiringSnapshot } from '../hooks/useAiringSnapshot';
 
 interface MediaCardProps {
@@ -41,6 +41,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const [isGeneratingReview, setIsGeneratingReview] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false);
 
   // Drag & Drop State for Characters
   const dragItem = useRef<number | null>(null);
@@ -265,6 +266,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
   const isMovie = aiData.mediaType === 'Pelicula';
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
+  const anilistId = aiData.anilist?.id;
 
   const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
     { id: 'info', label: 'Info', icon: Info },
@@ -776,10 +778,17 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <div className="flex gap-2">
                   <input placeholder="Añadir personaje..." value={newCharacterInput} onChange={(e) => setNewCharacterInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddCharacter()}
-                    className="flex-1 bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-white/20" />
+                    className="flex-1 min-w-0 bg-zinc-900/50 ring-1 ring-white/[0.06] rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-white/20" />
                   <button onClick={handleAddCharacter} className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-[rgb(var(--card-rgb))] hover:opacity-90 text-white rounded-xl transition-all">
                     <Plus className="w-4 h-4" />
                   </button>
+                  {anilistId !== undefined && (
+                    <button onClick={() => setIsCharacterPickerOpen(true)}
+                      className="min-h-[44px] shrink-0 flex items-center gap-1.5 px-3 rounded-xl bg-zinc-900/50 ring-1 ring-white/[0.06] text-[11px] font-bold text-violet-400 hover:bg-zinc-800 hover:text-violet-300 whitespace-nowrap transition-colors">
+                      <Users className="w-4 h-4" />
+                      Elegir de AniList
+                    </button>
+                  )}
                 </div>
                 <p className="text-[10px] text-zinc-600 mt-1.5 italic">Arrastra para reordenar. Top 5 aparecen destacados.</p>
               </div>
@@ -859,6 +868,18 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           airing.refresh();
         }}
       />
+
+      {anilistId !== undefined && isCharacterPickerOpen && (
+        <CharacterPickerModal
+          itemId={localData.id}
+          anilistId={anilistId}
+          existing={tracking.favoriteCharacters || []}
+          onConfirm={(selected) => {
+            handleInputChange('favoriteCharacters', mergeCharacters(tracking.favoriteCharacters || [], selected));
+          }}
+          onClose={() => setIsCharacterPickerOpen(false)}
+        />
+      )}
     </div>
   );
 };

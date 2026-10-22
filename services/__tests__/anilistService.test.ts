@@ -4,12 +4,14 @@ import {
   ANILIST_ENDPOINT,
   AIRING_TTL_MS,
   AniListError,
+  __clearCharacterCacheForTests,
   __resetThrottleForTests,
   __setThrottleForTests,
   applyAiringSnapshots,
   applyMatchResult,
   createManualMatch,
   fetchAiringSnapshots,
+  fetchMediaCharacters,
   isAiringSnapshotFresh,
   linkAniListCandidate,
   resolveAniListMatch,
@@ -133,6 +135,8 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   // AniList is throttled in production; tests must not wait 2s per request.
   __setThrottleForTests(0);
+  // Character lists are cached per media id; every test starts cold.
+  __clearCharacterCacheForTests();
 });
 
 afterEach(() => {
@@ -1095,5 +1099,104 @@ describe('linkAniListCandidate', () => {
     } finally {
       errorSpy.mockRestore();
     }
+  });
+});
+
+// --- Characters ---------------------------------------------------------------
+
+const charactersPayload = (nodes: unknown[]) => ({ Media: { characters: { nodes } } });
+
+const requestBody = (callIndex = 0): { query: string; variables: Record<string, unknown> } => {
+  const init = fetchMock.mock.calls[callIndex][1] as RequestInit;
+  return JSON.parse(String(init.body));
+};
+
+describe('fetchMediaCharacters', () => {
+  it('maps full name, native name and the large image, skipping blank names', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        charactersPayload([
+          {
+            id: 40882,
+            name: { full: 'Eren Yeager', native: 'エレン・イェーガー' },
+            image: { large: 'https://s4.anilist.co/file/anilistcdn/character/large/b40882.jpg' },
+          },
+          { id: 40881, name: { full: '   ', native: 'ミカサ・アッカーマン' }, image: { large: 'https://img/mikasa.png' } },
+          { id: 40883, name: { full: 'Armin Arlert', native: null }, image: null },
+        ]),
+      ),
+    );
+
+    const characters = await fetchMediaCharacters(16498);
+
+    expect(characters).toEqual([
+      {
+        id: 40882,
+        name: 'Eren Yeager',
+        nativeName: 'エレン・イェーガー',
+        image: 'https://s4.anilist.co/file/anilistcdn/character/large/b40882.jpg',
+      },
+      { id: 40883, name: 'Armin Arlert' },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const body = requestBody();
+    expect(body.variables).toEqual({ id: 16498, perPage: 50 });
+    expect(body.query).toContain('sort: [ROLE, RELEVANCE]');
+    expect(body.query).toContain('nodes { id name { full native } image { large } }');
+    expect(fetchMock.mock.calls[0][0]).toBe(ANILIST_ENDPOINT);
+  });
+
+  it('clamps perPage above the AniList maximum of 50', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(charactersPayload([])));
+
+    await fetchMediaCharacters(1, 500);
+
+    expect(requestBody().variables).toEqual({ id: 1, perPage: 50 });
+  });
+
+  it('clamps perPage below 1', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(charactersPayload([])));
+
+    await fetchMediaCharacters(2, 0);
+
+    expect(requestBody().variables).toEqual({ id: 2, perPage: 1 });
+  });
+
+  it('returns an empty list for an invalid media id without a request', async () => {
+    const results = await Promise.all([
+      fetchMediaCharacters(0),
+      fetchMediaCharacters(-7),
+      fetchMediaCharacters(Number.NaN),
+      fetchMediaCharacters(Number.POSITIVE_INFINITY),
+    ]);
+
+    expect(results).toEqual([[], [], [], []]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('serves a repeated request from the module cache', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(charactersPayload([{ id: 40882, name: { full: 'Eren Yeager' }, image: { large: 'https://img/eren.jpg' } }])),
+    );
+
+    const first = await fetchMediaCharacters(16498);
+    const second = await fetchMediaCharacters(16498);
+
+    expect(second).toEqual(first);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not cache failures', async () => {
+    fetchMock
+      .mockResolvedValueOnce(errorResponse(500))
+      .mockResolvedValueOnce(jsonResponse(charactersPayload([{ id: 1, name: { full: 'Levi Ackerman' } }])));
+
+    await expect(fetchMediaCharacters(16498)).rejects.toBeInstanceOf(AniListError);
+
+    const characters = await fetchMediaCharacters(16498);
+
+    expect(characters).toEqual([{ id: 1, name: 'Levi Ackerman' }]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

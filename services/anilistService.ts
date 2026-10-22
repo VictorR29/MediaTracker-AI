@@ -715,3 +715,95 @@ export async function linkAniListCandidate(
     return relinked;
   }
 }
+
+// --- Characters ---------------------------------------------------------------
+
+export interface AniListCharacter {
+  id: number;
+  name: string;
+  nativeName?: string;
+  image?: string;
+}
+
+interface CharacterNameNode {
+  full?: string | null;
+  native?: string | null;
+}
+
+interface CharacterNode {
+  id?: number | null;
+  name?: CharacterNameNode | null;
+  image?: { large?: string | null } | null;
+}
+
+interface MediaCharactersResponse {
+  Media?: { characters?: { nodes?: (CharacterNode | null)[] | null } | null } | null;
+}
+
+const CHARACTERS_QUERY = `
+query ($id: Int, $perPage: Int) {
+  Media(id: $id, type: ANIME) {
+    characters(perPage: $perPage, sort: [ROLE, RELEVANCE]) {
+      nodes { id name { full native } image { large } }
+    }
+  }
+}`;
+
+/**
+ * A character list changes far less often than airing data, so a successful
+ * response is reused for the rest of the session: reopening the picker costs no
+ * request. Failures are never cached.
+ */
+const characterCache = new Map<string, AniListCharacter[]>();
+
+/** Test-only: forget every cached character list. */
+export function __clearCharacterCacheForTests(): void {
+  characterCache.clear();
+}
+
+const clampCharacterPageSize = (perPage: number): number => {
+  if (!Number.isFinite(perPage)) return MAX_PAGE_SIZE;
+  return Math.min(MAX_PAGE_SIZE, Math.max(1, Math.trunc(perPage)));
+};
+
+/**
+ * Favourite-candidate characters for one AniList media entry, ordered by role
+ * and relevance. Requests go through the shared throttled queue like every
+ * other AniList call, so a picker open never trips the rate limiter.
+ */
+export async function fetchMediaCharacters(
+  mediaId: number,
+  perPage: number = MAX_PAGE_SIZE,
+): Promise<AniListCharacter[]> {
+  if (!isFiniteNumber(mediaId) || mediaId <= 0) return [];
+
+  const pageSize = clampCharacterPageSize(perPage);
+  const cacheKey = `${mediaId}:${pageSize}`;
+  const cached = characterCache.get(cacheKey);
+  // Copies keep a caller's mutation from corrupting the cache.
+  if (cached) return cached.map(character => ({ ...character }));
+
+  const data = await postGraphQL<MediaCharactersResponse>(CHARACTERS_QUERY, {
+    id: mediaId,
+    perPage: pageSize,
+  });
+  const nodes = data?.Media?.characters?.nodes ?? [];
+
+  const characters: AniListCharacter[] = [];
+  for (const node of nodes) {
+    if (!node || !isFiniteNumber(node.id)) continue;
+
+    const name = node.name?.full?.trim();
+    if (!name) continue;
+
+    characters.push({
+      id: node.id,
+      name,
+      nativeName: node.name?.native?.trim() || undefined,
+      image: node.image?.large || undefined,
+    });
+  }
+
+  characterCache.set(cacheKey, characters);
+  return characters.map(character => ({ ...character }));
+}

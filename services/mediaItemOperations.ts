@@ -82,6 +82,41 @@ export const processImageToBase64 = (file: File): Promise<string> => {
 };
 
 /**
+ * Comparison key for a character name: case- and accent-insensitive with
+ * collapsed whitespace. Punctuation is significant, unlike the AniList title
+ * matcher, because "Eren" and "Eren!" are different user entries.
+ */
+const normalizeCharacterName = (name: string): string =>
+  name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/**
+ * Appends characters whose names are not already present, keeping the existing
+ * order first and then the incoming order. Pure function — inputs are never
+ * mutated.
+ */
+export const mergeCharacters = (
+  existing: { name: string; image?: string }[],
+  incoming: { name: string; image?: string }[]
+): { name: string; image?: string }[] => {
+  const result = existing.map(character => ({ ...character }));
+  const seen = new Set(result.map(character => normalizeCharacterName(character.name)));
+
+  for (const character of incoming) {
+    const key = normalizeCharacterName(character.name);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({ name: character.name, image: character.image });
+  }
+
+  return result;
+};
+
+/**
  * Reorders an array by moving an element from one index to another.
  * Pure function — returns a new array.
  */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeNextSeason, createCustomLink, reorderCharacters } from '../mediaItemOperations';
+import { computeNextSeason, createCustomLink, mergeCharacters, reorderCharacters } from '../mediaItemOperations';
 import { MediaItem } from '../../types';
 
 const baseItem: MediaItem = {
@@ -90,6 +90,61 @@ describe('mediaItemOperations', () => {
     it('returns same array when indices match', () => {
       const result = reorderCharacters(['A', 'B'], 0, 0);
       expect(result).toEqual(['A', 'B']);
+    });
+  });
+
+  describe('mergeCharacters', () => {
+    it('dedupes names case- and accent-insensitively with collapsed whitespace', () => {
+      const existing = [{ name: 'Eren Yeager' }, { name: 'Mikasa Ackerman' }];
+      const incoming = [{ name: '  EREN   yeager  ' }, { name: 'Mikasa Áckerman' }];
+
+      expect(mergeCharacters(existing, incoming)).toEqual(existing);
+    });
+
+    it('keeps existing order and appends new characters in incoming order', () => {
+      const existing = [{ name: 'Mikasa Ackerman' }, { name: 'Eren Yeager' }];
+      const incoming = [{ name: 'Levi Ackerman' }, { name: 'Armin Arlert' }, { name: 'Eren Yeager' }];
+
+      expect(mergeCharacters(existing, incoming).map(character => character.name)).toEqual([
+        'Mikasa Ackerman',
+        'Eren Yeager',
+        'Levi Ackerman',
+        'Armin Arlert',
+      ]);
+    });
+
+    it('keeps incoming images and existing ones', () => {
+      const existing = [{ name: 'Eren Yeager', image: 'https://img/local.jpg' }];
+      const incoming = [
+        { name: 'Mikasa Ackerman', image: 'https://img/mikasa.png' },
+        { name: 'Armin Arlert' },
+      ];
+
+      expect(mergeCharacters(existing, incoming)).toEqual([
+        { name: 'Eren Yeager', image: 'https://img/local.jpg' },
+        { name: 'Mikasa Ackerman', image: 'https://img/mikasa.png' },
+        { name: 'Armin Arlert' },
+      ]);
+    });
+
+    it('does not mutate its inputs', () => {
+      const existing = [{ name: 'Eren Yeager' }];
+      const incoming = [{ name: 'Mikasa Ackerman', image: 'https://img/mikasa.png' }];
+
+      const result = mergeCharacters(existing, incoming);
+
+      expect(existing).toEqual([{ name: 'Eren Yeager' }]);
+      expect(incoming).toEqual([{ name: 'Mikasa Ackerman', image: 'https://img/mikasa.png' }]);
+      expect(result).not.toBe(existing);
+      expect(result).not.toBe(incoming);
+    });
+
+    it('handles empty sides', () => {
+      const characters = [{ name: 'Eren Yeager', image: 'https://img/eren.jpg' }];
+
+      expect(mergeCharacters([], [])).toEqual([]);
+      expect(mergeCharacters([], characters)).toEqual(characters);
+      expect(mergeCharacters(characters, [])).toEqual(characters);
     });
   });
 });
