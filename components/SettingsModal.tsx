@@ -7,6 +7,7 @@ import { hashPassword } from '../utils/password';
 import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2, ChevronRight, Copy } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useAniListBackfillStore } from '../stores/useAniListBackfillStore';
+import { useCharacterImageBackfillStore } from '../stores/useCharacterImageBackfillStore';
 import { useUIStore } from '../stores/useUIStore';
 import { auditLibrary } from '../services/libraryAudit';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +31,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const { showToast } = useToast();
   const { summary: backfillSummary, isRunning: isBackfillRunning, current: backfillCurrent, start: startBackfill, cancel: cancelBackfill } = useAniListBackfillStore();
+  const {
+    summary: characterSummary,
+    isRunning: isCharacterRunRunning,
+    current: characterCurrent,
+    start: startCharacterImages,
+    cancel: cancelCharacterImages,
+  } = useCharacterImageBackfillStore();
   const navigate = useNavigate();
   const setLastOpenedItemId = useUIStore(s => s.setLastOpenedItemId);
 
@@ -175,6 +183,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (!result) return;
       const hasProblems = result.failed > 0 || result.aborted;
       showToast("Sincronización terminada", hasProblems ? "error" : "success");
+  };
+
+  // --- CHARACTER PHOTOS ---
+  const handleCharacterImages = async () => {
+      if (isCharacterRunRunning || isBackfillRunning) return;
+      showToast("Buscando fotos de personajes…", "info");
+      await startCharacterImages();
+      const result = useCharacterImageBackfillStore.getState().summary;
+      if (!result) return;
+      const hasProblems = result.failed > 0 || result.cancelled;
+      showToast("Búsqueda de fotos terminada", hasProblems ? "error" : "success");
   };
 
   // The picker lives inside the work card, so fixing a link means going there.
@@ -489,7 +508,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleAniListBackfill}
-                                    disabled={isBackfillRunning}
+                                    disabled={isBackfillRunning || isCharacterRunRunning}
                                     className="flex-1 px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl text-sm text-white font-medium transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <RefreshCw className={`w-4 h-4 text-violet-400 ${isBackfillRunning ? 'animate-spin' : ''}`} />
@@ -528,6 +547,49 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     {backfillSummary.abortReason === 'cancelled' && ' Cancelado.'}
                                 </p>
                             )}
+
+                            {/* Character photos */}
+                            <div className="mt-4 pt-4 border-t border-white/[0.06]">
+                                <p className="text-xs font-semibold text-zinc-300 mb-1">
+                                    Completar fotos de personajes
+                                </p>
+                                <p className="text-[11px] text-zinc-500 mb-3">
+                                    Busca fotos solo para los personajes que ya agregaste y todavía no tienen imagen.
+                                    Si un nombre coincide con más de un personaje, se deja como está.
+                                </p>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={isCharacterRunRunning ? cancelCharacterImages : handleCharacterImages}
+                                        disabled={!isCharacterRunRunning && isBackfillRunning}
+                                        className="flex-1 px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl text-sm text-white font-medium transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <ImageIcon className={`w-4 h-4 text-sky-400 ${isCharacterRunRunning ? 'animate-pulse' : ''}`} />
+                                        {isCharacterRunRunning ? 'Cancelar' : 'Completar'}
+                                    </button>
+                                </div>
+
+                                {isCharacterRunRunning && characterSummary && (
+                                    <div className="mt-3 space-y-1.5">
+                                        <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-sky-500 transition-all duration-300"
+                                                style={{ width: `${characterSummary.worksConsidered > 0 ? (characterSummary.requests / characterSummary.worksConsidered) * 100 : 0}%` }}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3 text-[11px] text-zinc-500">
+                                            <span>{characterSummary.requests} de {characterSummary.worksConsidered}</span>
+                                            {characterCurrent && <span className="truncate">{characterCurrent}</span>}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!isCharacterRunRunning && characterSummary && (
+                                    <p className="text-[11px] text-zinc-500 mt-2">
+                                        {characterSummary.cancelled && 'Interrumpido: '}
+                                        Rellenadas {characterSummary.filled} · Ambiguas {characterSummary.ambiguous} · Sin coincidencia {characterSummary.notFound} · Errores {characterSummary.failed}
+                                    </p>
+                                )}
+                            </div>
 
                             {uncertainLinks.length > 0 && (
                                 <div className="mt-4 pt-3 border-t border-white/[0.06]">
