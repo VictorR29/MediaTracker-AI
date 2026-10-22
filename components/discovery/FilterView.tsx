@@ -1,7 +1,7 @@
 import React from 'react';
 import { MediaItem } from '../../types';
-import { MOOD_OPTIONS, MEDIA_TYPES } from './constants';
-import { Sparkles, Compass, Loader2, AlertCircle, ChevronDown, Filter, X, Search, Wand2, Heart, Plus } from 'lucide-react';
+import { MOOD_OPTIONS, MEDIA_TYPES, EPOCH_OPTIONS } from './constants';
+import { Sparkles, Compass, Loader2, AlertCircle, ChevronDown, Filter, X, Search, Wand2, Heart, Plus, CalendarDays } from 'lucide-react';
 
 export interface FilterViewProps {
   library: MediaItem[];
@@ -18,6 +18,13 @@ export interface FilterViewProps {
   onToggleRefine: () => void;
   isMoodOpen: boolean;
   onToggleMoodPanel: () => void;
+  /** Minimum release year, or null for any year. AniList-only. */
+  epochFilter: number | null;
+  onSelectEpoch: (epoch: number | null) => void;
+  onlyFirstSeason: boolean;
+  onToggleOnlyFirstSeason: () => void;
+  isCatalogOpen: boolean;
+  onToggleCatalogPanel: () => void;
   isLoading: boolean;
   error: string | null;
   onGenerate: () => void;
@@ -38,6 +45,12 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
   onToggleRefine,
   isMoodOpen,
   onToggleMoodPanel,
+  epochFilter,
+  onSelectEpoch,
+  onlyFirstSeason,
+  onToggleOnlyFirstSeason,
+  isCatalogOpen,
+  onToggleCatalogPanel,
   isLoading,
   error,
   onGenerate,
@@ -55,6 +68,10 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
       item.aiData.title.toLowerCase().includes(seedSearchQuery.toLowerCase())
     );
   }, [availableSeedItems, seedSearchQuery]);
+
+  const epochSummary = `${epochFilter === null ? 'Cualquier época' : `Desde ${epochFilter}`} · ${
+    onlyFirstSeason ? 'Solo primeras temporadas' : 'Incluye temporadas'
+  }`;
 
   return (
     <div className="animate-fade-in pb-12">
@@ -247,6 +264,75 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
               </div>
             )}
           </div>
+
+          {/* Catalog Panel: Epoch and franchise collapse, Anime only (AniList) */}
+          {selectedType === 'Anime' && (
+            <div className="bg-zinc-950/60 rounded-xl ring-1 ring-white/[0.04] overflow-hidden mb-8 transition-all">
+              <div
+                className="p-4 bg-zinc-900/50 border-b border-white/5 flex items-center justify-between cursor-pointer hover:bg-zinc-800/50 transition-colors"
+                onClick={onToggleCatalogPanel}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${epochFilter !== null || onlyFirstSeason ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
+                    <CalendarDays className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-zinc-200">
+                      Época y sagas
+                    </h4>
+                    <p className="text-xs text-zinc-500">{epochSummary}</p>
+                  </div>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-300 ${isCatalogOpen ? 'rotate-180' : ''}`} />
+              </div>
+
+              {isCatalogOpen && (
+                <div className="p-4 space-y-5 animate-fade-in">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 mb-2">Época</p>
+                    <div className="flex flex-wrap gap-2">
+                      {EPOCH_OPTIONS.map((option) => {
+                        const isSelected = epochFilter === option.value;
+                        return (
+                          <button
+                            key={option.label}
+                            onClick={() => onSelectEpoch(option.value)}
+                            aria-pressed={isSelected}
+                            className={`flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected
+                              ? 'bg-white/10 border-white/30 text-white shadow-[0_0_12px_rgba(255,255,255,0.1)]'
+                              : 'bg-zinc-900/40 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                            }`}
+                          >
+                            <span>{option.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-bold text-zinc-200">Solo primeras temporadas</p>
+                      <p className="text-xs text-zinc-500">
+                        Evita secuelas y temporadas posteriores de una misma saga.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      aria-pressed={onlyFirstSeason}
+                      aria-label="Solo primeras temporadas"
+                      onClick={onToggleOnlyFirstSeason}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${onlyFirstSeason ? 'bg-white/80' : 'bg-zinc-700'}`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-zinc-900 transition-transform ${onlyFirstSeason ? 'translate-x-6' : 'translate-x-1'}`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-xs text-zinc-400 hidden md:block">

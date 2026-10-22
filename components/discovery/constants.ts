@@ -11,6 +11,14 @@ export const MOOD_OPTIONS = [
   { emoji: "🚬", label: "Algo crudo, oscuro y realista", shortLabel: "Crudo y oscuro", keywords: "gritty, realistic, dark, noir, mature themes, morally complex, raw" }
 ];
 
+export const EPOCH_OPTIONS = [
+  { label: 'Todas', value: null },
+  { label: '1990+', value: 1990 },
+  { label: '2000+', value: 2000 },
+  { label: '2010+', value: 2010 },
+  { label: '2015+', value: 2015 },
+] as const;
+
 export const MEDIA_TYPES = [
   { label: 'Anime', value: 'Anime', icon: Tv, color: 'text-violet-400', activeColor: '#8b5cf6' },
   { label: 'Series', value: 'Serie', icon: Clapperboard, color: 'text-purple-400', activeColor: '#c084fc' },

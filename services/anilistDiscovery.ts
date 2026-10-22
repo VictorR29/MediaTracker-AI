@@ -55,6 +55,16 @@ export interface DiscoveryRequest {
    * how a deck asks for genuinely new cards once it ran out.
    */
   page?: number;
+  /**
+   * Oldest acceptable release year. Omitted means no year filter.
+   */
+  minYear?: number;
+  /**
+   * When true, an entry that has a PREQUEL of format TV, TV_SHORT or ONA is
+   * dropped: it is a later season, not the first entry of its franchise.
+   * Opt-in, because it costs one extra request.
+   */
+  collapseSeasons?: boolean;
 }
 
 // --- Tuning -------------------------------------------------------------------
@@ -83,6 +93,8 @@ interface DiscoveryMediaNode {
   episodes?: number | null;
   status?: string | null;
   seasonYear?: number | null;
+  /** Movies carry no `seasonYear`, but always carry a partial start date. */
+  startDate?: { year?: number | null } | null;
   description?: string | null;
   popularity?: number | null;
   isAdult?: boolean | null;
@@ -105,6 +117,20 @@ interface GenrePageResponse {
   Page?: { media?: (DiscoveryMediaNode | null)[] | null } | null;
 }
 
+interface RelationEdgeNode {
+  relationType?: string | null;
+  node?: { id?: number | null; format?: string | null } | null;
+}
+
+interface RelationsMediaNode {
+  id?: number | null;
+  relations?: { edges?: (RelationEdgeNode | null)[] | null } | null;
+}
+
+interface RelationsPageResponse {
+  Page?: { media?: (RelationsMediaNode | null)[] | null } | null;
+}
+
 const DISCOVERY_MEDIA_FIELDS = `
   id
   title { romaji english }
@@ -114,6 +140,7 @@ const DISCOVERY_MEDIA_FIELDS = `
   episodes
   status
   seasonYear
+  startDate { year }
   description
   popularity
   isAdult
@@ -138,19 +165,43 @@ query ($seedIds: [Int], $perSeed: Int) {
 /**
  * `format_not` takes a single MediaFormat enum in the live schema, not a list:
  * `format_not: [MUSIC]` is rejected with a validation error.
+ *
+ * The year filter uses `startDate_greater` (FuzzyDateInt). `seasonYear_greater`
+ * does not exist in the schema and AniList answers 400 for it.
  */
-const buildGenrePoolQuery = (withGenres: boolean): string => `
-query (${withGenres ? '$genres: [String], ' : ''}$excluded: [Int], $perPage: Int, $page: Int) {
+const buildGenrePoolQuery = (withGenres: boolean, withMinDate: boolean): string => `
+query (${withGenres ? '$genres: [String], ' : ''}${withMinDate ? '$minDate: FuzzyDateInt, ' : ''}$excluded: [Int], $perPage: Int, $page: Int) {
   Page(page: $page, perPage: $perPage) {
     media(
       type: ANIME,
       ${withGenres ? 'genre_in: $genres,' : ''}
+      ${withMinDate ? 'startDate_greater: $minDate,' : ''}
       id_not_in: $excluded,
       isAdult: false,
       format_not: MUSIC,
       sort: [POPULARITY_DESC]
     ) {
       ${DISCOVERY_MEDIA_FIELDS}
+    }
+  }
+}`;
+
+/**
+ * One batched lookup for the whole deck. A nested relations walk was measured
+ * slower and did not reach the franchise root, so this only looks one level
+ * deep: enough to tell "has a previous season" from "is the first entry".
+ */
+const RELATIONS_QUERY = `
+query ($ids: [Int]) {
+  Page(perPage: 50) {
+    media(id_in: $ids, type: ANIME) {
+      id
+      relations {
+        edges {
+          relationType
+          node { id format }
+        }
+      }
     }
   }
 }`;
@@ -341,6 +392,16 @@ const mergeGenrePool = (
   }
 };
 
+/**
+ * Release year for the card meta line. `seasonYear` is null for movies, so the
+ * partial start date is the fallback; without it a film would lose its year.
+ */
+const toReleaseYear = (node: DiscoveryMediaNode): number | undefined => {
+  if (isFiniteNumber(node.seasonYear)) return node.seasonYear;
+  if (isFiniteNumber(node.startDate?.year)) return node.startDate.year;
+  return undefined;
+};
+
 const toCandidate = (entry: AggregatedEntry): DiscoveryCandidate | null => {
   const node = entry.node;
   const id = toPositiveId(node.id);
@@ -363,7 +424,7 @@ const toCandidate = (entry: AggregatedEntry): DiscoveryCandidate | null => {
     format: node.format ?? undefined,
     episodes: isFiniteNumber(node.episodes) ? node.episodes : undefined,
     status: node.status ?? undefined,
-    seasonYear: isFiniteNumber(node.seasonYear) ? node.seasonYear : undefined,
+    seasonYear: toReleaseYear(node),
     synopsis: toSynopsis(node.description),
     recommendedBy: [...entry.recommendedBy],
     votes: entry.votes,
@@ -398,7 +459,22 @@ interface NormalizedRequest {
   excludeTitles: string[];
   limit: number;
   page: number;
+  minYear?: number;
+  collapseSeasons: boolean;
 }
+
+const MIN_ACCEPTABLE_YEAR = 1950;
+
+/**
+ * A non-finite or absurd year is dropped instead of clamped: a caller asking for
+ * 1200 or 3000 has a bug, and the safe behavior is "no year filter".
+ */
+const sanitizeMinYear = (value?: number): number | undefined => {
+  if (!isFiniteNumber(value)) return undefined;
+  const year = Math.trunc(value);
+  const maxYear = new Date().getFullYear() + 2;
+  return year >= MIN_ACCEPTABLE_YEAR && year <= maxYear ? year : undefined;
+};
 
 const normalizeSeeds = (seeds: DiscoveryRequest['seeds']): { anilistId: number; title: string }[] => {
   const unique: { anilistId: number; title: string }[] = [];
@@ -451,6 +527,8 @@ const normalizeRequest = (request: DiscoveryRequest): NormalizedRequest => {
     excludeTitles: uniqueNormalizedTitles(request.excludeTitles),
     limit: clampLimit(request.limit),
     page: clampPage(request.page),
+    minYear: sanitizeMinYear(request.minYear),
+    collapseSeasons: request.collapseSeasons === true,
   };
 };
 
@@ -465,6 +543,8 @@ const buildCacheKey = (request: NormalizedRequest): string =>
     excludeTitles: request.excludeTitles,
     limit: request.limit,
     page: request.page,
+    minYear: request.minYear ?? null,
+    collapseSeasons: request.collapseSeasons,
   });
 
 // --- Cache --------------------------------------------------------------------
@@ -486,6 +566,9 @@ const cloneCandidate = (candidate: DiscoveryCandidate): DiscoveryCandidate => ({
  * Turns the aggregated pool into the deck: unusable entries are dropped, the
  * user's own library is subtracted, and what survives is ordered by mood, then
  * by cross-seed consensus, then by votes.
+ *
+ * A candidate with no year at all is kept: unknown is not old, and dropping it
+ * would silently lose entries the API simply did not date.
  */
 const rankCandidates = (
   pool: Map<number, AggregatedEntry>,
@@ -493,11 +576,13 @@ const rankCandidates = (
   excludedTitles: Set<string>,
   moodKeys: Set<string>,
   limit: number,
+  minYear?: number,
 ): DiscoveryCandidate[] =>
   [...pool.values()]
     .map(toCandidate)
     .filter((candidate): candidate is DiscoveryCandidate => candidate !== null)
     .filter(candidate => !isExcluded(candidate, excludedIds, excludedTitles))
+    .filter(candidate => minYear === undefined || candidate.seasonYear === undefined || candidate.seasonYear >= minYear)
     .map(candidate => ({ candidate, mood: hasMoodMatch(candidate.genres, moodKeys) }))
     .sort(
       (a, b) =>
@@ -510,6 +595,56 @@ const rankCandidates = (
     )
     .slice(0, limit)
     .map(entry => entry.candidate);
+
+/** Prequel formats that make an entry a continuation rather than a franchise start. */
+const COLLAPSIBLE_PREQUEL_FORMATS = new Set(['TV', 'TV_SHORT', 'ONA']);
+
+/**
+ * Drops later seasons by asking AniList for the relations of the whole deck in
+ * one request. An entry whose PREQUEL is a TV/TV_SHORT/ONA title is a
+ * continuation; title heuristics ("Season N", "Part N") are not reliable, since
+ * arcs such as "Entertainment District Arc" are later seasons without the word.
+ *
+ * Later entries are dropped, never replaced by their first season: resolving the
+ * true root needs a chain walk (a nested relations query was measured slower and
+ * did not reach it), and when the root is already in the user's library the
+ * correct outcome is to show nothing from that franchise anyway. The genre pool
+ * then offers other first entries.
+ *
+ * Any failure returns the input unchanged on purpose: a relations outage must
+ * not empty the deck, and this filter stays non-blocking.
+ */
+const collapseLaterSeasons = async (candidates: DiscoveryCandidate[]): Promise<DiscoveryCandidate[]> => {
+  try {
+    if (candidates.length === 0) return candidates;
+
+    const data = await postGraphQL<RelationsPageResponse>(RELATIONS_QUERY, {
+      ids: candidates.map(candidate => candidate.anilistId),
+    });
+
+    const laterSeasonIds = new Set<number>();
+
+    for (const node of data?.Page?.media ?? []) {
+      const id = toPositiveId(node?.id);
+      if (id === null) continue;
+
+      const edges = node?.relations?.edges;
+      if (!Array.isArray(edges)) continue;
+
+      const hasPrequelSeries = edges.some(edge => {
+        if (edge?.relationType !== 'PREQUEL') return false;
+        const format = edge.node?.format;
+        return typeof format === 'string' && COLLAPSIBLE_PREQUEL_FORMATS.has(format);
+      });
+
+      if (hasPrequelSeries) laterSeasonIds.add(id);
+    }
+
+    return candidates.filter(candidate => !laterSeasonIds.has(candidate.anilistId));
+  } catch {
+    return candidates;
+  }
+};
 
 // --- Entry point --------------------------------------------------------------
 
@@ -532,7 +667,8 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
   const cached = discoveryCache.get(cacheKey);
   if (cached) return cached.map(cloneCandidate);
 
-  const { seeds, fallbackGenres, moodGenres, excludeIds, excludeTitles, limit, page } = normalized;
+  const { seeds, fallbackGenres, moodGenres, excludeIds, excludeTitles, limit, page, minYear, collapseSeasons } =
+    normalized;
 
   const pool = new Map<number, AggregatedEntry>();
 
@@ -550,13 +686,14 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
   const excludedTitleSet = new Set(excludeTitles);
   const moodKeys = new Set(moodGenres.map(normalizeTitle));
 
-  let ranked = rankCandidates(pool, excludedIdSet, excludedTitleSet, moodKeys, limit);
+  let ranked = rankCandidates(pool, excludedIdSet, excludedTitleSet, moodKeys, limit, minYear);
 
   // The threshold applies to what survives exclusion, not to the raw pool: a
   // healthy seed list can still leave a handful of usable cards once the whole
   // library is subtracted, and a deck that short strands the reveal.
   if (seeds.length === 0 || ranked.length < THIN_POOL_THRESHOLD) {
     const withGenres = fallbackGenres.length > 0;
+    const withMinDate = minYear !== undefined;
     const variables: Record<string, unknown> = {
       excluded: excludeIds,
       perPage: limit,
@@ -564,10 +701,21 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
     };
     // An empty `genre_in` returns an empty page, so the clause is omitted instead.
     if (withGenres) variables.genres = fallbackGenres;
+    // `startDate_greater` is exclusive, so the previous year's last day is sent
+    // to keep the whole requested year inside the range.
+    if (withMinDate) variables.minDate = (minYear - 1) * 10000 + 1231;
 
-    const data = await postGraphQL<GenrePageResponse>(buildGenrePoolQuery(withGenres), variables);
+    const data = await postGraphQL<GenrePageResponse>(
+      buildGenrePoolQuery(withGenres, withMinDate),
+      variables,
+    );
     mergeGenrePool(pool, data?.Page?.media ?? []);
-    ranked = rankCandidates(pool, excludedIdSet, excludedTitleSet, moodKeys, limit);
+    ranked = rankCandidates(pool, excludedIdSet, excludedTitleSet, moodKeys, limit, minYear);
+  }
+
+  // One extra request, and only when asked: the default deck keeps every season.
+  if (collapseSeasons && ranked.length > 0) {
+    ranked = await collapseLaterSeasons(ranked);
   }
 
   discoveryCache.set(cacheKey, ranked.map(cloneCandidate));

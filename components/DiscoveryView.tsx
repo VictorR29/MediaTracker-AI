@@ -31,10 +31,14 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   const [selectedSeeds, setSelectedSeeds] = useState<string[]>([]);
   const [seedSearchQuery, setSeedSearchQuery] = useState('');
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  // AniList-only catalog filters. The Gemini path does not use them.
+  const [epochFilter, setEpochFilter] = useState<number | null>(2000);
+  const [onlyFirstSeason, setOnlyFirstSeason] = useState(true);
 
   // Accordion States
   const [isRefineOpen, setIsRefineOpen] = useState(true);
   const [isMoodOpen, setIsMoodOpen] = useState(false);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
 
   // Recommendations State
   const [recommendations, setRecommendations] = useState<DeckCard[]>([]);
@@ -176,6 +180,8 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
         moodGenres: getMoodGenres(selectedMood),
         limit: 50,
         page: isNextPage ? page + 1 : 1,
+        minYear: epochFilter ?? undefined,
+        collapseSeasons: onlyFirstSeason,
       });
 
       const cards = candidates.map(toAniListDeckCard);
@@ -280,6 +286,12 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       onToggleRefine={() => setIsRefineOpen(prev => !prev)}
       isMoodOpen={isMoodOpen}
       onToggleMoodPanel={() => setIsMoodOpen(prev => !prev)}
+      epochFilter={epochFilter}
+      onSelectEpoch={setEpochFilter}
+      onlyFirstSeason={onlyFirstSeason}
+      onToggleOnlyFirstSeason={() => setOnlyFirstSeason(prev => !prev)}
+      isCatalogOpen={isCatalogOpen}
+      onToggleCatalogPanel={() => setIsCatalogOpen(prev => !prev)}
       isLoading={isLoading}
       error={error}
       onGenerate={() => handleDiscovery(false)}

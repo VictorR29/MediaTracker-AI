@@ -22,7 +22,8 @@ interface MediaFixture {
   format?: string;
   episodes?: number | null;
   status?: string;
-  seasonYear?: number;
+  seasonYear?: number | null;
+  startDate?: { year?: number | null } | null;
   description?: string | null;
   popularity?: number;
   isAdult?: boolean;
@@ -42,7 +43,11 @@ const media = (fixture: MediaFixture) => ({
   format: fixture.format ?? 'TV',
   episodes: fixture.episodes === undefined ? 12 : fixture.episodes,
   status: fixture.status ?? 'FINISHED',
-  seasonYear: fixture.seasonYear ?? 2013,
+  seasonYear: fixture.seasonYear === undefined ? 2013 : fixture.seasonYear,
+  startDate:
+    fixture.startDate === undefined
+      ? { year: fixture.seasonYear === undefined ? 2013 : fixture.seasonYear }
+      : fixture.startDate,
   description: fixture.description ?? '',
   popularity: fixture.popularity ?? 0,
   isAdult: fixture.isAdult ?? false,
@@ -504,5 +509,157 @@ describe('fetchDiscoveryDeck paging', () => {
     expect(first[0].anilistId).toBe(30);
     expect(second[0].anilistId).toBe(31);
     expect(firstAgain[0].anilistId).toBe(30);
+  });
+});
+
+// --- Catalog filters: year and franchise collapse ------------------------------
+
+describe('fetchDiscoveryDeck catalog filters', () => {
+  const relationsPayload = (nodes: unknown[]) => ({ Page: { media: nodes } });
+
+  it('drops a candidate older than minYear and keeps a newer one', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        genrePayload([
+          media({ id: 200, romaji: 'Old Show', english: 'Old Show', popularity: 10, seasonYear: 2005 }),
+          media({ id: 201, romaji: 'New Show', english: 'New Show', popularity: 20, seasonYear: 2015 }),
+        ]),
+      ),
+    );
+
+    const deck = await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], minYear: 2010 }));
+
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([201]);
+  });
+
+  it('uses startDate.year when seasonYear is null, so old movies are still dropped', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        genrePayload([
+          media({
+            id: 300,
+            romaji: 'Old Movie',
+            english: 'Old Movie',
+            format: 'MOVIE',
+            seasonYear: null,
+            startDate: { year: 1998 },
+          }),
+          media({
+            id: 301,
+            romaji: 'New Movie',
+            english: 'New Movie',
+            format: 'MOVIE',
+            seasonYear: null,
+            startDate: { year: 2019 },
+          }),
+        ]),
+      ),
+    );
+
+    const deck = await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], minYear: 2000 }));
+
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([301]);
+    // The fallback also feeds the card meta line.
+    expect(deck[0].seasonYear).toBe(2019);
+  });
+
+  it('keeps a candidate with no year at all', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        genrePayload([
+          media({ id: 400, romaji: 'Undated', english: 'Undated', seasonYear: null, startDate: null }),
+        ]),
+      ),
+    );
+
+    const deck = await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], minYear: 2010 }));
+
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([400]);
+    expect(deck[0].seasonYear).toBeUndefined();
+  });
+
+  it('adds startDate_greater and the previous year last day to the genre pool query', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(genrePayload([])));
+
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], minYear: 2000 }));
+
+    const body = requestBody(0);
+    expect(body.variables.minDate).toBe(19991231);
+    expect(body.query).toContain('startDate_greater');
+    expect(body.query).toContain('$minDate: FuzzyDateInt');
+  });
+
+  it('collapses later seasons by dropping entries with a series prequel', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(
+          genrePayload([
+            media({ id: 100, romaji: 'Later Season', english: 'Later Season' }),
+            media({ id: 101, romaji: 'First Entry', english: 'First Entry' }),
+            media({ id: 102, romaji: 'Movie With Prequel Movie', english: 'Movie With Prequel Movie' }),
+          ]),
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(
+          relationsPayload([
+            { id: 100, relations: { edges: [{ relationType: 'PREQUEL', node: { id: 90, format: 'TV' } }] } },
+            { id: 101, relations: { edges: [] } },
+            { id: 102, relations: { edges: [{ relationType: 'PREQUEL', node: { id: 91, format: 'MOVIE' } }] } },
+          ]),
+        ),
+      );
+
+    const deck = await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], collapseSeasons: true }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(requestBody(1).variables.ids).toEqual([100, 101, 102]);
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([101, 102]);
+  });
+
+  it('keeps every candidate when the relations request fails', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(
+          genrePayload([
+            media({ id: 100, romaji: 'Later Season', english: 'Later Season' }),
+            media({ id: 101, romaji: 'First Entry', english: 'First Entry' }),
+          ]),
+        ),
+      )
+      .mockResolvedValueOnce(errorResponse(500));
+
+    const deck = await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], collapseSeasons: true }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([100, 101]);
+  });
+
+  it('issues no relations request when collapseSeasons is false or omitted', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(genrePayload([media({ id: 100, romaji: 'Show', english: 'Show' })])));
+
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'] }));
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], collapseSeasons: false }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(requestBody(0).query).not.toContain('relations');
+  });
+
+  it('caches minYear and collapseSeasons separately', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(genrePayload([media({ id: 100, romaji: 'Show', english: 'Show', seasonYear: 2015 })])),
+    );
+
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], minYear: 2000 }));
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], minYear: 2010 }));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    // collapseSeasons: false shares the cache key of the omitted form.
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], minYear: 2000, collapseSeasons: false }));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    // A different collapseSeasons value misses the cache: genre pool + relations.
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], minYear: 2000, collapseSeasons: true }));
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 });
