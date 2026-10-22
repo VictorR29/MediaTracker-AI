@@ -642,7 +642,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </p>
                                     <div className="space-y-3 max-h-72 overflow-y-auto -mx-2 px-2">
                                         {duplicateGroups.map(group => (
-                                            <div key={`${group.reason}:${group.key}`}>
+                                            <div key={`${group.reason}:${group.key}:${group.mediaType ?? ''}`}>
                                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1 truncate">
                                                     {group.reason === 'anilist-id'
                                                         ? `Mismo ID de AniList · ${group.key}`
@@ -659,7 +659,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                                 <span className="flex-1 min-w-0 truncate text-xs text-zinc-300">{item.aiData.title || 'Sin título'}</span>
                                                                 <span className="shrink-0 text-[10px] text-zinc-600">→</span>
                                                                 <span className="flex-1 min-w-0 truncate text-xs text-zinc-500">
-                                                                    {item.aiData.anilist ? `AniList ${item.aiData.anilist.id}` : 'Sin vincular'}
+                                                                    {`${item.aiData.mediaType?.trim() || 'Otro'} · ${item.aiData.anilist ? `AniList ${item.aiData.anilist.id}` : 'Sin vincular'}`}
                                                                 </span>
                                                                 <ChevronRight className="shrink-0 w-3.5 h-3.5 text-zinc-600" />
                                                             </button>
@@ -671,6 +671,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </div>
                                     <p className="text-[11px] text-zinc-500 mt-2">
                                         Nada se elimina automáticamente. Temporadas distintas pueden compartir título.
+                                    </p>
+                                    <p className="text-[11px] text-zinc-500 mt-1">
+                                        Solo se comparan obras del mismo tipo: un anime y su manhwa comparten título y son obras distintas.
                                     </p>
                                 </>
                             )}

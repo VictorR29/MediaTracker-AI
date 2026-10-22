@@ -8,6 +8,7 @@ interface ItemFixture {
   id: string;
   title?: unknown;
   anilistId?: number;
+  mediaType?: unknown;
 }
 
 const makeItem = (fixture: ItemFixture): MediaItem => ({
@@ -15,7 +16,7 @@ const makeItem = (fixture: ItemFixture): MediaItem => ({
   createdAt: 0,
   aiData: {
     title: (fixture.title ?? '') as string,
-    mediaType: 'Anime',
+    mediaType: (fixture.mediaType ?? 'Anime') as AIWorkData['mediaType'],
     synopsis: '',
     genres: [],
     status: '',
@@ -49,6 +50,13 @@ const makeItem = (fixture: ItemFixture): MediaItem => ({
 const itemWithoutTitle = (id: string): MediaItem => {
   const base = makeItem({ id, title: 'placeholder' });
   const { title: _omitted, ...rest } = base.aiData;
+  return { ...base, aiData: rest as AIWorkData };
+};
+
+/** Builds an item whose `aiData.mediaType` key is absent, not merely empty. */
+const itemWithoutMediaType = (id: string, title: string): MediaItem => {
+  const base = makeItem({ id, title });
+  const { mediaType: _omitted, ...rest } = base.aiData;
   return { ...base, aiData: rest as AIWorkData };
 };
 
@@ -254,5 +262,88 @@ describe('auditLibrary', () => {
 
     expect(report.byAniListId.map(group => group.key)).toEqual(['5', '30']);
     expect(report.byTitle).toEqual([]);
+  });
+
+  it('does not report a shared title under different media types', () => {
+    const report = auditLibrary([
+      makeItem({ id: 'a', title: 'Solo Leveling', mediaType: 'Anime' }),
+      makeItem({ id: 'b', title: 'Solo Leveling', mediaType: 'Manhwa' }),
+    ]);
+
+    expect(report.byAniListId).toEqual([]);
+    expect(report.byTitle).toEqual([]);
+  });
+
+  it('reports a shared title under the same media type and exposes that type', () => {
+    const report = auditLibrary([
+      makeItem({ id: 'a', title: 'Solo Leveling', mediaType: 'Manhwa' }),
+      makeItem({ id: 'b', title: 'solo leveling', mediaType: 'Manhwa' }),
+    ]);
+
+    expect(report.byTitle).toHaveLength(1);
+    expect(report.byTitle[0].reason).toBe('title');
+    expect(report.byTitle[0].mediaType).toBe('Manhwa');
+    expect(memberIds(report.byTitle[0])).toEqual(['a', 'b']);
+  });
+
+  it('keeps only the same-type members when a title group mixes types', () => {
+    const report = auditLibrary([
+      makeItem({ id: 'a', title: 'Solo Leveling', mediaType: 'Anime' }),
+      makeItem({ id: 'b', title: 'Solo Leveling', mediaType: 'Manhwa' }),
+      makeItem({ id: 'c', title: 'SOLO LEVELING', mediaType: 'Anime' }),
+    ]);
+
+    expect(report.byTitle).toHaveLength(1);
+    expect(report.byTitle[0].mediaType).toBe('Anime');
+    expect(memberIds(report.byTitle[0])).toEqual(['a', 'c']);
+  });
+
+  it('splits one title group into one group per media type', () => {
+    const report = auditLibrary([
+      makeItem({ id: 'a1', title: 'Solo Leveling', mediaType: 'Anime' }),
+      makeItem({ id: 'm1', title: 'Solo Leveling', mediaType: 'Manhwa' }),
+      makeItem({ id: 'a2', title: 'solo leveling', mediaType: 'Anime' }),
+      makeItem({ id: 'm2', title: 'Solo Leveling!', mediaType: 'Manhwa' }),
+    ]);
+
+    expect(report.byTitle).toHaveLength(2);
+    expect(report.byTitle.map(group => group.key)).toEqual(['solo leveling', 'solo leveling']);
+    expect(report.byTitle.map(group => group.mediaType)).toEqual(['Anime', 'Manhwa']);
+    expect(report.byTitle.map(memberIds)).toEqual([['a1', 'a2'], ['m1', 'm2']]);
+  });
+
+  it('groups members with a missing or blank media type under an empty string', () => {
+    const report = auditLibrary([
+      itemWithoutMediaType('a', 'Solo Leveling'),
+      makeItem({ id: 'b', title: 'Solo Leveling', mediaType: '   ' }),
+    ]);
+
+    expect(report.byTitle).toHaveLength(1);
+    expect(report.byTitle[0].mediaType).toBe('');
+    expect(memberIds(report.byTitle[0])).toEqual(['a', 'b']);
+  });
+
+  it('still reports a cross-type pair that shares an AniList id', () => {
+    const report = auditLibrary([
+      makeItem({ id: 'a', title: 'Solo Leveling', mediaType: 'Anime', anilistId: 151807 }),
+      makeItem({ id: 'b', title: 'Solo Leveling', mediaType: 'Manhwa', anilistId: 151807 }),
+    ]);
+
+    expect(report.byAniListId).toHaveLength(1);
+    expect(report.byAniListId[0].key).toBe('151807');
+    expect(report.byAniListId[0].mediaType).toBeUndefined();
+    expect(memberIds(report.byAniListId[0])).toEqual(['a', 'b']);
+    expect(report.byTitle).toEqual([]);
+  });
+
+  it('keeps the normalized title as the key of split groups', () => {
+    const report = auditLibrary([
+      makeItem({ id: 'a', title: 'Boku no Hīrō Akademia', mediaType: 'Anime' }),
+      makeItem({ id: 'b', title: 'boku-no-hiro, akademia!', mediaType: 'Anime' }),
+    ]);
+
+    expect(report.byTitle).toHaveLength(1);
+    expect(report.byTitle[0].key).toBe('boku no hiro akademia');
+    expect(report.byTitle[0].mediaType).toBe('Anime');
   });
 });
