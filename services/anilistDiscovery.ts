@@ -1,4 +1,5 @@
 import { postGraphQL } from './anilistService';
+import { curateCandidates } from './discoveryCuration';
 
 /**
  * Canonical AniList genre enum. `genre_in` rejects anything outside this list,
@@ -25,6 +26,11 @@ export const ANILIST_GENRES: readonly string[] = Object.freeze([
   'Thriller',
 ]);
 
+export interface DiscoveryCandidateTag {
+  name: string;
+  rank: number;
+}
+
 export interface DiscoveryCandidate {
   anilistId: number;
   title: string;
@@ -32,6 +38,8 @@ export interface DiscoveryCandidate {
   coverImage?: string;
   color?: string;
   genres: string[];
+  /** Community tags with their 0-100 confidence rank. Never empty-undefined. */
+  tags: DiscoveryCandidateTag[];
   format?: string;
   episodes?: number;
   status?: string;
@@ -40,6 +48,8 @@ export interface DiscoveryCandidate {
   recommendedBy: string[];
   votes: number;
   popularity: number;
+  /** Spanish reason written by the opt-in curation pass. */
+  reason?: string;
 }
 
 export interface DiscoveryRequest {
@@ -48,6 +58,15 @@ export interface DiscoveryRequest {
   excludeAniListIds: number[];
   excludeTitles: string[];
   moodGenres?: string[];
+  /**
+   * Tags that express the selected mood. Scored locally; never sent to AniList.
+   */
+  moodTags?: string[];
+  /**
+   * Opt-in Gemini curation of the pool. Adds one deliberately blocking round
+   * trip so the deck is already ordered when the first card renders.
+   */
+  curation?: { apiKey: string; moodLabel?: string; maxItems?: number };
   limit?: number;
   /**
    * Page of the popularity-sorted genre pool. Seed recommendations are always
@@ -77,6 +96,15 @@ const THIN_POOL_THRESHOLD = 12;
 const RECOMMENDATIONS_PER_SEED = 10;
 const SYNOPSIS_MAX_LENGTH = 700;
 
+// --- Curation tuning ----------------------------------------------------------
+
+/** Curation needs a pool to choose from; below this the local order is used. */
+const MIN_CURATION_POOL_SIZE = 8;
+/** Default curated size: one generation feeds two reveal batches (20 per batch). */
+const DEFAULT_CURATION_MAX_ITEMS = 40;
+const MIN_CURATION_MAX_ITEMS = 8;
+const MAX_CURATION_MAX_ITEMS = 40;
+
 // --- GraphQL shapes -----------------------------------------------------------
 
 interface DiscoveryTitleNode {
@@ -89,6 +117,7 @@ interface DiscoveryMediaNode {
   title?: DiscoveryTitleNode | null;
   coverImage?: { large?: string | null; color?: string | null } | null;
   genres?: string[] | null;
+  tags?: { name?: string | null; rank?: number | null }[] | null;
   format?: string | null;
   episodes?: number | null;
   status?: string | null;
@@ -136,6 +165,7 @@ const DISCOVERY_MEDIA_FIELDS = `
   title { romaji english }
   coverImage { large color }
   genres
+  tags { name rank }
   format
   episodes
   status
@@ -225,6 +255,12 @@ const clampLimit = (value?: number): number => {
 const clampPage = (value?: number): number => {
   if (!isFiniteNumber(value)) return 1;
   return Math.max(1, Math.trunc(value));
+};
+
+/** Curated deck size: 8 is the floor, 40 the ceiling (two reveal batches). */
+const clampCurationMaxItems = (value?: number): number => {
+  if (!isFiniteNumber(value)) return DEFAULT_CURATION_MAX_ITEMS;
+  return Math.min(MAX_CURATION_MAX_ITEMS, Math.max(MIN_CURATION_MAX_ITEMS, Math.trunc(value)));
 };
 
 /** Lowercase, strip diacritics, collapse non-alphanumerics to one space, trim. */
@@ -421,6 +457,7 @@ const toCandidate = (entry: AggregatedEntry): DiscoveryCandidate | null => {
     genres: Array.isArray(node.genres)
       ? node.genres.filter((genre): genre is string => typeof genre === 'string' && genre.length > 0)
       : [],
+    tags: normalizeTags(node.tags),
     format: node.format ?? undefined,
     episodes: isFiniteNumber(node.episodes) ? node.episodes : undefined,
     status: node.status ?? undefined,
@@ -449,12 +486,54 @@ const isExcluded = (
 const hasMoodMatch = (genres: string[], moodKeys: Set<string>): boolean =>
   moodKeys.size > 0 && genres.some(genre => moodKeys.has(normalizeTitle(genre)));
 
+const TAG_RANK_MAX = 100;
+
+/**
+ * A candidate's tags, cleaned: a name must be a non-empty string and a rank must
+ * be a finite number clamped to 0-100. Anything else is dropped, and a missing
+ * `tags` field is simply an empty list — never a crash and never a filter.
+ */
+const normalizeTags = (tags: DiscoveryMediaNode['tags']): DiscoveryCandidateTag[] => {
+  if (!Array.isArray(tags)) return [];
+
+  const clean: DiscoveryCandidateTag[] = [];
+  for (const tag of tags) {
+    const name = typeof tag?.name === 'string' ? tag.name.trim() : '';
+    if (!name) continue;
+    if (!isFiniteNumber(tag?.rank)) continue;
+    clean.push({ name, rank: Math.min(TAG_RANK_MAX, Math.max(0, tag.rank)) });
+  }
+
+  return clean;
+};
+
+/**
+ * Sum of the community ranks of the mood's tags that this candidate carries.
+ * A mood tag absent from the candidate contributes nothing; the result is 0 for
+ * an unrelated title, and 0 is a valid score that never drops the candidate.
+ */
+const scoreMoodTags = (tags: DiscoveryCandidateTag[], moodTagKeys: Set<string>): number => {
+  if (moodTagKeys.size === 0) return 0;
+
+  let score = 0;
+  for (const tag of tags) {
+    if (moodTagKeys.has(tag.name)) score += tag.rank;
+  }
+
+  return score;
+};
+
 // --- Request normalization ----------------------------------------------------
 
 interface NormalizedRequest {
   seeds: { anilistId: number; title: string }[];
   fallbackGenres: string[];
   moodGenres: string[];
+  moodTags: string[];
+  /** Spanish mood label for curation; never part of any outbound AniList call. */
+  moodLabel?: string;
+  /** True when a Gemini key was supplied. The key itself never reaches the cache key. */
+  curationRequested: boolean;
   excludeIds: number[];
   excludeTitles: string[];
   limit: number;
@@ -517,20 +596,44 @@ const uniqueNormalizedTitles = (titles: readonly string[] | undefined): string[]
   return [...unique].sort();
 };
 
-const normalizeRequest = (request: DiscoveryRequest): NormalizedRequest => {
-  const seeds = normalizeSeeds(request.seeds);
-  return {
-    seeds,
-    fallbackGenres: canonicalizeGenres(request.fallbackGenres),
-    moodGenres: canonicalizeGenres(request.moodGenres),
-    excludeIds: uniqueSortedIds(request.excludeAniListIds),
-    excludeTitles: uniqueNormalizedTitles(request.excludeTitles),
-    limit: clampLimit(request.limit),
-    page: clampPage(request.page),
-    minYear: sanitizeMinYear(request.minYear),
-    collapseSeasons: request.collapseSeasons === true,
-  };
+/**
+ * Tags are canonical AniList names, matched verbatim against what a candidate
+ * carries, so they are only trimmed and deduped here — never title-normalized.
+ */
+const uniqueTags = (tags: readonly string[] | undefined): string[] => {
+  const unique = new Set<string>();
+  if (!Array.isArray(tags)) return [];
+
+  for (const tag of tags) {
+    if (typeof tag !== 'string') continue;
+    const trimmed = tag.trim();
+    if (trimmed) unique.add(trimmed);
+  }
+
+  return [...unique].sort();
 };
+
+const normalizeMoodLabel = (label?: string): string | undefined => {
+  if (typeof label !== 'string') return undefined;
+  const trimmed = label.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const normalizeRequest = (request: DiscoveryRequest): NormalizedRequest => ({
+  seeds: normalizeSeeds(request.seeds),
+  fallbackGenres: canonicalizeGenres(request.fallbackGenres),
+  moodGenres: canonicalizeGenres(request.moodGenres),
+  moodTags: uniqueTags(request.moodTags),
+  moodLabel: normalizeMoodLabel(request.curation?.moodLabel),
+  curationRequested:
+    typeof request.curation?.apiKey === 'string' && request.curation.apiKey.trim().length > 0,
+  excludeIds: uniqueSortedIds(request.excludeAniListIds),
+  excludeTitles: uniqueNormalizedTitles(request.excludeTitles),
+  limit: clampLimit(request.limit),
+  page: clampPage(request.page),
+  minYear: sanitizeMinYear(request.minYear),
+  collapseSeasons: request.collapseSeasons === true,
+});
 
 const buildCacheKey = (request: NormalizedRequest): string =>
   JSON.stringify({
@@ -539,6 +642,10 @@ const buildCacheKey = (request: NormalizedRequest): string =>
       .sort((a, b) => a[0] - b[0]),
     fallbackGenres: [...request.fallbackGenres].sort(),
     moodGenres: [...request.moodGenres].sort(),
+    // Sorted so a differently ordered mood tag list still shares one cache entry.
+    moodTags: [...request.moodTags].sort(),
+    moodLabel: request.moodLabel ?? null,
+    curationRequested: request.curationRequested,
     excludeIds: request.excludeIds,
     excludeTitles: request.excludeTitles,
     limit: request.limit,
@@ -559,22 +666,27 @@ export function __clearDiscoveryCacheForTests(): void {
 const cloneCandidate = (candidate: DiscoveryCandidate): DiscoveryCandidate => ({
   ...candidate,
   genres: [...candidate.genres],
+  tags: candidate.tags.map(tag => ({ ...tag })),
   recommendedBy: [...candidate.recommendedBy],
 });
 
 /**
  * Turns the aggregated pool into the deck: unusable entries are dropped, the
- * user's own library is subtracted, and what survives is ordered by mood, then
- * by cross-seed consensus, then by votes.
+ * user's own library is subtracted, and what survives is ordered by mood tag
+ * score, then by the genre-mood match, then by cross-seed consensus, then by
+ * votes.
  *
  * A candidate with no year at all is kept: unknown is not old, and dropping it
- * would silently lose entries the API simply did not date.
+ * would silently lose entries the API simply did not date. A candidate that
+ * matches none of the mood tags is kept too, with a score of 0: scoring only
+ * orders the deck, it never filters it.
  */
 const rankCandidates = (
   pool: Map<number, AggregatedEntry>,
   excludedIds: Set<number>,
   excludedTitles: Set<string>,
   moodKeys: Set<string>,
+  moodTagKeys: Set<string>,
   limit: number,
   minYear?: number,
 ): DiscoveryCandidate[] =>
@@ -583,9 +695,14 @@ const rankCandidates = (
     .filter((candidate): candidate is DiscoveryCandidate => candidate !== null)
     .filter(candidate => !isExcluded(candidate, excludedIds, excludedTitles))
     .filter(candidate => minYear === undefined || candidate.seasonYear === undefined || candidate.seasonYear >= minYear)
-    .map(candidate => ({ candidate, mood: hasMoodMatch(candidate.genres, moodKeys) }))
+    .map(candidate => ({
+      candidate,
+      mood: hasMoodMatch(candidate.genres, moodKeys),
+      moodScore: scoreMoodTags(candidate.tags, moodTagKeys),
+    }))
     .sort(
       (a, b) =>
+        b.moodScore - a.moodScore ||
         Number(b.mood) - Number(a.mood) ||
         b.candidate.recommendedBy.length - a.candidate.recommendedBy.length ||
         b.candidate.votes - a.candidate.votes ||
@@ -667,7 +784,7 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
   const cached = discoveryCache.get(cacheKey);
   if (cached) return cached.map(cloneCandidate);
 
-  const { seeds, fallbackGenres, moodGenres, excludeIds, excludeTitles, limit, page, minYear, collapseSeasons } =
+  const { seeds, fallbackGenres, moodGenres, moodTags, excludeIds, excludeTitles, limit, page, minYear, collapseSeasons } =
     normalized;
 
   const pool = new Map<number, AggregatedEntry>();
@@ -685,8 +802,9 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
   const excludedIdSet = new Set(excludeIds);
   const excludedTitleSet = new Set(excludeTitles);
   const moodKeys = new Set(moodGenres.map(normalizeTitle));
+  const moodTagKeys = new Set(moodTags);
 
-  let ranked = rankCandidates(pool, excludedIdSet, excludedTitleSet, moodKeys, limit, minYear);
+  let ranked = rankCandidates(pool, excludedIdSet, excludedTitleSet, moodKeys, moodTagKeys, limit, minYear);
 
   // The threshold applies to what survives exclusion, not to the raw pool: a
   // healthy seed list can still leave a handful of usable cards once the whole
@@ -710,12 +828,38 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
       variables,
     );
     mergeGenrePool(pool, data?.Page?.media ?? []);
-    ranked = rankCandidates(pool, excludedIdSet, excludedTitleSet, moodKeys, limit, minYear);
+    ranked = rankCandidates(pool, excludedIdSet, excludedTitleSet, moodKeys, moodTagKeys, limit, minYear);
   }
 
   // One extra request, and only when asked: the default deck keeps every season.
   if (collapseSeasons && ranked.length > 0) {
     ranked = await collapseLaterSeasons(ranked);
+  }
+
+  // Opt-in Gemini curation, after the local order is final. It adds one
+  // deliberately blocking round trip so the deck is already ordered when the
+  // first card renders. Curation means selection, not decoration: when it
+  // succeeds the deck is rebuilt from the curated ids only, in that order, with
+  // the Spanish reason attached. When it fails the local order is untouched —
+  // this never blocks the deck and never empties it.
+  if (normalized.curationRequested && request.curation?.apiKey && ranked.length >= MIN_CURATION_POOL_SIZE) {
+    const curated = await curateCandidates({
+      apiKey: request.curation.apiKey,
+      moodLabel: normalized.moodLabel,
+      maxItems: clampCurationMaxItems(request.curation.maxItems),
+      candidates: ranked,
+    });
+
+    if (curated) {
+      const byId = new Map(ranked.map(candidate => [candidate.anilistId, candidate]));
+      const selected: DiscoveryCandidate[] = [];
+      for (const entry of curated) {
+        const candidate = byId.get(entry.anilistId);
+        if (!candidate) continue;
+        selected.push({ ...candidate, reason: entry.reason });
+      }
+      if (selected.length > 0) ranked = selected;
+    }
   }
 
   discoveryCache.set(cacheKey, ranked.map(cloneCandidate));

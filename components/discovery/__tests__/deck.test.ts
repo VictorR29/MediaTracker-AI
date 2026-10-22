@@ -4,9 +4,11 @@ import type { DiscoveryCandidate } from '../../../services/anilistDiscovery';
 import { MOOD_OPTIONS } from '../constants';
 import {
   MOOD_GENRES,
+  MOOD_TAGS,
   formatCardMeta,
   formatReason,
   getMoodGenres,
+  getMoodTags,
   toAniListDeckCard,
 } from '../deck';
 import type { AniListDeckCard } from '../types';
@@ -29,6 +31,10 @@ const candidate = (overrides: Partial<DiscoveryCandidate> = {}): DiscoveryCandid
   coverImage: 'https://img.example/16498.jpg',
   color: '#3b4a6b',
   genres: ['Action', 'Drama', 'Fantasy'],
+  tags: [
+    { name: 'Tragedy', rank: 90 },
+    { name: 'Military', rank: 70 },
+  ],
   format: 'TV',
   episodes: 25,
   status: 'FINISHED',
@@ -69,6 +75,64 @@ describe('MOOD_GENRES', () => {
     expect(MOOD_GENRES['Quiero aprender o reflexionar sobre la vida']).toEqual(['Slice of Life', 'Drama', 'Psychological']);
     expect(MOOD_GENRES['Quiero sentir tensión y un poco de miedo']).toEqual(['Horror', 'Thriller', 'Mystery']);
     expect(MOOD_GENRES['Algo crudo, oscuro y realista']).toEqual(['Drama', 'Thriller', 'Psychological']);
+  });
+});
+
+/**
+ * Tag names dumped from the live `MediaTagCollection` (428 entries) and verified
+ * to exist. Any name outside this set is an invention and must fail the test.
+ */
+const VERIFIED_TAG_NAMES = new Set([
+  'Denpa', 'Time Loop', 'Time Manipulation', 'Alternate Universe', 'Memory Manipulation', 'Dissociative Identities', 'Philosophy',
+  'Iyashikei', 'Episodic', 'Slapstick', 'Parody', 'Surreal Comedy',
+  'Tragedy', 'Unrequited Love', 'Coming of Age', 'Family Life', 'Found Family',
+  'Guns', 'Swordplay', 'Martial Arts', 'Battle Royale', 'Survival', 'Espionage',
+  'Isekai', 'Magic', 'Fairy Tale', 'Virtual World', 'Space', 'Mythology',
+  'Educational', 'Religion',
+  'Cosmic Horror', 'Body Horror', 'Death Game', 'Ghost', 'Conspiracy',
+  'Noir', 'Crime', 'Yakuza', 'Drugs', 'Mafia', 'Psychosexual',
+]);
+
+describe('MOOD_TAGS', () => {
+  it('maps every mood label to 4-6 verified AniList tags', () => {
+    for (const option of MOOD_OPTIONS) {
+      const tags = MOOD_TAGS[option.label];
+      expect(tags, `missing mapping for "${option.label}"`).toBeDefined();
+      expect(tags.length).toBeGreaterThanOrEqual(4);
+      expect(tags.length).toBeLessThanOrEqual(6);
+
+      for (const tag of tags) {
+        expect(VERIFIED_TAG_NAMES, `"${tag}" is not a verified AniList tag`).toContain(tag);
+      }
+    }
+  });
+
+  it('does not invent labels that are missing from MOOD_OPTIONS', () => {
+    const labels = new Set(MOOD_OPTIONS.map(option => option.label));
+    for (const key of Object.keys(MOOD_TAGS)) {
+      expect(labels).toContain(key);
+    }
+  });
+});
+
+describe('getMoodTags', () => {
+  it('returns the tags of every known mood', () => {
+    for (const option of MOOD_OPTIONS) {
+      expect(getMoodTags(option.label)).toEqual([...MOOD_TAGS[option.label]]);
+    }
+  });
+
+  it('returns an empty list for null, undefined or unknown labels', () => {
+    expect(getMoodTags(null)).toEqual([]);
+    expect(getMoodTags(undefined)).toEqual([]);
+    expect(getMoodTags('')).toEqual([]);
+    expect(getMoodTags('Algo que no existe')).toEqual([]);
+  });
+
+  it('returns a copy so callers cannot mutate the mapping', () => {
+    const tags = getMoodTags('Quiero algo que me vuele la cabeza');
+    tags.push('Invention');
+    expect(getMoodTags('Quiero algo que me vuele la cabeza')).toEqual([...MOOD_TAGS['Quiero algo que me vuele la cabeza']]);
   });
 });
 
@@ -171,6 +235,17 @@ describe('toAniListDeckCard', () => {
 
   it('builds the reason from an empty recommendedBy list', () => {
     expect(toAniListDeckCard(candidate({ recommendedBy: [] })).reason).toBe('');
+  });
+
+  it('prefers a curated reason over the fan-credit line', () => {
+    const card = toAniListDeckCard(candidate({ reason: 'Su tensión constante encaja con esa sed de adrenalina.' }));
+    expect(card.reason).toBe('Su tensión constante encaja con esa sed de adrenalina.');
+  });
+
+  it('falls back to the fan-credit line when no curated reason is present', () => {
+    expect(toAniListDeckCard(candidate({ reason: undefined })).reason).toBe(
+      'Recomendada por fans de Death Note y Code Geass',
+    );
   });
 
   it('copies genres instead of sharing the candidate array', () => {

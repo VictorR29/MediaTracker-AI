@@ -17,6 +17,53 @@ export const MOOD_GENRES: Record<string, readonly string[]> = {
   'Algo crudo, oscuro y realista': ['Drama', 'Thriller', 'Psychological'],
 };
 
+/**
+ * Spanish mood label (as shown in MOOD_OPTIONS) to canonical AniList community
+ * tags. Verified against the live `MediaTagCollection` (428 names): every value
+ * here exists in AniList's catalog. Unlike MOOD_GENRES these are never sent to
+ * AniList — `tag_in` is AND, not OR — they only score the pool locally.
+ */
+export const MOOD_TAGS: Record<string, readonly string[]> = {
+  // No "Philosophy" here on purpose: it is carried by ~31% of popular anime, so
+  // it barely discriminates and surfaced cozy titles as mind-bending. It stays
+  // in the reflective mood, where it actually means something.
+  'Quiero algo que me vuele la cabeza': [
+    'Denpa',
+    'Time Loop',
+    'Time Manipulation',
+    'Alternate Universe',
+    'Memory Manipulation',
+    'Dissociative Identities',
+  ],
+  'Algo ligero para ver sin pensar': ['Iyashikei', 'Episodic', 'Slapstick', 'Parody', 'Surreal Comedy'],
+  'Busco una historia que me rompa el corazón': [
+    'Tragedy',
+    'Unrequited Love',
+    'Coming of Age',
+    'Family Life',
+    'Found Family',
+  ],
+  'Necesito adrenalina pura y emoción': ['Guns', 'Swordplay', 'Martial Arts', 'Battle Royale', 'Survival', 'Espionage'],
+  'Algo que me transporte a otro mundo': ['Isekai', 'Magic', 'Fairy Tale', 'Virtual World', 'Space', 'Mythology'],
+  'Quiero aprender o reflexionar sobre la vida': [
+    'Philosophy',
+    'Coming of Age',
+    'Educational',
+    'Family Life',
+    'Iyashikei',
+    'Religion',
+  ],
+  'Quiero sentir tensión y un poco de miedo': [
+    'Cosmic Horror',
+    'Body Horror',
+    'Death Game',
+    'Ghost',
+    'Survival',
+    'Conspiracy',
+  ],
+  'Algo crudo, oscuro y realista': ['Noir', 'Crime', 'Yakuza', 'Drugs', 'Mafia', 'Psychosexual'],
+};
+
 const FORMAT_LABELS: Record<string, string> = {
   TV: 'TV',
   TV_SHORT: 'TV corto',
@@ -31,6 +78,13 @@ export function getMoodGenres(label: string | null | undefined): string[] {
   if (typeof label !== 'string') return [];
   const genres = MOOD_GENRES[label];
   return genres ? [...genres] : [];
+}
+
+/** Canonical AniList tags for a mood label; an empty list for "no mood". */
+export function getMoodTags(label: string | null | undefined): string[] {
+  if (typeof label !== 'string') return [];
+  const tags = MOOD_TAGS[label];
+  return tags ? [...tags] : [];
 }
 
 /** "Recomendada por fans de X", with at most two named sources. */
@@ -72,7 +126,8 @@ export function toAniListDeckCard(candidate: DiscoveryCandidate): AniListDeckCar
     alternateTitle: candidate.alternateTitle,
     mediaType: 'Anime',
     synopsis: candidate.synopsis,
-    reason: formatReason(candidate.recommendedBy),
+    // A curated reason explains the mood; the fan-credit line is the fallback.
+    reason: candidate.reason ?? formatReason(candidate.recommendedBy),
     coverImage: candidate.coverImage,
     color: candidate.color,
     genres: [...candidate.genres],

@@ -7,7 +7,7 @@ import { computeTasteProfile } from '../services/tasteProfile';
 import { FilterView } from './discovery/FilterView';
 import { ImmersiveView } from './discovery/ImmersiveView';
 import { MOOD_OPTIONS } from './discovery/constants';
-import { getMoodGenres, toAniListDeckCard } from './discovery/deck';
+import { getMoodGenres, getMoodTags, toAniListDeckCard } from './discovery/deck';
 import { useSynopsisTranslation } from './discovery/useSynopsisTranslation';
 import type { AniListDeckCard, DeckCard } from './discovery/types';
 
@@ -178,6 +178,10 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
           : libraryIds,
         excludeTitles: library.map(item => item.aiData.title),
         moodGenres: getMoodGenres(selectedMood),
+        // Tags only score the pool locally; the genres above source it.
+        moodTags: getMoodTags(selectedMood),
+        // With a key, Gemini curates the pool and writes a Spanish reason per card.
+        curation: apiKey ? { apiKey, moodLabel: selectedMood ?? undefined } : undefined,
         limit: 50,
         page: isNextPage ? page + 1 : 1,
         minYear: epochFilter ?? undefined,

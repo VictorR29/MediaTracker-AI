@@ -1,10 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+const { curateCandidatesMock } = vi.hoisted(() => ({ curateCandidatesMock: vi.fn() }));
+
+vi.mock('../discoveryCuration', () => ({ curateCandidates: curateCandidatesMock }));
+
 import {
   ANILIST_GENRES,
   __clearDiscoveryCacheForTests,
   fetchDiscoveryDeck,
 } from '../anilistDiscovery';
-import type { DiscoveryRequest } from '../anilistDiscovery';
+import type { DiscoveryCandidate, DiscoveryRequest } from '../anilistDiscovery';
+import { curateCandidates } from '../discoveryCuration';
 import {
   AniListError,
   __resetThrottleForTests,
@@ -19,6 +25,7 @@ interface MediaFixture {
   english?: string | null;
   coverImage?: { large?: string | null; color?: string | null } | null;
   genres?: string[];
+  tags?: { name: string; rank: number }[];
   format?: string;
   episodes?: number | null;
   status?: string;
@@ -40,6 +47,7 @@ const media = (fixture: MediaFixture) => ({
       ? { large: `https://img.example/${fixture.id}.jpg`, color: '#123456' }
       : fixture.coverImage,
   genres: fixture.genres ?? [],
+  tags: fixture.tags ?? [],
   format: fixture.format ?? 'TV',
   episodes: fixture.episodes === undefined ? 12 : fixture.episodes,
   status: fixture.status ?? 'FINISHED',
@@ -105,6 +113,9 @@ beforeEach(() => {
   // Discovery reuses the shared AniList queue; tests must not wait 2s per call.
   __setThrottleForTests(0);
   __clearDiscoveryCacheForTests();
+  // Curation is opt-in and mocked: no test here may reach Gemini.
+  vi.mocked(curateCandidates).mockReset();
+  vi.mocked(curateCandidates).mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -661,5 +672,307 @@ describe('fetchDiscoveryDeck catalog filters', () => {
     // A different collapseSeasons value misses the cache: genre pool + relations.
     await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], minYear: 2000, collapseSeasons: true }));
     expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+});
+
+// --- Mood tag scoring ---------------------------------------------------------
+
+describe('fetchDiscoveryDeck mood tag scoring', () => {
+  it('requests tags in the pool query at no extra request', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(genrePayload([media({ id: 10, romaji: 'Show', english: 'Show' })])));
+
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'] }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(requestBody(0).query).toContain('tags { name rank }');
+  });
+
+  it('ranks the highest tag-rank sum first, above votes and consensus', async () => {
+    respondSeedThenGenre(
+      seedPayload([
+        seed({ id: 1, romaji: 'Seed', english: 'Seed' }, [
+          {
+            rating: 1,
+            media: media({
+              id: 10,
+              romaji: 'Tag Star',
+              english: 'Tag Star',
+              popularity: 1,
+              tags: [
+                { name: 'Denpa', rank: 95 },
+                { name: 'Philosophy', rank: 60 },
+              ],
+            }),
+          },
+          {
+            rating: 9000,
+            media: media({
+              id: 11,
+              romaji: 'Votes Star',
+              english: 'Votes Star',
+              popularity: 900000,
+              tags: [{ name: 'Denpa', rank: 10 }],
+            }),
+          },
+        ]),
+      ]),
+    );
+
+    const deck = await fetchDiscoveryDeck(
+      makeRequest({
+        seeds: [{ anilistId: 1, title: 'Seed' }],
+        moodTags: ['Denpa', 'Philosophy'],
+      }),
+    );
+
+    // 95 + 60 = 155 beats 10, despite the other candidate's votes and popularity.
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([10, 11]);
+    expect(deck[0].tags).toEqual([
+      { name: 'Denpa', rank: 95 },
+      { name: 'Philosophy', rank: 60 },
+    ]);
+  });
+
+  it('keeps a candidate whose mood score is zero', async () => {
+    respondSeedThenGenre(
+      seedPayload([
+        seed({ id: 1, romaji: 'Seed', english: 'Seed' }, [
+          {
+            rating: 500,
+            media: media({
+              id: 20,
+              romaji: 'Unrelated',
+              english: 'Unrelated',
+              tags: [{ name: 'Cooking', rank: 100 }],
+            }),
+          },
+        ]),
+      ]),
+    );
+
+    const deck = await fetchDiscoveryDeck(
+      makeRequest({ seeds: [{ anilistId: 1, title: 'Seed' }], moodTags: ['Denpa'] }),
+    );
+
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([20]);
+  });
+
+  it('treats a missing tags field as an empty list and ignores malformed tags', async () => {
+    respondSeedThenGenre(
+      seedPayload([
+        seed({ id: 1, romaji: 'Seed', english: 'Seed' }, [
+          { rating: 100, media: media({ id: 30, romaji: 'No Tags', english: 'No Tags' }) },
+          {
+            rating: 50,
+            media: {
+              ...media({ id: 31, romaji: 'Broken Tags', english: 'Broken Tags' }),
+              // A hostile payload: the engine must clean it, not trust it.
+              tags: [
+                { name: '  ', rank: 90 },
+                { name: 'Denpa', rank: null },
+                { name: 'Denpa', rank: 999 },
+                null,
+                'nope',
+              ] as unknown as { name: string; rank: number }[],
+            },
+          },
+        ]),
+      ]),
+    );
+
+    const deck = await fetchDiscoveryDeck(
+      makeRequest({ seeds: [{ anilistId: 1, title: 'Seed' }], moodTags: ['Denpa'] }),
+    );
+
+    expect(deck.find(candidate => candidate.anilistId === 30)?.tags).toEqual([]);
+    // The rank is clamped to 0-100, so the malformed entries leave exactly one tag.
+    expect(deck.find(candidate => candidate.anilistId === 31)?.tags).toEqual([{ name: 'Denpa', rank: 100 }]);
+    expect(deck[0].anilistId).toBe(31);
+  });
+});
+
+// --- Curation -----------------------------------------------------------------
+
+describe('fetchDiscoveryDeck curation', () => {
+  const poolOfTen = () =>
+    seedPayload([
+      seed(
+        { id: 1, romaji: 'Seed', english: 'Seed' },
+        Array.from({ length: 10 }, (_, index) => ({
+          rating: 100 - index,
+          media: media({ id: 100 + index, romaji: `Pick ${index}`, english: `Pick ${index}` }),
+        })),
+      ),
+    ]);
+
+  const curationRequest = (apiKey = 'secret-api-key'): Partial<DiscoveryRequest> => ({
+    seeds: [{ anilistId: 1, title: 'Seed' }],
+    moodTags: ['Denpa'],
+    curation: { apiKey, moodLabel: 'Quiero algo que me vuele la cabeza' },
+  });
+
+  /** One seed response followed by one empty genre pool, per scheduled call. */
+  const scheduleSeedPicks = (times = 1): void => {
+    for (let index = 0; index < times; index += 1) {
+      fetchMock.mockResolvedValueOnce(jsonResponse(poolOfTen()));
+      fetchMock.mockResolvedValueOnce(jsonResponse(genrePayload([])));
+    }
+  };
+
+  it('rebuilds the deck from the curated order with the Spanish reasons', async () => {
+    scheduleSeedPicks();
+    vi.mocked(curateCandidates).mockResolvedValueOnce([
+      { anilistId: 105, reason: 'Su estructura fragmentada te deja descolocado.' },
+      { anilistId: 100, reason: 'Juega con la memoria de un modo imposible de prever.' },
+    ]);
+
+    const deck = await fetchDiscoveryDeck(makeRequest(curationRequest()));
+
+    // Curation selects: everything it did not pick is dropped, not appended.
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([105, 100]);
+    expect(deck[0].reason).toBe('Su estructura fragmentada te deja descolocado.');
+    expect(deck[1].reason).toBe('Juega con la memoria de un modo imposible de prever.');
+
+    // The curated ids are the only ones offered to the model.
+    const call = vi.mocked(curateCandidates).mock.calls[0][0];
+    expect(call.candidates.map(candidate => candidate.anilistId)).toEqual([
+      100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+    ]);
+    expect(call.moodLabel).toBe('Quiero algo que me vuele la cabeza');
+    expect(call.maxItems).toBe(40);
+    // The key must never reach AniList.
+    expect(JSON.stringify(requestBody(0))).not.toContain('secret-api-key');
+  });
+
+  it('drops curated ids the engine never offered', async () => {
+    scheduleSeedPicks();
+    vi.mocked(curateCandidates).mockResolvedValueOnce([
+      { anilistId: 999, reason: 'Inventada.' },
+      { anilistId: 101, reason: 'Real.' },
+    ]);
+
+    const deck = await fetchDiscoveryDeck(makeRequest(curationRequest()));
+
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([101]);
+  });
+
+  it('keeps the local order when curation returns null', async () => {
+    scheduleSeedPicks();
+    vi.mocked(curateCandidates).mockResolvedValueOnce(null);
+
+    const deck = await fetchDiscoveryDeck(makeRequest(curationRequest()));
+
+    expect(deck).toHaveLength(10);
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([
+      100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+    ]);
+    expect(deck.every(candidate => candidate.reason === undefined)).toBe(true);
+  });
+
+  it('does not curate without a key or with a pool thinner than eight', async () => {
+    // A single usable pick: the pool is never deep enough to curate.
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(
+          seedPayload([
+            seed({ id: 1, romaji: 'Seed', english: 'Seed' }, [
+              { rating: 10, media: media({ id: 100, romaji: 'Only Pick', english: 'Only Pick' }) },
+            ]),
+          ]),
+        ),
+      )
+      .mockResolvedValueOnce(jsonResponse(genrePayload([])))
+      .mockResolvedValueOnce(
+        jsonResponse(
+          seedPayload([
+            seed({ id: 1, romaji: 'Seed', english: 'Seed' }, [
+              { rating: 10, media: media({ id: 100, romaji: 'Only Pick', english: 'Only Pick' }) },
+            ]),
+          ]),
+        ),
+      )
+      .mockResolvedValueOnce(jsonResponse(genrePayload([])));
+
+    await fetchDiscoveryDeck(makeRequest({ seeds: [{ anilistId: 1, title: 'Seed' }], moodTags: ['Denpa'] }));
+    expect(vi.mocked(curateCandidates)).not.toHaveBeenCalled();
+
+    __clearDiscoveryCacheForTests();
+    await fetchDiscoveryDeck(makeRequest({ ...curationRequest(), curation: { apiKey: '   ' } }));
+    expect(vi.mocked(curateCandidates)).not.toHaveBeenCalled();
+  });
+
+  it('clamps maxItems into the 8-40 window', async () => {
+    scheduleSeedPicks(3);
+    vi.mocked(curateCandidates).mockResolvedValue(null);
+    await fetchDiscoveryDeck(
+      makeRequest({ ...curationRequest(), curation: { apiKey: 'secret-api-key', maxItems: 3 } }),
+    );
+    expect(vi.mocked(curateCandidates).mock.calls[0][0].maxItems).toBe(8);
+
+    __clearDiscoveryCacheForTests();
+    await fetchDiscoveryDeck(
+      makeRequest({ ...curationRequest(), curation: { apiKey: 'secret-api-key', maxItems: 500 } }),
+    );
+    expect(vi.mocked(curateCandidates).mock.calls[1][0].maxItems).toBe(40);
+
+    __clearDiscoveryCacheForTests();
+    await fetchDiscoveryDeck(makeRequest(curationRequest()));
+    expect(vi.mocked(curateCandidates).mock.calls[2][0].maxItems).toBe(40);
+  });
+
+  it('caches mood tags sorted and separates entries by mood label', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(genrePayload([media({ id: 10, romaji: 'Show', english: 'Show' })])));
+
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], moodTags: ['Denpa', 'Time Loop'] }));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Same tag set in another order: one cache entry.
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], moodTags: ['Time Loop', 'Denpa'] }));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // A different tag set misses the cache.
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'], moodTags: ['Denpa'] }));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    // A different mood label misses the cache even with the same tags.
+    await fetchDiscoveryDeck(
+      makeRequest({
+        fallbackGenres: ['Action'],
+        moodTags: ['Denpa'],
+        curation: { apiKey: 'secret-api-key', moodLabel: 'Quiero algo que me vuele la cabeza' },
+      }),
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    // A different apiKey is not in the cache key, so it hits the same entry.
+    await fetchDiscoveryDeck(
+      makeRequest({
+        fallbackGenres: ['Action'],
+        moodTags: ['Denpa'],
+        curation: { apiKey: 'another-key', moodLabel: 'Quiero algo que me vuele la cabeza' },
+      }),
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    // No mood tags at all is yet another entry.
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'] }));
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  it('copies tags onto the served deck so callers cannot mutate the cache', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        genrePayload([
+          media({ id: 10, romaji: 'Show', english: 'Show', tags: [{ name: 'Denpa', rank: 90 }] }),
+        ]),
+      ),
+    );
+
+    const first = await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'] }));
+    first[0].tags.push({ name: 'Injected', rank: 100 });
+    first[0].tags[0].rank = 1;
+
+    const second = await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'] }));
+    expect(second[0].tags).toEqual<DiscoveryCandidate['tags']>([{ name: 'Denpa', rank: 90 }]);
   });
 });
