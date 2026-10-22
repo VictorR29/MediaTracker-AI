@@ -143,7 +143,7 @@ interface MediaNode {
   episodes?: number | null;
   status?: AniListMediaStatus | null;
   isAdult?: boolean | null;
-  coverImage?: { medium?: string | null } | null;
+  coverImage?: { medium?: string | null; large?: string | null } | null;
   genres?: string[] | null;
   nextAiringEpisode?: { episode?: number | null; airingAt?: number | null } | null;
   relations?: { edges?: (RelationEdge | null)[] | null } | null;
@@ -231,7 +231,7 @@ const BATCH_AIRING_QUERY = `
 query ($ids: [Int]) {
   Page(perPage: 50) {
     media(id_in: $ids, type: ANIME) {
-      id status episodes genres nextAiringEpisode { episode airingAt timeUntilAiring }
+      id status episodes genres coverImage { large } nextAiringEpisode { episode airingAt timeUntilAiring }
       relations {
         edges {
           relationType
@@ -573,7 +573,7 @@ export interface AiringDetails {
   snapshot: AniListAiringSnapshot;
   sequel?: AniListSequel;
   /** Extra media fields carried by the same response. Absent when not fetched. */
-  meta?: { genres: string[] };
+  meta?: { genres: string[]; coverImage?: string };
 }
 
 export async function fetchAiringSnapshots(ids: number[]): Promise<Map<number, AiringDetails>> {
@@ -599,7 +599,10 @@ export async function fetchAiringSnapshots(ids: number[]): Promise<Map<number, A
       };
 
       const sequel = pickSequel(node.id, node);
-      const meta = { genres: Array.isArray(node.genres) ? node.genres : [] };
+      const meta = {
+        genres: Array.isArray(node.genres) ? node.genres : [],
+        coverImage: node.coverImage?.large ?? undefined,
+      };
       // `sequel` is omitted entirely when nothing qualifies, so a refresh can
       // distinguish "no related season" from "not fetched yet".
       details.set(node.id, sequel ? { snapshot, sequel, meta } : { snapshot, meta });
@@ -640,10 +643,16 @@ export function applyAiringSnapshots(
   const details = snapshots.get(existing.id);
   if (!details) return item;
 
+  // The cover is curated by the user and this path runs unattended (daily
+  // refresh and library backfill), so it may only ever fill a hole: any
+  // non-empty existing value — remote URL or base64 upload — is untouchable.
+  const coverImage = item.aiData.coverImage || details.meta?.coverImage;
+
   return {
     ...item,
     aiData: {
       ...item.aiData,
+      coverImage,
       anilist: {
         ...existing,
         airing: details.snapshot,

@@ -15,7 +15,7 @@ import {
   resolveAniListMatch,
   searchAniListCandidates,
 } from '../anilistService';
-import type { AniListCandidate } from '../anilistService';
+import type { AniListCandidate, AiringDetails } from '../anilistService';
 
 // --- Fixtures -----------------------------------------------------------------
 
@@ -31,6 +31,7 @@ interface MediaNodeFixture {
   status?: string;
   isAdult?: boolean;
   genres?: string[];
+  coverLarge?: string;
   nextAiringEpisode?: { episode: number; airingAt: number } | null;
   relations?: { edges: unknown[] };
 }
@@ -48,7 +49,7 @@ const mediaNode = (fixture: MediaNodeFixture) => ({
   episodes: fixture.episodes === undefined ? 12 : fixture.episodes,
   status: fixture.status ?? 'FINISHED',
   isAdult: fixture.isAdult ?? false,
-  coverImage: { medium: `https://img.example/${fixture.id}.jpg` },
+  coverImage: { medium: `https://img.example/${fixture.id}.jpg`, large: fixture.coverLarge },
   genres: fixture.genres ?? [],
   nextAiringEpisode: fixture.nextAiringEpisode ?? null,
   relations: fixture.relations ?? { edges: [] },
@@ -589,6 +590,28 @@ describe('fetchAiringSnapshots meta', () => {
 
     expect(details?.meta).toEqual({ genres: ['Action', 'Drama', 'Sci-Fi'] });
   });
+
+  it('carries the large poster url of the matched node', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        searchPayload([
+          mediaNode({ id: 16498, coverLarge: 'https://img.example/16498-large.jpg' }),
+        ]),
+      ),
+    );
+
+    const details = (await fetchAiringSnapshots([16498])).get(16498);
+
+    expect(details?.meta?.coverImage).toBe('https://img.example/16498-large.jpg');
+  });
+
+  it('omits the cover when the node has no large poster', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(searchPayload([mediaNode({ id: 1 })])));
+
+    const details = (await fetchAiringSnapshots([1])).get(1);
+
+    expect(details?.meta?.coverImage).toBeUndefined();
+  });
 });
 
 describe('isAiringSnapshotFresh', () => {
@@ -614,6 +637,31 @@ describe('isAiringSnapshotFresh', () => {
 // --- Pure appliers ------------------------------------------------------------
 
 describe('applyAiringSnapshots', () => {
+  const ANILIST_ID = 21;
+
+  const linkedItem = (aiData: Partial<MediaItem['aiData']> = {}): MediaItem =>
+    makeItem({
+      anilist: {
+        id: ANILIST_ID,
+        matchedTitle: 'Shingeki no Kyojin',
+        matchedBy: 'title',
+        confidence: 'exact',
+        resolvedAt: 5_000,
+      },
+      ...aiData,
+    });
+
+  const detailsFor = (meta?: { genres: string[]; coverImage?: string }): Map<number, AiringDetails> =>
+    new Map([
+      [
+        ANILIST_ID,
+        {
+          snapshot: { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 },
+          ...(meta ? { meta } : {}),
+        },
+      ],
+    ]);
+
   it('merges the snapshot while preserving every other aiData field', () => {
     const item = makeItem({
       synopsis: 'Existing synopsis',
@@ -768,6 +816,64 @@ describe('applyAiringSnapshots', () => {
     );
 
     expect(result.aiData.anilist?.genres).toEqual(['Action', 'Drama']);
+  });
+
+  it('fills aiData.coverImage when it is undefined', () => {
+    const item = linkedItem({ coverImage: undefined });
+    const result = applyAiringSnapshots(
+      item,
+      detailsFor({ genres: ['Action'], coverImage: 'https://img.example/21-large.jpg' }),
+    );
+
+    expect(result.aiData.coverImage).toBe('https://img.example/21-large.jpg');
+    // The cover rides along with the existing snapshot update.
+    expect(result.aiData.anilist?.airing?.fetchedAt).toBe(9_000);
+  });
+
+  it('fills aiData.coverImage when it is an empty string', () => {
+    const item = linkedItem({ coverImage: '' });
+    const result = applyAiringSnapshots(
+      item,
+      detailsFor({ genres: ['Action'], coverImage: 'https://img.example/21-large.jpg' }),
+    );
+
+    expect(result.aiData.coverImage).toBe('https://img.example/21-large.jpg');
+  });
+
+  it('never overwrites an existing remote cover url', () => {
+    const item = linkedItem({ coverImage: 'https://img.example/curated.jpg' });
+    const result = applyAiringSnapshots(
+      item,
+      detailsFor({ genres: ['Action'], coverImage: 'https://img.example/21-large.jpg' }),
+    );
+
+    expect(result.aiData.coverImage).toBe('https://img.example/curated.jpg');
+  });
+
+  it('never overwrites an existing base64 cover upload', () => {
+    const base64 = 'data:image/webp;base64,UklGRhIAAABXRUJQVlA4TAYAAAAv';
+    const item = linkedItem({ coverImage: base64 });
+    const result = applyAiringSnapshots(
+      item,
+      detailsFor({ genres: ['Action'], coverImage: 'https://img.example/21-large.jpg' }),
+    );
+
+    expect(result.aiData.coverImage).toBe(base64);
+  });
+
+  it('leaves aiData.coverImage untouched when the details carry no meta', () => {
+    const item = linkedItem({ coverImage: undefined });
+    const result = applyAiringSnapshots(item, detailsFor());
+
+    expect(result.aiData.coverImage).toBeUndefined();
+  });
+
+  it('leaves aiData.coverImage untouched when the meta has no cover', () => {
+    const item = linkedItem({ coverImage: undefined });
+    const result = applyAiringSnapshots(item, detailsFor({ genres: ['Action'] }));
+
+    expect(result.aiData.coverImage).toBeUndefined();
+    expect(result.aiData.anilist?.genres).toEqual(['Action']);
   });
 
   it('returns the item unchanged when it has no AniList data', () => {
