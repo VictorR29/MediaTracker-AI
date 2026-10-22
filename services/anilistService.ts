@@ -161,7 +161,12 @@ const errorMessage = (error: unknown): string => {
   return String(error);
 };
 
-async function postGraphQL<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+/**
+ * Single throttled entry point for every AniList request. Discovery reuses it
+ * so both features share one queue and one rate limit; never bypass it with a
+ * direct fetch.
+ */
+export async function postGraphQL<T>(query: string, variables: Record<string, unknown>): Promise<T> {
   return enqueue(async () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
