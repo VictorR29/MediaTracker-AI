@@ -251,6 +251,30 @@ describe('fetchTvmazeShow', () => {
     expect(match?.seasons).toBe(3);
   });
 
+  it('derives firstSeasonEpisodes from season 1 only', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        // Season 0 is a special and season 2+ belongs to the rest of the run.
+        makeShow({ seasons: [0, 1, 1, 1, 2, 2, 3] }),
+      ),
+    );
+
+    const match = await fetchTvmazeShow(22557);
+
+    expect(match?.firstSeasonEpisodes).toBe(3);
+    expect(match?.totalEpisodes).toBe(6);
+    expect(match?.seasons).toBe(3);
+  });
+
+  it('leaves firstSeasonEpisodes undefined when there is no season 1', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(makeShow({ seasons: [0, 2, 2] })));
+
+    const match = await fetchTvmazeShow(22557);
+
+    expect(match?.firstSeasonEpisodes).toBeUndefined();
+    expect(match?.seasons).toBe(1);
+  });
+
   it('leaves the counts undefined when the payload has no episodes', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(makeShow()));
 

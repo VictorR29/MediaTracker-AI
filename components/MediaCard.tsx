@@ -12,7 +12,7 @@ import {
   PlayCircle, User, Minus, CalendarClock, Trophy, Medal, GripVertical,
   Wand2, MessageSquare, Info, BarChart2, PenTool, Users
 } from 'lucide-react';
-import { EditActionBar, AiringBlock, AniListLinkModal, AniListLinkRow, CharacterPickerModal, ManhwaWebLinkModal, ManhwaWebLinkRow } from './media-card';
+import { EditActionBar, AiringBlock, AniListLinkModal, AniListLinkRow, CharacterPickerModal, ManhwaWebLinkModal, ManhwaWebLinkRow, TvmazeLinkModal, TvmazeLinkRow } from './media-card';
 import { resolveAniListScope } from '../services/anilistService';
 import { MANHWAWEB_SITE_BASE } from '../services/manhwawebService';
 import { useAiringSnapshot } from '../hooks/useAiringSnapshot';
@@ -44,6 +44,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const [isGeneratingReview, setIsGeneratingReview] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [isTvmazeModalOpen, setIsTvmazeModalOpen] = useState(false);
   const [isManhwaWebModalOpen, setIsManhwaWebModalOpen] = useState(false);
   const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false);
 
@@ -696,6 +697,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     />
                   )}
 
+                  {aiData.mediaType === 'Serie' && tracking.status !== 'Descartado' && !isEditing && (
+                    <TvmazeLinkRow
+                      hasLink={typeof aiData.tvmaze?.id === 'number'}
+                      status={aiData.status}
+                      onOpen={() => setIsTvmazeModalOpen(true)}
+                    />
+                  )}
+
                   {manhwaWebEnabled && aiData.mediaType === 'Manhwa' && tracking.status !== 'Descartado' && !isEditing && (
                     <ManhwaWebLinkRow
                       hasLink={hasManhwaWebLink}
@@ -891,6 +900,16 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         isOpen={isManhwaWebModalOpen}
         item={localData}
         onClose={() => setIsManhwaWebModalOpen(false)}
+        onSelect={(linked) => {
+          setLocalData(linked);
+          onUpdate(linked);
+        }}
+      />
+
+      <TvmazeLinkModal
+        isOpen={isTvmazeModalOpen}
+        item={localData}
+        onClose={() => setIsTvmazeModalOpen(false)}
         onSelect={(linked) => {
           setLocalData(linked);
           onUpdate(linked);

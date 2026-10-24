@@ -6,13 +6,15 @@ import {
   MOOD_GENRES,
   MOOD_TAGS,
   buildDiscoveryItem,
+  buildSerieItem,
   formatCardMeta,
   formatReason,
   getMoodGenres,
   getMoodTags,
   toAniListDeckCard,
 } from '../deck';
-import type { AniListDeckCard } from '../types';
+import type { AiDeckCard, AniListDeckCard } from '../types';
+import type { TvmazeMatch } from '../../../services/tvmazeService';
 
 const deckCard = (overrides: Partial<AniListDeckCard> = {}): AniListDeckCard => ({
   kind: 'anilist',
@@ -338,5 +340,107 @@ describe('buildDiscoveryItem', () => {
       confidence: 'manual',
       genres: ['Action'],
     });
+  });
+});
+
+const aiCard = (overrides: Partial<AiDeckCard> = {}): AiDeckCard => ({
+  kind: 'ai',
+  title: 'El Marginal',
+  mediaType: 'Serie',
+  synopsis: 'Un policial carcelario argentino.',
+  reason: 'Encaja con tu gusto por el drama carcelario.',
+  ...overrides,
+});
+
+const tvmazeDetail = (overrides: Partial<TvmazeMatch> = {}): TvmazeMatch => ({
+  id: 22557,
+  name: 'El Marginal',
+  premiered: '2016-06-02',
+  ended: '2022-05-04',
+  status: 'En emisión',
+  genres: ['Drama', 'Crime'],
+  image: 'https://static.tvmaze.com/original.jpg',
+  totalEpisodes: 43,
+  seasons: 5,
+  firstSeasonEpisodes: 13,
+  ...overrides,
+});
+
+describe('buildSerieItem', () => {
+  it('builds a linked item from a hydrated card and its detail', () => {
+    const item = buildSerieItem(
+      aiCard({ tvmazeId: 22557, coverImage: 'https://static.tvmaze.com/original.jpg', status: 'En emisión' }),
+      tvmazeDetail(),
+      { id: 'serie-1', now: 2000 },
+    );
+
+    expect(item.id).toBe('serie-1');
+    expect(item.createdAt).toBe(2000);
+    expect(item.aiData.mediaType).toBe('Serie');
+    expect(item.aiData.coverImage).toBe('https://static.tvmaze.com/original.jpg');
+    expect(item.aiData.status).toBe('En emisión');
+    expect(item.aiData.totalContent).toBe('5 Temporadas · 43 Caps');
+    expect(item.aiData.tvmaze).toEqual({ id: 22557 });
+    expect(item.aiData.releaseDate).toBe('2016-06-02');
+    expect(item.aiData.endDate).toBe('2022-05-04');
+    expect(item.trackingData.totalSeasons).toBe(5);
+    expect(item.trackingData.totalEpisodesInSeason).toBe(13);
+    expect(item.trackingData.status).toBe('Sin empezar');
+    expect(item.trackingData.currentSeason).toBe(1);
+  });
+
+  it('uses the singular label for a one-season show', () => {
+    const item = buildSerieItem(
+      aiCard({ tvmazeId: 1 }),
+      tvmazeDetail({ totalEpisodes: 10, seasons: 1, firstSeasonEpisodes: 10 }),
+    );
+
+    expect(item.aiData.totalContent).toBe('1 Temporada · 10 Caps');
+  });
+
+  it('degrades to the episode count when the season count is unknown', () => {
+    const item = buildSerieItem(
+      aiCard({ tvmazeId: 1 }),
+      tvmazeDetail({ totalEpisodes: 12, seasons: undefined }),
+    );
+
+    expect(item.aiData.totalContent).toBe('12 Caps');
+  });
+
+  it('still produces a valid item when the detail fetch failed', () => {
+    const item = buildSerieItem(aiCard({ tvmazeId: 22557 }), null, { now: 3000 });
+
+    expect(item.aiData.totalContent).toBe('');
+    expect(item.aiData.releaseDate).toBeUndefined();
+    expect(item.aiData.endDate).toBeUndefined();
+    expect(item.trackingData.totalSeasons).toBe(1);
+    expect(item.trackingData.totalEpisodesInSeason).toBe(0);
+    expect(item.aiData.tvmaze).toEqual({ id: 22557 });
+  });
+
+  it('omits the tvmaze key when the card has no id', () => {
+    const item = buildSerieItem(aiCard(), tvmazeDetail());
+
+    expect('tvmaze' in item.aiData).toBe(false);
+    expect(item.aiData.totalContent).toBe('5 Temporadas · 43 Caps');
+  });
+
+  it('keeps the Spanish Gemini synopsis instead of the English TVmaze summary', () => {
+    const item = buildSerieItem(
+      aiCard({ tvmazeId: 22557, synopsis: 'Un policial carcelario argentino.' }),
+      tvmazeDetail({ synopsis: 'A prison police drama.' }),
+    );
+
+    expect(item.aiData.synopsis).toBe('Un policial carcelario argentino.');
+  });
+
+  it('copies the card genres instead of aliasing them and never mutates the card', () => {
+    const card = aiCard({ genres: ['Drama'], tvmazeId: 22557 });
+    const item = buildSerieItem(card, tvmazeDetail());
+
+    item.aiData.genres.push('Crime');
+
+    expect(card.genres).toEqual(['Drama']);
+    expect(card).toEqual(aiCard({ genres: ['Drama'], tvmazeId: 22557 }));
   });
 });

@@ -1,6 +1,6 @@
 import type { MediaItem } from '../types';
 import type { BackfillSummary } from './anilistBackfill';
-import { TvmazeError, applyTvmazeMetadata, fetchTvmazeShow, searchTvmazeShow } from './tvmazeService';
+import { TvmazeError, applyTvmazeMetadata, searchTvmazeShow } from './tvmazeService';
 import type { TvmazeMatch } from './tvmazeService';
 
 /**
@@ -12,7 +12,6 @@ export type TvmazeBackfillSummary = BackfillSummary;
 
 export interface TvmazeBackfillDeps {
   resolve: (title: string) => Promise<TvmazeMatch | null>;
-  fetchDetail: (id: number) => Promise<TvmazeMatch | null>;
 }
 
 export interface RunTvmazeBackfillOptions {
@@ -34,29 +33,27 @@ const MAX_CONSECUTIVE_FAILURES = 3;
 
 const defaultDeps: TvmazeBackfillDeps = {
   resolve: searchTvmazeShow,
-  fetchDetail: fetchTvmazeShow,
 };
 
 const isRateLimit = (error: unknown): boolean => error instanceof TvmazeError && error.status === 429;
 
-const hasCover = (item: MediaItem): boolean => {
-  const cover = item.aiData.coverImage;
-  return typeof cover === 'string' && cover.trim().length > 0;
-};
-
 /**
- * Series whose metadata is still missing and that the user still cares about.
- * A discarded work is never worth a request, and a user's cover — uploaded or
- * remote — is never a reason to touch the item at all.
+ * Series whose TVmaze identity is still missing and that the user still cares
+ * about. A discarded work is never worth a request. An existing cover is NOT a
+ * reason to skip: identity, status and dates are still missing.
  */
 const isCandidate = (item: MediaItem): boolean =>
   item.aiData.mediaType === 'Serie' &&
   item.trackingData.status !== 'Descartado' &&
-  item.aiData.tvmaze?.id === undefined &&
-  !hasCover(item);
+  item.aiData.tvmaze?.id === undefined;
 
 /**
  * Hydrates the library's Series from TVmaze without ever throwing.
+ *
+ * One request per item: the search match already carries identity, cover,
+ * genres, status and dates, and `applyTvmazeMetadata` runs fill-only, so the
+ * episode list `fetchTvmazeShow` would add is never applied. A user's cover,
+ * genres, status, dates and synopsis are never replaced.
  *
  * Metadata only: the run never reorders, drops or recommends anything. A title
  * TVmaze does not know is counted as failed, but a miss is not treated as an
@@ -124,7 +121,7 @@ export async function runTvmazeBackfill(options: RunTvmazeBackfillOptions): Prom
         notify();
         continue;
       }
-      if (before.aiData.tvmaze?.id !== undefined || hasCover(before)) {
+      if (before.aiData.tvmaze?.id !== undefined) {
         summary.done += 1;
         notify(before.aiData.title);
         continue;
@@ -156,22 +153,9 @@ export async function runTvmazeBackfill(options: RunTvmazeBackfillOptions): Prom
         summary.failed += 1;
         consecutiveFailures = 0;
       } else {
-        let detail: TvmazeMatch | null = null;
-        try {
-          detail = await deps.fetchDetail(match.id);
-        } catch (error) {
-          if (isRateLimit(error)) {
-            summary.aborted = true;
-            summary.abortReason = 'rate_limit';
-            return summary;
-          }
-          // The identity and the cover are already in hand: keep them instead
-          // of discarding a valid match over a missing episode list.
-          detail = null;
-        }
-
-        // Re-read once more: the item may have changed while the second
-        // request was in flight, and `applyTvmazeMetadata` is fill-only anyway.
+        // Search already carries identity, cover, genres, status and dates.
+        // `applyTvmazeMetadata` runs fill-only, so a detail request would only
+        // buy episode counts that the run never writes.
         const base = read(item.id);
         if (!base) {
           summary.done += 1;
@@ -181,7 +165,7 @@ export async function runTvmazeBackfill(options: RunTvmazeBackfillOptions): Prom
 
         const hydrated: MediaItem = {
           ...base,
-          aiData: applyTvmazeMetadata(base.aiData, detail ?? match, { overwrite: false }),
+          aiData: applyTvmazeMetadata(base.aiData, match, { overwrite: false }),
         };
         if (await save(hydrated)) {
           summary.matched += 1;

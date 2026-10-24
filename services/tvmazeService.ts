@@ -37,6 +37,8 @@ export interface TvmazeMatch {
   country?: string;
   totalEpisodes?: number;
   seasons?: number;
+  /** Episodes in season 1 only. Used to seed a new item's current-season capacity. */
+  firstSeasonEpisodes?: number;
 }
 
 // --- Throttle -----------------------------------------------------------------
@@ -256,27 +258,33 @@ const nonEmptyString = (value: unknown): string | undefined => {
 };
 
 /**
- * Embedded episodes -> season count and episode count. Specials (season 0) are
- * not part of the show's run and would inflate both numbers.
+ * Embedded episodes -> season count, total episode count and season-1 episode
+ * count. Specials (season 0) are not part of the show's run and would inflate
+ * every number.
  */
 const deriveEpisodeStats = (
   episodes: (TvmazeEpisodeNode | null)[] | undefined,
-): { totalEpisodes?: number; seasons?: number } => {
+): { totalEpisodes?: number; seasons?: number; firstSeasonEpisodes?: number } => {
   if (!Array.isArray(episodes)) return {};
 
   const seasonNumbers = new Set<number>();
   let totalEpisodes = 0;
+  let firstSeasonEpisodes = 0;
 
   for (const episode of episodes) {
     if (!episode) continue;
     if (episode.season === 0) continue;
     totalEpisodes += 1;
-    if (typeof episode.season === 'number' && episode.season > 0) seasonNumbers.add(episode.season);
+    if (typeof episode.season === 'number' && episode.season > 0) {
+      seasonNumbers.add(episode.season);
+      if (episode.season === 1) firstSeasonEpisodes += 1;
+    }
   }
 
   return {
     totalEpisodes: totalEpisodes > 0 ? totalEpisodes : undefined,
     seasons: seasonNumbers.size > 0 ? seasonNumbers.size : undefined,
+    firstSeasonEpisodes: firstSeasonEpisodes > 0 ? firstSeasonEpisodes : undefined,
   };
 };
 

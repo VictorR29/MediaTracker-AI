@@ -6,8 +6,8 @@ import {
 } from 'lucide-react';
 import { useToast } from './context/ToastContext';
 import { MediaItem, parseAccentToRgb } from './types';
-import type { AniListDeckCard } from './components/discovery/types';
-import { buildDiscoveryItem } from './components/discovery/deck';
+import type { AiDeckCard, AniListDeckCard } from './components/discovery/types';
+import { buildDiscoveryItem, buildSerieItem } from './components/discovery/deck';
 import { saveMediaItem } from './services/storage';
 import { searchMediaInfo } from './services/geminiService';
 import { applyTvmazeMetadata, fetchTvmazeShow, searchTvmazeShow } from './services/tvmazeService';
@@ -167,6 +167,20 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
     showToast('Agregada a tu biblioteca', 'success');
   };
 
+  /**
+   * TVmaze-hydrated Serie deck → library in one tap. The detail request only
+   * enriches the item: a failure still adds it from the card's own data, and the
+   * user stays on the deck exactly like the AniList path.
+   */
+  const handleAddSerieCard = async (card: AiDeckCard) => {
+    if (typeof card.tvmazeId !== 'number') return;
+
+    const detail = await fetchTvmazeShow(card.tvmazeId).catch(() => null);
+
+    await addItem(buildSerieItem(card, detail));
+    showToast('Agregada a tu biblioteca', 'success');
+  };
+
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
   const currentPath = location.pathname;
 
@@ -202,6 +216,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
           onUpdateItem={handleUpdateItem}
           onRecommendationSelect={handleRecommendationSelect}
           onAddDiscoveryItem={handleAddDiscoveryItem}
+          onAddSerieCard={handleAddSerieCard}
           onImportBackup={dataHandlers.handleImportBackup}
           isRestoring={isRestoring}
           onToggleImmersive={setImmersiveMode}
@@ -291,6 +306,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
           onUpdateItem={handleUpdateItem}
           onRecommendationSelect={handleRecommendationSelect}
           onAddDiscoveryItem={handleAddDiscoveryItem}
+          onAddSerieCard={handleAddSerieCard}
           onImportBackup={dataHandlers.handleImportBackup}
           isRestoring={isRestoring}
           onToggleImmersive={setImmersiveMode}

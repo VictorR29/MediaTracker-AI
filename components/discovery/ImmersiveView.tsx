@@ -1,7 +1,7 @@
 import React, { useRef, useMemo, useEffect } from 'react';
 import { getColorData } from './constants';
 import { formatCardMeta } from './deck';
-import type { AniListDeckCard, DeckCard } from './types';
+import type { AiDeckCard, AniListDeckCard, DeckCard } from './types';
 import { AniListCard, GenerativeCard, LoadingCard, NoResultsCard, EndCard, InfoSheet, PosterCard } from './DiscoveryCards';
 import { Sparkles, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -13,6 +13,7 @@ export interface ImmersiveViewProps {
   selectedMood: string | null;
   onSelectRecommendation: (title: string, type: string) => void;
   onAddAniList?: (card: AniListDeckCard) => Promise<void> | void;
+  onAddSerie?: (card: AiDeckCard) => Promise<void> | void;
   isExhausted?: boolean;
   onLoadMore: () => void;
   onGoBack: () => void;
@@ -26,6 +27,7 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
   selectedMood,
   onSelectRecommendation,
   onAddAniList,
+  onAddSerie,
   isExhausted = false,
   onLoadMore,
   onGoBack,
@@ -40,6 +42,10 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
   const isEndCard = recommendations.length > 0 && currentIndex === recommendations.length;
   const currentCard = recommendations[currentIndex];
   const isAniListCard = currentCard?.kind === 'anilist';
+  // A Serie card hydrated by TVmaze carries an id, so it can be added in one
+  // tap exactly like an AniList card. An unhydrated Gemini card can only search.
+  const isSerieCard = currentCard?.kind === 'ai' && typeof currentCard.tvmazeId === 'number';
+  const canAddDirectly = isAniListCard || isSerieCard;
   // A deck never mixes both sources, so one member is enough to identify it.
   const isAniListDeck = recommendations.some(card => card.kind === 'anilist');
   const cardColors = currentCard ? getColorData(currentCard.title) : { bg: 'from-zinc-700 to-zinc-800', shadow: '#000000' };
@@ -157,13 +163,18 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
   }, [nextCoverImage]);
 
   /**
-   * Primary sheet action. AniList cards are added straight to the library and
-   * advance; AI cards keep their existing search hand-off untouched.
+   * Primary sheet action. AniList cards and TVmaze-hydrated Serie cards are
+   * added straight to the library and advance; any other AI card keeps its
+   * existing search hand-off untouched.
    */
   const handleSelect = async () => {
     if (!currentCard) return;
 
-    if (currentCard.kind !== 'anilist') {
+    const isAddable =
+      currentCard.kind === 'anilist' ||
+      (currentCard.kind === 'ai' && typeof currentCard.tvmazeId === 'number');
+
+    if (!isAddable) {
       onSelectRecommendation(currentCard.title, currentCard.mediaType);
       setIsInfoOpen(false);
       return;
@@ -172,7 +183,11 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
     if (isAdding) return;
     setIsAdding(true);
     try {
-      await onAddAniList?.(currentCard);
+      if (currentCard.kind === 'anilist') {
+        await onAddAniList?.(currentCard);
+      } else {
+        await onAddSerie?.(currentCard);
+      }
       setIsInfoOpen(false);
       handleNext();
     } finally {
@@ -327,10 +342,10 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
           card={currentCard}
           selectedMood={selectedMood}
           eyebrow={isAniListCard ? 'Recomendación de AniList' : 'Recomendación IA'}
-          meta={isAniListCard ? formatCardMeta(currentCard) : undefined}
-          actionLabel={isAniListCard ? 'Agregar' : 'Buscar obra'}
-          actionVariant={isAniListCard ? 'add' : 'search'}
-          isBusy={isAdding}
+          meta={isAniListCard ? formatCardMeta(currentCard) : currentCard.status}
+          actionLabel={canAddDirectly ? 'Agregar' : 'Buscar obra'}
+          actionVariant={canAddDirectly ? 'add' : 'search'}
+          isBusy={canAddDirectly && isAdding}
           isOpen={isInfoOpen}
           onClose={() => setIsInfoOpen(false)}
           onSelect={handleSelect}

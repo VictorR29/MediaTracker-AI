@@ -649,7 +649,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <Tv className="w-3.5 h-3.5" /> TVmaze
                             </h3>
                             <p className="text-xs text-zinc-500 mb-3">
-                                Trae portadas, cantidad de episodios y estado de emisión reales para tus series. Es metadata: no cambia las recomendaciones.
+                                Vincula tus series a TVmaze y completa portada, episodios, estado y fechas. No reemplaza una portada que ya tengas.
                             </p>
                             <div className="flex gap-2">
                                 <button

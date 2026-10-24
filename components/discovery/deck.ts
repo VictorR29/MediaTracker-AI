@@ -1,6 +1,7 @@
 import type { DiscoveryCandidate } from '../../services/anilistDiscovery';
+import type { TvmazeMatch } from '../../services/tvmazeService';
 import type { MediaItem } from '../../types';
-import type { AniListDeckCard } from './types';
+import type { AiDeckCard, AniListDeckCard } from './types';
 
 /**
  * Spanish mood label (as shown in MOOD_OPTIONS) to canonical AniList genres.
@@ -149,9 +150,80 @@ export function toAniListDeckCard(candidate: DiscoveryCandidate): AniListDeckCar
 }
 
 /**
- * Deck card → library item. Kept pure so the add path is testable: the media
- * type and the chapter/episode split used to live inline in App.tsx, where a
- * manhwa was silently stored as an Anime.
+ * "5 Temporadas · 43 Caps" for a hydrated Serie, degrading to "43 Caps" when the
+ * season count is unknown and to an empty string when there is no episode count.
+ */
+const formatSerieTotalContent = (detail: TvmazeMatch | null): string => {
+  const totalEpisodes = detail?.totalEpisodes;
+  if (typeof totalEpisodes !== 'number' || !Number.isFinite(totalEpisodes) || totalEpisodes <= 0) {
+    return '';
+  }
+
+  const seasons = detail?.seasons;
+  const episodesLabel = `${totalEpisodes} Caps`;
+
+  if (typeof seasons !== 'number' || !Number.isFinite(seasons) || seasons <= 0) {
+    return episodesLabel;
+  }
+
+  const seasonsLabel = seasons === 1 ? '1 Temporada' : `${seasons} Temporadas`;
+  return `${seasonsLabel} · ${episodesLabel}`;
+};
+
+/**
+ * Gemini Serie deck card + optional TVmaze detail → library item.
+ *
+ * Kept pure for the same reason as `buildDiscoveryItem`: the add path must be
+ * testable without React. The synopsis always comes from Gemini (Spanish), never
+ * from TVmaze, whose `summary` is English only.
+ */
+export function buildSerieItem(
+  card: AiDeckCard,
+  detail: TvmazeMatch | null,
+  { id = Date.now().toString(), now = Date.now() }: { id?: string; now?: number } = {},
+): MediaItem {
+  // A card the deck hydrated still has to work when its detail fetch failed:
+  // the item is built from whatever the card itself carries.
+  const tvmazeId = card.tvmazeId;
+
+  return {
+    id,
+    aiData: {
+      title: card.title,
+      mediaType: 'Serie',
+      synopsis: card.synopsis,
+      genres: [...(card.genres ?? [])],
+      status: card.status ?? '',
+      totalContent: formatSerieTotalContent(detail),
+      coverDescription: '',
+      releaseDate: detail?.premiered,
+      endDate: detail?.ended,
+      sourceUrls: [],
+      primaryColor: '#c084fc',
+      coverImage: card.coverImage,
+      ...(typeof tvmazeId === 'number' && Number.isFinite(tvmazeId) ? { tvmaze: { id: tvmazeId } } : {}),
+    },
+    trackingData: {
+      status: 'Sin empezar',
+      currentSeason: 1,
+      totalSeasons: detail?.seasons ?? 1,
+      watchedEpisodes: 0,
+      // Season 1 only: `totalEpisodes` is the whole show and would make the
+      // progress bar start at a fraction of the first season.
+      totalEpisodesInSeason: detail?.firstSeasonEpisodes ?? 0,
+      emotionalTags: [],
+      favoriteCharacters: [],
+      rating: '',
+      comment: '',
+    },
+    createdAt: now,
+  };
+}
+
+/**
+ * AniList deck card → library item. Kept pure so the add path is testable: the
+ * media type and the chapter/episode split used to live inline in App.tsx, where
+ * a manhwa was silently stored as an Anime.
  */
 export function buildDiscoveryItem(
   card: AniListDeckCard,

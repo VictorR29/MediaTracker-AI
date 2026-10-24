@@ -10,7 +10,7 @@ import { ImmersiveView } from './discovery/ImmersiveView';
 import { MOOD_OPTIONS } from './discovery/constants';
 import { getMoodGenres, getMoodTags, toAniListDeckCard } from './discovery/deck';
 import { useSynopsisTranslation } from './discovery/useSynopsisTranslation';
-import type { AniListDeckCard, DeckCard } from './discovery/types';
+import type { AiDeckCard, AniListDeckCard, DeckCard } from './discovery/types';
 
 /** Cards revealed per batch. The engine returns up to 50, so one deck holds 2-3 rounds. */
 const REVEAL_BATCH_SIZE = 20;
@@ -20,10 +20,11 @@ interface DiscoveryViewProps {
   apiKey: string;
   onSelectRecommendation: (title: string, type: string) => void;
   onAddAniList?: (card: AniListDeckCard) => Promise<void> | void;
+  onAddSerie?: (card: AiDeckCard) => Promise<void> | void;
   onToggleImmersive?: (isImmersive: boolean) => void;
 }
 
-export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, onSelectRecommendation, onAddAniList, onToggleImmersive }) => {
+export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, onSelectRecommendation, onAddAniList, onAddSerie, onToggleImmersive }) => {
   // Mode State
   const [viewMode, setViewMode] = useState<'filters' | 'immersive'>('filters');
 
@@ -330,6 +331,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
         selectedMood={selectedMood}
         onSelectRecommendation={onSelectRecommendation}
         onAddAniList={onAddAniList}
+        onAddSerie={onAddSerie}
         isExhausted={isExhausted}
         onLoadMore={() => handleDiscovery(true)}
         onGoBack={handleGoBack}

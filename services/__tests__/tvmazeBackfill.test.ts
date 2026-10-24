@@ -47,7 +47,8 @@ const makeMatch = (id: number, name = 'El Marginal'): TvmazeMatch => ({
   name,
   genres: ['Drama'],
   image: `https://static.tvmaze.com/${id}.jpg`,
-  status: 'Running',
+  status: 'En emisión',
+  premiered: '2016-06-02',
   totalEpisodes: 43,
   seasons: 5,
 });
@@ -67,54 +68,66 @@ const makeStore = (items: MediaItem[]) => {
 // --- Selection ----------------------------------------------------------------
 
 describe('runTvmazeBackfill selection', () => {
-  it('hydrates only Series without a cover and without a TVmaze id', async () => {
+  it('hydrates Series without a TVmaze id regardless of an existing cover', async () => {
     const store = makeStore([
       makeItem({ id: 'candidate', title: 'El Marginal' }),
-      makeItem({ id: 'covered', title: 'Okupas', coverImage: 'data:image/webp;base64,USER' }),
+      makeItem({ id: 'covered', title: 'Okupas', coverImage: 'https://user.example/cover.jpg' }),
       makeItem({ id: 'linked', title: 'Los Simuladores', tvmazeId: 99 }),
       makeItem({ id: 'dropped', title: 'División Palermo', status: 'Descartado' }),
       makeItem({ id: 'movie', title: 'El Aura', mediaType: 'Pelicula' }),
     ]);
 
     const resolve = vi.fn(async (title: string) => makeMatch(22557, title));
-    const fetchDetail = vi.fn(async (id: number) => makeMatch(id));
 
     const summary = await runTvmazeBackfill({
       items: store.items(),
       persist: store.persist,
       read: store.read,
-      deps: { resolve, fetchDetail },
+      deps: { resolve },
     });
 
-    expect(summary.total).toBe(1);
-    expect(summary.matched).toBe(1);
+    expect(summary.total).toBe(2);
+    expect(summary.matched).toBe(2);
     expect(summary.failed).toBe(0);
-    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(resolve).toHaveBeenCalledTimes(2);
     expect(resolve).toHaveBeenCalledWith('El Marginal');
+    expect(resolve).toHaveBeenCalledWith('Okupas');
 
     const hydrated = store.read('candidate');
     expect(hydrated?.aiData.tvmaze).toEqual({ id: 22557 });
     expect(hydrated?.aiData.coverImage).toBe('https://static.tvmaze.com/22557.jpg');
+    expect(hydrated?.aiData.status).toBe('En emisión');
+
+    // A user cover survives, but the identity and status are still filled.
+    const covered = store.read('covered');
+    expect(covered?.aiData.coverImage).toBe('https://user.example/cover.jpg');
+    expect(covered?.aiData.tvmaze).toEqual({ id: 22557 });
+    expect(covered?.aiData.status).toBe('En emisión');
 
     // Nothing else was touched.
-    expect(store.read('covered')?.aiData.tvmaze).toBeUndefined();
     expect(store.read('linked')?.aiData.coverImage).toBe('');
     expect(store.read('dropped')?.aiData.tvmaze).toBeUndefined();
     expect(store.read('movie')?.aiData.tvmaze).toBeUndefined();
   });
 
-  it('keeps a user cover even when the fetch returns artwork', async () => {
-    const store = makeStore([makeItem({ id: 'covered', title: 'Okupas', coverImage: 'https://user.example/cover.jpg' })]);
+  it('performs exactly one request per item and needs no detail dependency', async () => {
+    const store = makeStore([
+      makeItem({ id: 'a', title: 'El Marginal' }),
+      makeItem({ id: 'b', title: 'Okupas', coverImage: 'https://user.example/cover.jpg' }),
+    ]);
+
+    const resolve = vi.fn(async (title: string) => makeMatch(title === 'Okupas' ? 2 : 1, title));
 
     const summary = await runTvmazeBackfill({
       items: store.items(),
       persist: store.persist,
       read: store.read,
-      deps: { resolve: async () => makeMatch(1), fetchDetail: async () => makeMatch(1) },
+      // No `fetchDetail` is accepted anymore: the type only allows `resolve`.
+      deps: { resolve },
     });
 
-    expect(summary.total).toBe(0);
-    expect(store.read('covered')?.aiData.coverImage).toBe('https://user.example/cover.jpg');
+    expect(summary.matched).toBe(2);
+    expect(resolve).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -128,7 +141,7 @@ describe('runTvmazeBackfill outcomes', () => {
       items: store.items(),
       persist: store.persist,
       read: store.read,
-      deps: { resolve: async () => null, fetchDetail: async () => null },
+      deps: { resolve: async () => null },
     });
 
     expect(summary.total).toBe(1);
@@ -143,8 +156,7 @@ describe('runTvmazeBackfill outcomes', () => {
     const store = makeStore([makeItem({ id: 'a', title: 'El Marginal' }), makeItem({ id: 'b', title: 'Okupas' })]);
 
     const resolve = vi.fn(async (title: string) => makeMatch(title === 'Okupas' ? 2 : 1, title));
-    const fetchDetail = vi.fn(async (id: number) => makeMatch(id));
-    const deps = { resolve, fetchDetail };
+    const deps = { resolve };
 
     const first = await runTvmazeBackfill({ items: store.items(), persist: store.persist, read: store.read, deps });
     expect(first.total).toBe(2);
@@ -155,25 +167,6 @@ describe('runTvmazeBackfill outcomes', () => {
     expect(second.total).toBe(0);
     expect(second.matched).toBe(0);
     expect(resolve).toHaveBeenCalledTimes(2);
-  });
-
-  it('keeps the search match when the detail request fails', async () => {
-    const store = makeStore([makeItem({ id: 'a', title: 'El Marginal' })]);
-
-    const summary = await runTvmazeBackfill({
-      items: store.items(),
-      persist: store.persist,
-      read: store.read,
-      deps: {
-        resolve: async () => makeMatch(22557),
-        fetchDetail: async () => {
-          throw new TvmazeError('boom', 500);
-        },
-      },
-    });
-
-    expect(summary.matched).toBe(1);
-    expect(store.read('a')?.aiData.coverImage).toBe('https://static.tvmaze.com/22557.jpg');
   });
 
   it('aborts on a 429 without hammering the API', async () => {
@@ -190,7 +183,6 @@ describe('runTvmazeBackfill outcomes', () => {
         resolve: async () => {
           throw new TvmazeError('rate limited', 429);
         },
-        fetchDetail: async () => null,
       },
     });
 
@@ -209,7 +201,7 @@ describe('runTvmazeBackfill outcomes', () => {
       persist: store.persist,
       read: store.read,
       shouldStop: () => true,
-      deps: { resolve: async () => makeMatch(1), fetchDetail: async () => makeMatch(1) },
+      deps: { resolve: async () => makeMatch(1) },
     });
 
     expect(summary.aborted).toBe(true);
@@ -224,7 +216,7 @@ describe('runTvmazeBackfill outcomes', () => {
       items: [makeItem({ id: 'gone', title: 'El Marginal' })],
       persist,
       read: () => undefined,
-      deps: { resolve: async () => makeMatch(1), fetchDetail: async () => makeMatch(1) },
+      deps: { resolve: async () => makeMatch(1) },
     });
 
     expect(persist).not.toHaveBeenCalled();

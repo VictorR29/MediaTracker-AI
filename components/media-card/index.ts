@@ -5,4 +5,6 @@ export { AniListLinkModal } from './AniListLinkModal';
 export { AniListLinkRow } from './AniListLinkRow';
 export { ManhwaWebLinkModal } from './ManhwaWebLinkModal';
 export { ManhwaWebLinkRow } from './ManhwaWebLinkRow';
+export { TvmazeLinkModal } from './TvmazeLinkModal';
+export { TvmazeLinkRow } from './TvmazeLinkRow';
 export { CharacterPickerModal } from './CharacterPickerModal';
