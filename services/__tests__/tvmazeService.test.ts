@@ -7,6 +7,7 @@ import {
   __resetTvmazeThrottleForTests,
   __setTvmazeThrottleForTests,
   applyTvmazeMetadata,
+  fetchTvmazeCharacters,
   fetchTvmazeShow,
   searchTvmazeShow,
 } from '../tvmazeService';
@@ -297,6 +298,130 @@ describe('fetchTvmazeShow', () => {
     expect(await fetchTvmazeShow(0)).toBeNull();
     expect(await fetchTvmazeShow(Number.NaN)).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+// --- Cast ---------------------------------------------------------------------
+
+interface CastFixture {
+  characterId?: number | null;
+  characterName?: string | null;
+  characterImage?: { medium?: string | null; original?: string | null } | null;
+  personId?: number | null;
+  personName?: string | null;
+  personImage?: { medium?: string | null; original?: string | null } | null;
+}
+
+const CAST_CHARACTER_IMAGE = 'https://static.tvmaze.com/uploads/character-original.jpg';
+const CAST_CHARACTER_MEDIUM = 'https://static.tvmaze.com/uploads/character-medium.jpg';
+const CAST_PERSON_IMAGE = 'https://static.tvmaze.com/uploads/person-original.jpg';
+const CAST_PERSON_MEDIUM = 'https://static.tvmaze.com/uploads/person-medium.jpg';
+
+const makeCastEntry = (fixture: CastFixture = {}) => ({
+  person: {
+    id: fixture.personId === undefined ? 151209 : fixture.personId,
+    name: fixture.personName === undefined ? 'Juan Minujín' : fixture.personName,
+    image:
+      fixture.personImage === undefined
+        ? { medium: CAST_PERSON_MEDIUM, original: CAST_PERSON_IMAGE }
+        : fixture.personImage,
+  },
+  character: {
+    id: fixture.characterId === undefined ? 343249 : fixture.characterId,
+    name: fixture.characterName === undefined ? 'Miguel Palacios / Pastor Peña' : fixture.characterName,
+    image:
+      fixture.characterImage === undefined
+        ? { medium: CAST_CHARACTER_MEDIUM, original: CAST_CHARACTER_IMAGE }
+        : fixture.characterImage,
+  },
+  self: false,
+  voice: false,
+});
+
+describe('fetchTvmazeCharacters', () => {
+  it('requests the cast endpoint and maps the character name, actor and character portrait', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([makeCastEntry()]));
+
+    const characters = await fetchTvmazeCharacters(22557);
+
+    expect(fetchMock.mock.calls[0][0]).toBe(`${TVMAZE_API_BASE}/shows/22557/cast`);
+    expect(characters).toEqual([
+      {
+        id: 343249,
+        name: 'Miguel Palacios / Pastor Peña',
+        actor: 'Juan Minujín',
+        image: CAST_CHARACTER_IMAGE,
+      },
+    ]);
+  });
+
+  it('falls back to the person image when the character has none', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([makeCastEntry({ characterImage: null })]));
+
+    const characters = await fetchTvmazeCharacters(22557);
+
+    expect(characters[0].image).toBe(CAST_PERSON_IMAGE);
+  });
+
+  it('falls back to the person id when the character id is missing', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([makeCastEntry({ characterId: null })]));
+
+    const characters = await fetchTvmazeCharacters(22557);
+
+    expect(characters[0]).toMatchObject({ id: 151209, name: 'Miguel Palacios / Pastor Peña' });
+  });
+
+  it('drops null entries, blank names and entries without a usable id', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse([
+        null,
+        { person: null, character: null },
+        makeCastEntry({ characterName: '   ' }),
+        makeCastEntry({ characterId: null, personId: null }),
+        makeCastEntry({ characterId: 343250, characterName: 'Diosito' }),
+      ]),
+    );
+
+    const characters = await fetchTvmazeCharacters(22557);
+
+    expect(characters).toHaveLength(1);
+    expect(characters[0].name).toBe('Diosito');
+  });
+
+  it('returns an empty array for an invalid id without any request', async () => {
+    expect(await fetchTvmazeCharacters(0)).toEqual([]);
+    expect(await fetchTvmazeCharacters(-1)).toEqual([]);
+    expect(await fetchTvmazeCharacters(Number.NaN)).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns an empty array for a 404 and caches it', async () => {
+    fetchMock.mockResolvedValueOnce(statusResponse(404));
+
+    expect(await fetchTvmazeCharacters(22557)).toEqual([]);
+    expect(await fetchTvmazeCharacters(22557)).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns copies from the cache so a caller cannot poison it', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([makeCastEntry()]));
+
+    const first = await fetchTvmazeCharacters(22557);
+    first[0].name = 'Mutado';
+    first.pop();
+
+    const second = await fetchTvmazeCharacters(22557);
+
+    expect(second).toHaveLength(1);
+    expect(second[0].name).toBe('Miguel Palacios / Pastor Peña');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a 429 exactly once and then throws', async () => {
+    fetchMock.mockResolvedValue(statusResponse(429));
+
+    await expect(fetchTvmazeCharacters(22557)).rejects.toBeInstanceOf(TvmazeError);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 

@@ -1,17 +1,47 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ImageOff, X } from 'lucide-react';
-import type { AniListCharacter } from '../../services/anilistService';
 import { fetchMediaCharacters } from '../../services/anilistService';
+import { fetchTvmazeCharacters } from '../../services/tvmazeService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 
-interface CharacterPickerModalProps {
+/**
+ * One selectable character. `subtitle` is the native name for AniList and the
+ * actor for TVmaze, so the second line means the right thing for each source.
+ */
+export interface CharacterCandidate {
+  id: number;
+  name: string;
+  subtitle?: string;
+  image?: string;
+}
+
+type CharacterPickerModalProps = {
   itemId: string;
-  anilistId: number;
   existing: { name: string; image?: string }[];
   onConfirm: (selected: { name: string; image?: string }[]) => void;
   onClose: () => void;
-}
+} & (
+  | { anilistId: number; tvmazeId?: never }
+  | { tvmazeId: number; anilistId?: never }
+);
+
+type CharacterSource = 'anilist' | 'tvmaze';
+
+const SOURCE_COPY = {
+  anilist: {
+    title: 'Personajes de AniList',
+    empty: 'Este anime no tiene personajes en AniList.',
+    failure: 'No se pudo consultar AniList',
+    consoleLabel: 'AniList',
+  },
+  tvmaze: {
+    title: 'Reparto de TVmaze',
+    empty: 'TVmaze no tiene reparto para esta serie.',
+    failure: 'No se pudo consultar TVmaze',
+    consoleLabel: 'TVmaze',
+  },
+} as const;
 
 const TITLE_ID = 'character-picker-modal-title';
 
@@ -27,16 +57,21 @@ const normalizeName = (value: string): string =>
 export const CharacterPickerModal: React.FC<CharacterPickerModalProps> = ({
   itemId,
   anilistId,
+  tvmazeId,
   existing,
   onConfirm,
   onClose,
 }) => {
-  const [characters, setCharacters] = useState<AniListCharacter[] | null>(null);
+  const [characters, setCharacters] = useState<CharacterCandidate[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [filter, setFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
   const [reloadToken, setReloadToken] = useState(0);
+
+  // The props are a discriminated union, so exactly one source is defined.
+  const source: CharacterSource = anilistId !== undefined ? 'anilist' : 'tvmaze';
+  const copy = SOURCE_COPY[source];
 
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const requestIdRef = useRef(0);
@@ -56,26 +91,38 @@ export const CharacterPickerModal: React.FC<CharacterPickerModalProps> = ({
     setIsLoading(true);
     setLoadFailed(false);
 
-    fetchMediaCharacters(anilistId)
+    const load = async (): Promise<CharacterCandidate[]> => {
+      if (anilistId !== undefined) {
+        const list = await fetchMediaCharacters(anilistId);
+        return list.map(c => ({ id: c.id, name: c.name, subtitle: c.nativeName, image: c.image }));
+      }
+      if (tvmazeId !== undefined) {
+        const list = await fetchTvmazeCharacters(tvmazeId);
+        return list.map(c => ({ id: c.id, name: c.name, subtitle: c.actor, image: c.image }));
+      }
+      return [];
+    };
+
+    load()
       .then((list) => {
         if (requestIdRef.current !== requestId) return;
         setCharacters(list);
       })
       .catch((error) => {
         if (requestIdRef.current !== requestId) return;
-        console.error('Failed to load AniList characters', error);
+        console.error(`Failed to load ${copy.consoleLabel} characters`, error);
         setLoadFailed(true);
       })
       .finally(() => {
         if (requestIdRef.current === requestId) setIsLoading(false);
       });
-  }, [anilistId, itemId, reloadToken]);
+  }, [anilistId, tvmazeId, itemId, reloadToken]);
 
   // A different work starts with a clean selection and filter; a retry keeps them.
   useEffect(() => {
     setSelectedIds(new Set());
     setFilter('');
-  }, [anilistId, itemId]);
+  }, [anilistId, tvmazeId, itemId]);
 
   const existingKeys = useMemo(
     () => new Set(existing.map((character) => normalizeName(character.name))),
@@ -89,7 +136,7 @@ export const CharacterPickerModal: React.FC<CharacterPickerModalProps> = ({
 
     return characters.filter((character) => {
       if (normalizeName(character.name).includes(query)) return true;
-      return !!character.nativeName && normalizeName(character.nativeName).includes(query);
+      return !!character.subtitle && normalizeName(character.subtitle).includes(query);
     });
   }, [characters, filter]);
 
@@ -132,7 +179,7 @@ export const CharacterPickerModal: React.FC<CharacterPickerModalProps> = ({
       >
         <div className="flex items-center justify-between gap-3 px-4 py-3 ring-1 ring-white/[0.06] bg-[#18181B]">
           <h2 id={TITLE_ID} className="text-sm font-bold text-white uppercase tracking-wider">
-            Personajes de AniList
+            {copy.title}
           </h2>
           <button
             type="button"
@@ -162,7 +209,7 @@ export const CharacterPickerModal: React.FC<CharacterPickerModalProps> = ({
 
           {!isLoading && loadFailed && (
             <div className="flex items-center justify-between gap-3 py-4">
-              <span className="text-xs text-zinc-500">No se pudo consultar AniList</span>
+              <span className="text-xs text-zinc-500">{copy.failure}</span>
               <button
                 type="button"
                 onClick={() => setReloadToken((token) => token + 1)}
@@ -174,7 +221,7 @@ export const CharacterPickerModal: React.FC<CharacterPickerModalProps> = ({
           )}
 
           {!isLoading && !loadFailed && characters !== null && characters.length === 0 && (
-            <p className="text-xs text-zinc-500 py-4">Este anime no tiene personajes en AniList.</p>
+            <p className="text-xs text-zinc-500 py-4">{copy.empty}</p>
           )}
 
           {!isLoading && !loadFailed && characters !== null && characters.length > 0 && visibleCharacters.length === 0 && (
@@ -186,7 +233,7 @@ export const CharacterPickerModal: React.FC<CharacterPickerModalProps> = ({
               {visibleCharacters.map((character) => {
                 const isSelected = selectedIds.has(character.id);
                 const isAlreadyAdded = existingKeys.has(normalizeName(character.name));
-                const showNative = !!character.nativeName && character.nativeName !== character.name;
+                const showSubtitle = !!character.subtitle && character.subtitle !== character.name;
 
                 return (
                   <li key={character.id}>
@@ -219,7 +266,7 @@ export const CharacterPickerModal: React.FC<CharacterPickerModalProps> = ({
 
                       <div className="min-w-0 flex-1 space-y-0.5">
                         <p className="text-sm font-bold text-white truncate">{character.name}</p>
-                        {showNative && <p className="text-xs text-zinc-500 truncate">{character.nativeName}</p>}
+                        {showSubtitle && <p className="text-xs text-zinc-500 truncate">{character.subtitle}</p>}
                       </div>
 
                       {isAlreadyAdded ? (

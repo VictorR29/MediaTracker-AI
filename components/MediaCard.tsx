@@ -274,6 +274,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const isMovie = aiData.mediaType === 'Pelicula';
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
   const anilistId = aiData.anilist?.id;
+  const tvmazeId = typeof aiData.tvmaze?.id === 'number' ? aiData.tvmaze.id : undefined;
   // Match by URL, not by link title: a link the user pasted by hand points to
   // the same series and must count as already linked.
   const hasManhwaWebLink = (tracking.customLinks || []).some(
@@ -285,6 +286,17 @@ export const MediaCard: React.FC<MediaCardProps> = ({
     { id: 'progreso', label: 'Progreso', icon: BarChart2 },
     { id: 'resena', label: 'Reseña', icon: PenTool },
   ];
+
+  // Shared props for the character picker. The source id is a discriminated
+  // union, so the two mount sites below differ only in which id they pass.
+  const characterPickerProps = {
+    itemId: localData.id,
+    existing: tracking.favoriteCharacters || [],
+    onConfirm: (selected: { name: string; image?: string }[]) => {
+      handleInputChange('favoriteCharacters', mergeCharacters(tracking.favoriteCharacters || [], selected));
+    },
+    onClose: () => setIsCharacterPickerOpen(false),
+  };
 
   return (
     <div
@@ -809,11 +821,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   <button onClick={handleAddCharacter} className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-[rgb(var(--card-rgb))] hover:opacity-90 text-white rounded-xl transition-all">
                     <Plus className="w-4 h-4" />
                   </button>
-                  {anilistId !== undefined && (
+                  {(anilistId !== undefined || tvmazeId !== undefined) && (
                     <button onClick={() => setIsCharacterPickerOpen(true)}
                       className="min-h-[44px] shrink-0 flex items-center gap-1.5 px-3 rounded-xl bg-zinc-900/50 ring-1 ring-white/[0.06] text-[11px] font-bold text-violet-400 hover:bg-zinc-800 hover:text-violet-300 whitespace-nowrap transition-colors">
                       <Users className="w-4 h-4" />
-                      Elegir de AniList
+                      {anilistId !== undefined ? 'Elegir de AniList' : 'Elegir de TVmaze'}
                     </button>
                   )}
                 </div>
@@ -916,16 +928,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         }}
       />
 
-      {anilistId !== undefined && isCharacterPickerOpen && (
-        <CharacterPickerModal
-          itemId={localData.id}
-          anilistId={anilistId}
-          existing={tracking.favoriteCharacters || []}
-          onConfirm={(selected) => {
-            handleInputChange('favoriteCharacters', mergeCharacters(tracking.favoriteCharacters || [], selected));
-          }}
-          onClose={() => setIsCharacterPickerOpen(false)}
-        />
+      {isCharacterPickerOpen && anilistId !== undefined && (
+        <CharacterPickerModal {...characterPickerProps} anilistId={anilistId} />
+      )}
+
+      {isCharacterPickerOpen && anilistId === undefined && tvmazeId !== undefined && (
+        <CharacterPickerModal {...characterPickerProps} tvmazeId={tvmazeId} />
       )}
     </div>
   );

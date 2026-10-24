@@ -41,6 +41,14 @@ export interface TvmazeMatch {
   firstSeasonEpisodes?: number;
 }
 
+export interface TvmazeCharacter {
+  id: number;
+  name: string;
+  /** The actor playing the character. TVmaze always pairs the two. */
+  actor?: string;
+  image?: string;
+}
+
 // --- Throttle -----------------------------------------------------------------
 
 /**
@@ -95,11 +103,13 @@ export function __resetTvmazeThrottleForTests(): void {
  */
 const searchCache = new Map<string, TvmazeMatch | null>();
 const showCache = new Map<number, TvmazeMatch>();
+const castCache = new Map<number, TvmazeCharacter[]>();
 
-/** Test-only: forget every cached search and show. */
+/** Test-only: forget every cached search, show and cast. */
 export function __clearTvmazeCacheForTests(): void {
   searchCache.clear();
   showCache.clear();
+  castCache.clear();
 }
 
 // --- Payload shapes -----------------------------------------------------------
@@ -137,6 +147,11 @@ interface TvmazeShowNode {
 interface TvmazeSearchEntry {
   score?: number | null;
   show?: TvmazeShowNode | null;
+}
+
+interface TvmazeCastNode {
+  person?: { id?: number | null; name?: string | null; image?: TvmazeImageNode | null } | null;
+  character?: { id?: number | null; name?: string | null; image?: TvmazeImageNode | null } | null;
 }
 
 // --- Transport ----------------------------------------------------------------
@@ -406,6 +421,52 @@ export async function fetchTvmazeShow(id: number): Promise<TvmazeMatch | null> {
 
   showCache.set(id, match);
   return match;
+}
+
+/**
+ * The show's cast: character name, the actor behind it and the character
+ * portrait. One request, cached for the session. Returns an empty array for an
+ * invalid id, a 404 or a show with no cast.
+ */
+export async function fetchTvmazeCharacters(showId: number): Promise<TvmazeCharacter[]> {
+  if (typeof showId !== 'number' || !Number.isFinite(showId) || showId <= 0) return [];
+
+  const cached = castCache.get(showId);
+  // Copies keep a caller's mutation from corrupting the cache.
+  if (cached) return cached.map(character => ({ ...character }));
+
+  const payload = await requestJson<(TvmazeCastNode | null)[]>(`${TVMAZE_API_BASE}/shows/${showId}/cast`);
+
+  // A 404 is cached as an empty cast: a show without cast does not grow one
+  // mid-session, and the picker must not retry on every open.
+  const characters: TvmazeCharacter[] = [];
+  for (const node of payload ?? []) {
+    if (!node) continue;
+
+    const name = nonEmptyString(node.character?.name);
+    if (!name) continue;
+
+    // The character id is the identity the picker selects. The actor id is only
+    // a fallback for malformed entries where TVmaze dropped the character id.
+    const characterId = toFiniteNumber(node.character?.id);
+    const id = characterId !== undefined && characterId > 0 ? characterId : toFiniteNumber(node.person?.id);
+    if (id === undefined || id <= 0) continue;
+
+    // Prefer the character portrait: the user is picking characters, not actors.
+    characters.push({
+      id,
+      name,
+      actor: nonEmptyString(node.person?.name),
+      image:
+        nonEmptyString(node.character?.image?.original) ??
+        nonEmptyString(node.character?.image?.medium) ??
+        nonEmptyString(node.person?.image?.original) ??
+        nonEmptyString(node.person?.image?.medium),
+    });
+  }
+
+  castCache.set(showId, characters);
+  return characters.map(character => ({ ...character }));
 }
 
 // --- Pure projection ----------------------------------------------------------
