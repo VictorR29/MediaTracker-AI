@@ -9,6 +9,7 @@ import {
   applyTvmazeMetadata,
   fetchTvmazeCharacters,
   fetchTvmazeShow,
+  hydrateSerieFromTvmaze,
   searchTvmazeShow,
 } from '../tvmazeService';
 import type { TvmazeMatch } from '../tvmazeService';
@@ -555,5 +556,103 @@ describe('applyTvmazeMetadata', () => {
 
     expect((await searchTvmazeShow('El Marginal'))?.image).toBe('https://static.tvmaze.com/original.jpg');
     expect((await searchTvmazeShow('El Marginal 2'))?.image).toBe('https://static.tvmaze.com/medium.jpg');
+  });
+});
+
+// --- Shared hydration ---------------------------------------------------------
+
+describe('hydrateSerieFromTvmaze', () => {
+  it('returns the same object reference and performs no request when a cover is already present', async () => {
+    const aiData = makeAiData({ coverImage: 'https://static.tvmaze.com/user-cover.jpg' });
+
+    const result = await hydrateSerieFromTvmaze(aiData);
+
+    expect(result.aiData).toBe(aiData);
+    expect(result.detail).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('hydrates from the search match plus the fetched detail in exactly two requests', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(searchPayload([{ show: makeShow() }])))
+      .mockResolvedValueOnce(jsonResponse(makeShow({ seasons: [1, 1, 2, 2] })));
+
+    const aiData = makeAiData();
+    const result = await hydrateSerieFromTvmaze(aiData);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][0]).toBe(`${TVMAZE_API_BASE}/search/shows?q=El%20Marginal`);
+    expect(fetchMock.mock.calls[1][0]).toBe(`${TVMAZE_API_BASE}/shows/22557?embed[]=episodes`);
+
+    expect(result.aiData).not.toBe(aiData);
+    expect(result.aiData.coverImage).toBe('https://static.tvmaze.com/original.jpg');
+    expect(result.aiData.status).toBe('En emisión');
+    expect(result.aiData.tvmaze).toEqual({ id: 22557 });
+    // TVmaze's real count replaces the one Gemini invented.
+    expect(result.aiData.totalContent).toBe('2 Temporadas · 4 Caps');
+
+    expect(result.detail).toMatchObject({
+      id: 22557,
+      name: 'El Marginal',
+      seasons: 2,
+      firstSeasonEpisodes: 2,
+      totalEpisodes: 4,
+    });
+  });
+
+  it('returns the input untouched when the search has no match', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+    const aiData = makeAiData();
+
+    const result = await hydrateSerieFromTvmaze(aiData);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe(`${TVMAZE_API_BASE}/search/shows?q=El%20Marginal`);
+    expect(result.aiData).toBe(aiData);
+    expect(result.detail).toBeNull();
+  });
+
+  it('falls back to the search match when the detail request fails, without throwing', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(searchPayload([{ show: makeShow() }])))
+      .mockResolvedValueOnce(statusResponse(500));
+
+    const result = await hydrateSerieFromTvmaze(makeAiData());
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.detail).toMatchObject({ id: 22557, name: 'El Marginal' });
+    // No embedded episodes in the search payload, so no episode counts either.
+    expect(result.detail?.seasons).toBeUndefined();
+    expect(result.detail?.firstSeasonEpisodes).toBeUndefined();
+    expect(result.aiData.coverImage).toBe('https://static.tvmaze.com/original.jpg');
+    expect(result.aiData.tvmaze).toEqual({ id: 22557 });
+    // Without a real episode count the invented one is left alone.
+    expect(result.aiData.totalContent).toBe('inventado por gemini');
+  });
+
+  it('swallows a search failure, logs it and returns the original data', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    fetchMock.mockRejectedValueOnce(new Error('network down'));
+    const aiData = makeAiData();
+
+    try {
+      const result = await hydrateSerieFromTvmaze(aiData);
+
+      expect(result.aiData).toBe(aiData);
+      expect(result.detail).toBeNull();
+      expect(errorSpy).toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('performs no request and returns the input unchanged for an empty title', async () => {
+    const aiData = makeAiData({ title: '   ' });
+
+    const result = await hydrateSerieFromTvmaze(aiData);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.aiData).toBe(aiData);
+    expect(result.detail).toBeNull();
   });
 });

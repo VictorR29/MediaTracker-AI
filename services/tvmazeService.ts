@@ -469,6 +469,44 @@ export async function fetchTvmazeCharacters(showId: number): Promise<TvmazeChara
   return characters.map(character => ({ ...character }));
 }
 
+export interface TvmazeHydration {
+  /** The work with whatever TVmaze could fill. Unchanged when nothing matched. */
+  aiData: AIWorkData;
+  /** The show detail behind the hydration, so a caller can seed season structure. */
+  detail: TvmazeMatch | null;
+}
+
+/**
+ * Gemini Series result -> the same work with TVmaze facts filled in.
+ *
+ * Callers own the "is this a Serie" decision: the deck knows the type it asked
+ * for, and the search path only reaches here when Gemini classified the result
+ * as a Series. The check is deliberately NOT repeated inside, because a
+ * misclassified result would otherwise skip hydration silently.
+ *
+ * Never throws. TVmaze is a bonus: an outage, a miss or a bad payload returns
+ * the original data untouched.
+ */
+export async function hydrateSerieFromTvmaze(aiData: AIWorkData): Promise<TvmazeHydration> {
+  // A cover already present means there is nothing to win here, and skipping the
+  // request preserves the discovery hand-off behaviour exactly.
+  if (!isBlank(aiData.coverImage)) return { aiData, detail: null };
+
+  try {
+    const match = await searchTvmazeShow(aiData.title);
+    if (!match) return { aiData, detail: null };
+
+    // The detail request adds the real episode counts; the search match already
+    // carries a usable cover, so a failure here is not fatal.
+    const detail = (await fetchTvmazeShow(match.id).catch(() => null)) ?? match;
+
+    return { aiData: applyTvmazeMetadata(aiData, detail, { overwrite: true }), detail };
+  } catch (error) {
+    console.error('TVmaze hydration failed', error);
+    return { aiData, detail: null };
+  }
+}
+
 // --- Pure projection ----------------------------------------------------------
 
 const isBlank = (value: string | undefined): boolean =>

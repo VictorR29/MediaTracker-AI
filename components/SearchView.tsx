@@ -6,7 +6,9 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useLibraryStore } from '../stores/useLibraryStore';
 import { useUIStore } from '../stores/useUIStore';
 import { MediaItem } from '../types';
+import type { AIWorkData } from '../types';
 import { searchMediaInfo } from '../services/geminiService';
+import { hydrateSerieFromTvmaze } from '../services/tvmazeService';
 import { SearchBar } from './SearchBar';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { MediaCard } from './MediaCard';
@@ -61,6 +63,32 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
     onSearchingChange?.(v);
   };
 
+  /** Gemini result -> preview item, with Series facts pulled from TVmaze. */
+  const buildPreviewItem = async (data: AIWorkData): Promise<MediaItem> => {
+    // Only a Serie is hydrated: the other types have no TVmaze counterpart, and
+    // `detail` stays null so their tracking values are exactly what they were.
+    const hydration = data.mediaType === 'Serie'
+      ? await hydrateSerieFromTvmaze(data)
+      : { aiData: data, detail: null };
+
+    return {
+      id: 'preview',
+      aiData: hydration.aiData,
+      trackingData: {
+        status: 'Sin empezar',
+        currentSeason: 1,
+        totalSeasons: hydration.detail?.seasons ?? 1,
+        watchedEpisodes: 0,
+        totalEpisodesInSeason: hydration.detail?.firstSeasonEpisodes ?? 0,
+        emotionalTags: [],
+        favoriteCharacters: [],
+        rating: '',
+        comment: '',
+      },
+      createdAt: Date.now(),
+    };
+  };
+
   const handleSearch = useCallback(async (query: string) => {
     if (!userProfile?.apiKey) {
       showToast("Configura tu API Key primero", "error");
@@ -76,17 +104,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
         setNoResultBaseQuery(query);
         return;
       }
-      const tempItem: MediaItem = {
-        id: 'preview',
-        aiData: data,
-        trackingData: {
-          status: 'Sin empezar', currentSeason: 1, totalSeasons: 1,
-          watchedEpisodes: 0, totalEpisodesInSeason: 0,
-          emotionalTags: [], favoriteCharacters: [], rating: '', comment: ''
-        },
-        createdAt: Date.now()
-      };
-      setPreviewItem(tempItem);
+      setPreviewItem(await buildPreviewItem(data));
     } catch (e) {
       setNoResultBaseQuery(query);
     } finally {
@@ -106,17 +124,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
       if (!data) {
         return;
       }
-      const tempItem: MediaItem = {
-        id: 'preview',
-        aiData: data,
-        trackingData: {
-          status: 'Sin empezar', currentSeason: 1, totalSeasons: 1,
-          watchedEpisodes: 0, totalEpisodesInSeason: 0,
-          emotionalTags: [], favoriteCharacters: [], rating: '', comment: ''
-        },
-        createdAt: Date.now()
-      };
-      setPreviewItem(tempItem);
+      setPreviewItem(await buildPreviewItem(data));
     } catch (e) {
       // keep no-result state; user can try next variant
     } finally {

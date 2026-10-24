@@ -10,7 +10,7 @@ import type { AiDeckCard, AniListDeckCard } from './components/discovery/types';
 import { buildDiscoveryItem, buildSerieItem } from './components/discovery/deck';
 import { saveMediaItem } from './services/storage';
 import { searchMediaInfo } from './services/geminiService';
-import { applyTvmazeMetadata, fetchTvmazeShow, searchTvmazeShow } from './services/tvmazeService';
+import { fetchTvmazeShow, hydrateSerieFromTvmaze } from './services/tvmazeService';
 
 import { useAuthStore } from './stores/useAuthStore';
 import { useLibraryStore } from './stores/useLibraryStore';
@@ -132,20 +132,13 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
 
       // Gemini leaves Series without a poster and with invented episode counts.
       // TVmaze fills those facts only; the recommendation is already decided.
-      // `SearchView` stores `state.searchData` as `aiData`, so hydrating here is
-      // what carries the real cover into the library.
+      // The hydration lives in `hydrateSerieFromTvmaze` because the direct
+      // search in `SearchView` needs exactly the same pass. `SearchView` stores
+      // `state.searchData` as `aiData`, so hydrating here is what carries the
+      // real cover into the library.
       let hydrated = data;
-      if (hydrated && type === 'Serie' && !hydrated.coverImage?.trim()) {
-        try {
-          const match = await searchTvmazeShow(hydrated.title);
-          if (match) {
-            const detail = await fetchTvmazeShow(match.id);
-            hydrated = applyTvmazeMetadata(hydrated, detail ?? match, { overwrite: true });
-          }
-        } catch (error) {
-          // Metadata is a bonus: a TVmaze outage must never break the flow.
-          console.error('TVmaze hydration failed', error);
-        }
+      if (hydrated && type === 'Serie') {
+        hydrated = (await hydrateSerieFromTvmaze(hydrated)).aiData;
       }
 
       navigate('/add', { state: { searchQuery: title, searchType: type, searchData: hydrated } });
