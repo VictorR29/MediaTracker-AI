@@ -503,7 +503,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <RefreshCw className="w-3.5 h-3.5" /> AniList
                             </h3>
                             <p className="text-xs text-zinc-500 mb-3">
-                                Vincula tus animes y guarda el estado de emisión. Se ejecuta por tandas y retoma donde quedó.
+                                Vincula tus animes y manhwas a AniList y guarda el estado de emisión. Se ejecuta por tandas y retoma donde quedó.
                             </p>
                             <div className="flex gap-2">
                                 <button

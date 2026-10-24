@@ -13,6 +13,7 @@ import {
   Wand2, MessageSquare, Info, BarChart2, PenTool, Users
 } from 'lucide-react';
 import { EditActionBar, AiringBlock, AniListLinkModal, AniListLinkRow, CharacterPickerModal } from './media-card';
+import { resolveAniListScope } from '../services/anilistService';
 import { useAiringSnapshot } from '../hooks/useAiringSnapshot';
 
 interface MediaCardProps {
@@ -677,7 +678,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     </div>
                   </div>
 
-                  {aiData.mediaType === 'Anime' && tracking.status !== 'Descartado' && !isEditing && (
+                  {resolveAniListScope(localData) !== null && tracking.status !== 'Descartado' && !isEditing && (
                     <AniListLinkRow
                       identity={aiData.anilist}
                       state={airing.state}
