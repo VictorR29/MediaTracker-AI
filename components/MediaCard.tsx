@@ -12,9 +12,11 @@ import {
   PlayCircle, User, Minus, CalendarClock, Trophy, Medal, GripVertical,
   Wand2, MessageSquare, Info, BarChart2, PenTool, Users
 } from 'lucide-react';
-import { EditActionBar, AiringBlock, AniListLinkModal, AniListLinkRow, CharacterPickerModal } from './media-card';
+import { EditActionBar, AiringBlock, AniListLinkModal, AniListLinkRow, CharacterPickerModal, ManhwaWebLinkModal, ManhwaWebLinkRow } from './media-card';
 import { resolveAniListScope } from '../services/anilistService';
+import { MANHWAWEB_SITE_BASE } from '../services/manhwawebService';
 import { useAiringSnapshot } from '../hooks/useAiringSnapshot';
+import { useAuthStore } from '../stores/useAuthStore';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -42,7 +44,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const [isGeneratingReview, setIsGeneratingReview] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [isManhwaWebModalOpen, setIsManhwaWebModalOpen] = useState(false);
   const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false);
+
+  const manhwaWebEnabled = useAuthStore(state => state.userProfile?.manhwaWebEnabled === true);
 
   // Drag & Drop State for Characters
   const dragItem = useRef<number | null>(null);
@@ -268,6 +273,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const isMovie = aiData.mediaType === 'Pelicula';
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
   const anilistId = aiData.anilist?.id;
+  // Match by URL, not by link title: a link the user pasted by hand points to
+  // the same series and must count as already linked.
+  const hasManhwaWebLink = (tracking.customLinks || []).some(
+    link => link.url.startsWith(`${MANHWAWEB_SITE_BASE}/manhwa/`),
+  );
 
   const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
     { id: 'info', label: 'Info', icon: Info },
@@ -686,6 +696,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     />
                   )}
 
+                  {manhwaWebEnabled && aiData.mediaType === 'Manhwa' && tracking.status !== 'Descartado' && !isEditing && (
+                    <ManhwaWebLinkRow
+                      hasLink={hasManhwaWebLink}
+                      onOpen={() => setIsManhwaWebModalOpen(true)}
+                    />
+                  )}
+
                   <AiringBlock
                     state={airing.state}
                     snapshot={aiData.anilist?.airing}
@@ -867,6 +884,16 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           // Force the load state to 'ready' after a manual re-link so a previous
           // 'unmatched'/'error' state cannot outlive the new identity.
           airing.refresh();
+        }}
+      />
+
+      <ManhwaWebLinkModal
+        isOpen={isManhwaWebModalOpen}
+        item={localData}
+        onClose={() => setIsManhwaWebModalOpen(false)}
+        onSelect={(linked) => {
+          setLocalData(linked);
+          onUpdate(linked);
         }}
       />
 

@@ -110,6 +110,7 @@ export interface UserProfile {
   apiKey: string; // User provided API Key
   password?: string; // Optional access password (simple hash or plain for this demo)
   preferences?: UserPreferences;
+  manhwaWebEnabled?: boolean; // Opt-in: show the ManhwaWeb link picker on manhwa cards
 }
 
 export interface EmotionalTagOption {

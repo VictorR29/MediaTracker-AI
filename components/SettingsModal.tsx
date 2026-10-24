@@ -4,7 +4,7 @@ import { UserProfile, MediaItem, RATING_TO_SCORE } from '../types';
 import { useToast } from '../context/ToastContext';
 import { saveMediaItem, deleteMediaItem } from '../services/storage';
 import { hashPassword } from '../utils/password';
-import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2, ChevronRight, Copy } from 'lucide-react';
+import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2, ChevronRight, Copy, Globe, Link as LinkIcon } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useAniListBackfillStore } from '../stores/useAniListBackfillStore';
 import { useCharacterImageBackfillStore } from '../stores/useCharacterImageBackfillStore';
@@ -81,6 +81,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
   const [isDragging, setIsDragging] = useState(false);
+
+  const manhwaWebEnabled = userProfile.manhwaWebEnabled === true;
 
   // --- STORAGE STATS CALCULATION ---
   const storageStats = useMemo(() => {
@@ -620,6 +622,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </ul>
                                 </div>
                             )}
+                        </div>
+
+                        {/* ManhwaWeb Section */}
+                        <div>
+                            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <Globe className="w-3.5 h-3.5" /> ManhwaWeb
+                            </h3>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={manhwaWebEnabled}
+                                onClick={() => onUpdateProfile({ ...userProfile, manhwaWebEnabled: !manhwaWebEnabled })}
+                                className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl text-sm text-white font-medium transition-colors"
+                            >
+                                <span className="flex items-center gap-2 text-left">
+                                    <LinkIcon className="w-4 h-4 text-violet-400 shrink-0" />
+                                    Añadir enlace de lectura
+                                </span>
+                                <span
+                                    aria-hidden="true"
+                                    className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${
+                                        manhwaWebEnabled ? 'bg-violet-500' : 'bg-zinc-700'
+                                    }`}
+                                >
+                                    <span
+                                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
+                                            manhwaWebEnabled ? 'left-[18px]' : 'left-0.5'
+                                        }`}
+                                    />
+                                </span>
+                            </button>
+                            <p className="text-xs text-zinc-500 mt-2">
+                                Añade un enlace "Leer en ManhwaWeb" a tus manhwas. Es una fuente externa no oficial: el enlace se guarda en tu dispositivo y no se envía nada a ningún servidor propio.
+                            </p>
                         </div>
 
                         {/* Duplicate Audit Section */}
