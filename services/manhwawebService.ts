@@ -22,6 +22,13 @@ export interface ManhwaWebCandidate {
   title: string;
   /** `name_esp`, present only when it differs from `title`. */
   spanishTitle?: string;
+  /**
+   * Kept for API completeness, but deliberately NOT rendered: `img1mw.xyz` and
+   * `img2mw.xyz` sit behind Cloudflare hotlink protection and answer 403 unless
+   * the `Referer` is `manhwaweb.com`. Verified live on 2026-10-24 (browser UA,
+   * any other origin → 403, `manhwaweb.com` → 200 image/webp). A browser cannot
+   * forge that header, so showing the cover would only paint a broken image.
+   */
   coverImage?: string;
   chapters?: number;
   status?: string;

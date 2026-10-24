@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ImageOff, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import type { MediaItem } from '../../types';
 import type { ManhwaWebCandidate } from '../../services/manhwawebService';
 import {
@@ -221,18 +221,6 @@ export const ManhwaWebLinkModal: React.FC<ManhwaWebLinkModalProps> = ({
                       aria-label={`Vincular con ${candidate.title}`}
                       className="w-full min-h-[44px] flex items-start gap-3 p-2.5 text-left rounded-xl bg-zinc-900/50 ring-1 transition-colors ring-white/[0.06] hover:bg-zinc-800/70"
                     >
-                      {candidate.coverImage ? (
-                        <img
-                          src={candidate.coverImage}
-                          alt=""
-                          className="w-10 h-14 object-cover rounded shrink-0"
-                        />
-                      ) : (
-                        <div className="w-10 h-14 rounded bg-zinc-800 flex items-center justify-center shrink-0">
-                          <ImageOff className="w-4 h-4 text-zinc-600" />
-                        </div>
-                      )}
-
                       <div className="min-w-0 flex-1 space-y-0.5">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold text-white truncate">{candidate.title}</span>
