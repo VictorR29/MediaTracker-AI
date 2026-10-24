@@ -62,6 +62,7 @@ Built with the latest web technologies for native performance:
 - **Animations:** Framer Motion for 3D flips, crossfades, and gesture-driven interactions.
 - **AI:** Google GenAI SDK (`@google/genai` v1.31+).
 - **Data:** AniList GraphQL API for real Anime metadata, artwork and recommendation graphs (no API key required).
+- **Data:** [TVmaze](https://www.tvmaze.com) for Series metadata — poster, episode count, seasons and broadcast status — under [CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/). TVmaze is metadata only: Series discovery and recommendations still come from Gemini, because TVmaze has no recommendation graph.
 - **Styles:** Tailwind CSS with custom utilities for Glassmorphism and 3D animations.
 - **Persistence:** IndexedDB wrapper for robust client-side storage.
 - **Iconography:** Lucide React.

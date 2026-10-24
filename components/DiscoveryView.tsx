@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MediaItem } from '../types';
 import { getRecommendations } from '../services/geminiService';
 import { fetchDiscoveryDeck } from '../services/anilistDiscovery';
 import { AniListError } from '../services/anilistService';
+import { searchTvmazeShow } from '../services/tvmazeService';
 import { computeTasteProfile } from '../services/tasteProfile';
 import { FilterView } from './discovery/FilterView';
 import { ImmersiveView } from './discovery/ImmersiveView';
@@ -52,6 +53,9 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
   // Genre-pool page and whether AniList has anything left beyond the current deck.
   const [page, setPage] = useState(1);
   const [isExhausted, setIsExhausted] = useState(false);
+  // Identifies the deck run that owns the current card list. A TVmaze hydration
+  // loop checks it before every patch so an older run cannot touch a newer deck.
+  const hydrationRunId = useRef(0);
 
   // --- IMMERSIVE MODE HANDLER ---
   useEffect(() => {
@@ -89,6 +93,45 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
 
   // --- ACTIONS ---
 
+  /**
+   * TVmaze hydration for a Gemini Serie deck: purely progressive. The cards are
+   * already on screen, and each one is patched in place as soon as its lookup
+   * resolves, so the deck is never blocked by the network. A miss or a failure
+   * leaves the card exactly as Gemini returned it — a card is never dropped.
+   *
+   * One request per card on purpose: the deck only needs art and basic facts,
+   * and `fetchTvmazeShow` would double the budget for a season count the card
+   * does not render.
+   */
+  const hydrateSerieCards = async (titles: string[], runId: number): Promise<void> => {
+    for (const title of titles) {
+      if (runId !== hydrationRunId.current) return;
+
+      try {
+        const match = await searchTvmazeShow(title);
+        if (!match || runId !== hydrationRunId.current) continue;
+
+        setRecommendations(prev => {
+          // Re-checked inside the updater: React may run it after a newer deck.
+          if (runId !== hydrationRunId.current) return prev;
+          return prev.map(card => {
+            if (card.kind !== 'ai' || card.title !== title) return card;
+            return {
+              ...card,
+              coverImage: card.coverImage || match.image,
+              genres: card.genres && card.genres.length > 0 ? card.genres : match.genres,
+              status: card.status || match.status,
+              tvmazeId: match.id,
+            };
+          });
+        });
+      } catch (error) {
+        // Metadata is a bonus: keep the Gemini card untouched.
+        console.error('TVmaze discovery hydration failed', error);
+      }
+    }
+  };
+
   /** Gemini deck. Used by every non-AniList type, and as the AniList fallback. */
   const handleGeminiDiscovery = async (isLoadMore = false) => {
     if (!apiKey) {
@@ -99,6 +142,8 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
     setIsLoading(true);
     setError(null);
     setViewMode('immersive');
+    // Any new deck invalidates the hydration loop of the previous one.
+    const runId = ++hydrationRunId.current;
 
     if (!isLoadMore) {
       setRecommendations([]);
@@ -117,9 +162,16 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
       );
 
       if (results.length > 0) {
-        setRecommendations(results.map(result => ({ ...result, kind: 'ai' as const })));
+        const cards = results.map(result => ({ ...result, kind: 'ai' as const }));
+        setRecommendations(cards);
         setSessionExcludedTitles(prev => [...prev, ...results.map(r => r.title)]);
         setCurrentIndex(0);
+
+        // Cards first, metadata second: this never blocks the deck, and only
+        // Series are covered by TVmaze (movies, books and the rest stay Gemini).
+        if (selectedType === 'Serie') {
+          void hydrateSerieCards(cards.map(card => card.title), runId);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -156,6 +208,9 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
     setIsLoading(true);
     setError(null);
     setViewMode('immersive');
+    // An AniList deck cancels any in-flight Serie hydration: the cards it would
+    // patch no longer exist.
+    hydrationRunId.current += 1;
 
     try {
       const seeds = library.flatMap(item => {

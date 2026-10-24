@@ -36,25 +36,42 @@ export const GenerativeCard: React.FC<GenerativeCardProps> = ({ title, type }) =
   );
 };
 
-export interface AniListCardProps {
-  card: AniListDeckCard;
+export interface PosterCardProps {
+  title: string;
+  coverImage?: string;
+  genres: string[];
+  /** Optional third metadata line, e.g. "TV · 2013 · 12 eps". */
+  meta?: string;
+  /** Optional label above the title. Rendered only when provided. */
+  eyebrow?: string;
+  alternateTitle?: string;
+  synopsis?: string;
+  reason?: string;
 }
 
 /**
- * Poster-first card for AniList results. The artwork is full bleed, but a dark
- * veil covers all of it before any text is drawn: a title over raw artwork is
- * unreadable on bright key visuals.
+ * Poster-first card shared by AniList results and TVmaze-hydrated Series cards.
+ * The artwork is full bleed, but a dark veil covers all of it before any text
+ * is drawn: a title over raw artwork is unreadable on bright key visuals.
  */
-export const AniListCard: React.FC<AniListCardProps> = ({ card }) => {
-  const colors = getColorData(card.title);
-  const meta = formatCardMeta(card);
-  const genres = card.genres.slice(0, 3);
+export const PosterCard: React.FC<PosterCardProps> = ({
+  title,
+  coverImage,
+  genres,
+  meta,
+  eyebrow,
+  alternateTitle,
+  synopsis,
+  reason,
+}) => {
+  const colors = getColorData(title);
+  const visibleGenres = genres.slice(0, 3);
 
   return (
     <div className={`w-full h-full relative overflow-hidden bg-gradient-to-br ${colors.bg}`}>
-      {card.coverImage && (
+      {coverImage && (
         <img
-          src={card.coverImage}
+          src={coverImage}
           alt=""
           loading="eager"
           className="absolute inset-0 w-full h-full object-cover"
@@ -65,21 +82,27 @@ export const AniListCard: React.FC<AniListCardProps> = ({ card }) => {
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent"></div>
 
       <div className="absolute inset-x-0 bottom-0 p-5 space-y-2">
+        {eyebrow && (
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">
+            {eyebrow}
+          </span>
+        )}
+
         <h2 className="text-xl font-bold text-white leading-tight line-clamp-2">
-          {card.title}
+          {title}
         </h2>
 
-        {card.alternateTitle && card.alternateTitle !== card.title && (
-          <p className="text-xs text-zinc-400 line-clamp-1">{card.alternateTitle}</p>
+        {alternateTitle && alternateTitle !== title && (
+          <p className="text-xs text-zinc-400 line-clamp-1">{alternateTitle}</p>
         )}
 
         {meta && (
           <p className="text-[11px] text-zinc-300">{meta}</p>
         )}
 
-        {genres.length > 0 && (
+        {visibleGenres.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {genres.map(genre => (
+            {visibleGenres.map(genre => (
               <span
                 key={genre}
                 className="px-2 py-0.5 rounded-full bg-white/10 text-[10px] font-semibold text-zinc-200 ring-1 ring-white/10"
@@ -90,17 +113,37 @@ export const AniListCard: React.FC<AniListCardProps> = ({ card }) => {
           </div>
         )}
 
-        {card.synopsis && (
-          <p className="text-[11px] text-zinc-300 leading-relaxed line-clamp-2">{card.synopsis}</p>
+        {synopsis && (
+          <p className="text-[11px] text-zinc-300 leading-relaxed line-clamp-2">{synopsis}</p>
         )}
 
-        {card.reason && (
-          <p className="text-[11px] text-violet-300 font-medium line-clamp-2">{card.reason}</p>
+        {reason && (
+          <p className="text-[11px] text-violet-300 font-medium line-clamp-2">{reason}</p>
         )}
       </div>
     </div>
   );
 };
+
+export interface AniListCardProps {
+  card: AniListDeckCard;
+}
+
+/**
+ * AniList deck card. Delegates to `PosterCard` so the Anime/Manhwa deck renders
+ * exactly as before while TVmaze-hydrated Series cards share the same design.
+ */
+export const AniListCard: React.FC<AniListCardProps> = ({ card }) => (
+  <PosterCard
+    title={card.title}
+    coverImage={card.coverImage}
+    genres={card.genres}
+    meta={formatCardMeta(card)}
+    alternateTitle={card.alternateTitle}
+    synopsis={card.synopsis}
+    reason={card.reason}
+  />
+);
 
 export const LoadingCard: React.FC = () => {
   return (

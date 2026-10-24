@@ -127,6 +127,23 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
             })}
           </div>
 
+          {/* TVmaze attribution: required by its CC BY-SA license. Only Series
+              metadata comes from there; the recommendation is still Gemini's. */}
+          {selectedType === 'Serie' && (
+            <p className="text-[11px] text-zinc-500 mb-6 -mt-4">
+              Datos de series por cortesía de{' '}
+              <a
+                href="https://www.tvmaze.com"
+                target="_blank"
+                rel="noreferrer"
+                className="underline hover:text-zinc-300"
+              >
+                TVmaze
+              </a>{' '}
+              · CC BY-SA
+            </p>
+          )}
+
           {/* Refine by Works Panel */}
 <div className="bg-zinc-950/60 rounded-xl ring-1 ring-white/[0.04] overflow-hidden mb-4 transition-all">
   <div

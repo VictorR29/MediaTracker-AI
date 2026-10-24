@@ -4,10 +4,11 @@ import { UserProfile, MediaItem, RATING_TO_SCORE } from '../types';
 import { useToast } from '../context/ToastContext';
 import { saveMediaItem, deleteMediaItem } from '../services/storage';
 import { hashPassword } from '../utils/password';
-import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2, ChevronRight, Copy, Globe, Link as LinkIcon } from 'lucide-react';
+import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2, ChevronRight, Copy, Globe, Link as LinkIcon, Tv } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useAniListBackfillStore } from '../stores/useAniListBackfillStore';
 import { useCharacterImageBackfillStore } from '../stores/useCharacterImageBackfillStore';
+import { useTvmazeBackfillStore } from '../stores/useTvmazeBackfillStore';
 import { useUIStore } from '../stores/useUIStore';
 import { auditLibrary } from '../services/libraryAudit';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +39,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     start: startCharacterImages,
     cancel: cancelCharacterImages,
   } = useCharacterImageBackfillStore();
+  const {
+    summary: tvmazeSummary,
+    isRunning: isTvmazeRunning,
+    current: tvmazeCurrent,
+    start: startTvmazeBackfill,
+    cancel: cancelTvmazeBackfill,
+  } = useTvmazeBackfillStore();
   const navigate = useNavigate();
   const setLastOpenedItemId = useUIStore(s => s.setLastOpenedItemId);
 
@@ -196,6 +204,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (!result) return;
       const hasProblems = result.failed > 0 || result.cancelled;
       showToast("Búsqueda de fotos terminada", hasProblems ? "error" : "success");
+  };
+
+  // --- TVMAZE BACKFILL ---
+  const handleTvmazeBackfill = async () => {
+      if (isTvmazeRunning || isBackfillRunning || isCharacterRunRunning) return;
+      showToast("Sincronizando series con TVmaze…", "info");
+      await startTvmazeBackfill();
+      const result = useTvmazeBackfillStore.getState().summary;
+      if (!result) return;
+      const hasProblems = result.failed > 0 || result.aborted;
+      showToast("Sincronización de series terminada", hasProblems ? "error" : "success");
   };
 
   // The picker lives inside the work card, so fixing a link means going there.
@@ -510,7 +529,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleAniListBackfill}
-                                    disabled={isBackfillRunning || isCharacterRunRunning}
+                                    disabled={isBackfillRunning || isCharacterRunRunning || isTvmazeRunning}
                                     className="flex-1 px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl text-sm text-white font-medium transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <RefreshCw className={`w-4 h-4 text-violet-400 ${isBackfillRunning ? 'animate-spin' : ''}`} />
@@ -562,7 +581,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <div className="flex gap-2">
                                     <button
                                         onClick={isCharacterRunRunning ? cancelCharacterImages : handleCharacterImages}
-                                        disabled={!isCharacterRunRunning && isBackfillRunning}
+                                        disabled={!isCharacterRunRunning && (isBackfillRunning || isTvmazeRunning)}
                                         className="flex-1 px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl text-sm text-white font-medium transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <ImageIcon className={`w-4 h-4 text-sky-400 ${isCharacterRunRunning ? 'animate-pulse' : ''}`} />
@@ -622,6 +641,62 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </ul>
                                 </div>
                             )}
+                        </div>
+
+                        {/* TVmaze Section — Series metadata only */}
+                        <div>
+                            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <Tv className="w-3.5 h-3.5" /> TVmaze
+                            </h3>
+                            <p className="text-xs text-zinc-500 mb-3">
+                                Trae portadas, cantidad de episodios y estado de emisión reales para tus series. Es metadata: no cambia las recomendaciones.
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleTvmazeBackfill}
+                                    disabled={isTvmazeRunning || isBackfillRunning || isCharacterRunRunning}
+                                    className="flex-1 px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl text-sm text-white font-medium transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <RefreshCw className={`w-4 h-4 text-emerald-400 ${isTvmazeRunning ? 'animate-spin' : ''}`} />
+                                    Sincronizar series
+                                </button>
+                                {isTvmazeRunning && (
+                                    <button
+                                        onClick={cancelTvmazeBackfill}
+                                        className="px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl text-sm text-zinc-300 font-medium transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                )}
+                            </div>
+
+                            {isTvmazeRunning && tvmazeSummary && (
+                                <div className="mt-3 space-y-1.5">
+                                    <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-emerald-500 transition-all duration-300"
+                                            style={{ width: `${tvmazeSummary.total > 0 ? (tvmazeSummary.done / tvmazeSummary.total) * 100 : 0}%` }}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3 text-[11px] text-zinc-500">
+                                        <span>{tvmazeSummary.done}/{tvmazeSummary.total}</span>
+                                        {tvmazeCurrent && <span className="truncate">{tvmazeCurrent}</span>}
+                                    </div>
+                                </div>
+                            )}
+
+                            {!isTvmazeRunning && tvmazeSummary && (
+                                <p className="text-[11px] text-zinc-500 mt-2">
+                                    {tvmazeSummary.aborted && 'Interrumpido: '}
+                                    Actualizadas {tvmazeSummary.matched} · Sin datos {tvmazeSummary.failed}
+                                    {tvmazeSummary.abortReason === 'rate_limit' && ' TVmaze limitó las consultas. Probá de nuevo en un minuto.'}
+                                    {tvmazeSummary.abortReason === 'cancelled' && ' Cancelado.'}
+                                </p>
+                            )}
+
+                            <p className="text-[11px] text-zinc-600 mt-2">
+                                Datos de series por cortesía de TVmaze (CC BY-SA).
+                            </p>
                         </div>
 
                         {/* ManhwaWeb Section */}

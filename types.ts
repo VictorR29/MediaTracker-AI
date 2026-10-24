@@ -65,6 +65,8 @@ export interface AIWorkData {
   endDate?: string; // New: End year or date
   franchise_link?: string; // New: Internal Linked Franchise Identifier (e.g. "Demon Slayer" for the movie)
   anilist?: AniListData; // Optional AniList match + volatile airing cache
+  /** TVmaze identity for Series. Metadata only: TVmaze has no recommendation graph. */
+  tvmaze?: { id: number };
 }
 
 export interface UserTrackingData {

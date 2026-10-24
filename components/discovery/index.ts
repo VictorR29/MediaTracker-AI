@@ -8,8 +8,8 @@ export type { FilterViewProps } from './FilterView';
 export { ImmersiveView } from './ImmersiveView';
 export type { ImmersiveViewProps } from './ImmersiveView';
 
-export { GenerativeCard, AniListCard, LoadingCard, NoResultsCard, EndCard, InfoSheet } from './DiscoveryCards';
-export type { GenerativeCardProps, AniListCardProps, NoResultsCardProps, EndCardProps, InfoSheetProps } from './DiscoveryCards';
+export { GenerativeCard, PosterCard, AniListCard, LoadingCard, NoResultsCard, EndCard, InfoSheet } from './DiscoveryCards';
+export type { GenerativeCardProps, PosterCardProps, AniListCardProps, NoResultsCardProps, EndCardProps, InfoSheetProps } from './DiscoveryCards';
 
 // Deck types & helpers
 export type { AiDeckCard, AniListDeckCard, DeckCard } from './types';

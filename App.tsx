@@ -10,6 +10,7 @@ import type { AniListDeckCard } from './components/discovery/types';
 import { buildDiscoveryItem } from './components/discovery/deck';
 import { saveMediaItem } from './services/storage';
 import { searchMediaInfo } from './services/geminiService';
+import { applyTvmazeMetadata, fetchTvmazeShow, searchTvmazeShow } from './services/tvmazeService';
 
 import { useAuthStore } from './stores/useAuthStore';
 import { useLibraryStore } from './stores/useLibraryStore';
@@ -128,7 +129,26 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
       if (!data) {
         showToast(`Sin resultados para "${title}". Probá con el título original o agregalo manualmente.`, "error");
       }
-      navigate('/add', { state: { searchQuery: title, searchType: type, searchData: data } });
+
+      // Gemini leaves Series without a poster and with invented episode counts.
+      // TVmaze fills those facts only; the recommendation is already decided.
+      // `SearchView` stores `state.searchData` as `aiData`, so hydrating here is
+      // what carries the real cover into the library.
+      let hydrated = data;
+      if (hydrated && type === 'Serie' && !hydrated.coverImage?.trim()) {
+        try {
+          const match = await searchTvmazeShow(hydrated.title);
+          if (match) {
+            const detail = await fetchTvmazeShow(match.id);
+            hydrated = applyTvmazeMetadata(hydrated, detail ?? match, { overwrite: true });
+          }
+        } catch (error) {
+          // Metadata is a bonus: a TVmaze outage must never break the flow.
+          console.error('TVmaze hydration failed', error);
+        }
+      }
+
+      navigate('/add', { state: { searchQuery: title, searchType: type, searchData: hydrated } });
     } catch (e) {
       showToast("Error buscando recomendación", "error");
     } finally {

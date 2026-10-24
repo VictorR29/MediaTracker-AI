@@ -6,6 +6,14 @@ import type { RecommendationResult } from '../../services/geminiService';
  */
 export interface AiDeckCard extends RecommendationResult {
   kind: 'ai';
+  /**
+   * Facts filled asynchronously by TVmaze after the deck has already rendered.
+   * The card never waits for them and a miss leaves every field untouched.
+   */
+  coverImage?: string;
+  genres?: string[];
+  status?: string;
+  tvmazeId?: number;
 }
 
 /** A deck card produced by AniList. Anime or Manhwa: both come from the same engine. */

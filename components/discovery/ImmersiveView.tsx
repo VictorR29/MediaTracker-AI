@@ -2,7 +2,7 @@ import React, { useRef, useMemo, useEffect } from 'react';
 import { getColorData } from './constants';
 import { formatCardMeta } from './deck';
 import type { AniListDeckCard, DeckCard } from './types';
-import { AniListCard, GenerativeCard, LoadingCard, NoResultsCard, EndCard, InfoSheet } from './DiscoveryCards';
+import { AniListCard, GenerativeCard, LoadingCard, NoResultsCard, EndCard, InfoSheet, PosterCard } from './DiscoveryCards';
 import { Sparkles, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 
 export interface ImmersiveViewProps {
@@ -146,10 +146,9 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
   // Warm the next cover so advancing does not show an empty frame.
   // Preload by URL, not by array identity: a synopsis translation replaces the
   // card object, and depending on `recommendations` would re-run this needlessly.
-  const nextCoverImage = useMemo(() => {
-    const next = recommendations[currentIndex + 1];
-    return next?.kind === 'anilist' ? next.coverImage : undefined;
-  }, [recommendations, currentIndex]);
+  // Both deck sources can carry a cover: AniList always, a Serie once TVmaze
+  // has hydrated it.
+  const nextCoverImage = useMemo(() => recommendations[currentIndex + 1]?.coverImage, [recommendations, currentIndex]);
 
   useEffect(() => {
     if (!nextCoverImage) return;
@@ -248,6 +247,14 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
               <div className="absolute inset-0 rounded-[calc(2rem-0.375rem)] overflow-hidden bg-[#18181B]">
                 {currentCard.kind === 'anilist' ? (
                   <AniListCard card={currentCard} />
+                ) : currentCard.coverImage ? (
+                  // A Serie hydrated by TVmaze: same poster presentation as the
+                  // AniList deck, but the card stays an AI card (no catalog id).
+                  <PosterCard
+                    title={currentCard.title}
+                    coverImage={currentCard.coverImage}
+                    genres={currentCard.genres ?? []}
+                  />
                 ) : (
                   <GenerativeCard title={currentCard.title} type={currentCard.mediaType} />
                 )}
