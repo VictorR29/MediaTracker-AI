@@ -42,8 +42,15 @@ export interface DiscoveryCandidate {
   tags: DiscoveryCandidateTag[];
   format?: string;
   episodes?: number;
+  /**
+   * Chapter count. Manga nodes carry `chapters` instead of `episodes`, so the
+   * card meta line has to fall back to it.
+   */
+  chapters?: number;
   status?: string;
   seasonYear?: number;
+  /** ISO country code of origin, e.g. `KR`. Manhwa decks filter on it. */
+  countryOfOrigin?: string;
   synopsis: string;
   recommendedBy: string[];
   votes: number;
@@ -59,14 +66,29 @@ export interface DiscoveryRequest {
   excludeTitles: string[];
   moodGenres?: string[];
   /**
+   * AniList has no MANHWA media format: manhwa is `type: MANGA` narrowed by
+   * `countryOfOrigin: "KR"`. Defaults to `'ANIME'`.
+   */
+  mediaType?: 'ANIME' | 'MANGA';
+  /**
+   * ISO country code the deck is restricted to, e.g. `'KR'`. Omitted means no
+   * country filter. Applied after mapping, so it also filters seed
+   * recommendations, which AniList returns across origins.
+   */
+  countryOfOrigin?: string;
+  /**
    * Tags that express the selected mood. Scored locally; never sent to AniList.
    */
   moodTags?: string[];
   /**
    * Opt-in Gemini curation of the pool. Adds one deliberately blocking round
    * trip so the deck is already ordered when the first card renders.
+   *
+   * `mediaType` is accepted next to the deck for callers that build both in one
+   * place; the prompt subject comes from the request-level `mediaType`, which is
+   * the single source of truth for what the deck actually is.
    */
-  curation?: { apiKey: string; moodLabel?: string; maxItems?: number };
+  curation?: { apiKey: string; moodLabel?: string; maxItems?: number; mediaType?: 'ANIME' | 'MANGA' };
   limit?: number;
   /**
    * Page of the popularity-sorted genre pool. Seed recommendations are always
@@ -120,6 +142,9 @@ interface DiscoveryMediaNode {
   tags?: { name?: string | null; rank?: number | null }[] | null;
   format?: string | null;
   episodes?: number | null;
+  /** Manga counterparts: `episodes` is null there and chapters is populated. */
+  chapters?: number | null;
+  countryOfOrigin?: string | null;
   status?: string | null;
   seasonYear?: number | null;
   /** Movies carry no `seasonYear`, but always carry a partial start date. */
@@ -168,6 +193,8 @@ const DISCOVERY_MEDIA_FIELDS = `
   tags { name rank }
   format
   episodes
+  chapters
+  countryOfOrigin
   status
   seasonYear
   startDate { year }
@@ -177,9 +204,9 @@ const DISCOVERY_MEDIA_FIELDS = `
 `;
 
 const SEEDS_QUERY = `
-query ($seedIds: [Int], $perSeed: Int) {
+query ($seedIds: [Int], $perSeed: Int, $type: MediaType) {
   Page(perPage: $perSeed) {
-    media(id_in: $seedIds, type: ANIME) {
+    media(id_in: $seedIds, type: $type) {
       id
       title { romaji english }
       recommendations(perPage: ${RECOMMENDATIONS_PER_SEED}, sort: RATING_DESC) {
@@ -196,25 +223,58 @@ query ($seedIds: [Int], $perSeed: Int) {
  * `format_not` takes a single MediaFormat enum in the live schema, not a list:
  * `format_not: [MUSIC]` is rejected with a validation error.
  *
+ * It is also Anime-only: `format_not: MUSIC` together with `type: MANGA` is
+ * rejected with HTTP 400, so the clause is omitted there.
+ *
  * The year filter uses `startDate_greater` (FuzzyDateInt). `seasonYear_greater`
  * does not exist in the schema and AniList answers 400 for it.
+ *
+ * Unused variables are a validation error in GraphQL, so every optional clause
+ * carries its own declaration and is left out entirely when unused.
  */
-const buildGenrePoolQuery = (withGenres: boolean, withMinDate: boolean): string => `
-query (${withGenres ? '$genres: [String], ' : ''}${withMinDate ? '$minDate: FuzzyDateInt, ' : ''}$excluded: [Int], $perPage: Int, $page: Int) {
+interface GenrePoolQueryOptions {
+  withGenres: boolean;
+  withMinDate: boolean;
+  /** Appends `countryOfOrigin`, which is what makes a MANGA pool Korean-only. */
+  withCountry: boolean;
+  /** Anime only: see the HTTP 400 note above. */
+  withFormatNot: boolean;
+}
+
+const buildGenrePoolQuery = ({
+  withGenres,
+  withMinDate,
+  withCountry,
+  withFormatNot,
+}: GenrePoolQueryOptions): string => {
+  const declarations = [
+    withGenres ? '$genres: [String]' : '',
+    withMinDate ? '$minDate: FuzzyDateInt' : '',
+    withCountry ? '$country: CountryCode' : '',
+    '$type: MediaType',
+    '$excluded: [Int]',
+    '$perPage: Int',
+    '$page: Int',
+  ].filter(declaration => declaration.length > 0);
+
+  return `
+query (${declarations.join(', ')}) {
   Page(page: $page, perPage: $perPage) {
     media(
-      type: ANIME,
+      type: $type,
       ${withGenres ? 'genre_in: $genres,' : ''}
       ${withMinDate ? 'startDate_greater: $minDate,' : ''}
+      ${withCountry ? 'countryOfOrigin: $country,' : ''}
       id_not_in: $excluded,
       isAdult: false,
-      format_not: MUSIC,
+      ${withFormatNot ? 'format_not: MUSIC,' : ''}
       sort: [POPULARITY_DESC]
     ) {
       ${DISCOVERY_MEDIA_FIELDS}
     }
   }
 }`;
+};
 
 /**
  * One batched lookup for the whole deck. A nested relations walk was measured
@@ -460,8 +520,13 @@ const toCandidate = (entry: AggregatedEntry): DiscoveryCandidate | null => {
     tags: normalizeTags(node.tags),
     format: node.format ?? undefined,
     episodes: isFiniteNumber(node.episodes) ? node.episodes : undefined,
+    chapters: isFiniteNumber(node.chapters) ? node.chapters : undefined,
     status: node.status ?? undefined,
     seasonYear: toReleaseYear(node),
+    countryOfOrigin:
+      typeof node.countryOfOrigin === 'string' && node.countryOfOrigin.trim().length > 0
+        ? node.countryOfOrigin.trim()
+        : undefined,
     synopsis: toSynopsis(node.description),
     recommendedBy: [...entry.recommendedBy],
     votes: entry.votes,
@@ -530,6 +595,10 @@ interface NormalizedRequest {
   fallbackGenres: string[];
   moodGenres: string[];
   moodTags: string[];
+  /** AniList media type of the whole deck; `'ANIME'` unless explicitly MANGA. */
+  mediaType: 'ANIME' | 'MANGA';
+  /** Uppercase ISO country code, or undefined for "any origin". */
+  countryOfOrigin?: string;
   /** Spanish mood label for curation; never part of any outbound AniList call. */
   moodLabel?: string;
   /** True when a Gemini key was supplied. The key itself never reaches the cache key. */
@@ -619,11 +688,30 @@ const normalizeMoodLabel = (label?: string): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
+/**
+ * AniList has no MANHWA format, so anything that is not exactly `'MANGA'` is an
+ * Anime deck: a typo must degrade to the default, never to a broken query.
+ */
+const normalizeMediaType = (value?: string): 'ANIME' | 'MANGA' =>
+  value === 'MANGA' ? 'MANGA' : 'ANIME';
+
+/**
+ * ISO 3166-1 alpha-2, uppercase. Anything else is dropped instead of sent:
+ * `countryOfOrigin` is a schema enum, so a malformed value is a 400.
+ */
+const sanitizeCountry = (value?: string): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(trimmed) ? trimmed : undefined;
+};
+
 const normalizeRequest = (request: DiscoveryRequest): NormalizedRequest => ({
   seeds: normalizeSeeds(request.seeds),
   fallbackGenres: canonicalizeGenres(request.fallbackGenres),
   moodGenres: canonicalizeGenres(request.moodGenres),
   moodTags: uniqueTags(request.moodTags),
+  mediaType: normalizeMediaType(request.mediaType),
+  countryOfOrigin: sanitizeCountry(request.countryOfOrigin),
   moodLabel: normalizeMoodLabel(request.curation?.moodLabel),
   curationRequested:
     typeof request.curation?.apiKey === 'string' && request.curation.apiKey.trim().length > 0,
@@ -642,6 +730,9 @@ const buildCacheKey = (request: NormalizedRequest): string =>
       .sort((a, b) => a[0] - b[0]),
     fallbackGenres: [...request.fallbackGenres].sort(),
     moodGenres: [...request.moodGenres].sort(),
+    // A MANGA deck and an ANIME deck are different pools even with the same seeds.
+    mediaType: request.mediaType,
+    countryOfOrigin: request.countryOfOrigin ?? null,
     // Sorted so a differently ordered mood tag list still shares one cache entry.
     moodTags: [...request.moodTags].sort(),
     moodLabel: request.moodLabel ?? null,
@@ -680,6 +771,11 @@ const cloneCandidate = (candidate: DiscoveryCandidate): DiscoveryCandidate => ({
  * would silently lose entries the API simply did not date. A candidate that
  * matches none of the mood tags is kept too, with a score of 0: scoring only
  * orders the deck, it never filters it.
+ *
+ * `country` is the one hard origin filter, and it lives here — inside the shared
+ * chain — so it also narrows seed recommendations (AniList crosses origins: a
+ * Korean seed happily recommends One Piece) and so the thin-pool threshold later
+ * measures what survives it.
  */
 const rankCandidates = (
   pool: Map<number, AggregatedEntry>,
@@ -689,10 +785,12 @@ const rankCandidates = (
   moodTagKeys: Set<string>,
   limit: number,
   minYear?: number,
+  country?: string,
 ): DiscoveryCandidate[] =>
   [...pool.values()]
     .map(toCandidate)
     .filter((candidate): candidate is DiscoveryCandidate => candidate !== null)
+    .filter(candidate => country === undefined || candidate.countryOfOrigin === country)
     .filter(candidate => !isExcluded(candidate, excludedIds, excludedTitles))
     .filter(candidate => minYear === undefined || candidate.seasonYear === undefined || candidate.seasonYear >= minYear)
     .map(candidate => ({
@@ -776,6 +874,10 @@ const collapseLaterSeasons = async (candidates: DiscoveryCandidate[]): Promise<D
  * Transport failures are never swallowed: `AniListError` propagates so the
  * caller can decide whether to fall back. Results are cached per normalized
  * request, so repeating an identical discovery costs no request.
+ *
+ * The same engine serves Anime and Manhwa. Manhwa is not a format in AniList's
+ * schema: it is `type: MANGA` narrowed to `countryOfOrigin: "KR"`, so the deck
+ * passes those two parameters instead of forking the pipeline.
  */
 export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<DiscoveryCandidate[]> {
   const normalized = normalizeRequest(request);
@@ -784,17 +886,32 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
   const cached = discoveryCache.get(cacheKey);
   if (cached) return cached.map(cloneCandidate);
 
-  const { seeds, fallbackGenres, moodGenres, moodTags, excludeIds, excludeTitles, limit, page, minYear, collapseSeasons } =
-    normalized;
+  const {
+    seeds,
+    fallbackGenres,
+    moodGenres,
+    moodTags,
+    mediaType,
+    countryOfOrigin,
+    excludeIds,
+    excludeTitles,
+    limit,
+    page,
+    minYear,
+    collapseSeasons,
+  } = normalized;
 
   const pool = new Map<number, AggregatedEntry>();
 
   // Seed recommendations are not paged, so they are only harvested once: a
   // later page continues the genre pool instead of repeating the same picks.
+  // With no seeds there is no seed request at all: an empty `id_in` is not a
+  // useful query, and the deck comes entirely from the genre pool.
   if (seeds.length > 0 && page === 1) {
     const data = await postGraphQL<SeedsPageResponse>(SEEDS_QUERY, {
       seedIds: seeds.map(seed => seed.anilistId),
       perSeed: Math.min(MAX_LIMIT, seeds.length),
+      type: mediaType,
     });
     mergeSeedPool(pool, data?.Page?.media ?? []);
   }
@@ -804,7 +921,16 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
   const moodKeys = new Set(moodGenres.map(normalizeTitle));
   const moodTagKeys = new Set(moodTags);
 
-  let ranked = rankCandidates(pool, excludedIdSet, excludedTitleSet, moodKeys, moodTagKeys, limit, minYear);
+  let ranked = rankCandidates(
+    pool,
+    excludedIdSet,
+    excludedTitleSet,
+    moodKeys,
+    moodTagKeys,
+    limit,
+    minYear,
+    countryOfOrigin,
+  );
 
   // The threshold applies to what survives exclusion, not to the raw pool: a
   // healthy seed list can still leave a handful of usable cards once the whole
@@ -812,7 +938,11 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
   if (seeds.length === 0 || ranked.length < THIN_POOL_THRESHOLD) {
     const withGenres = fallbackGenres.length > 0;
     const withMinDate = minYear !== undefined;
+    const withCountry = countryOfOrigin !== undefined;
+    // `format_not` with `type: MANGA` is an HTTP 400: the clause is Anime-only.
+    const withFormatNot = mediaType === 'ANIME';
     const variables: Record<string, unknown> = {
+      type: mediaType,
       excluded: excludeIds,
       perPage: limit,
       page,
@@ -822,17 +952,29 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
     // `startDate_greater` is exclusive, so the previous year's last day is sent
     // to keep the whole requested year inside the range.
     if (withMinDate) variables.minDate = (minYear - 1) * 10000 + 1231;
+    if (withCountry) variables.country = countryOfOrigin;
 
     const data = await postGraphQL<GenrePageResponse>(
-      buildGenrePoolQuery(withGenres, withMinDate),
+      buildGenrePoolQuery({ withGenres, withMinDate, withCountry, withFormatNot }),
       variables,
     );
     mergeGenrePool(pool, data?.Page?.media ?? []);
-    ranked = rankCandidates(pool, excludedIdSet, excludedTitleSet, moodKeys, moodTagKeys, limit, minYear);
+    ranked = rankCandidates(
+      pool,
+      excludedIdSet,
+      excludedTitleSet,
+      moodKeys,
+      moodTagKeys,
+      limit,
+      minYear,
+      countryOfOrigin,
+    );
   }
 
   // One extra request, and only when asked: the default deck keeps every season.
-  if (collapseSeasons && ranked.length > 0) {
+  // Season collapse is an Anime-only concept: a manhwa's relations are a
+  // different franchise graph, so the relations query is never issued for MANGA.
+  if (mediaType === 'ANIME' && collapseSeasons && ranked.length > 0) {
     ranked = await collapseLaterSeasons(ranked);
   }
 
@@ -846,6 +988,7 @@ export async function fetchDiscoveryDeck(request: DiscoveryRequest): Promise<Dis
     const curated = await curateCandidates({
       apiKey: request.curation.apiKey,
       moodLabel: normalized.moodLabel,
+      mediaType,
       maxItems: clampCurationMaxItems(request.curation.maxItems),
       candidates: ranked,
     });

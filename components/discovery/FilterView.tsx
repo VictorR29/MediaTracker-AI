@@ -69,9 +69,14 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
     );
   }, [availableSeedItems, seedSearchQuery]);
 
-  const epochSummary = `${epochFilter === null ? 'Cualquier época' : `Desde ${epochFilter}`} · ${
-    onlyFirstSeason ? 'Solo primeras temporadas' : 'Incluye temporadas'
-  }`;
+  // AniList-backed categories share the catalog panel; only Anime has seasons.
+  const isAniListType = selectedType === 'Anime' || selectedType === 'Manhwa';
+  const hasSeasonToggle = selectedType === 'Anime';
+  const epochLabel = epochFilter === null ? 'Cualquier época' : `Desde ${epochFilter}`;
+  const epochSummary = hasSeasonToggle
+    ? `${epochLabel} · ${onlyFirstSeason ? 'Solo primeras temporadas' : 'Incluye temporadas'}`
+    : epochLabel;
+  const isCatalogActive = epochFilter !== null || (hasSeasonToggle && onlyFirstSeason);
 
   return (
     <div className="animate-fade-in pb-12">
@@ -265,15 +270,15 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
             )}
           </div>
 
-          {/* Catalog Panel: Epoch and franchise collapse, Anime only (AniList) */}
-          {selectedType === 'Anime' && (
+          {/* Catalog Panel: epoch for Anime and Manhwa, franchise collapse Anime only */}
+          {isAniListType && (
             <div className="bg-zinc-950/60 rounded-xl ring-1 ring-white/[0.04] overflow-hidden mb-8 transition-all">
               <div
                 className="p-4 bg-zinc-900/50 border-b border-white/5 flex items-center justify-between cursor-pointer hover:bg-zinc-800/50 transition-colors"
                 onClick={onToggleCatalogPanel}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${epochFilter !== null || onlyFirstSeason ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
+                  <div className={`p-2 rounded-lg ${isCatalogActive ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
                     <CalendarDays className="w-4 h-4" />
                   </div>
                   <div>
@@ -311,23 +316,27 @@ const FilterViewInner: React.FC<FilterViewProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-bold text-zinc-200">Solo primeras temporadas</p>
-                      <p className="text-xs text-zinc-500">
-                        Evita secuelas y temporadas posteriores de una misma saga.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      aria-pressed={onlyFirstSeason}
-                      aria-label="Solo primeras temporadas"
-                      onClick={onToggleOnlyFirstSeason}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${onlyFirstSeason ? 'bg-white/80' : 'bg-zinc-700'}`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-zinc-900 transition-transform ${onlyFirstSeason ? 'translate-x-6' : 'translate-x-1'}`}
-                      />
-                    </button>
+                    {hasSeasonToggle && (
+                      <>
+                        <div>
+                          <p className="text-sm font-bold text-zinc-200">Solo primeras temporadas</p>
+                          <p className="text-xs text-zinc-500">
+                            Evita secuelas y temporadas posteriores de una misma saga.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          aria-pressed={onlyFirstSeason}
+                          aria-label="Solo primeras temporadas"
+                          onClick={onToggleOnlyFirstSeason}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${onlyFirstSeason ? 'bg-white/80' : 'bg-zinc-700'}`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-zinc-900 transition-transform ${onlyFirstSeason ? 'translate-x-6' : 'translate-x-1'}`}
+                          />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}

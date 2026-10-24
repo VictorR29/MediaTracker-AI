@@ -1,4 +1,5 @@
 import type { DiscoveryCandidate } from '../../services/anilistDiscovery';
+import type { MediaItem } from '../../types';
 import type { AniListDeckCard } from './types';
 
 /**
@@ -71,6 +72,9 @@ const FORMAT_LABELS: Record<string, string> = {
   OVA: 'OVA',
   ONA: 'ONA',
   SPECIAL: 'Especial',
+  // AniList has no MANHWA format: a MANGA entry in this deck is Korean-only, so
+  // the label is accurate rather than a guess at every manga's origin.
+  MANGA: 'Manhwa',
 };
 
 /** Canonical AniList genres for a mood label; an empty list for "no mood". */
@@ -110,7 +114,11 @@ export function formatCardMeta(card: AniListDeckCard): string {
   if (typeof card.seasonYear === 'number' && Number.isFinite(card.seasonYear)) {
     parts.push(String(card.seasonYear));
   }
-  if (typeof card.episodes === 'number' && Number.isFinite(card.episodes) && card.episodes > 0) {
+  // Manga reports chapters and leaves `episodes` null; chapters win when both
+  // are present, because that is the unit the reader actually counts.
+  if (typeof card.chapters === 'number' && Number.isFinite(card.chapters) && card.chapters > 0) {
+    parts.push(`${card.chapters} caps`);
+  } else if (typeof card.episodes === 'number' && Number.isFinite(card.episodes) && card.episodes > 0) {
     parts.push(`${card.episodes} eps`);
   }
 
@@ -124,7 +132,8 @@ export function toAniListDeckCard(candidate: DiscoveryCandidate): AniListDeckCar
     anilistId: candidate.anilistId,
     title: candidate.title,
     alternateTitle: candidate.alternateTitle,
-    mediaType: 'Anime',
+    // MANGA in this engine always means the KR-only manhwa pool.
+    mediaType: candidate.format === 'MANGA' ? 'Manhwa' : 'Anime',
     synopsis: candidate.synopsis,
     // A curated reason explains the mood; the fan-credit line is the fallback.
     reason: candidate.reason ?? formatReason(candidate.recommendedBy),
@@ -133,7 +142,60 @@ export function toAniListDeckCard(candidate: DiscoveryCandidate): AniListDeckCar
     genres: [...candidate.genres],
     format: candidate.format,
     episodes: candidate.episodes,
+    chapters: candidate.chapters,
     seasonYear: candidate.seasonYear,
     status: candidate.status,
+  };
+}
+
+/**
+ * Deck card → library item. Kept pure so the add path is testable: the media
+ * type and the chapter/episode split used to live inline in App.tsx, where a
+ * manhwa was silently stored as an Anime.
+ */
+export function buildDiscoveryItem(
+  card: AniListDeckCard,
+  { id = Date.now().toString(), now = Date.now() }: { id?: string; now?: number } = {},
+): MediaItem {
+  const isMovie = card.format === 'MOVIE';
+  const isManhwa = card.mediaType === 'Manhwa';
+
+  return {
+    id,
+    aiData: {
+      title: card.title,
+      mediaType: card.mediaType,
+      synopsis: card.synopsis,
+      genres: [...card.genres],
+      status: card.status === 'RELEASING' ? 'En emisión' : card.status === 'FINISHED' ? 'Finalizado' : '',
+      totalContent: isManhwa
+        ? (card.chapters ? `${card.chapters} Capítulos` : '')
+        : (card.episodes ? `${card.episodes} episodios` : ''),
+      coverDescription: '',
+      releaseDate: card.seasonYear ? String(card.seasonYear) : undefined,
+      sourceUrls: [],
+      primaryColor: card.color ?? '#c084fc',
+      coverImage: card.coverImage,
+      anilist: {
+        id: card.anilistId,
+        matchedTitle: card.title,
+        matchedBy: 'manual',
+        confidence: 'manual',
+        resolvedAt: now,
+        genres: [...card.genres],
+      },
+    },
+    trackingData: {
+      status: 'Sin empezar',
+      currentSeason: isMovie ? 0 : 1,
+      totalSeasons: isMovie ? 0 : 1,
+      watchedEpisodes: 0,
+      totalEpisodesInSeason: isMovie ? 0 : (isManhwa ? (card.chapters ?? 0) : (card.episodes ?? 0)),
+      emotionalTags: [],
+      favoriteCharacters: [],
+      rating: '',
+      comment: '',
+    },
+    createdAt: now,
   };
 }

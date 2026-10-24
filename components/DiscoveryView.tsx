@@ -89,7 +89,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
 
   // --- ACTIONS ---
 
-  /** Gemini deck. Used by every non-Anime type, and as the AniList fallback. */
+  /** Gemini deck. Used by every non-AniList type, and as the AniList fallback. */
   const handleGeminiDiscovery = async (isLoadMore = false) => {
     if (!apiKey) {
       setError("Configura tu API Key en ajustes para usar la IA.");
@@ -129,7 +129,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
     }
   };
 
-  /** AniList deck. Anime only: this is the one type the engine can serve. */
+  /** AniList deck. Serves Anime and Manhwa: Manhwa is `type: MANGA` + country KR. */
   const handleAniListDiscovery = async (isLoadMore = false) => {
     // Still unshown cards in the current deck: reveal them, no request needed.
     if (isLoadMore && shownCount < pool.length) {
@@ -168,6 +168,11 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
         .map(item => item.aiData.anilist?.id)
         .filter((id): id is number => typeof id === 'number');
 
+      // AniList has no MANHWA format: manhwa is Korean MANGA. Everything else
+      // about the request is identical, which is why the engine is shared.
+      const isManhwa = selectedType === 'Manhwa';
+      const mediaType: 'ANIME' | 'MANGA' = isManhwa ? 'MANGA' : 'ANIME';
+
       const candidates = await fetchDiscoveryDeck({
         // Seed picks are not paged, so they are only harvested on the first page.
         seeds: isNextPage ? [] : seeds,
@@ -180,12 +185,15 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
         moodGenres: getMoodGenres(selectedMood),
         // Tags only score the pool locally; the genres above source it.
         moodTags: getMoodTags(selectedMood),
+        mediaType,
+        countryOfOrigin: isManhwa ? 'KR' : undefined,
         // With a key, Gemini curates the pool and writes a Spanish reason per card.
-        curation: apiKey ? { apiKey, moodLabel: selectedMood ?? undefined } : undefined,
+        curation: apiKey ? { apiKey, moodLabel: selectedMood ?? undefined, mediaType } : undefined,
         limit: 50,
         page: isNextPage ? page + 1 : 1,
         minYear: epochFilter ?? undefined,
-        collapseSeasons: onlyFirstSeason,
+        // Season collapse is Anime-only: it is a TV-franchise concept.
+        collapseSeasons: selectedType === 'Anime' ? onlyFirstSeason : false,
       });
 
       const cards = candidates.map(toAniListDeckCard);
@@ -237,7 +245,7 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({ library, apiKey, o
     // A rapid double tap must not fire two decks; the deck is stateful.
     if (isLoading) return;
 
-    if (selectedType === 'Anime') {
+    if (selectedType === 'Anime' || selectedType === 'Manhwa') {
       await handleAniListDiscovery(isLoadMore);
       return;
     }

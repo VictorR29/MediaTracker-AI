@@ -8,13 +8,13 @@ export interface AiDeckCard extends RecommendationResult {
   kind: 'ai';
 }
 
-/** A deck card produced by AniList. Anime only: the source has no other media. */
+/** A deck card produced by AniList. Anime or Manhwa: both come from the same engine. */
 export interface AniListDeckCard {
   kind: 'anilist';
   anilistId: number;
   title: string;
   alternateTitle?: string;
-  mediaType: 'Anime';
+  mediaType: 'Anime' | 'Manhwa';
   synopsis: string;
   reason: string;
   coverImage?: string;
@@ -22,6 +22,8 @@ export interface AniListDeckCard {
   genres: string[];
   format?: string;
   episodes?: number;
+  /** Manhwa carries chapters where anime carries episodes. */
+  chapters?: number;
   seasonYear?: number;
   status?: string;
 }

@@ -22,6 +22,11 @@ export interface CurationInput {
   apiKey: string;
   moodLabel?: string;
   maxItems: number;
+  /**
+   * What the deck actually is. Manhwa decks are Korean MANGA entries, so the
+   * prompt must call them manhwa instead of anime; defaults to `'ANIME'`.
+   */
+  mediaType?: 'ANIME' | 'MANGA';
   candidates: DiscoveryCandidate[];
 }
 
@@ -49,6 +54,8 @@ const topTags = (candidate: DiscoveryCandidate): string =>
  */
 export const buildCurationPrompt = (input: Omit<CurationInput, 'apiKey'>): string => {
   const mood = input.moodLabel?.trim() || 'an unspecified mood';
+  // The article changes with the noun: "an anime" but "a manhwa".
+  const deckKind = input.mediaType === 'MANGA' ? 'a manhwa' : 'an anime';
 
   const catalog = input.candidates
     .map(candidate =>
@@ -64,7 +71,7 @@ export const buildCurationPrompt = (input: Omit<CurationInput, 'apiKey'>): strin
     )
     .join('\n');
 
-  return `You are curating an anime discovery deck for a viewer who asked for: "${mood}".
+  return `You are curating ${deckKind} discovery deck for a viewer who asked for: "${mood}".
 
 Below is the candidate pool, already fetched from AniList. For each entry you get its id, title, year, format, genres, its most representative community tags with their confidence rank (0-100), and a short synopsis.
 
@@ -163,7 +170,12 @@ export async function curateCandidates(input: CurationInput): Promise<CurationRe
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: CURATION_MODEL,
-      contents: buildCurationPrompt({ moodLabel: input.moodLabel, maxItems, candidates }),
+      contents: buildCurationPrompt({
+        moodLabel: input.moodLabel,
+        maxItems,
+        mediaType: input.mediaType,
+        candidates,
+      }),
       config: { responseMimeType: 'application/json', temperature: 0.4 },
     });
 

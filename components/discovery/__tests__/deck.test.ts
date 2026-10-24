@@ -5,6 +5,7 @@ import { MOOD_OPTIONS } from '../constants';
 import {
   MOOD_GENRES,
   MOOD_TAGS,
+  buildDiscoveryItem,
   formatCardMeta,
   formatReason,
   getMoodGenres,
@@ -207,6 +208,24 @@ describe('formatCardMeta', () => {
     expect(formatCardMeta(deckCard({ format: 'OVA', episodes: 0 }))).toBe('OVA');
     expect(formatCardMeta(deckCard({ format: 'ONA' }))).toBe('ONA');
   });
+
+  it('shows caps for a chapter count and eps when only episodes exist', () => {
+    expect(formatCardMeta(deckCard({ format: 'MANGA', seasonYear: 2018, chapters: 179 }))).toBe(
+      'Manhwa · 2018 · 179 caps',
+    );
+    expect(formatCardMeta(deckCard({ format: 'TV', seasonYear: 2013, episodes: 25 }))).toBe('TV · 2013 · 25 eps');
+    // Chapters win when a payload carries both: chapters are the reader's unit.
+    expect(formatCardMeta(deckCard({ format: 'MANGA', chapters: 179, episodes: 12 }))).toBe('Manhwa · 179 caps');
+  });
+
+  it('falls back to eps when chapters is zero or missing', () => {
+    expect(formatCardMeta(deckCard({ format: 'MANGA', chapters: 0, episodes: 12 }))).toBe('Manhwa · 12 eps');
+    expect(formatCardMeta(deckCard({ format: 'MANGA' }))).toBe('Manhwa');
+  });
+
+  it('renders the MANGA format as Manhwa', () => {
+    expect(formatCardMeta(deckCard({ format: 'MANGA' }))).toBe('Manhwa');
+  });
 });
 
 describe('toAniListDeckCard', () => {
@@ -229,8 +248,14 @@ describe('toAniListDeckCard', () => {
     });
   });
 
-  it('always reports the Anime media type', () => {
+  it('reports Anime for non-MANGA formats', () => {
     expect(toAniListDeckCard(candidate({ format: 'MOVIE' })).mediaType).toBe('Anime');
+  });
+
+  it('reports Manhwa for MANGA candidates', () => {
+    expect(toAniListDeckCard(candidate({ format: 'MANGA', episodes: undefined, chapters: 179 })).mediaType).toBe(
+      'Manhwa',
+    );
   });
 
   it('builds the reason from an empty recommendedBy list', () => {
@@ -253,5 +278,65 @@ describe('toAniListDeckCard', () => {
     const card = toAniListDeckCard(source);
     card.genres.push('Ecchi');
     expect(source.genres).toEqual(['Action', 'Drama', 'Fantasy']);
+  });
+
+  it('copies the chapter count onto the card', () => {
+    const card = toAniListDeckCard(candidate({ format: 'MANGA', episodes: undefined, chapters: 179 }));
+    expect(card.chapters).toBe(179);
+    expect(card.episodes).toBeUndefined();
+  });
+});
+
+describe('buildDiscoveryItem', () => {
+  it('stores an anime deck card as an Anime item with an episode count', () => {
+    const item = buildDiscoveryItem(deckCard({ format: 'TV', episodes: 25, seasonYear: 2013 }), {
+      id: 'item-1',
+      now: 1000,
+    });
+
+    expect(item.id).toBe('item-1');
+    expect(item.createdAt).toBe(1000);
+    expect(item.aiData.mediaType).toBe('Anime');
+    expect(item.aiData.totalContent).toBe('25 episodios');
+    expect(item.trackingData.totalEpisodesInSeason).toBe(25);
+    expect(item.aiData.anilist?.resolvedAt).toBe(1000);
+  });
+
+  it('stores a manhwa deck card as a Manhwa item with a chapter count', () => {
+    const item = buildDiscoveryItem(
+      deckCard({ format: 'MANGA', mediaType: 'Manhwa', chapters: 179, episodes: undefined }),
+    );
+
+    expect(item.aiData.mediaType).toBe('Manhwa');
+    expect(item.aiData.totalContent).toBe('179 Capítulos');
+    expect(item.trackingData.totalEpisodesInSeason).toBe(179);
+  });
+
+  it('leaves the chapter count empty when AniList reports none', () => {
+    const item = buildDiscoveryItem(deckCard({ format: 'MANGA', mediaType: 'Manhwa' }));
+
+    expect(item.aiData.totalContent).toBe('');
+    expect(item.trackingData.totalEpisodesInSeason).toBe(0);
+  });
+
+  it('keeps a movie at zero seasons and zero progress capacity', () => {
+    const item = buildDiscoveryItem(deckCard({ format: 'MOVIE', episodes: undefined }));
+
+    expect(item.aiData.totalContent).toBe('');
+    expect(item.trackingData.currentSeason).toBe(0);
+    expect(item.trackingData.totalSeasons).toBe(0);
+    expect(item.trackingData.totalEpisodesInSeason).toBe(0);
+  });
+
+  it('links the item to its AniList id as a manual match', () => {
+    const item = buildDiscoveryItem(deckCard({ anilistId: 105398, title: 'Solo Leveling', genres: ['Action'] }));
+
+    expect(item.aiData.anilist).toMatchObject({
+      id: 105398,
+      matchedTitle: 'Solo Leveling',
+      matchedBy: 'manual',
+      confidence: 'manual',
+      genres: ['Action'],
+    });
   });
 });

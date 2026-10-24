@@ -72,6 +72,13 @@ describe('buildCurationPrompt', () => {
     expect(prompt).toContain('No commentary');
   });
 
+  it('names the deck anime by default and manhwa for a MANGA deck', () => {
+    expect(buildCurationPrompt({ maxItems: 8, candidates: pool() })).toContain('an anime discovery deck');
+    expect(buildCurationPrompt({ maxItems: 8, candidates: pool(), mediaType: 'MANGA' })).toContain(
+      'a manhwa discovery deck',
+    );
+  });
+
   it('caps the synopsis it sends per candidate', () => {
     const long = 'x'.repeat(1000);
     const prompt = buildCurationPrompt({ maxItems: 8, candidates: [candidate(1, { synopsis: long })] });

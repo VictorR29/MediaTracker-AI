@@ -7,6 +7,7 @@ import {
 import { useToast } from './context/ToastContext';
 import { MediaItem, parseAccentToRgb } from './types';
 import type { AniListDeckCard } from './components/discovery/types';
+import { buildDiscoveryItem } from './components/discovery/deck';
 import { saveMediaItem } from './services/storage';
 import { searchMediaInfo } from './services/geminiService';
 
@@ -140,43 +141,7 @@ const handleOpenDetail = useCallback((item: MediaItem) => {
    * AniList id, and the user stays on the deck instead of navigating away.
    */
   const handleAddDiscoveryItem = async (card: AniListDeckCard) => {
-    const isMovie = card.format === 'MOVIE';
-    const newItem: MediaItem = {
-      id: Date.now().toString(),
-      aiData: {
-        title: card.title,
-        mediaType: 'Anime',
-        synopsis: card.synopsis,
-        genres: card.genres,
-        status: card.status === 'RELEASING' ? 'En emisión' : card.status === 'FINISHED' ? 'Finalizado' : '',
-        totalContent: card.episodes ? `${card.episodes} episodios` : '',
-        coverDescription: '',
-        releaseDate: card.seasonYear ? String(card.seasonYear) : undefined,
-        sourceUrls: [],
-        primaryColor: card.color ?? '#c084fc',
-        coverImage: card.coverImage,
-        anilist: {
-          id: card.anilistId,
-          matchedTitle: card.title,
-          matchedBy: 'manual',
-          confidence: 'manual',
-          resolvedAt: Date.now(),
-          genres: card.genres,
-        },
-      },
-      trackingData: {
-        status: 'Sin empezar',
-        currentSeason: isMovie ? 0 : 1,
-        totalSeasons: isMovie ? 0 : 1,
-        watchedEpisodes: 0,
-        totalEpisodesInSeason: isMovie ? 0 : (card.episodes ?? 0),
-        emotionalTags: [],
-        favoriteCharacters: [],
-        rating: '',
-        comment: '',
-      },
-      createdAt: Date.now(),
-    };
+    const newItem = buildDiscoveryItem(card);
 
     await addItem(newItem);
     showToast('Agregada a tu biblioteca', 'success');

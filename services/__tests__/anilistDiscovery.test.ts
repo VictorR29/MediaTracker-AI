@@ -28,6 +28,8 @@ interface MediaFixture {
   tags?: { name: string; rank: number }[];
   format?: string;
   episodes?: number | null;
+  chapters?: number | null;
+  countryOfOrigin?: string | null;
   status?: string;
   seasonYear?: number | null;
   startDate?: { year?: number | null } | null;
@@ -50,6 +52,8 @@ const media = (fixture: MediaFixture) => ({
   tags: fixture.tags ?? [],
   format: fixture.format ?? 'TV',
   episodes: fixture.episodes === undefined ? 12 : fixture.episodes,
+  chapters: fixture.chapters === undefined ? null : fixture.chapters,
+  countryOfOrigin: fixture.countryOfOrigin === undefined ? 'JP' : fixture.countryOfOrigin,
   status: fixture.status ?? 'FINISHED',
   seasonYear: fixture.seasonYear === undefined ? 2013 : fixture.seasonYear,
   startDate:
@@ -452,6 +456,179 @@ describe('fetchDiscoveryDeck genre pool', () => {
     expect(body.variables).not.toHaveProperty('genres');
     expect(body.query).toContain('format_not: MUSIC');
     expect(body.query).toContain('isAdult: false');
+  });
+});
+
+// --- Manhwa: MANGA + country KR -----------------------------------------------
+
+describe('fetchDiscoveryDeck manhwa (MANGA + KR)', () => {
+  /** A Korean webtoon: MANGA format, no episodes, chapters instead, origin KR. */
+  const manhwa = (id: number, title: string, chapters = 120) =>
+    media({
+      id,
+      romaji: title,
+      english: title,
+      format: 'MANGA',
+      episodes: null,
+      chapters,
+      countryOfOrigin: 'KR',
+    });
+
+  it('queries type MANGA and narrows the pool to countryOfOrigin KR', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(genrePayload([manhwa(105398, 'Solo Leveling', 201)])));
+
+    const deck = await fetchDiscoveryDeck(
+      makeRequest({ mediaType: 'MANGA', countryOfOrigin: 'KR', fallbackGenres: ['Action'] }),
+    );
+
+    const body = requestBody(0);
+    expect(body.variables.type).toBe('MANGA');
+    expect(body.variables.country).toBe('KR');
+    expect(body.query).toContain('type: $type');
+    expect(body.query).toContain('countryOfOrigin: $country');
+    expect(body.query).toContain('$country: CountryCode');
+
+    // `episodes` is null on manga nodes; chapters is the count that exists.
+    expect(deck[0]).toMatchObject({ anilistId: 105398, chapters: 201, countryOfOrigin: 'KR' });
+    expect(deck[0].episodes).toBeUndefined();
+  });
+
+  it('omits format_not for MANGA and keeps it for ANIME', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(genrePayload([])));
+
+    await fetchDiscoveryDeck(
+      makeRequest({ mediaType: 'MANGA', countryOfOrigin: 'KR', fallbackGenres: ['Action'] }),
+    );
+    const manhwaQuery = requestBody(0).query;
+    expect(manhwaQuery).not.toContain('format_not');
+
+    __clearDiscoveryCacheForTests();
+    await fetchDiscoveryDeck(makeRequest({ fallbackGenres: ['Action'] }));
+    const animeQuery = requestBody(1).query;
+    expect(animeQuery).toContain('format_not: MUSIC');
+    expect(requestBody(1).variables.type).toBe('ANIME');
+    expect(requestBody(1).variables).not.toHaveProperty('country');
+  });
+
+  it('drops seed recommendations from another origin and refills from the KR pool', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(
+          seedPayload([
+            seed({ id: 105398, romaji: 'Solo Leveling', english: 'Solo Leveling', format: 'MANGA', countryOfOrigin: 'KR' }, [
+              { rating: 100, media: manhwa(119257, 'Omniscient Reader') },
+              // AniList happy to cross origins: One Piece is Japanese.
+              { rating: 90, media: media({ id: 21, romaji: 'ONE PIECE', english: 'ONE PIECE', format: 'MANGA' }) },
+              // A node with no origin at all is not provably Korean either.
+              { rating: 80, media: media({ id: 22, romaji: 'Unknown', english: 'Unknown', countryOfOrigin: null }) },
+            ]),
+          ]),
+        ),
+      )
+      .mockResolvedValueOnce(jsonResponse(genrePayload([manhwa(85143, 'Tower of God')])));
+
+    const deck = await fetchDiscoveryDeck(
+      makeRequest({
+        mediaType: 'MANGA',
+        countryOfOrigin: 'KR',
+        seeds: [{ anilistId: 105398, title: 'Solo Leveling' }],
+        fallbackGenres: ['Action'],
+      }),
+    );
+
+    // One KR pick survives the seed filter, so the thin-pool refill still runs.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(requestBody(0).variables.type).toBe('MANGA');
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([119257, 85143]);
+    expect(deck.every(candidate => candidate.countryOfOrigin === 'KR')).toBe(true);
+    expect(deck.map(candidate => candidate.title)).not.toContain('ONE PIECE');
+  });
+
+  it('never issues the relations request for a MANGA deck', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(genrePayload([manhwa(105398, 'Solo Leveling'), manhwa(119257, 'Omniscient Reader')])),
+    );
+
+    const deck = await fetchDiscoveryDeck(
+      makeRequest({
+        mediaType: 'MANGA',
+        countryOfOrigin: 'KR',
+        fallbackGenres: ['Action'],
+        collapseSeasons: true,
+      }),
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(requestBody(0).query).not.toContain('relations');
+    expect(deck).toHaveLength(2);
+  });
+
+  it('keys the cache by mediaType and countryOfOrigin', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(genrePayload([])));
+    const base = { fallbackGenres: ['Action'] };
+
+    await fetchDiscoveryDeck(makeRequest(base));
+    // An explicit ANIME is the same deck as the omitted default.
+    await fetchDiscoveryDeck(makeRequest({ ...base, mediaType: 'ANIME' }));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await fetchDiscoveryDeck(makeRequest({ ...base, mediaType: 'MANGA' }));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await fetchDiscoveryDeck(makeRequest({ ...base, mediaType: 'MANGA', countryOfOrigin: 'KR' }));
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    // Same request again: cache hit.
+    await fetchDiscoveryDeck(makeRequest({ ...base, mediaType: 'MANGA', countryOfOrigin: 'KR' }));
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    // A different origin is a different pool.
+    await fetchDiscoveryDeck(makeRequest({ ...base, mediaType: 'MANGA', countryOfOrigin: 'JP' }));
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  it('issues no seed query when seeds are empty', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(genrePayload([manhwa(105398, 'Solo Leveling')])));
+
+    const deck = await fetchDiscoveryDeck(
+      makeRequest({ mediaType: 'MANGA', countryOfOrigin: 'KR', seeds: [], fallbackGenres: ['Action'] }),
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const body = requestBody(0);
+    expect(body.query).not.toContain('recommendations');
+    expect(body.query).not.toContain('id_in: $seedIds');
+    expect(body.variables).not.toHaveProperty('seedIds');
+    expect(body.variables).not.toHaveProperty('perSeed');
+    expect(deck.map(candidate => candidate.anilistId)).toEqual([105398]);
+  });
+
+  it('trims and uppercases the country, and drops a malformed one', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(genrePayload([])));
+
+    await fetchDiscoveryDeck(
+      makeRequest({ mediaType: 'MANGA', countryOfOrigin: ' kr ', fallbackGenres: ['Action'] }),
+    );
+    expect(requestBody(0).variables.country).toBe('KR');
+
+    __clearDiscoveryCacheForTests();
+    await fetchDiscoveryDeck(
+      makeRequest({ mediaType: 'MANGA', countryOfOrigin: 'Korea', fallbackGenres: ['Action'] }),
+    );
+    expect(requestBody(1).query).not.toContain('countryOfOrigin: $country');
+    expect(requestBody(1).query).not.toContain('$country: CountryCode');
+    expect(requestBody(1).variables).not.toHaveProperty('country');
+  });
+
+  it('falls back to ANIME for anything that is not exactly MANGA', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(genrePayload([])));
+
+    await fetchDiscoveryDeck(
+      makeRequest({ mediaType: 'MANHWA' as unknown as 'MANGA', fallbackGenres: ['Action'] }),
+    );
+
+    expect(requestBody(0).variables.type).toBe('ANIME');
+    expect(requestBody(0).query).toContain('format_not: MUSIC');
   });
 });
 
