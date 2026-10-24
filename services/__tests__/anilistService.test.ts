@@ -15,6 +15,7 @@ import {
   isAiringSnapshotFresh,
   linkAniListCandidate,
   resolveAniListMatch,
+  resolveAniListScope,
   searchAniListCandidates,
 } from '../anilistService';
 import type { AniListCandidate, AiringDetails } from '../anilistService';
@@ -30,6 +31,8 @@ interface MediaNodeFixture {
   format?: string;
   seasonYear?: number;
   episodes?: number | null;
+  chapters?: number | null;
+  countryOfOrigin?: string | null;
   status?: string;
   isAdult?: boolean;
   genres?: string[];
@@ -49,6 +52,8 @@ const mediaNode = (fixture: MediaNodeFixture) => ({
   format: fixture.format ?? 'TV',
   seasonYear: fixture.seasonYear ?? 2013,
   episodes: fixture.episodes === undefined ? 12 : fixture.episodes,
+  chapters: fixture.chapters ?? null,
+  countryOfOrigin: fixture.countryOfOrigin ?? null,
   status: fixture.status ?? 'FINISHED',
   isAdult: fixture.isAdult ?? false,
   coverImage: { medium: `https://img.example/${fixture.id}.jpg`, large: fixture.coverLarge },
@@ -354,6 +359,101 @@ describe('resolveAniListMatch', () => {
     const result = await resolveAniListMatch(makeItem({ title: '   ' }));
 
     expect(result.status).toBe('not_found');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+// --- Media scope --------------------------------------------------------------
+
+const requestBodyAt = (callIndex = 0): { query: string; variables: Record<string, unknown> } => {
+  const init = fetchMock.mock.calls[callIndex][1] as RequestInit;
+  return JSON.parse(String(init.body));
+};
+
+describe('resolveAniListScope', () => {
+  it('maps Anime to ANIME and Manhwa to Korean MANGA', () => {
+    expect(resolveAniListScope(makeItem({ mediaType: 'Anime' }))).toEqual({ mediaType: 'ANIME' });
+    expect(resolveAniListScope(makeItem({ mediaType: 'Manhwa' }))).toEqual({
+      mediaType: 'MANGA',
+      countryOfOrigin: 'KR',
+    });
+  });
+
+  it('maps Manga and Comic to MANGA without a country filter', () => {
+    expect(resolveAniListScope(makeItem({ mediaType: 'Manga' }))).toEqual({ mediaType: 'MANGA' });
+    expect(resolveAniListScope(makeItem({ mediaType: 'Comic' }))).toEqual({ mediaType: 'MANGA' });
+  });
+
+  it('returns null for every format AniList does not cover', () => {
+    const uncovered: MediaItem['aiData']['mediaType'][] = ['Serie', 'Pelicula', 'Libro', 'Otro'];
+
+    for (const mediaType of uncovered) {
+      expect(resolveAniListScope(makeItem({ mediaType }))).toBeNull();
+    }
+  });
+});
+
+describe('searchAniListCandidates scope', () => {
+  it('narrows a manhwa search to Korean MANGA', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(searchPayload([])));
+
+    await searchAniListCandidates('Solo Leveling', 10, { mediaType: 'MANGA', countryOfOrigin: 'KR' });
+
+    const body = requestBodyAt();
+    expect(body.variables).toEqual({
+      search: 'Solo Leveling',
+      perPage: 10,
+      type: 'MANGA',
+      country: 'KR',
+    });
+    expect(body.query).toContain('countryOfOrigin: $country');
+    expect(body.query).toContain('$country: CountryCode');
+  });
+
+  it('searches plain manga without a country clause', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(searchPayload([])));
+
+    await searchAniListCandidates('Solo Leveling', 10, { mediaType: 'MANGA' });
+
+    const body = requestBodyAt();
+    expect(body.variables).toEqual({ search: 'Solo Leveling', perPage: 10, type: 'MANGA' });
+    expect(body.variables).not.toHaveProperty('country');
+    // The field is selected (manga carries it) but no country filter is applied.
+    expect(body.query).not.toContain('countryOfOrigin: $country');
+  });
+});
+
+describe('resolveAniListMatch media scope', () => {
+  it('resolves a manhwa against Korean MANGA', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        searchPayload([
+          mediaNode({
+            id: 105398,
+            romaji: 'Solo Leveling',
+            format: 'MANGA',
+            episodes: null,
+            chapters: 179,
+            countryOfOrigin: 'KR',
+          }),
+        ]),
+      ),
+    );
+
+    const result = await resolveAniListMatch(makeItem({ title: 'Solo Leveling', mediaType: 'Manhwa' }));
+
+    expect(result.status).toBe('matched');
+    expect(result.match?.id).toBe(105398);
+
+    const body = requestBodyAt();
+    expect(body.variables).toMatchObject({ type: 'MANGA', country: 'KR' });
+  });
+
+  it('never issues a request for a format AniList does not cover', async () => {
+    const result = await resolveAniListMatch(makeItem({ title: 'El Marginal', mediaType: 'Serie' }));
+
+    expect(result.status).toBe('not_found');
+    expect(result.candidates).toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

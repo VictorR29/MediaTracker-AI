@@ -6,6 +6,7 @@ import {
   fetchAiringSnapshots,
   isAiringSnapshotFresh,
   resolveAniListMatch,
+  resolveAniListScope,
 } from './anilistService';
 import type { AiringDetails, MatchResult } from './anilistService';
 
@@ -56,8 +57,9 @@ const defaultDeps: BackfillDeps = {
 const isRateLimit = (error: unknown): boolean =>
   error instanceof AniListError && error.kind === 'rate_limit';
 
+/** Every format AniList covers (anime and manga-likes) is a candidate. */
 const isCandidate = (item: MediaItem): boolean =>
-  item.aiData.mediaType === 'Anime' && item.trackingData.status !== 'Descartado';
+  resolveAniListScope(item) !== null && item.trackingData.status !== 'Descartado';
 
 /**
  * Brings the whole library in line with AniList without ever throwing.

@@ -30,6 +30,36 @@ export class AniListError extends Error {
   }
 }
 
+/**
+ * The only two AniList media types this app talks to. Manhwa has no type of its
+ * own: it is Spanish/Korean `MANGA` narrowed by `countryOfOrigin`.
+ */
+export type AniListMediaType = 'ANIME' | 'MANGA';
+
+export interface AniListScope {
+  mediaType: AniListMediaType;
+  /** ISO 3166-1 alpha-2, e.g. `KR`. Omitted when the country does not matter. */
+  countryOfOrigin?: string;
+}
+
+/**
+ * AniList scope for a library item, or null when AniList does not cover it.
+ * Manhwa is Korean MANGA; Manga/Comic are MANGA without a country filter.
+ */
+export function resolveAniListScope(item: MediaItem): AniListScope | null {
+  switch (item.aiData.mediaType) {
+    case 'Anime':
+      return { mediaType: 'ANIME' };
+    case 'Manhwa':
+      return { mediaType: 'MANGA', countryOfOrigin: 'KR' };
+    case 'Manga':
+    case 'Comic':
+      return { mediaType: 'MANGA' };
+    default:
+      return null;
+  }
+}
+
 export interface AniListCandidate {
   id: number;
   romaji: string;
@@ -39,6 +69,10 @@ export interface AniListCandidate {
   format?: string;
   seasonYear?: number;
   episodes?: number | null;
+  /** Manga only: AniList reports `chapters` where an anime reports `episodes`. */
+  chapters?: number | null;
+  /** ISO 3166-1 alpha-2 of the origin country, e.g. `KR` for a manhwa. */
+  countryOfOrigin?: string;
   status: AniListMediaStatus;
   coverImage?: string;
   isAdult: boolean;
@@ -141,6 +175,8 @@ interface MediaNode {
   format?: string | null;
   seasonYear?: number | null;
   episodes?: number | null;
+  chapters?: number | null;
+  countryOfOrigin?: string | null;
   status?: AniListMediaStatus | null;
   isAdult?: boolean | null;
   coverImage?: { medium?: string | null; large?: string | null } | null;
@@ -222,20 +258,30 @@ export async function postGraphQL<T>(query: string, variables: Record<string, un
 
 // --- Queries ------------------------------------------------------------------
 
-const SEARCH_QUERY = `
-query ($search: String, $perPage: Int) {
+/**
+ * `type` is a variable so one query serves anime and manga; `countryOfOrigin`
+ * cannot express "no filter" as a nullable variable, because `null` is accepted
+ * and instead matches only entries with no origin (zero results). So the clause
+ * and its declaration are only emitted when they are used, the same pattern as
+ * `anilistDiscovery.buildGenrePoolQuery`.
+ */
+const buildSearchQuery = (withCountry: boolean): string => `
+query (${withCountry ? '$country: CountryCode, ' : ''}$search: String, $perPage: Int, $type: MediaType) {
   Page(perPage: $perPage) {
-    media(search: $search, type: ANIME, sort: SEARCH_MATCH) {
+    media(search: $search, type: $type, ${withCountry ? 'countryOfOrigin: $country, ' : ''}sort: SEARCH_MATCH) {
       id title { romaji english native } synonyms format seasonYear genres
-      startDate { year month day } episodes status isAdult coverImage { medium }
+      startDate { year month day } episodes chapters countryOfOrigin status isAdult coverImage { medium }
     }
   }
 }`;
 
+const SEARCH_QUERY = buildSearchQuery(false);
+const SEARCH_QUERY_WITH_COUNTRY = buildSearchQuery(true);
+
 const BATCH_AIRING_QUERY = `
 query ($ids: [Int]) {
   Page(perPage: 50) {
-    media(id_in: $ids, type: ANIME) {
+    media(id_in: $ids) {
       id status episodes genres coverImage { large } nextAiringEpisode { episode airingAt timeUntilAiring }
       relations {
         edges {
@@ -256,6 +302,11 @@ const toCandidate = (node: MediaNode): AniListCandidate => ({
   format: node.format ?? undefined,
   seasonYear: node.seasonYear ?? undefined,
   episodes: node.episodes ?? null,
+  chapters: node.chapters ?? null,
+  countryOfOrigin:
+    typeof node.countryOfOrigin === 'string' && node.countryOfOrigin.trim().length > 0
+      ? node.countryOfOrigin.trim()
+      : undefined,
   // AniList always returns a status; the fallback only guards malformed payloads.
   status: node.status ?? 'FINISHED',
   coverImage: node.coverImage?.medium ?? undefined,
@@ -266,8 +317,20 @@ const toCandidate = (node: MediaNode): AniListCandidate => ({
 export async function searchAniListCandidates(
   search: string,
   perPage: number = SEARCH_PAGE_SIZE,
+  scope: AniListScope = { mediaType: 'ANIME' },
 ): Promise<AniListCandidate[]> {
-  const data = await postGraphQL<PageResponse>(SEARCH_QUERY, { search, perPage });
+  const withCountry = !!scope.countryOfOrigin;
+  const variables: Record<string, unknown> = {
+    search,
+    perPage,
+    type: scope.mediaType,
+  };
+  if (withCountry) variables.country = scope.countryOfOrigin;
+
+  const data = await postGraphQL<PageResponse>(
+    withCountry ? SEARCH_QUERY_WITH_COUNTRY : SEARCH_QUERY,
+    variables,
+  );
   const media = data?.Page?.media ?? [];
   return media.filter((node): node is MediaNode => !!node).map(toCandidate);
 }
@@ -407,13 +470,17 @@ const buildQuerySources = (item: MediaItem): QuerySource[] => {
 };
 
 export async function resolveAniListMatch(item: MediaItem): Promise<MatchResult> {
+  const scope = resolveAniListScope(item);
+  // AniList does not cover this format at all, so no request would ever match.
+  if (!scope) return { status: 'not_found' };
+
   const sources = buildQuerySources(item);
   let sawAnyCandidate = false;
   let lastCandidates: AniListCandidate[] | undefined;
   let fallbackCandidates: AniListCandidate[] | undefined;
 
   for (const { text, source } of sources) {
-    const fetched = await searchAniListCandidates(text);
+    const fetched = await searchAniListCandidates(text, SEARCH_PAGE_SIZE, scope);
     // Adult entries are never valid matches for a personal library.
     const usable = fetched.filter(candidate => !candidate.isAdult);
     if (usable.length === 0) continue;
@@ -747,7 +814,7 @@ interface MediaCharactersResponse {
 
 const CHARACTERS_QUERY = `
 query ($id: Int, $perPage: Int) {
-  Media(id: $id, type: ANIME) {
+  Media(id: $id) {
     characters(perPage: $perPage, sort: [ROLE, RELEVANCE]) {
       nodes { id name { full native } image { large } }
     }
@@ -772,9 +839,9 @@ const clampCharacterPageSize = (perPage: number): number => {
 };
 
 /**
- * Favourite-candidate characters for one AniList media entry, ordered by role
- * and relevance. Requests go through the shared throttled queue like every
- * other AniList call, so a picker open never trips the rate limiter.
+ * Favourite-candidate characters for one AniList media entry (anime or manga),
+ * ordered by role and relevance. Requests go through the shared throttled queue
+ * like every other AniList call, so a picker open never trips the rate limiter.
  */
 export async function fetchMediaCharacters(
   mediaId: number,

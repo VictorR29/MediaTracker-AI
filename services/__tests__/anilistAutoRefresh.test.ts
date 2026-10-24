@@ -152,7 +152,7 @@ describe('refreshStaleAiring', () => {
     expect(result.updated[0].aiData.anilist?.airing?.fetchedAt).toBe(NOW);
   });
 
-  it('excludes non-anime, discarded and unlinked items', async () => {
+  it('excludes formats AniList does not cover, discarded and unlinked items', async () => {
     const staleAiring = makeAiring(NOW - 25 * HOUR_MS);
     const items = [
       makeItem({
@@ -181,6 +181,24 @@ describe('refreshStaleAiring', () => {
     expect(result.requestedIds).toEqual([300]);
     expect(fetcher).toHaveBeenCalledWith([300]);
     expect(result.updated.map(item => item.id)).toEqual(['wanted']);
+  });
+
+  it('treats a linked manhwa with a stale snapshot as a refresh candidate', async () => {
+    const items = [
+      makeItem({
+        id: 'manhwa',
+        title: 'Solo Leveling',
+        mediaType: 'Manhwa',
+        anilist: makeAniList({ id: 105398, airing: makeAiring(NOW - 25 * HOUR_MS) }),
+      }),
+    ];
+    const fetcher = makeFetcher(new Map([[105398, makeDetails()]]));
+
+    const result = await refreshStaleAiring({ items, now: NOW, fetchSnapshots: fetcher });
+
+    expect(fetcher).toHaveBeenCalledWith([105398]);
+    expect(result.requestedIds).toEqual([105398]);
+    expect(result.updated.map(item => item.id)).toEqual(['manhwa']);
   });
 
   it('dedupes a shared AniList id and updates every item that carries it', async () => {

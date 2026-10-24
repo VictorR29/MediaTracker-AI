@@ -117,20 +117,42 @@ const run = (
 // --- Tests --------------------------------------------------------------------
 
 describe('runAniListBackfill', () => {
-  it('ignores non-anime and dropped items when counting the candidates', async () => {
+  it('counts every format AniList covers and ignores dropped items', async () => {
     const items = [
       makeItem({ id: 'anime', title: 'Anime' }),
       makeItem({ id: 'series', title: 'Series', mediaType: 'Serie' }),
       makeItem({ id: 'manga', title: 'Manga', mediaType: 'Manga' }),
+      makeItem({ id: 'manhwa', title: 'Manhwa', mediaType: 'Manhwa' }),
       makeItem({ id: 'dropped', title: 'Dropped', status: 'Descartado' }),
     ];
     const harness = createHarness();
 
     const summary = await run(items, harness);
 
-    expect(summary.total).toBe(1);
-    expect(harness.deps.resolve).toHaveBeenCalledTimes(1);
-    expect(harness.deps.resolve).toHaveBeenCalledWith(items[0]);
+    expect(summary.total).toBe(3);
+    expect(harness.deps.resolve).toHaveBeenCalledTimes(3);
+    expect(harness.deps.resolve).toHaveBeenNthCalledWith(1, items[0]);
+    expect(harness.deps.resolve).toHaveBeenNthCalledWith(2, items[2]);
+    expect(harness.deps.resolve).toHaveBeenNthCalledWith(3, items[3]);
+  });
+
+  it('resolves a manhwa item', async () => {
+    const item = makeItem({ id: 'solo', title: 'Solo Leveling', mediaType: 'Manhwa' });
+    const match: AniListData = {
+      id: 105398,
+      matchedTitle: 'Solo Leveling',
+      matchedBy: 'title',
+      confidence: 'exact',
+      resolvedAt: Date.now(),
+    };
+    const resolve = vi.fn(async () => ({ status: 'matched' as const, match }));
+    const harness = createHarness({ resolve });
+
+    const summary = await run([item], harness);
+
+    expect(resolve).toHaveBeenCalledWith(item);
+    expect(summary).toMatchObject({ total: 1, done: 1, matched: 1, unmatched: 0, failed: 0 });
+    expect(harness.persistedItems[0].aiData.anilist?.id).toBe(105398);
   });
 
   it('skips an item whose snapshot is still fresh without touching the service', async () => {

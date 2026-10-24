@@ -1,9 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ImageOff, X } from 'lucide-react';
 import type { AniListMediaStatus, MediaItem } from '../../types';
 import type { AniListCandidate } from '../../services/anilistService';
-import { linkAniListCandidate, searchAniListCandidates } from '../../services/anilistService';
+import {
+  linkAniListCandidate,
+  resolveAniListScope,
+  searchAniListCandidates,
+} from '../../services/anilistService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface AniListLinkModalProps {
@@ -30,11 +34,20 @@ const statusChip = (status: AniListMediaStatus): React.ReactNode => {
   return <span className={`${CHIP_BASE_CLASS} bg-zinc-800/80 text-zinc-400 ring-white/[0.06]`}>{status}</span>;
 };
 
+const isPositiveFinite = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0;
+
 const candidateMeta = (candidate: AniListCandidate): string =>
   [
     candidate.format,
     candidate.seasonYear !== undefined ? String(candidate.seasonYear) : undefined,
-    typeof candidate.episodes === 'number' ? `${candidate.episodes} eps` : undefined,
+    // Manga publishes chapters where an anime publishes episodes.
+    isPositiveFinite(candidate.chapters)
+      ? `${candidate.chapters} caps`
+      : typeof candidate.episodes === 'number'
+        ? `${candidate.episodes} eps`
+        : undefined,
+    candidate.countryOfOrigin,
   ]
     .filter((part): part is string => !!part)
     .join(' · ');
@@ -54,6 +67,13 @@ export const AniListLinkModal: React.FC<AniListLinkModalProps> = ({
 
   const modalRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
   const requestIdRef = useRef(0);
+
+  // Stable identity per media type keeps `runSearch` (and the search-on-open
+  // effect) from firing again on every parent re-render.
+  const scope = useMemo(
+    () => resolveAniListScope(item) ?? { mediaType: 'ANIME' as const },
+    [item.aiData.mediaType],
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -83,8 +103,18 @@ export const AniListLinkModal: React.FC<AniListLinkModalProps> = ({
     setIsSearching(true);
 
     try {
-      const candidates = await searchAniListCandidates(search);
+      let candidates = await searchAniListCandidates(search, undefined, scope);
       if (requestIdRef.current !== requestId) return;
+
+      // A missing result with a country filter usually means the entry is
+      // mistagged upstream (e.g. a Korean manhwa stored as JP). Retrying once
+      // without the filter keeps that work manually linkable instead of
+      // hiding it behind an empty list.
+      if (candidates.length === 0 && scope.countryOfOrigin) {
+        candidates = await searchAniListCandidates(search, undefined, { mediaType: scope.mediaType });
+        if (requestIdRef.current !== requestId) return;
+      }
+
       setResults(candidates);
     } catch (error) {
       if (requestIdRef.current !== requestId) return;
@@ -94,7 +124,7 @@ export const AniListLinkModal: React.FC<AniListLinkModalProps> = ({
     } finally {
       if (requestIdRef.current === requestId) setIsSearching(false);
     }
-  }, []);
+  }, [scope]);
 
   // Search once per open, prefilled with the best local title.
   useEffect(() => {

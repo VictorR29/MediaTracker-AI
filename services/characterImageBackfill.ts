@@ -1,5 +1,5 @@
 import type { MediaItem } from '../types';
-import { fetchMediaCharacters } from './anilistService';
+import { fetchMediaCharacters, resolveAniListScope } from './anilistService';
 import type { AniListCharacter } from './anilistService';
 
 export interface CharacterImageMatchReport {
@@ -110,12 +110,12 @@ export const matchCharacterImages = (
   return { characters: result, filled, ambiguous, notFound };
 };
 
-/** Only linked anime works can be asked for characters at all. */
-const hasLinkedAnime = (item: MediaItem): boolean =>
-  item.aiData.mediaType === 'Anime' && Number.isFinite(item.aiData.anilist?.id);
+/** Only linked works AniList covers (anime or manga) can be asked for characters. */
+const hasLinkedWork = (item: MediaItem): boolean =>
+  resolveAniListScope(item) !== null && Number.isFinite(item.aiData.anilist?.id);
 
 const needsCharacterImages = (item: MediaItem): boolean =>
-  hasLinkedAnime(item) &&
+  hasLinkedWork(item) &&
   (item.trackingData.favoriteCharacters ?? []).some(character => !hasImage(character));
 
 /**

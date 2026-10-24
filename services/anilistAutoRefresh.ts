@@ -1,5 +1,5 @@
 import type { MediaItem } from '../types';
-import { applyAiringSnapshots, fetchAiringSnapshots } from './anilistService';
+import { applyAiringSnapshots, fetchAiringSnapshots, resolveAniListScope } from './anilistService';
 import type { AiringDetails } from './anilistService';
 
 export const DEFAULT_AIRING_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -31,15 +31,18 @@ export interface RefreshAiringResult {
 }
 
 /**
- * Only already-linked anime can be refreshed: resolving identity here would
- * mean one search request per unknown work, which is exactly what this path
- * exists to avoid.
+ * Only already-linked works AniList covers can be refreshed: resolving identity
+ * here would mean one search request per unknown work, which is exactly what
+ * this path exists to avoid.
+ *
+ * A linked manhwa has no `nextAiringEpisode`, but its status, cover and genres
+ * still refresh through the same snapshot.
  *
  * A missing `fetchedAt` (or a non-finite one from a malformed payload) counts
  * as stale, because it cannot be proven fresh.
  */
 export function isAiringRefreshCandidate(item: MediaItem, now: number, maxAgeMs: number): boolean {
-  if (item.aiData.mediaType !== 'Anime') return false;
+  if (resolveAniListScope(item) === null) return false;
   if (item.trackingData.status === 'Descartado') return false;
 
   const anilist = item.aiData.anilist;

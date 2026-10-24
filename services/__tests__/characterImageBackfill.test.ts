@@ -263,6 +263,25 @@ describe('runCharacterImageBackfill', () => {
     expect(summary).toMatchObject({ worksConsidered: 2, requests: 2, filled: 1, notFound: 1 });
   });
 
+  it('considers a linked manhwa whose character is missing an image', async () => {
+    const manhwa = makeItem({
+      id: 'solo',
+      title: 'Solo Leveling',
+      mediaId: 105398,
+      mediaType: 'Manhwa',
+      characters: [{ name: 'Sung Jinwoo' }],
+    });
+    const harness = createHarness({ 105398: [character(1, 'Sung Jinwoo', 'jinwoo.jpg')] });
+
+    const summary = await run([manhwa], harness);
+
+    expect(harness.fetchCharacters).toHaveBeenCalledWith(105398);
+    expect(summary).toMatchObject({ worksConsidered: 1, requests: 1, filled: 1, failed: 0 });
+    expect(harness.persisted[0].trackingData.favoriteCharacters).toEqual([
+      { name: 'Sung Jinwoo', image: 'jinwoo.jpg' },
+    ]);
+  });
+
   it('writes the live item so an edit made during the run survives', async () => {
     const stale = makeItem({ id: 'a', title: 'A', mediaId: 99, characters: [{ name: 'Levi' }] });
     const library = new Map<string, MediaItem>([['a', stale]]);
