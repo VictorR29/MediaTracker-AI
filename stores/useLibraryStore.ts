@@ -8,6 +8,8 @@ interface LibraryState {
   library: MediaItem[];
   filters: FilterState;
   isRestoring: boolean;
+  /** Set when the last `loadLibrary` failed. `null` means the load succeeded. */
+  loadError: string | null;
   loadLibrary: () => Promise<void>;
   addItem: (item: MediaItem) => Promise<void>;
   updateItem: (item: MediaItem) => Promise<void>;
@@ -32,10 +34,24 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     onlyFavorites: false
   },
   isRestoring: false,
+  loadError: null,
 
   loadLibrary: async () => {
-    const items = await getLibrary();
-    set({ library: items });
+    try {
+      const items = await getLibrary();
+      set({ library: items, loadError: null });
+    } catch (error) {
+      // Private mode, denied storage or a corrupted database all reject here.
+      // Never leave the user with an empty library that looks like a fresh
+      // account: keep the error and let the UI surface it.
+      console.error('Failed to load the library from IndexedDB', error);
+      set({
+        library: [],
+        loadError:
+          'No se pudo cargar tu biblioteca desde el almacenamiento local. ' +
+          'Revisa si el navegador está bloqueando el almacenamiento o si los datos están dañados.',
+      });
+    }
   },
 
   addItem: async (item: MediaItem) => {

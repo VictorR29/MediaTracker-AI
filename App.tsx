@@ -61,7 +61,17 @@ const {
 
   // Init auth + library on mount
   useEffect(() => {
-    initAuth().then(() => loadLibrary());
+    initAuth()
+      .then(() => loadLibrary())
+      .then(() => {
+        const { loadError } = useLibraryStore.getState();
+        if (loadError) showToast(loadError, 'error');
+      })
+      .catch((err) => {
+        // Auth init already handles its own failure; this is the last guard so
+        // a rejected promise never stays unhandled.
+        console.error('Application bootstrap failed', err);
+      });
   }, []);
 
   // Scroll handling for bottom nav + scroll-top + header visibility (ref-based to avoid re-render per pixel)
