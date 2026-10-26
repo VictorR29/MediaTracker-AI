@@ -4,6 +4,7 @@ import { UserProfile, MediaItem, RATING_TO_SCORE } from '../types';
 import { useToast } from '../context/ToastContext';
 import { saveMediaItem, deleteMediaItem } from '../services/storage';
 import { hashPassword } from '../utils/password';
+import { compressImage } from '../utils/imageCompression';
 import { Shield, Key, Download, Upload, Trash2, X, Save, CheckCircle2, AlertTriangle, Eye, EyeOff, User, Image as ImageIcon, FileJson, Share2, HardDrive, Archive, RefreshCw, Minimize2, ChevronRight, Copy, Globe, Link as LinkIcon, Tv } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useAniListBackfillStore } from '../stores/useAniListBackfillStore';
@@ -222,37 +223,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       onClose();
       setLastOpenedItemId(itemId);
       navigate(`/item/${itemId}`);
-  };
-
-  // --- HELPER: IMAGE COMPRESSION ---
-  const compressImage = (base64Str: string, maxWidth: number = 300, quality: number = 0.7): Promise<string> => {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.src = base64Str;
-        img.onload = () => {
-            let width = img.width;
-            let height = img.height;
-
-            if (width > maxWidth) {
-                height = Math.round((height * maxWidth) / width);
-                width = maxWidth;
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.drawImage(img, 0, 0, width, height);
-                const newBase64 = canvas.toDataURL('image/webp', quality);
-                resolve(newBase64);
-            } else {
-                resolve(base64Str);
-            }
-        };
-        img.onerror = () => resolve(base64Str);
-    });
   };
 
   // --- CLEANING ACTIONS ---

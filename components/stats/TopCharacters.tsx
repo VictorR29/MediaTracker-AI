@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Camera, Crown, Link, Upload, X, Shuffle, ArrowRight } from 'lucide-react';
 import { MediaItem } from '../../types';
 import { getGenres } from '../../utils/genres';
+import { compressImage } from '../../utils/imageCompression';
 import { useLibraryStore } from '../../stores/useLibraryStore';
 import { useToast } from '../../context/ToastContext';
 
@@ -18,37 +19,6 @@ interface CharacterEntry {
   primaryColor?: string;
   character: { name: string; image?: string };
 }
-
-const compressImage = (base64Str: string, maxWidth: number = 200, quality: number = 0.7): Promise<string> => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = base64Str;
-    img.onload = () => {
-      let width = img.width;
-      let height = img.height;
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        try {
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/webp', quality));
-        } catch {
-          resolve(base64Str);
-        }
-      } else {
-        resolve(base64Str);
-      }
-    };
-    img.onerror = () => resolve(base64Str);
-  });
-};
 
 // Single character card (reused in both rows)
 const CharacterCard: React.FC<{
@@ -161,7 +131,7 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const updateCharacterImage = useCallback(async (mediaId: string, imageUrl: string) => {
     setUploadingId(mediaId);
     try {
-      const compressed = await compressImage(imageUrl);
+      const compressed = await compressImage(imageUrl, 200);
       const item = library.find(i => i.id === mediaId);
       if (item) {
         const updatedChars = [...item.trackingData.favoriteCharacters];

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Crown, Shuffle, Filter, Camera, Link, Upload, X, LayoutGrid, CreditCard } from 'lucide-react';
 import { MediaItem } from '../types';
 import { getGenres } from '../utils/genres';
+import { compressImage } from '../utils/imageCompression';
 import { useLibraryStore } from '../stores/useLibraryStore';
 import { useToast } from '../context/ToastContext';
 import { useUIStore } from '../stores/useUIStore';
@@ -39,42 +40,6 @@ interface CharacterWithRank extends CharacterEntry {
   rankInWork: number;
   totalInWork: number;
 }
-
-// Image compression helper
-const compressImage = (base64Str: string, maxWidth: number = 200, quality: number = 0.7): Promise<string> => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = base64Str;
-    img.onload = () => {
-      let width = img.width;
-      let height = img.height;
-
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
-      }
-
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        try {
-          ctx.drawImage(img, 0, 0, width, height);
-          const newBase64 = canvas.toDataURL('image/webp', quality);
-          resolve(newBase64);
-        } catch {
-          resolve(base64Str);
-        }
-      } else {
-        resolve(base64Str);
-      }
-    };
-    img.onerror = () => resolve(base64Str);
-  });
-};
 
 // Fisher-Yates shuffle
 const shuffleArray = <T,>(arr: T[]): T[] => {
@@ -312,7 +277,7 @@ export const CharactersView: React.FC = () => {
   const updateCharacterImage = async (mediaId: string, imageUrl: string) => {
     setUploadingId(mediaId);
     try {
-      const compressed = await compressImage(imageUrl);
+      const compressed = await compressImage(imageUrl, 200);
       const item = library.find(i => i.id === mediaId);
       if (item) {
         const updatedChars = [...item.trackingData.favoriteCharacters];

@@ -5,6 +5,7 @@ import { updateMediaInfo, generateReviewSummary } from '../services/geminiServic
 import { computeNextSeason, createCustomLink, mergeCharacters, processImageToBase64, reorderCharacters } from '../services/mediaItemOperations';
 import { useToast } from '../context/ToastContext';
 import { extractColorFromImage, hexToRgb, vibrify } from './media-card/colorUtils';
+import { compressImage } from '../utils/imageCompression';
 import {
   Edit3, X, Trash2, Star, Link as LinkIcon,
   Plus, Layout, Globe, Upload, Image as ImageIcon,
@@ -107,10 +108,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
   const processImageFile = async (file: File) => {
     try {
-      const base64 = await processImageToBase64(file);
-      handleAIDataChange('coverImage', base64);
+      const raw = await processImageToBase64(file);
+      // Storage is IndexedDB with a limited quota: a phone photo must never be
+      // stored at its original size. 300 px / WebP 0.7 matches the manual cover
+      // optimizer in SettingsModal, so new uploads and optimized ones converge.
+      const compressed = await compressImage(raw);
+      handleAIDataChange('coverImage', compressed);
       try {
-        const extractedColor = await extractColorFromImage(base64);
+        const extractedColor = await extractColorFromImage(compressed);
         handleAIDataChange('primaryColor', extractedColor);
         showToast("Color extraído: " + extractedColor, "success");
       } catch (err) {
