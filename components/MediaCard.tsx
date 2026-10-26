@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { EditActionBar, AiringBlock, AniListLinkModal, AniListLinkRow, CharacterPickerModal, ManhwaWebLinkModal, ManhwaWebLinkRow, TvmazeLinkModal, TvmazeLinkRow } from './media-card';
 import { resolveAniListScope } from '../services/anilistService';
+import { refreshSerieFromTvmaze } from '../services/tvmazeService';
 import { MANHWAWEB_SITE_BASE } from '../services/manhwawebService';
 import { useAiringSnapshot } from '../hooks/useAiringSnapshot';
 import { useAuthStore } from '../stores/useAuthStore';
@@ -199,10 +200,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   };
 
   const handleSmartUpdate = async () => {
-    if (!apiKey) return showToast("Falta API Key", "error");
+    const isSerie = aiData.mediaType === 'Serie';
+    // TVmaze needs no key: only the Gemini path may block on a missing API key.
+    if (!isSerie && !apiKey) return showToast("Falta API Key", "error");
     setIsUpdatingInfo(true);
     try {
-      const { updatedData, hasChanges } = await updateMediaInfo(aiData, apiKey);
+      const { updatedData, hasChanges } = isSerie
+        ? await refreshSerieFromTvmaze(aiData)
+        : await updateMediaInfo(aiData, apiKey);
       if (hasChanges) {
         const newData = { ...localData, aiData: { ...localData.aiData, ...updatedData } };
         setLocalData(newData);
@@ -521,7 +526,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   <button
                     onClick={handleSmartUpdate}
                     disabled={isUpdatingInfo}
-                    title="Busca en la web los capítulos y fechas más recientes"
+                    title={aiData.mediaType === 'Serie'
+                      ? "Busca en TVmaze el estado, los capítulos y las fechas más recientes"
+                      : "Busca en la web los capítulos y fechas más recientes"}
                     className="text-xs text-[rgb(var(--card-rgb))] flex items-center gap-1.5 font-bold hover:underline disabled:opacity-50"
                   >
                     <RefreshCw className={`w-3 h-3 ${isUpdatingInfo ? 'animate-spin' : ''}`} />

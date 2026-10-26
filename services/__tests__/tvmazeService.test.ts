@@ -10,6 +10,7 @@ import {
   fetchTvmazeCharacters,
   fetchTvmazeShow,
   hydrateSerieFromTvmaze,
+  refreshSerieFromTvmaze,
   searchTvmazeShow,
 } from '../tvmazeService';
 import type { TvmazeMatch } from '../tvmazeService';
@@ -654,5 +655,161 @@ describe('hydrateSerieFromTvmaze', () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.aiData).toBe(aiData);
     expect(result.detail).toBeNull();
+  });
+});
+
+// --- Explicit refresh ---------------------------------------------------------
+
+describe('refreshSerieFromTvmaze', () => {
+  const staleDetail = () =>
+    makeShow({
+      status: 'Ended',
+      ended: '2022-05-12',
+      genres: ['Drama', 'Crime'],
+      seasons: [1, 1, 2, 2],
+      imageOriginal: 'https://static.tvmaze.com/new-poster.jpg',
+    });
+
+  it('refreshes a stored id with exactly one detail request and no search', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(staleDetail()));
+
+    const result = await refreshSerieFromTvmaze(makeAiData({ tvmaze: { id: 22557 } }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe(`${TVMAZE_API_BASE}/shows/22557?embed[]=episodes`);
+    expect(result.hasChanges).toBe(true);
+  });
+
+  it('searches first and then fetches the detail when there is no stored id', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(searchPayload([{ show: makeShow() }])))
+      .mockResolvedValueOnce(jsonResponse(staleDetail()));
+
+    const result = await refreshSerieFromTvmaze(makeAiData());
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][0]).toBe(`${TVMAZE_API_BASE}/search/shows?q=El%20Marginal`);
+    expect(fetchMock.mock.calls[1][0]).toBe(`${TVMAZE_API_BASE}/shows/22557?embed[]=episodes`);
+    expect(result.updatedData.tvmaze).toEqual({ id: 22557 });
+    expect(result.updatedData.status).toBe('Finalizado');
+  });
+
+  it('returns no changes after a single request when the show is not on TVmaze', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+
+    const result = await refreshSerieFromTvmaze(makeAiData());
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ updatedData: {}, hasChanges: false });
+  });
+
+  it('replaces every stale field TVmaze owns', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(staleDetail()));
+
+    const aiData = makeAiData({
+      status: 'En emisión',
+      totalContent: '1 Temporada inventada',
+      releaseDate: '2016-06-02',
+      genres: ['Policial'],
+      coverImage: 'https://static.tvmaze.com/old-poster.jpg',
+      tvmaze: { id: 22557 },
+    });
+
+    const result = await refreshSerieFromTvmaze(aiData);
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.updatedData).toEqual({
+      status: 'Finalizado',
+      totalContent: '2 Temporadas · 4 Caps',
+      endDate: '2022-05-12',
+      genres: ['Drama', 'Crime'],
+      coverImage: 'https://static.tvmaze.com/new-poster.jpg',
+    });
+  });
+
+  it('keeps a data: cover untouched while the other fields still refresh', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(staleDetail()));
+
+    const aiData = makeAiData({
+      status: 'En emisión',
+      totalContent: '1 Temporada inventada',
+      coverImage: 'data:image/webp;base64,USER',
+      tvmaze: { id: 22557 },
+    });
+
+    const result = await refreshSerieFromTvmaze(aiData);
+
+    expect(result.updatedData).not.toHaveProperty('coverImage');
+    expect(result.updatedData.status).toBe('Finalizado');
+    expect(result.updatedData.totalContent).toBe('2 Temporadas · 4 Caps');
+  });
+
+  it('keeps a third-party cover untouched while the other fields still refresh', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(staleDetail()));
+
+    const aiData = makeAiData({
+      status: 'En emisión',
+      totalContent: '1 Temporada inventada',
+      coverImage: 'https://example.com/poster.jpg',
+      tvmaze: { id: 22557 },
+    });
+
+    const result = await refreshSerieFromTvmaze(aiData);
+
+    expect(result.updatedData).not.toHaveProperty('coverImage');
+    expect(result.updatedData.status).toBe('Finalizado');
+  });
+
+  it('returns an empty diff when the item is already up to date', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(staleDetail()));
+
+    const aiData = makeAiData({
+      status: 'Finalizado',
+      totalContent: '2 Temporadas · 4 Caps',
+      releaseDate: '2016-06-02',
+      endDate: '2022-05-12',
+      genres: ['Drama', 'Crime'],
+      coverImage: 'https://static.tvmaze.com/new-poster.jpg',
+      tvmaze: { id: 22557 },
+    });
+
+    const result = await refreshSerieFromTvmaze(aiData);
+
+    expect(result).toEqual({ updatedData: {}, hasChanges: false });
+  });
+
+  it('never includes synopsis, title, mediaType or anilist in the diff', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(staleDetail()));
+
+    const anilist = {
+      id: 1,
+      matchedTitle: 'El Marginal',
+      matchedBy: 'title' as const,
+      confidence: 'exact' as const,
+      resolvedAt: 1,
+    };
+    const aiData = makeAiData({
+      title: 'El Marginal',
+      mediaType: 'Serie',
+      synopsis: 'Mi propia sinopsis.',
+      anilist,
+      tvmaze: { id: 22557 },
+    });
+
+    const result = await refreshSerieFromTvmaze(aiData);
+
+    const keys = Object.keys(result.updatedData);
+    expect(keys).not.toContain('synopsis');
+    expect(keys).not.toContain('title');
+    expect(keys).not.toContain('mediaType');
+    expect(keys).not.toContain('anilist');
+  });
+
+  it('lets a transport error reject instead of reporting no changes', async () => {
+    fetchMock.mockResolvedValueOnce(statusResponse(500));
+
+    await expect(refreshSerieFromTvmaze(makeAiData({ tvmaze: { id: 22557 } }))).rejects.toMatchObject({
+      status: 500,
+    });
   });
 });

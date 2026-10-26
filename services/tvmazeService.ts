@@ -507,7 +507,88 @@ export async function hydrateSerieFromTvmaze(aiData: AIWorkData): Promise<Tvmaze
   }
 }
 
+export interface TvmazeRefresh {
+  /** Only the fields TVmaze owns, compared against the current values. */
+  updatedData: Partial<AIWorkData>;
+  hasChanges: boolean;
+}
+
+/**
+ * The explicit "ACTUALIZAR" pass for a Serie: TVmaze owns status, structure,
+ * dates, genres and the poster, so those are refreshed even when they already
+ * hold a value. Everything else — synopsis, title, mediaType, AniList link — is
+ * never touched.
+ *
+ * Unlike `applyTvmazeMetadata` this is NOT fill-only: the whole point is to
+ * replace a stale `En emisión` with `Finalizado`.
+ */
+export async function refreshSerieFromTvmaze(aiData: AIWorkData): Promise<TvmazeRefresh> {
+  const storedId = aiData.tvmaze?.id;
+  const hasStoredId = typeof storedId === 'number' && Number.isFinite(storedId) && storedId > 0;
+
+  let detail: TvmazeMatch | null;
+  if (hasStoredId) {
+    // A known identity is authoritative: one detail request, never a search.
+    detail = await fetchTvmazeShow(storedId);
+    if (!detail) return { updatedData: {}, hasChanges: false };
+  } else {
+    const match = await searchTvmazeShow(aiData.title);
+    // A miss is not a failure: the show simply is not on TVmaze.
+    if (!match) return { updatedData: {}, hasChanges: false };
+    detail = (await fetchTvmazeShow(match.id).catch(() => null)) ?? match;
+  }
+
+  const updatedData: Partial<AIWorkData> = {};
+
+  if (detail.status !== undefined && !sameText(detail.status, aiData.status)) {
+    updatedData.status = detail.status;
+  }
+
+  const totalContent = formatTotalContent(detail);
+  if (totalContent !== undefined && !sameText(totalContent, aiData.totalContent)) {
+    updatedData.totalContent = totalContent;
+  }
+
+  if (detail.premiered !== undefined && !sameText(detail.premiered, aiData.releaseDate)) {
+    updatedData.releaseDate = detail.premiered;
+  }
+
+  // Never clear a date TVmaze does not know.
+  if (detail.ended !== undefined && !sameText(detail.ended, aiData.endDate)) {
+    updatedData.endDate = detail.ended;
+  }
+
+  if (detail.genres.length > 0 && !sameTextList(detail.genres, aiData.genres)) {
+    updatedData.genres = [...detail.genres];
+  }
+
+  // Only a blank cover or an existing TVmaze poster may be replaced: a data:
+  // upload or a third-party URL belongs to the user.
+  const currentCover = typeof aiData.coverImage === 'string' ? aiData.coverImage : '';
+  const coverOwnedByTvmaze =
+    isBlank(currentCover) || currentCover.startsWith('https://static.tvmaze.com/');
+  if (detail.image !== undefined && coverOwnedByTvmaze && !sameText(detail.image, currentCover)) {
+    updatedData.coverImage = detail.image;
+  }
+
+  if (storedId !== detail.id) {
+    updatedData.tvmaze = { id: detail.id };
+  }
+
+  return { updatedData, hasChanges: Object.keys(updatedData).length > 0 };
+}
+
 // --- Pure projection ----------------------------------------------------------
+
+const sameText = (a: string | undefined, b: string | undefined): boolean =>
+  (a ?? '').trim() === (b ?? '').trim();
+
+const sameTextList = (a: string[] | undefined, b: string[] | undefined): boolean => {
+  const left = Array.isArray(a) ? a : [];
+  const right = Array.isArray(b) ? b : [];
+  if (left.length !== right.length) return false;
+  return left.every((value, index) => sameText(value, right[index]));
+};
 
 const isBlank = (value: string | undefined): boolean =>
   typeof value !== 'string' || value.trim().length === 0;
