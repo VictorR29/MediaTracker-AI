@@ -22,7 +22,7 @@ import { useAuthStore } from '../stores/useAuthStore';
 
 interface MediaCardProps {
   item: MediaItem;
-  onUpdate: (item: MediaItem) => void;
+  onUpdate: (item: MediaItem) => void | Promise<void>;
   onDelete?: () => void;
   isNew?: boolean;
   username?: string;
@@ -197,8 +197,17 @@ export const MediaCard: React.FC<MediaCardProps> = ({
     setNewCharacterInput('');
   };
 
-  const saveChanges = () => {
-    onUpdate(localData);
+  const saveChanges = async () => {
+    // The write can fail (IndexedDB quota, a closed database). Leaving the card
+    // in edit mode with the data untouched is the only honest outcome: closing
+    // it and showing "Cambios guardados" would report a save that never landed.
+    try {
+      await onUpdate(localData);
+    } catch {
+      showToast("No se pudieron guardar los cambios. La ficha sigue en edición.", "error");
+      return;
+    }
+
     setIsEditing(false);
     // In a preview the parent only stores the draft, so "Obra guardada" would be
     // a lie: the item is still not in the library.
