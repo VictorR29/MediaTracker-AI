@@ -14,6 +14,7 @@ import {
   fetchMediaCharacters,
   isAiringSnapshotFresh,
   linkAniListCandidate,
+  mergeResolvedAniList,
   resolveAniListMatch,
   resolveAniListScope,
   searchAniListCandidates,
@@ -1004,6 +1005,54 @@ describe('applyAiringSnapshots', () => {
     ]);
 
     expect(applyAiringSnapshots(item, snapshots)).toBe(item);
+  });
+});
+
+describe('mergeResolvedAniList', () => {
+  it('keeps the live tracking progress and only replaces the AniList fields', () => {
+    // The request was built from watchedEpisodes: 11; the user incremented while
+    // it was in flight, so the live copy must win over the resolved one.
+    const live = makeItem({
+      genres: ['Action'],
+      coverImage: '',
+      anilist: { id: 21, matchedTitle: 'Attack on Titan', matchedBy: 'title', confidence: 'exact', resolvedAt: 5_000 },
+    });
+    live.trackingData = { ...live.trackingData, watchedEpisodes: 12, status: 'Viendo/Leyendo' };
+
+    const resolved: MediaItem = {
+      ...live,
+      trackingData: { ...live.trackingData, watchedEpisodes: 11, status: 'Completado' },
+      aiData: {
+        ...live.aiData,
+        coverImage: 'https://img.example/remote.jpg',
+        anilist: {
+          id: 21,
+          matchedTitle: 'Attack on Titan',
+          matchedBy: 'title',
+          confidence: 'exact',
+          resolvedAt: 5_000,
+          airing: { status: 'RELEASING', isAiring: true, fetchedAt: 9_000 },
+        },
+      },
+    };
+
+    const merged = mergeResolvedAniList(live, resolved);
+
+    expect(merged.trackingData.watchedEpisodes).toBe(12);
+    expect(merged.trackingData.status).toBe('Viendo/Leyendo');
+    expect(merged.aiData.anilist?.airing).toEqual(resolved.aiData.anilist?.airing);
+    // A curated cover is never replaced by the remote one.
+    expect(merged.aiData.coverImage).toBe('https://img.example/remote.jpg');
+  });
+
+  it('never overwrites a cover the user already has', () => {
+    const live = makeItem({ coverImage: 'data:image/png;base64,local' });
+    const resolved: MediaItem = {
+      ...live,
+      aiData: { ...live.aiData, coverImage: 'https://img.example/remote.jpg' },
+    };
+
+    expect(mergeResolvedAniList(live, resolved).aiData.coverImage).toBe('data:image/png;base64,local');
   });
 });
 

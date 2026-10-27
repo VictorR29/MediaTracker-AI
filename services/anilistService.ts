@@ -738,6 +738,27 @@ export function applyAiringSnapshots(
   };
 }
 
+/**
+ * Re-applies the AniList-derived fields of a resolved copy onto the item as it
+ * exists now.
+ *
+ * A match or snapshot request can take seconds. Persisting the copy captured
+ * before the request would revert anything the user changed meanwhile — an
+ * episode increment, a rating — and the card syncs its local copy from the
+ * stored item, so the edit would disappear from the screen as well.
+ */
+export function mergeResolvedAniList(live: MediaItem, resolved: MediaItem): MediaItem {
+  return {
+    ...live,
+    aiData: {
+      ...live.aiData,
+      // The cover is curated by the user, so this path may only fill a hole.
+      coverImage: live.aiData.coverImage || resolved.aiData.coverImage,
+      anilist: resolved.aiData.anilist,
+    },
+  };
+}
+
 // --- Manual linking -----------------------------------------------------------
 
 /**

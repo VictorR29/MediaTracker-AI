@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MediaItem } from '../types';
+import { useLibraryStore } from '../stores/useLibraryStore';
 import {
   AniListError,
   applyAiringSnapshots,
   applyMatchResult,
   fetchAiringSnapshots,
   isAiringSnapshotFresh,
+  mergeResolvedAniList,
   resolveAniListMatch,
 } from '../services/anilistService';
 
@@ -64,6 +66,19 @@ export function useAiringSnapshot(
 
     let cancelled = false;
 
+    /**
+     * Writes the AniList fields of a resolved copy onto the item as it exists now.
+     *
+     * The requests take seconds and the user can increment an episode meanwhile.
+     * Persisting the copy captured before the request would revert that edit, in
+     * the store and in IndexedDB, and the card re-syncs its local copy from the
+     * stored item — so the edit would also vanish from the screen.
+     */
+    const persist = (resolved: MediaItem): void => {
+      const live = useLibraryStore.getState().library.find(candidate => candidate.id === resolved.id);
+      onUpdateRef.current(live ? mergeResolvedAniList(live, resolved) : resolved);
+    };
+
     const run = async (): Promise<void> => {
       const current = itemRef.current;
       const existing = current.aiData.anilist;
@@ -88,7 +103,7 @@ export function useAiringSnapshot(
 
         working = applyMatchResult(working, result);
         // Persist the identity immediately so a failed snapshot does not lose the match.
-        onUpdateRef.current(working);
+        persist(working);
       }
 
       const anilist = working.aiData.anilist;
@@ -101,7 +116,7 @@ export function useAiringSnapshot(
       if (cancelled) return;
 
       const withSnapshot = applyAiringSnapshots(working, snapshots);
-      onUpdateRef.current(withSnapshot);
+      persist(withSnapshot);
       setState('ready');
     };
 
