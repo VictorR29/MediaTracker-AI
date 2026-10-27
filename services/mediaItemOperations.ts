@@ -41,6 +41,17 @@ export const promoteStatusOnFirstEpisode = (
 };
 
 /**
+ * Episodes credited to the historical counter when a season is committed.
+ *
+ * The logged counter wins over the declared season length. They disagree only
+ * when the user lowered `totalEpisodesInSeason` after logging episodes, and in
+ * that case what they logged is the record of what they watched; trusting the
+ * declared length would silently drop the difference.
+ */
+export const episodesToCredit = (tracking: UserTrackingData): number =>
+  tracking.watchedEpisodes || tracking.totalEpisodesInSeason;
+
+/**
  * Applies a new season count to a work.
  *
  * `tracking` is the state BEFORE the edit, not the already-patched one.
@@ -80,7 +91,7 @@ export const applySeasonCountChange = (
     return reconciled;
   }
 
-  const episodesToAdd = tracking.totalEpisodesInSeason || tracking.watchedEpisodes;
+  const episodesToAdd = episodesToCredit(tracking);
   const advanced: UserTrackingData = {
     ...tracking,
     totalSeasons: nextTotalSeasons,
@@ -117,12 +128,8 @@ export const computeNextSeason = (
   }
 
   const nextSeason = trackingData.currentSeason + 1;
-  // totalEpisodesInSeason describes the season just finished, so it is credited
-  // to the historical counter before the current counter is reset to zero. Using
-  // it instead of watchedEpisodes keeps the credit stable when the user corrected
-  // the episode count downwards.
-  const episodesToAdd = trackingData.totalEpisodesInSeason || trackingData.watchedEpisodes;
-  const newHistory = (trackingData.accumulated_consumption || 0) + episodesToAdd;
+  // The season just finished is credited before the counter is reset to zero.
+  const newHistory = (trackingData.accumulated_consumption || 0) + episodesToCredit(trackingData);
 
   const nextTracking: UserTrackingData = {
     ...trackingData,

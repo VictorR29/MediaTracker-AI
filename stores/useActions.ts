@@ -1,6 +1,6 @@
 import { MediaItem } from '../types';
 import { saveMediaItem } from '../services/storage';
-import { resolveStatusForPendingSeasons } from '../services/mediaItemOperations';
+import { episodesToCredit, resolveStatusForPendingSeasons } from '../services/mediaItemOperations';
 import { useLibraryStore } from './useLibraryStore';
 
 export const incrementProgress = async (
@@ -45,7 +45,7 @@ export const incrementProgress = async (
   // Logic: Transition (Next Season or Complete) if full
   else {
     if (currentSeason < totalSeasons && totalSeasons > 0) {
-      const newHistory = (accumulated_consumption || 0) + watchedEpisodes;
+      const newHistory = (accumulated_consumption || 0) + episodesToCredit(item.trackingData);
       const nextTracking = {
         ...item.trackingData,
         currentSeason: currentSeason + 1,

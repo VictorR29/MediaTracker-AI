@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applySeasonCountChange, computeNextSeason, createCustomLink, mergeCharacters, promoteStatusOnFirstEpisode, reorderCharacters, resolveStatusForPendingSeasons } from '../mediaItemOperations';
+import { applySeasonCountChange, computeNextSeason, episodesToCredit, createCustomLink, mergeCharacters, promoteStatusOnFirstEpisode, reorderCharacters, resolveStatusForPendingSeasons } from '../mediaItemOperations';
 import { MediaItem, UserTrackingData } from '../../types';
 
 const baseItem: MediaItem = {
@@ -95,6 +95,23 @@ describe('mediaItemOperations', () => {
       expect(computeNextSeason(paused).updatedItem.trackingData.status).toBe('En Pausa');
     });
 
+    it('credits the logged episodes when the declared season length is lower', () => {
+      const corrected = {
+        ...baseItem,
+        trackingData: {
+          ...baseItem.trackingData,
+          watchedEpisodes: 12,
+          totalEpisodesInSeason: 8,
+          accumulated_consumption: 0,
+        },
+      };
+
+      const result = computeNextSeason(corrected);
+
+      // Crediting the declared 8 would drop the 4 episodes the user logged.
+      expect(result.updatedItem.trackingData.accumulated_consumption).toBe(12);
+    });
+
     it('handles zero totalEpisodes (infinite series)', () => {
       const infinite = { ...baseItem, trackingData: { ...baseItem.trackingData, totalEpisodesInSeason: 0, watchedEpisodes: 0 } };
       const result = computeNextSeason(infinite);
@@ -161,6 +178,13 @@ describe('mediaItemOperations', () => {
       expect(result.status).toBe('Sin empezar');
     });
 
+    it('credits the logged episodes when they exceed the declared season length', () => {
+      // The user logged 12 and then lowered the season length to 8.
+      const result = applySeasonCountChange(finished({ totalEpisodesInSeason: 8 }), 3);
+
+      expect(result.accumulated_consumption).toBe(24);
+    });
+
     it('clamps the current season when the total is lowered below it', () => {
       const ahead = finished({ currentSeason: 5, totalSeasons: 5, accumulated_consumption: 48 });
 
@@ -178,6 +202,16 @@ describe('mediaItemOperations', () => {
 
       expect(raised.currentSeason).toBe(3);
       expect(raised.totalSeasons).toBe(5);
+    });
+  });
+
+  describe('episodesToCredit', () => {
+    it('prefers the logged counter when both disagree', () => {
+      expect(episodesToCredit(tracking({ watchedEpisodes: 12, totalEpisodesInSeason: 8 }))).toBe(12);
+    });
+
+    it('falls back to the declared length when nothing is logged', () => {
+      expect(episodesToCredit(tracking({ watchedEpisodes: 0, totalEpisodesInSeason: 12 }))).toBe(12);
     });
   });
 
