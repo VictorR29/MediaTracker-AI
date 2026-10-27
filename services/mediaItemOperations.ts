@@ -41,6 +41,45 @@ export const promoteStatusOnFirstEpisode = (
 };
 
 /**
+ * Lowering the counter below the season length takes a completed work back to
+ * in progress. Without this the card stays "COMPLETADO 11/12", the complete
+ * action is hidden because it requires a full season, and there is no way back
+ * except re-picking the status by hand.
+ */
+export const resolveStatusAfterProgressDrop = (
+  tracking: UserTrackingData,
+): UserTrackingData['status'] => {
+  if (tracking.status !== 'Completado') return tracking.status;
+  if (tracking.totalEpisodesInSeason <= 0) return tracking.status;
+  if (tracking.watchedEpisodes >= tracking.totalEpisodesInSeason) return tracking.status;
+
+  // Something was consumed before this season — an earlier season committed to
+  // history, or a few episodes of this one — so the work is in progress, not
+  // untouched. Only a work with nothing behind it anywhere goes back to
+  // "Sin empezar".
+  const consumed = tracking.watchedEpisodes > 0 || (tracking.accumulated_consumption ?? 0) > 0;
+  return consumed ? 'Viendo/Leyendo' : 'Sin empezar';
+};
+
+/**
+ * Status after the user edits the watched-episode counter.
+ *
+ * The two rules are ordered: the first episode of a season starts it, and a
+ * counter that falls below a full season takes a completed work back to in
+ * progress. Both are needed in the same edit — an untouched but completed work
+ * drops to zero and must not be left "Completado" at 0/12, where the complete
+ * action stays hidden because a completed work on its last season never shows
+ * it.
+ */
+export const resolveStatusAfterEpisodeEdit = (
+  tracking: UserTrackingData,
+): UserTrackingData['status'] =>
+  resolveStatusAfterProgressDrop({
+    ...tracking,
+    status: promoteStatusOnFirstEpisode(tracking.status, tracking.watchedEpisodes),
+  });
+
+/**
  * Episodes credited to the historical counter when a season is committed.
  *
  * The logged counter wins over the declared season length. They disagree only

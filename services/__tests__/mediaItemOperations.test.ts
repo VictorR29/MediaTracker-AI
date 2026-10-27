@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applySeasonCountChange, computeNextSeason, episodesToCredit, createCustomLink, mergeCharacters, promoteStatusOnFirstEpisode, reorderCharacters, resolveStatusForPendingSeasons } from '../mediaItemOperations';
+import { applySeasonCountChange, computeNextSeason, episodesToCredit, createCustomLink, mergeCharacters, promoteStatusOnFirstEpisode, reorderCharacters, resolveStatusAfterEpisodeEdit, resolveStatusAfterProgressDrop, resolveStatusForPendingSeasons } from '../mediaItemOperations';
 import { MediaItem, UserTrackingData } from '../../types';
 
 const baseItem: MediaItem = {
@@ -258,6 +258,74 @@ describe('mediaItemOperations', () => {
 
     it('does not demote when the counter drops to zero', () => {
       expect(promoteStatusOnFirstEpisode('Viendo/Leyendo', 0)).toBe('Viendo/Leyendo');
+    });
+  });
+
+  describe('resolveStatusAfterProgressDrop', () => {
+    it('takes a completed work back to in progress when the counter drops', () => {
+      // The card hid the complete action because a completed work at the last
+      // season never shows it, so this state had no way out.
+      expect(resolveStatusAfterProgressDrop(tracking({ status: 'Completado', watchedEpisodes: 11 })))
+        .toBe('Viendo/Leyendo');
+    });
+
+    it('goes back to Sin empezar when nothing at all was consumed', () => {
+      expect(resolveStatusAfterProgressDrop(
+        tracking({ status: 'Completado', watchedEpisodes: 0, accumulated_consumption: 0 }),
+      )).toBe('Sin empezar');
+    });
+
+    it('stays in progress when an earlier season is already in history', () => {
+      // Season 1 was committed to accumulated_consumption: the work is not untouched.
+      expect(resolveStatusAfterProgressDrop(
+        tracking({ status: 'Completado', currentSeason: 2, watchedEpisodes: 0, accumulated_consumption: 12 }),
+      )).toBe('Viendo/Leyendo');
+    });
+
+    it('leaves a full season completed', () => {
+      expect(resolveStatusAfterProgressDrop(tracking({ status: 'Completado', watchedEpisodes: 12 })))
+        .toBe('Completado');
+    });
+
+    it('leaves a work with no declared season length alone', () => {
+      // Infinite series: there is no "full season" to fall short of.
+      expect(resolveStatusAfterProgressDrop(
+        tracking({ status: 'Completado', watchedEpisodes: 3, totalEpisodesInSeason: 0 }),
+      )).toBe('Completado');
+    });
+
+    it('never promotes anything that was not completed', () => {
+      expect(resolveStatusAfterProgressDrop(tracking({ status: 'Descartado', watchedEpisodes: 0 })))
+        .toBe('Descartado');
+      expect(resolveStatusAfterProgressDrop(tracking({ status: 'En Pausa', watchedEpisodes: 0 })))
+        .toBe('En Pausa');
+    });
+  });
+
+  describe('resolveStatusAfterEpisodeEdit', () => {
+    it('starts a season on the first episode', () => {
+      expect(resolveStatusAfterEpisodeEdit(tracking({ status: 'Sin empezar', watchedEpisodes: 1 })))
+        .toBe('Viendo/Leyendo');
+    });
+
+    it('takes a completed work back to in progress when the counter drops', () => {
+      expect(resolveStatusAfterEpisodeEdit(
+        tracking({ status: 'Completado', currentSeason: 3, totalSeasons: 3, watchedEpisodes: 11 }),
+      )).toBe('Viendo/Leyendo');
+    });
+
+    it('applies both rules when a completed work drops to zero', () => {
+      // The promote rule alone would leave it "Completado" at 0/12, and the drop
+      // rule alone would leave it at "Sin empezar" only by accident.
+      expect(resolveStatusAfterEpisodeEdit(
+        tracking({ status: 'Completado', currentSeason: 3, totalSeasons: 3, watchedEpisodes: 0, accumulated_consumption: 24 }),
+      )).toBe('Viendo/Leyendo');
+    });
+
+    it('keeps a season complete when the counter reaches the full length', () => {
+      expect(resolveStatusAfterEpisodeEdit(
+        tracking({ status: 'Viendo/Leyendo', watchedEpisodes: 12 }),
+      )).toBe('Viendo/Leyendo');
     });
   });
 

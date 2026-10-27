@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem, UserTrackingData, AIWorkData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { updateMediaInfo, generateReviewSummary } from '../services/geminiService';
-import { applySeasonCountChange, computeNextSeason, createCustomLink, mergeCharacters, processImageToBase64, promoteStatusOnFirstEpisode, reorderCharacters, resolveStatusForPendingSeasons } from '../services/mediaItemOperations';
+import { applySeasonCountChange, computeNextSeason, createCustomLink, mergeCharacters, processImageToBase64, reorderCharacters, resolveStatusAfterEpisodeEdit, resolveStatusForPendingSeasons } from '../services/mediaItemOperations';
 import { useToast } from '../context/ToastContext';
 import { extractColorFromImage, hexToRgb, vibrify } from './media-card/colorUtils';
 import { compressImage } from '../utils/imageCompression';
@@ -108,11 +108,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
     if (field === 'totalSeasons') {
       updated.trackingData = applySeasonCountChange(localData.trackingData, Number(value));
     }
-    // The first watched episode starts the season, so "Sin empezar" stops being true.
-    if (field === 'watchedEpisodes' && Number(value) > 0) {
+    // One edit can need both rules: the first episode of a season starts it, and
+    // a counter below a full season takes a completed work back to in progress.
+    if (field === 'watchedEpisodes') {
       updated.trackingData = {
         ...updated.trackingData,
-        status: promoteStatusOnFirstEpisode(updated.trackingData.status, Number(value)),
+        status: resolveStatusAfterEpisodeEdit(updated.trackingData),
       };
     }
     setLocalData(updated);
