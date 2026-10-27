@@ -276,6 +276,21 @@ export const MediaCard: React.FC<MediaCardProps> = ({
     }
   };
 
+  /**
+   * The season stepper says where the user is. Once the current season is
+   * complete, moving forward must archive it exactly like the complete action:
+   * changing only the counter would carry its episodes into the next season and
+   * then offer that season as already finished.
+   */
+  const handleAdvanceSeason = () => {
+    if (tracking.totalSeasons > 0 && tracking.currentSeason >= tracking.totalSeasons) return;
+    if (tracking.totalEpisodesInSeason > 0 && tracking.watchedEpisodes >= tracking.totalEpisodesInSeason) {
+      handleNextSeason();
+      return;
+    }
+    handleInputChange('currentSeason', tracking.currentSeason + 1);
+  };
+
   const handleCharDragStart = (e: React.DragEvent, position: number) => {
     dragItem.current = position;
     e.dataTransfer.effectAllowed = "move";
@@ -694,8 +709,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                           onChange={(e) => handleInputChange('totalSeasons', parseInt(e.target.value) || 1)}
                           className="w-10 bg-zinc-800/50 rounded px-1 py-0.5 text-sm font-bold text-zinc-400 text-center outline-none focus:text-white focus:ring-1 focus:ring-white/20" />
                       </div>
-                      <button onClick={() => handleInputChange('currentSeason', tracking.totalSeasons > 0 ? Math.min(tracking.totalSeasons, tracking.currentSeason + 1) : tracking.currentSeason + 1)}
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                      <button onClick={handleAdvanceSeason}
+                        disabled={tracking.totalSeasons > 0 && tracking.currentSeason >= tracking.totalSeasons}
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all disabled:opacity-40 disabled:hover:bg-zinc-800 disabled:hover:text-zinc-400">
                         <ChevronRight className="w-5 h-5" />
                       </button>
                     </div>
