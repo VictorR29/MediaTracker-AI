@@ -123,3 +123,14 @@ main {
 .animate-slide-down {
   animation: slideDown 280ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
+
+/* Horizontal rails that should not show a scrollbar.
+   Defined here, not inside CatalogView's inline <style>, because CharactersView
+   and stats/TopCharacters also use the class on different routes. */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
