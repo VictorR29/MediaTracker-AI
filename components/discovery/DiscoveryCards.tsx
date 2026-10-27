@@ -66,14 +66,18 @@ export const PosterCard: React.FC<PosterCardProps> = ({
 }) => {
   const colors = getColorData(title);
   const visibleGenres = genres.slice(0, 3);
+  // Track which URL failed instead of a boolean, so a new card reusing this
+  // component is not hidden by the previous card's broken image.
+  const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
 
   return (
     <div className={`w-full h-full relative overflow-hidden bg-gradient-to-br ${colors.bg}`}>
-      {coverImage && (
+      {coverImage && failedSrc !== coverImage && (
         <img
           src={coverImage}
           alt=""
           loading="eager"
+          onError={() => setFailedSrc(coverImage)}
           className="absolute inset-0 w-full h-full object-cover"
         />
       )}
