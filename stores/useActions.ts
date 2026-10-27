@@ -1,5 +1,6 @@
 import { MediaItem } from '../types';
 import { saveMediaItem } from '../services/storage';
+import { resolveStatusForPendingSeasons } from '../services/mediaItemOperations';
 import { useLibraryStore } from './useLibraryStore';
 
 export const incrementProgress = async (
@@ -45,14 +46,16 @@ export const incrementProgress = async (
   else {
     if (currentSeason < totalSeasons && totalSeasons > 0) {
       const newHistory = (accumulated_consumption || 0) + watchedEpisodes;
+      const nextTracking = {
+        ...item.trackingData,
+        currentSeason: currentSeason + 1,
+        watchedEpisodes: 0,
+        accumulated_consumption: newHistory
+      };
+      nextTracking.status = resolveStatusForPendingSeasons(nextTracking);
       const updated = {
         ...item,
-        trackingData: {
-          ...item.trackingData,
-          currentSeason: currentSeason + 1,
-          watchedEpisodes: 0,
-          accumulated_consumption: newHistory
-        },
+        trackingData: nextTracking,
         lastInteraction: Date.now()
       };
       await saveMediaItem(updated);
