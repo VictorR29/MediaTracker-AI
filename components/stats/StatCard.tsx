@@ -4,7 +4,10 @@ export interface StatCardProps {
   title: string;
   value: string | number;
   icon: React.ElementType;
-  color: { bg: string; text: string };
+  /** Only the text tint is a Tailwind class; the chip background is derived from
+   *  `accentColor` at runtime, because a template-built class (`${bg}/10`) is
+   *  invisible to Tailwind's scanner and silently produces no style. */
+  color: { text: string };
   subtext?: string;
   accentColor: string;
 }
@@ -39,8 +42,8 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, co
         )}
       </div>
       <div
-        className={`p-3 md:p-4 rounded-xl ${color.bg}/10 ring-1 ring-white/[0.06] flex-shrink-0`}
-        style={{ boxShadow: `0 0 20px ${accentColor}50` }}
+        className="p-3 md:p-4 rounded-xl ring-1 ring-white/[0.06] flex-shrink-0"
+        style={{ backgroundColor: `${accentColor}1a`, boxShadow: `0 0 20px ${accentColor}50` }}
       >
         <Icon className={`w-6 h-6 md:w-8 md:h-8 ${color.text}`} style={{ filter: `drop-shadow(0 0 6px ${accentColor})` }} />
       </div>
