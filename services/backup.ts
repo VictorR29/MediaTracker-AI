@@ -70,12 +70,32 @@ export const parseBackupFile = (content: string): ParsedBackup | null => {
   }
 };
 
+export interface ParsedCatalog {
+  items: MediaItem[];
+  /** Entries dropped because they did not satisfy the minimum item shape. */
+  skippedCount: number;
+}
+
 /** Parse a catalog JSON string (array of MediaItem). Returns null if invalid format. */
-export const parseCatalogFile = (content: string): MediaItem[] | null => {
+export const parseCatalogFile = (content: string): ParsedCatalog | null => {
   try {
     const json = JSON.parse(content);
     if (!Array.isArray(json)) return null;
-    return json as MediaItem[];
+
+    // Same gate as a backup restore: a catalog is a plain array, so a single
+    // malformed entry would otherwise be persisted verbatim and crash the stats
+    // screen the moment it reads trackingData.
+    const items: MediaItem[] = [];
+    let skippedCount = 0;
+    for (const entry of json) {
+      if (isValidMediaItem(entry)) {
+        items.push(entry);
+      } else {
+        skippedCount++;
+      }
+    }
+
+    return { items, skippedCount };
   } catch {
     return null;
   }

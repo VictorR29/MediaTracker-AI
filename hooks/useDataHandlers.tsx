@@ -131,9 +131,26 @@ export const useDataHandlers = () => {
           const content = e.target?.result as string;
           const parsed = parseCatalogFile(content);
           if (parsed) {
-            const existingIds = new Set(library.map(i => i.id));
-            const count = await useLibraryStore.getState().importItems(parsed, existingIds);
-            showToast(`Importadas ${count} obras nuevas`, "success");
+            // Read the current library from IndexedDB, not from the store cache:
+            // after a failed load the cache is empty while the database still
+            // holds the real library, and treating every entry as new would
+            // overwrite stored progress.
+            let existingItems: MediaItem[];
+            try {
+              existingItems = await getLibrary();
+            } catch {
+              showToast("No se pudo leer la biblioteca. Importación cancelada.", "error");
+              return;
+            }
+
+            const existingIds = new Set(existingItems.map(i => i.id));
+            const count = await useLibraryStore.getState().importItems(parsed.items, existingIds);
+            showToast(
+              parsed.skippedCount > 0
+                ? `Importadas ${count} obras nuevas (${parsed.skippedCount} omitidas)`
+                : `Importadas ${count} obras nuevas`,
+              "success"
+            );
           } else {
             showToast("Formato inválido. Se esperaba una lista (Array) de obras.", "error");
           }
@@ -145,7 +162,7 @@ export const useDataHandlers = () => {
       };
       reader.readAsText(file);
     }, 100);
-  }, [showToast, setRestoring, library]);
+  }, [showToast, setRestoring]);
 
   const handleExportCatalog = useCallback(() => {
     const blob = createCatalogBlob(library);

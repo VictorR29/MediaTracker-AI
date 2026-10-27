@@ -122,7 +122,19 @@ describe('backup service', () => {
       const json = JSON.stringify(mockLibrary);
       const result = parseCatalogFile(json);
       expect(result).not.toBeNull();
-      expect(result!).toHaveLength(1);
+      expect(result!.items).toHaveLength(1);
+      expect(result!.skippedCount).toBe(0);
+    });
+
+    it('drops entries that cannot be rendered or tracked', () => {
+      // An entry without id/title/type, or without a trackingData object, would
+      // be persisted verbatim and crash the stats screen on first read.
+      const json = JSON.stringify([mockLibrary[0], {}, { id: 'orphan' }, null, 42]);
+      const result = parseCatalogFile(json);
+
+      expect(result!.items).toHaveLength(1);
+      expect(result!.items[0].id).toBe('test');
+      expect(result!.skippedCount).toBe(4);
     });
 
     it('returns null for object (not array)', () => {
