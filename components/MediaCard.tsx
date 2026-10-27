@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem, UserTrackingData, AIWorkData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { updateMediaInfo, generateReviewSummary } from '../services/geminiService';
-import { computeNextSeason, createCustomLink, mergeCharacters, processImageToBase64, promoteStatusOnFirstEpisode, reorderCharacters, resolveStatusForPendingSeasons } from '../services/mediaItemOperations';
+import { applySeasonCountChange, computeNextSeason, createCustomLink, mergeCharacters, processImageToBase64, promoteStatusOnFirstEpisode, reorderCharacters, resolveStatusForPendingSeasons } from '../services/mediaItemOperations';
 import { useToast } from '../context/ToastContext';
 import { extractColorFromImage, hexToRgb, vibrify } from './media-card/colorUtils';
 import { compressImage } from '../utils/imageCompression';
@@ -101,13 +101,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
     if (field === 'watchedEpisodes' && value > 0 && updated.trackingData.totalEpisodesInSeason === 0) {
       updated.trackingData = { ...updated.trackingData, totalEpisodesInSeason: value };
     }
-    // Adding a season to a completed work means it is no longer completed: the
-    // season exists but has not been started yet.
+    // Adding a season to a completed work commits the finished season to history
+    // and moves the work to the new one, so the user does not have to "complete"
+    // a season that is already complete. The helper needs the state BEFORE the
+    // edit, which is why it reads localData and not the already-patched value.
     if (field === 'totalSeasons') {
-      updated.trackingData = {
-        ...updated.trackingData,
-        status: resolveStatusForPendingSeasons(updated.trackingData),
-      };
+      updated.trackingData = applySeasonCountChange(localData.trackingData, Number(value));
     }
     // The first watched episode starts the season, so "Sin empezar" stops being true.
     if (field === 'watchedEpisodes' && Number(value) > 0) {

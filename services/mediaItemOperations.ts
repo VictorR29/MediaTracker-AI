@@ -41,6 +41,48 @@ export const promoteStatusOnFirstEpisode = (
 };
 
 /**
+ * Applies a new season count to a work.
+ *
+ * `tracking` is the state BEFORE the edit, not the already-patched one.
+ *
+ * When a completed work gains seasons, the season it finished is still parked in
+ * watchedEpisodes — that is what keeps Stats from counting it twice. Adding the
+ * new season is the moment to commit it to history and move the work forward,
+ * otherwise the user is left standing on a finished season and has to press a
+ * button labelled after work that is already done.
+ *
+ * Anything that does not fit that shape is only reconciled, never advanced.
+ */
+export const applySeasonCountChange = (
+  tracking: UserTrackingData,
+  nextTotalSeasons: number,
+): UserTrackingData => {
+  const wasComplete =
+    tracking.status === 'Completado' &&
+    tracking.totalSeasons > 0 &&
+    tracking.currentSeason >= tracking.totalSeasons &&
+    (tracking.totalEpisodesInSeason === 0 ||
+      tracking.watchedEpisodes >= tracking.totalEpisodesInSeason);
+
+  if (!wasComplete || nextTotalSeasons <= tracking.totalSeasons) {
+    const reconciled: UserTrackingData = { ...tracking, totalSeasons: nextTotalSeasons };
+    reconciled.status = resolveStatusForPendingSeasons(reconciled);
+    return reconciled;
+  }
+
+  const episodesToAdd = tracking.totalEpisodesInSeason || tracking.watchedEpisodes;
+  const advanced: UserTrackingData = {
+    ...tracking,
+    totalSeasons: nextTotalSeasons,
+    currentSeason: tracking.currentSeason + 1,
+    watchedEpisodes: 0,
+    accumulated_consumption: (tracking.accumulated_consumption || 0) + episodesToAdd,
+  };
+  advanced.status = resolveStatusForPendingSeasons(advanced);
+  return advanced;
+};
+
+/**
  * Computes the next season transition for a series.
  * Pure data transformation — no React, no toast, no state.
  */

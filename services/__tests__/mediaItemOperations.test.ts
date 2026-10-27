@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeNextSeason, createCustomLink, mergeCharacters, promoteStatusOnFirstEpisode, reorderCharacters, resolveStatusForPendingSeasons } from '../mediaItemOperations';
+import { applySeasonCountChange, computeNextSeason, createCustomLink, mergeCharacters, promoteStatusOnFirstEpisode, reorderCharacters, resolveStatusForPendingSeasons } from '../mediaItemOperations';
 import { MediaItem, UserTrackingData } from '../../types';
 
 const baseItem: MediaItem = {
@@ -35,6 +35,11 @@ const baseItem: MediaItem = {
 };
 
 describe('mediaItemOperations', () => {
+  const tracking = (overrides: Partial<UserTrackingData> = {}): UserTrackingData => ({
+    ...baseItem.trackingData,
+    ...overrides,
+  });
+
   describe('computeNextSeason', () => {
     it('moves to next season when not last', () => {
       const result = computeNextSeason(baseItem);
@@ -97,12 +102,67 @@ describe('mediaItemOperations', () => {
     });
   });
 
-  describe('resolveStatusForPendingSeasons', () => {
-    const tracking = (overrides: Partial<UserTrackingData> = {}): UserTrackingData => ({
-      ...baseItem.trackingData,
+  describe('applySeasonCountChange', () => {
+    const finished = (overrides: Partial<UserTrackingData> = {}) => tracking({
+      status: 'Completado',
+      currentSeason: 2,
+      totalSeasons: 2,
+      watchedEpisodes: 12,
+      totalEpisodesInSeason: 12,
+      accumulated_consumption: 12,
       ...overrides,
     });
 
+    it('commits the finished season and moves the work to the new one', () => {
+      const result = applySeasonCountChange(finished(), 3);
+
+      expect(result.totalSeasons).toBe(3);
+      expect(result.currentSeason).toBe(3);
+      expect(result.watchedEpisodes).toBe(0);
+      // The episodes the user already watched are moved, not recounted.
+      expect(result.accumulated_consumption).toBe(24);
+      expect(result.status).toBe('Sin empezar');
+    });
+
+    it('advances a single season when several are added at once', () => {
+      const result = applySeasonCountChange(finished(), 5);
+
+      expect(result.currentSeason).toBe(3);
+      expect(result.totalSeasons).toBe(5);
+      expect(result.accumulated_consumption).toBe(24);
+    });
+
+    it('leaves a completed work untouched when no season is added', () => {
+      const result = applySeasonCountChange(finished(), 2);
+
+      expect(result.currentSeason).toBe(2);
+      expect(result.watchedEpisodes).toBe(12);
+      expect(result.accumulated_consumption).toBe(12);
+      expect(result.status).toBe('Completado');
+    });
+
+    it('does not advance a work that was never finished', () => {
+      const watching = tracking({ status: 'Viendo/Leyendo', currentSeason: 1, totalSeasons: 2 });
+
+      const result = applySeasonCountChange(watching, 3);
+
+      expect(result.currentSeason).toBe(1);
+      expect(result.status).toBe('Viendo/Leyendo');
+    });
+
+    it('does not advance when the last season was never actually watched', () => {
+      const marked = finished({ watchedEpisodes: 0 });
+
+      const result = applySeasonCountChange(marked, 3);
+
+      // Nothing to commit: the season is still pending, so the work stays on it.
+      expect(result.currentSeason).toBe(2);
+      expect(result.accumulated_consumption).toBe(12);
+      expect(result.status).toBe('Sin empezar');
+    });
+  });
+
+  describe('resolveStatusForPendingSeasons', () => {
     it('moves Completado to Sin empezar when seasons remain', () => {
       expect(resolveStatusForPendingSeasons(tracking({ status: 'Completado', currentSeason: 2, totalSeasons: 3 })))
         .toBe('Sin empezar');
