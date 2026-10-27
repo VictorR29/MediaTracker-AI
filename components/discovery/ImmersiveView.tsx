@@ -312,6 +312,23 @@ const ImmersiveViewInner: React.FC<ImmersiveViewProps> = ({
         )}
       </div>
 
+      {/* ESCAPE HATCH — a generation can take close to a minute, and the nav bar
+          is hidden while loading, which would trap the user on a full-screen
+          deck with no way back. */}
+      {isLoading && (
+        <div className="absolute top-4 left-0 right-0 z-50 px-4 md:px-6 pt-safe flex justify-end w-full max-w-lg mx-auto pointer-events-none">
+          <button
+            onClick={onGoBack}
+            aria-label="Salir de la generación"
+            className="pointer-events-auto bg-[#111113]/80 hover:bg-[#1C1C1F]/80 backdrop-blur-xl text-white px-4 py-2 rounded-full text-xs font-bold transition-all ring-1 ring-white/[0.08] flex items-center gap-2 shadow-lg hover:scale-105 active:scale-[0.97]"
+            style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
+          >
+            <ArrowLeft className="w-3 h-3" />
+            <span>Salir</span>
+          </button>
+        </div>
+      )}
+
       {/* NAVIGATION BAR */}
       {!isLoading && recommendations.length > 0 && (
         <div className="absolute top-4 left-0 right-0 z-50 px-4 md:px-6 pt-safe flex justify-between items-center w-full max-w-lg mx-auto pointer-events-none">
