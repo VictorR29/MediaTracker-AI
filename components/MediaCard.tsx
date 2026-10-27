@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem, UserTrackingData, AIWorkData, EMOTIONAL_TAGS_OPTIONS, RATING_OPTIONS } from '../types';
 import { updateMediaInfo, generateReviewSummary } from '../services/geminiService';
-import { computeNextSeason, createCustomLink, mergeCharacters, processImageToBase64, reorderCharacters } from '../services/mediaItemOperations';
+import { computeNextSeason, createCustomLink, mergeCharacters, processImageToBase64, promoteStatusOnFirstEpisode, reorderCharacters, resolveStatusForPendingSeasons } from '../services/mediaItemOperations';
 import { useToast } from '../context/ToastContext';
 import { extractColorFromImage, hexToRgb, vibrify } from './media-card/colorUtils';
 import { compressImage } from '../utils/imageCompression';
@@ -92,7 +92,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   // Handlers
   const handleInputChange = (field: keyof UserTrackingData, value: any, shouldSave = true) => {
     const isProgressUpdate = field === 'watchedEpisodes' || field === 'currentSeason' || field === 'status';
-    let updated = {
+    let updated: MediaItem = {
       ...localData,
       lastInteraction: isProgressUpdate ? Date.now() : localData.lastInteraction,
       trackingData: { ...localData.trackingData, [field]: value }
@@ -100,6 +100,21 @@ export const MediaCard: React.FC<MediaCardProps> = ({
     // Auto-set totalEpisodesInSeason when increasing watchedEpisodes and total is 0
     if (field === 'watchedEpisodes' && value > 0 && updated.trackingData.totalEpisodesInSeason === 0) {
       updated.trackingData = { ...updated.trackingData, totalEpisodesInSeason: value };
+    }
+    // Adding a season to a completed work means it is no longer completed: the
+    // season exists but has not been started yet.
+    if (field === 'totalSeasons') {
+      updated.trackingData = {
+        ...updated.trackingData,
+        status: resolveStatusForPendingSeasons(updated.trackingData),
+      };
+    }
+    // The first watched episode starts the season, so "Sin empezar" stops being true.
+    if (field === 'watchedEpisodes' && Number(value) > 0) {
+      updated.trackingData = {
+        ...updated.trackingData,
+        status: promoteStatusOnFirstEpisode(updated.trackingData.status, Number(value)),
+      };
     }
     setLocalData(updated);
     if (!isEditing && shouldSave) onUpdate(updated);
@@ -291,6 +306,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const progressPercent = tracking.totalEpisodesInSeason > 0
     ? Math.min(100, (tracking.watchedEpisodes / tracking.totalEpisodesInSeason) * 100)
     : 0;
+
+  // Nothing left to advance to: the action would only re-announce a completion
+  // that is already saved. It comes back the moment a season is added.
+  const hasNothingLeftToComplete = tracking.status === 'Completado'
+    && tracking.totalSeasons > 0
+    && tracking.currentSeason >= tracking.totalSeasons;
 
   const isMovie = aiData.mediaType === 'Pelicula';
   const isReadingContent = ['Manhwa', 'Manga', 'Comic', 'Libro'].includes(aiData.mediaType);
@@ -759,7 +780,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   />
 
                   {/* Complete Season Button */}
-                  {tracking.totalEpisodesInSeason > 0 && tracking.watchedEpisodes >= tracking.totalEpisodesInSeason && (
+                  {tracking.totalEpisodesInSeason > 0 && tracking.watchedEpisodes >= tracking.totalEpisodesInSeason && !hasNothingLeftToComplete && (
                     <button onClick={handleNextSeason}
                       className="w-full py-3.5 bg-[rgb(var(--card-rgb))] hover:opacity-90 text-white rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all animate-fade-in">
                       <CheckCircle2 className="w-4 h-4" />
