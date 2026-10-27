@@ -60,12 +60,22 @@ export const applySeasonCountChange = (
   const wasComplete =
     tracking.status === 'Completado' &&
     tracking.totalSeasons > 0 &&
-    tracking.currentSeason >= tracking.totalSeasons &&
+    // Exactly on the last season. `>=` would also match an item already sitting
+    // beyond the count, and advancing from there overshoots the new limit.
+    tracking.currentSeason === tracking.totalSeasons &&
     (tracking.totalEpisodesInSeason === 0 ||
       tracking.watchedEpisodes >= tracking.totalEpisodesInSeason);
 
   if (!wasComplete || nextTotalSeasons <= tracking.totalSeasons) {
-    const reconciled: UserTrackingData = { ...tracking, totalSeasons: nextTotalSeasons };
+    const reconciled: UserTrackingData = {
+      ...tracking,
+      totalSeasons: nextTotalSeasons,
+      // Lowering the count below the current season would leave an impossible
+      // "T.5 / 2" card. Clamp so the season never exceeds the total.
+      currentSeason: nextTotalSeasons > 0
+        ? Math.min(tracking.currentSeason, nextTotalSeasons)
+        : tracking.currentSeason,
+    };
     reconciled.status = resolveStatusForPendingSeasons(reconciled);
     return reconciled;
   }

@@ -160,6 +160,25 @@ describe('mediaItemOperations', () => {
       expect(result.accumulated_consumption).toBe(12);
       expect(result.status).toBe('Sin empezar');
     });
+
+    it('clamps the current season when the total is lowered below it', () => {
+      const ahead = finished({ currentSeason: 5, totalSeasons: 5, accumulated_consumption: 48 });
+
+      const lowered = applySeasonCountChange(ahead, 2);
+
+      // The card must never read "T.5 / 2".
+      expect(lowered.currentSeason).toBe(2);
+      expect(lowered.totalSeasons).toBe(2);
+    });
+
+    it('does not overshoot the new limit when a lowered count is raised again', () => {
+      const ahead = finished({ currentSeason: 5, totalSeasons: 5, accumulated_consumption: 48 });
+
+      const raised = applySeasonCountChange(applySeasonCountChange(ahead, 2), 5);
+
+      expect(raised.currentSeason).toBe(3);
+      expect(raised.totalSeasons).toBe(5);
+    });
   });
 
   describe('resolveStatusForPendingSeasons', () => {
