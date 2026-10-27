@@ -28,13 +28,19 @@ interface MediaCardProps {
   username?: string;
   apiKey?: string;
   initialEditMode?: boolean;
+  /**
+   * True when the card edits a draft that is not in the library yet (search
+   * results). Saving only updates the preview, so the action bar must not
+   * claim the work was stored.
+   */
+  isPreview?: boolean;
   onSearch?: (query: string) => void;
 }
 
 type TabId = 'info' | 'progreso' | 'resena';
 
 export const MediaCard: React.FC<MediaCardProps> = ({
-  item, onUpdate, onDelete, isNew = false, username, apiKey, initialEditMode = false, onSearch
+  item, onUpdate, onDelete, isNew = false, username, apiKey, initialEditMode = false, isPreview = false, onSearch
 }) => {
   const { showToast } = useToast();
 
@@ -179,7 +185,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const saveChanges = () => {
     onUpdate(localData);
     setIsEditing(false);
-    showToast(isNew ? "Obra guardada" : "Cambios guardados", "success");
+    // In a preview the parent only stores the draft, so "Obra guardada" would be
+    // a lie: the item is still not in the library.
+    showToast(
+      isPreview ? "Vista previa actualizada" : isNew ? "Obra guardada" : "Cambios guardados",
+      "success"
+    );
   };
 
   const cancelChanges = () => {
@@ -905,7 +916,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         </div>
       </div>
 
-      {isEditing && <EditActionBar onSave={saveChanges} onCancel={cancelChanges} />}
+      {isEditing && (
+        <EditActionBar
+          onSave={saveChanges}
+          onCancel={cancelChanges}
+          saveLabel={isPreview ? 'VER FICHA' : undefined}
+        />
+      )}
 
       <AniListLinkModal
         isOpen={isLinkModalOpen}

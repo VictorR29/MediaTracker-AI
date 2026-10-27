@@ -208,6 +208,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ onOpenDetail, onSearchin
               item={previewItem}
               onUpdate={(updated) => setPreviewItem(updated)}
               isNew={true}
+              isPreview={true}
               onDelete={() => setPreviewItem(null)}
             />
             <div className="flex gap-3 mt-6 max-w-2xl mx-auto">
