@@ -9,6 +9,7 @@ import { useLibraryStore } from '../stores/useLibraryStore';
 import { useToast } from '../context/ToastContext';
 import { useUIStore } from '../stores/useUIStore';
 import { createPortal } from 'react-dom';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 // Memoized background — never re-renders with the card
 const BackgroundImage = React.memo(({ src }: { src: string | undefined }) => {
@@ -428,12 +429,29 @@ export const CharactersView: React.FC = () => {
     applyTilt(0, 0, false);
   }, [applyTilt]);
 
+  const closeImageModal = useCallback(() => {
+    setEditingId(null);
+    setUrlInput('');
+  }, []);
+
   // Reset trending index when characters change
   useEffect(() => {
     if (trendingIndex >= characters.length) {
       setTrendingIndex(0);
     }
-  }, [characters.length, trendingIndex]);
+    // The overlay only renders while there is a character to show. Deleting the
+    // last one used to unmount it while viewMode stayed 'trending': the grid is
+    // gated on 'grid' too, so the screen went blank with the app chrome hidden.
+    if (characters.length === 0 && viewMode === 'trending') {
+      setViewMode('grid');
+    }
+  }, [characters.length, trendingIndex, viewMode]);
+
+  const trendingRef = useFocusTrap<HTMLDivElement>(
+    viewMode === 'trending' && characters.length > 0,
+    () => setViewMode('grid'),
+  );
+  const imageModalRef = useFocusTrap<HTMLDivElement>(!!editingId, closeImageModal);
 
   // Toggle immersive mode to hide app header + bottom nav in trending view
   useEffect(() => {
@@ -448,7 +466,7 @@ export const CharactersView: React.FC = () => {
       {/* Fixed header - only in grid mode */}
       {viewMode === 'grid' && (
         <div className="fixed top-[60px] left-0 right-0 z-50 bg-[#09090B]/95 backdrop-blur-md border-b border-white/[0.06]">
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center justify-between px-4 md:px-8 py-3">
             <button
               onClick={() => navigate(-1)}
               className="p-2 -ml-2 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
@@ -500,7 +518,7 @@ export const CharactersView: React.FC = () => {
             </button>
           </div>
 
-          <div className="px-4 pb-3">
+          <div className="px-4 md:px-8 pb-3">
             <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
               <span>{discoveredWorks} de {totalWorks} descubiertos</span>
               <span>{Math.round(progressPercent)}%</span>
@@ -521,7 +539,7 @@ export const CharactersView: React.FC = () => {
 
       {/* Genre filter bar - only in grid mode */}
       {viewMode === 'grid' && (
-        <div className="pt-[180px] px-4 pb-4">
+        <div className="pt-[180px] pb-4">
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
             {genres.map(genre => (
               <button
@@ -542,7 +560,7 @@ export const CharactersView: React.FC = () => {
 
       {/* Character cards grid */}
       {viewMode === 'grid' && (
-        <div className="px-4 pb-8">
+        <div className="pb-8">
           {characters.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="w-16 h-16 rounded-full bg-zinc-800/50 flex items-center justify-center mb-4">
@@ -656,6 +674,7 @@ export const CharactersView: React.FC = () => {
       {/* Trending card view — Discovery/ImmersiveView double-bezel pattern */}
       {viewMode === 'trending' && characters.length > 0 && (
         <div
+          ref={trendingRef}
           className="fixed inset-0 z-[60] bg-[#09090B] overflow-hidden touch-none"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -767,9 +786,15 @@ export const CharactersView: React.FC = () => {
       {editingId &&
         createPortal(
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div className="bg-[#1C1C1F] rounded-2xl p-6 w-full max-w-sm ring-1 ring-white/10 shadow-2xl">
+            <div
+              ref={imageModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="character-image-title"
+              className="bg-[#1C1C1F] rounded-2xl p-6 w-full max-w-sm ring-1 ring-white/10 shadow-2xl"
+            >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">Imagen del Personaje</h3>
+                <h3 id="character-image-title" className="text-lg font-bold text-white">Imagen del Personaje</h3>
                 <button
                   onClick={() => {
                     setEditingId(null);
