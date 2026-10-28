@@ -14,6 +14,34 @@ import { useUIStore } from '../stores/useUIStore';
 import { auditLibrary } from '../services/libraryAudit';
 import { useNavigate } from 'react-router-dom';
 
+/**
+ * A labelled card for the "Datos" tab.
+ *
+ * The tab used to be eight sibling blocks under one scroll area, all separated
+ * by the same gap and all titled with the same small uppercase label, so nothing
+ * said which controls belonged together. The group title is deliberately larger
+ * and lighter than the section labels inside it: that two-level hierarchy is the
+ * whole point of the wrapper.
+ */
+const DataGroup: React.FC<{
+  title: string;
+  icon: React.ElementType;
+  description?: string;
+  children: React.ReactNode;
+}> = ({ title, icon: Icon, description, children }) => (
+  <section className="rounded-2xl bg-zinc-900/40 ring-1 ring-white/[0.06] overflow-hidden">
+    <header className="px-4 pt-4 pb-3">
+      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+        <Icon className="w-4 h-4 text-zinc-500" />
+        {title}
+      </h3>
+      {description && <p className="text-[11px] text-zinc-500 mt-1">{description}</p>}
+    </header>
+    <div className="px-4 pb-4 space-y-4">
+      {children}
+    </div>
+  </section>
+);
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -448,7 +476,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {activeTab === 'data' && (
                     <div className="space-y-5 animate-fade-in">
                         {/* Storage Widget */}
-                        <div className="bg-zinc-900/50 ring-1 ring-white/[0.04] rounded-xl p-4">
+                        <div className="rounded-2xl bg-zinc-900/40 ring-1 ring-white/[0.06] p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
                                     <HardDrive className={`w-3.5 h-3.5 ${storageStats.status === 'critical' ? 'text-red-400' : storageStats.status === 'warning' ? 'text-yellow-400' : 'text-blue-400'}`} />
@@ -502,6 +530,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             )}
                         </div>
 
+                        <DataGroup
+                            title="Fuentes externas"
+                            icon={RefreshCw}
+                            description="Sincronizaciones que consultan servicios de terceros. Ninguna reemplaza datos que ya tengas."
+                        >
                         {/* AniList Section */}
                         <div>
                             <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -716,7 +749,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 Añade un enlace "Leer en ManhwaWeb" a tus manhwas. Es una fuente externa no oficial: el enlace se guarda en tu dispositivo y no se envía nada a ningún servidor propio.
                             </p>
                         </div>
+                        </DataGroup>
+
                         {/* Duplicate Audit Section */}
+                        <DataGroup
+                            title="Integridad"
+                            icon={Copy}
+                            description="Revisión de la biblioteca. Nada se modifica sin que lo confirmes."
+                        >
                         <div>
                             <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                                 <Copy className="w-3.5 h-3.5" /> Duplicados
@@ -773,7 +813,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             )}
                         </div>
 
+                        </DataGroup>
+
                         {/* Backup Section */}
+                        <DataGroup
+                            title="Respaldo y traspaso"
+                            icon={Shield}
+                            description="Sacá tus datos de este dispositivo o traelos de vuelta."
+                        >
                         <div>
                             <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                                 <Shield className="w-3.5 h-3.5" /> Respaldo
@@ -820,6 +867,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <input type="file" ref={catalogInputRef} onChange={handleCatalogFileChange} onClick={handleInputClick} className="hidden" accept=".json,application/json" />
                             </div>
                         </div>
+                        </DataGroup>
 
                         {/* Danger Zone */}
                         <div className="pt-2">
