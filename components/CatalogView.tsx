@@ -139,7 +139,10 @@ const Shelf: React.FC<{
 
     return (
         <div className="mb-12 animate-fade-in-up w-full max-w-full">
-	<div className="flex items-center gap-3 mb-5 px-4 md:px-8 border-l-4 border-white/[0.10] ml-4 md:ml-8 pl-3">
+            {/* The shell (<main>) already applies px-4 md:px-8. Re-adding it here
+                doubled the inset and pushed the title off the poster edge. */}
+            <div className="flex items-center gap-3 mb-5 border-l-4 border-white/[0.10] pl-3">
+                {Icon && <Icon className="w-5 h-5 md:w-6 md:h-6 text-zinc-500 shrink-0" aria-hidden="true" />}
                 <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight drop-shadow-md">{title}</h2>
                 <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">{items.length}</span>
             </div>
@@ -166,7 +169,7 @@ const Shelf: React.FC<{
                 <div 
                     ref={scrollContainerRef}
                     onScroll={checkScroll}
-                    className="flex flex-nowrap overflow-x-auto gap-4 md:gap-6 px-4 md:px-8 pb-4 snap-x snap-mandatory scrollbar-hide pt-2 items-center w-full"
+                    className="flex flex-nowrap overflow-x-auto gap-4 md:gap-6 pb-4 snap-x snap-mandatory scrollbar-hide pt-2 items-center w-full"
                 >
                     {items.map(item => (
                         <div key={item.id} className="snap-center flex-shrink-0">
