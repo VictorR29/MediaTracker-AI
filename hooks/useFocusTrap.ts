@@ -23,14 +23,22 @@ export function useFocusTrap<T extends HTMLElement>(
   const containerRef = useRef<T>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
+  // `onClose` is read through a ref. Call sites pass inline arrows — a new
+  // function on every render — and an identity in the effect deps would tear the
+  // trap down and rebuild it on each render. Rebuilding re-focuses the first
+  // focusable element, so typing into a field inside the dialog lost focus on
+  // every keystroke.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!containerRef.current) return;
 
       // Escape to close
-      if (e.key === 'Escape' && onClose) {
+      if (e.key === 'Escape' && onCloseRef.current) {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -57,7 +65,7 @@ export function useFocusTrap<T extends HTMLElement>(
         }
       }
     },
-    [onClose]
+    []
   );
 
   useEffect(() => {

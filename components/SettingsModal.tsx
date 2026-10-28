@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { UserProfile, MediaItem, RATING_TO_SCORE } from '../types';
 import { useToast } from '../context/ToastContext';
 import { saveMediaItem, deleteMediaItem } from '../services/storage';
@@ -13,6 +13,7 @@ import { useTvmazeBackfillStore } from '../stores/useTvmazeBackfillStore';
 import { useUIStore } from '../stores/useUIStore';
 import { auditLibrary } from '../services/libraryAudit';
 import { useNavigate } from 'react-router-dom';
+
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -88,7 +89,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const catalogInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const modalRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
+  // Escape must dismiss the innermost layer. The clear-library confirmation is
+  // rendered inside this same overlay, so a bare onClose would throw away the
+  // whole settings modal — and whatever the user typed — instead of the question.
+  // Read from a ref so the trap callback keeps a stable identity.
+  const confirmOpenRef = useRef(false);
+  confirmOpenRef.current = showClearLibraryConfirm;
+  const handleDismiss = useCallback(() => {
+    if (confirmOpenRef.current) {
+      setShowClearLibraryConfirm(false);
+      return;
+    }
+    onClose();
+  }, [onClose]);
+  const modalRef = useFocusTrap<HTMLDivElement>(isOpen, handleDismiss);
   const [isDragging, setIsDragging] = useState(false);
 
   const manhwaWebEnabled = userProfile.manhwaWebEnabled === true;
@@ -702,7 +716,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 Añade un enlace "Leer en ManhwaWeb" a tus manhwas. Es una fuente externa no oficial: el enlace se guarda en tu dispositivo y no se envía nada a ningún servidor propio.
                             </p>
                         </div>
-
                         {/* Duplicate Audit Section */}
                         <div>
                             <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">

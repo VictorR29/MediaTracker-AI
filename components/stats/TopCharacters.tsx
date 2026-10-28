@@ -7,6 +7,7 @@ import { getGenres } from '../../utils/genres';
 import { compressImage } from '../../utils/imageCompression';
 import { useLibraryStore } from '../../stores/useLibraryStore';
 import { useToast } from '../../context/ToastContext';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface TopCharactersProps {
   library: MediaItem[];
@@ -79,6 +80,12 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
+
+  const closeImageModal = useCallback(() => {
+    setEditingId(null);
+    setUrlInput('');
+  }, []);
+  const imageModalRef = useFocusTrap<HTMLDivElement>(!!editingId, closeImageModal);
   const [activeGenre, setActiveGenre] = useState<string>('Todos');
 
   const genres = useMemo(() => {
@@ -303,9 +310,15 @@ export const TopCharacters: React.FC<TopCharactersProps> = ({ library }) => {
         {/* Image upload modal */}
         {editingId && createPortal(
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div className="bg-[#1C1C1F] rounded-2xl p-6 w-full max-w-sm ring-1 ring-white/10 shadow-2xl">
+            <div
+              ref={imageModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="top-character-image-title"
+              className="bg-[#1C1C1F] rounded-2xl p-6 w-full max-w-sm ring-1 ring-white/10 shadow-2xl"
+            >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">Imagen del Personaje</h3>
+                <h3 id="top-character-image-title" className="text-lg font-bold text-white">Imagen del Personaje</h3>
                 <button onClick={() => { setEditingId(null); setUrlInput(''); }} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
                   <X className="w-5 h-5 text-zinc-400" />
                 </button>

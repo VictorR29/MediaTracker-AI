@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, THEME_COLORS, parseAccentToRgb } from '../types';
 import { useToast } from '../context/ToastContext';
-import { Sparkles, Key, Lock, Eye, EyeOff, Upload, UserCircle, ChevronRight, Check } from 'lucide-react';
+import { Sparkles, Key, Lock, Eye, EyeOff, Upload, UserCircle, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 
 interface OnboardingProps {
   onComplete: (profile: UserProfile) => void;
@@ -130,6 +130,22 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
     </div>
   );
 
+  /**
+   * Steps 1 and 2 were one-way: the only control was "Continuar", so a typo in
+   * the username or a rejected API key trapped the user in the wizard with no
+   * way back to the step that owns that field.
+   */
+  const BackButton = ({ target }: { target: number }) => (
+    <button
+      type="button"
+      onClick={() => goToStep(target)}
+      className="fixed top-4 left-3 z-50 flex items-center gap-1 pl-1.5 pr-3 py-2 rounded-full text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+    >
+      <ChevronLeft className="w-4 h-4" />
+      Atrás
+    </button>
+  );
+
   // ─── Step 0: Welcome ──────────────────────────────────────────────
   const renderStepWelcome = () => (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 relative">
@@ -228,6 +244,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
   // ─── Step 1: Configura ────────────────────────────────────────────
   const renderStepConfigura = () => (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 relative">
+      <BackButton target={0} />
+
       {/* Subtle accent gradient orb */}
       <div
         className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full opacity-[0.05] pointer-events-none blur-[100px]"
@@ -324,6 +342,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onImport }) 
   // ─── Step 2: Elige tu firma ───────────────────────────────────────
   const renderStepColor = () => (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 relative">
+      <BackButton target={1} />
+
       {/* Dynamic accent background glow */}
       <div
         className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.06] pointer-events-none blur-[140px] transition-colors duration-700"
