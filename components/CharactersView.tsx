@@ -1,15 +1,16 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Crown, Shuffle, Filter, Camera, Link, Upload, X, LayoutGrid, CreditCard } from 'lucide-react';
+import { ArrowLeft, Crown, Shuffle, Filter, Camera, X, LayoutGrid, CreditCard } from 'lucide-react';
 import { MediaItem } from '../types';
 import { getGenres } from '../utils/genres';
 import { compressImage } from '../utils/imageCompression';
 import { useLibraryStore } from '../stores/useLibraryStore';
 import { useToast } from '../context/ToastContext';
 import { useUIStore } from '../stores/useUIStore';
-import { createPortal } from 'react-dom';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { CharacterImageModal } from './CharacterImageModal';
+import { applyCharacterImage, pickImageFile, readFileAsDataUrl } from '../services/characterImage';
 
 // Memoized background — never re-renders with the card
 const BackgroundImage = React.memo(({ src }: { src: string | undefined }) => {
@@ -142,8 +143,10 @@ export const CharactersView: React.FC = () => {
   const navigate = useNavigate();
 
   const [activeGenre, setActiveGenre] = useState<string>('Todos');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [urlInput, setUrlInput] = useState('');
+  // Which character the photo dialog is editing. The name travels with the id
+  // because a work can hold several favourites and the write must hit the one
+  // the user opened.
+  const [editing, setEditing] = useState<{ mediaId: string; characterName: string } | null>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'trending'>('grid');
   const [trendingIndex, setTrendingIndex] = useState(0);
@@ -274,59 +277,51 @@ export const CharactersView: React.FC = () => {
     }, 250);
   }, [isShuffling, characters.length, allCharacters]);
 
+  /**
+   * A card knows its character as `{ character: { name } }`; the editor needs the
+   * two ids flat. Converting in one place keeps every entry point consistent —
+   * and the parameter type is checked, which matters while @types/react is absent
+   * and the state setter itself is untyped.
+   */
+  const openCharacterEditor = (entry: { mediaId: string; character: { name: string } }) => {
+    setEditing({ mediaId: entry.mediaId, characterName: entry.character.name });
+  };
+
   // Image upload handlers
-  const updateCharacterImage = async (mediaId: string, imageUrl: string) => {
-    setUploadingId(mediaId);
+  const updateCharacterImage = async (
+    target: { mediaId: string; characterName: string },
+    imageUrl: string,
+  ) => {
+    setUploadingId(target.mediaId);
     try {
       const compressed = await compressImage(imageUrl, 200);
-      const item = library.find(i => i.id === mediaId);
-      if (item) {
-        const updatedChars = [...item.trackingData.favoriteCharacters];
-        const charIndex = updatedChars.findIndex(c => c.image === undefined || c.image === '');
-        if (charIndex >= 0) {
-          updatedChars[charIndex] = { ...updatedChars[charIndex], image: compressed };
-        } else if (updatedChars.length > 0) {
-          updatedChars[0] = { ...updatedChars[0], image: compressed };
-        }
-        await updateItem({
-          ...item,
-          trackingData: { ...item.trackingData, favoriteCharacters: updatedChars },
-        });
+      const item = library.find(i => i.id === target.mediaId);
+      const updated = item ? applyCharacterImage(item, target.characterName, compressed) : null;
+
+      if (updated) {
+        await updateItem(updated);
         showToast('Imagen del personaje actualizada', 'success');
+      } else {
+        // The character left the work while the dialog was open. Writing at any
+        // index would put the photo on someone else.
+        showToast('Ese personaje ya no está en la obra', 'error');
       }
     } catch (err) {
       console.error('Failed to update character image:', err);
       showToast('Error al guardar imagen', 'error');
     }
     setUploadingId(null);
-    setEditingId(null);
-    setUrlInput('');
+    setEditing(null);
   };
 
-  const handleFileUpload = (mediaId: string, file: File) => {
-    setUploadingId(mediaId);
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const base64 = e.target?.result as string;
-      await updateCharacterImage(mediaId, base64);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const triggerFileUpload = (mediaId: string) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) handleFileUpload(mediaId, file);
-    };
-    input.click();
-  };
-
-  const handleUrlSubmit = () => {
-    if (urlInput.trim() && editingId) {
-      updateCharacterImage(editingId, urlInput.trim());
+  const uploadCharacterFile = async (target: { mediaId: string; characterName: string }, file: File) => {
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      await updateCharacterImage(target, dataUrl);
+    } catch (err) {
+      console.error('Failed to read character image:', err);
+      setUploadingId(null);
+      showToast('No se pudo leer la imagen', 'error');
     }
   };
 
@@ -429,11 +424,6 @@ export const CharactersView: React.FC = () => {
     applyTilt(0, 0, false);
   }, [applyTilt]);
 
-  const closeImageModal = useCallback(() => {
-    setEditingId(null);
-    setUrlInput('');
-  }, []);
-
   // Reset trending index when characters change
   useEffect(() => {
     if (trendingIndex >= characters.length) {
@@ -451,7 +441,6 @@ export const CharactersView: React.FC = () => {
     viewMode === 'trending' && characters.length > 0,
     () => setViewMode('grid'),
   );
-  const imageModalRef = useFocusTrap<HTMLDivElement>(!!editingId, closeImageModal);
 
   // Toggle immersive mode to hide app header + bottom nav in trending view
   useEffect(() => {
@@ -650,9 +639,9 @@ export const CharactersView: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setEditingId(entry.mediaId);
+                          openCharacterEditor(entry);
                         }}
-                        aria-label={`Cambiar imagen de ${entry.character.name}`}
+                                                aria-label={`Cambiar imagen de ${entry.character.name}`}
                         className="absolute top-3 right-3 p-2 min-w-[36px] min-h-[36px] flex items-center justify-center bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
                       >
                         <Camera className="w-3.5 h-3.5 text-white" />
@@ -743,7 +732,7 @@ export const CharactersView: React.FC = () => {
                     <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900" />
                   )}
                   <div className="absolute inset-0 bg-black/40" />
-                  <CardContent char={frontData} dynamicColor={dynamicColor} onUpload={() => setEditingId(frontData?.mediaId)} workChars={charactersWithTotal} />
+                  <CardContent char={frontData} dynamicColor={dynamicColor} onUpload={() => frontData && openCharacterEditor(frontData)} workChars={charactersWithTotal} />
                 </div>
               </div>
 
@@ -783,71 +772,13 @@ export const CharactersView: React.FC = () => {
         </div>
       )}
 
-      {/* Image upload modal */}
-      {editingId &&
-        createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div
-              ref={imageModalRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="character-image-title"
-              className="bg-[#1C1C1F] rounded-2xl p-6 w-full max-w-sm ring-1 ring-white/10 shadow-2xl"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 id="character-image-title" className="text-lg font-bold text-white">Imagen del Personaje</h3>
-                <button
-                  onClick={() => {
-                    setEditingId(null);
-                    setUrlInput('');
-                  }}
-                  className="p-1 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-zinc-400" />
-                </button>
-              </div>
-
-              <button
-                onClick={() => {
-                  const id = editingId;
-                  setEditingId(null);
-                  if (id) triggerFileUpload(id);
-                }}
-                className="w-full flex items-center gap-3 p-4 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl ring-1 ring-white/[0.08] transition-colors mb-3"
-              >
-                <div className="p-2 bg-violet-500/20 rounded-lg">
-                  <Upload className="w-5 h-5 text-violet-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-white">Subir archivo</p>
-                  <p className="text-xs text-zinc-400">JPG, PNG, GIF</p>
-                </div>
-              </button>
-
-              <div className="flex items-center gap-2">
-                <div className="flex-1 relative">
-                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                  <input
-                    type="url"
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
-                    placeholder="https://..."
-                    className="w-full bg-zinc-900 ring-1 ring-white/[0.06] rounded-xl pl-9 pr-4 py-3 text-sm text-white outline-none focus:ring-white/20 placeholder:text-zinc-600"
-                  />
-                </div>
-                <button
-                  onClick={handleUrlSubmit}
-                  disabled={!urlInput.trim()}
-                  className="px-4 py-3 bg-violet-600 hover:bg-violet-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-xl font-medium transition-colors"
-                >
-                  Guardar
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
+      <CharacterImageModal
+        characterName={editing?.characterName ?? null}
+        workTitle={editing ? library.find(i => i.id === editing.mediaId)?.aiData.title : undefined}
+        onClose={() => setEditing(null)}
+        onSaveUrl={(url) => { if (editing) updateCharacterImage(editing, url); }}
+        onPickFile={() => { if (editing) pickImageFile((file) => uploadCharacterFile(editing, file)); }}
+      />
     </div>
   );
 };
