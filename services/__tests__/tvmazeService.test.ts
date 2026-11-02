@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { AIWorkData } from '../../types';
+import type { AIWorkData, UserTrackingData } from '../../types';
 import {
   TVMAZE_API_BASE,
   TvmazeError,
@@ -11,6 +11,7 @@ import {
   fetchTvmazeShow,
   hydrateSerieFromTvmaze,
   refreshSerieFromTvmaze,
+  resolveSeasonCountSync,
   searchTvmazeShow,
 } from '../tvmazeService';
 import type { TvmazeMatch } from '../tvmazeService';
@@ -660,15 +661,16 @@ describe('hydrateSerieFromTvmaze', () => {
 
 // --- Explicit refresh ---------------------------------------------------------
 
+const staleDetail = () =>
+  makeShow({
+    status: 'Ended',
+    ended: '2022-05-12',
+    genres: ['Drama', 'Crime'],
+    seasons: [1, 1, 2, 2],
+    imageOriginal: 'https://static.tvmaze.com/new-poster.jpg',
+  });
+
 describe('refreshSerieFromTvmaze', () => {
-  const staleDetail = () =>
-    makeShow({
-      status: 'Ended',
-      ended: '2022-05-12',
-      genres: ['Drama', 'Crime'],
-      seasons: [1, 1, 2, 2],
-      imageOriginal: 'https://static.tvmaze.com/new-poster.jpg',
-    });
 
   it('refreshes a stored id with exactly one detail request and no search', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(staleDetail()));
@@ -811,5 +813,99 @@ describe('refreshSerieFromTvmaze', () => {
     await expect(refreshSerieFromTvmaze(makeAiData({ tvmaze: { id: 22557 } }))).rejects.toMatchObject({
       status: 500,
     });
+  });
+});
+
+// --- Structural season count ------------------------------------------------
+
+const makeTracking = (overrides: Partial<UserTrackingData> = {}): UserTrackingData => ({
+  status: 'Sin empezar',
+  currentSeason: 1,
+  totalSeasons: 1,
+  watchedEpisodes: 0,
+  totalEpisodesInSeason: 0,
+  emotionalTags: [],
+  favoriteCharacters: [],
+  rating: '',
+  comment: '',
+  ...overrides,
+});
+
+const upToDateAiData = () =>
+  makeAiData({
+    status: 'Finalizado',
+    totalContent: '2 Temporadas · 4 Caps',
+    releaseDate: '2016-06-02',
+    endDate: '2022-05-12',
+    genres: ['Drama', 'Crime'],
+    coverImage: 'https://static.tvmaze.com/new-poster.jpg',
+    tvmaze: { id: 22557 },
+  });
+
+describe('resolveSeasonCountSync', () => {
+  it('adopts the reported season count while the structure is untouched', () => {
+    expect(resolveSeasonCountSync(makeTracking(), 5)).toEqual({ totalSeasons: 5 });
+  });
+
+  it('does nothing when the count is already the reported one', () => {
+    expect(resolveSeasonCountSync(makeTracking(), 1)).toBeNull();
+  });
+
+  it('stops touching the count once an episode is logged', () => {
+    // From here the count may be a deliberate choice for how the user tracks it.
+    expect(resolveSeasonCountSync(makeTracking({ watchedEpisodes: 3 }), 5)).toBeNull();
+  });
+
+  it('stops touching the count once a season was advanced', () => {
+    expect(resolveSeasonCountSync(makeTracking({ currentSeason: 2, totalSeasons: 3 }), 5)).toBeNull();
+  });
+
+  it('stops touching the count once archived history exists', () => {
+    expect(resolveSeasonCountSync(makeTracking({ accumulated_consumption: 12 }), 5)).toBeNull();
+  });
+
+  it('never promotes the count of a work the user marked Completado', () => {
+    // A completed work with no episodes logged is a real state (backlog #5).
+    // Raising its season count would demote a status the user set on purpose.
+    expect(resolveSeasonCountSync(makeTracking({ status: 'Completado' }), 5)).toBeNull();
+  });
+
+  it('ignores a missing or unusable season count from TVmaze', () => {
+    expect(resolveSeasonCountSync(makeTracking(), undefined)).toBeNull();
+    expect(resolveSeasonCountSync(makeTracking(), 0)).toBeNull();
+    expect(resolveSeasonCountSync(makeTracking(), -2)).toBeNull();
+    expect(resolveSeasonCountSync(makeTracking(), Number.NaN)).toBeNull();
+  });
+
+  it('reaches the tracking diff through a refresh, without any aiData change', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(staleDetail()));
+
+    const result = await refreshSerieFromTvmaze(upToDateAiData(), makeTracking());
+
+    expect(result.updatedData).toEqual({});
+    expect(result.updatedTracking).toEqual({ totalSeasons: 2 });
+    // The card only writes when the refresh reports a change.
+    expect(result.hasChanges).toBe(true);
+  });
+
+  it('leaves the tracking diff out when the user already has progress', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(staleDetail()));
+
+    const result = await refreshSerieFromTvmaze(
+      upToDateAiData(),
+      makeTracking({ watchedEpisodes: 2 }),
+    );
+
+    expect(result).not.toHaveProperty('updatedTracking');
+    expect(result.hasChanges).toBe(false);
+  });
+
+  it('keeps the metadata diff when no tracking was supplied', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(staleDetail()));
+
+    const result = await refreshSerieFromTvmaze(makeAiData({ tvmaze: { id: 22557 } }));
+
+    expect(result).not.toHaveProperty('updatedTracking');
+    expect(result.updatedData.totalContent).toBe('2 Temporadas · 4 Caps');
   });
 });

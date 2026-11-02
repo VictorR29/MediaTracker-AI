@@ -1,4 +1,4 @@
-import type { AIWorkData } from '../types';
+import type { AIWorkData, UserTrackingData } from '../types';
 
 export const TVMAZE_API_BASE = 'https://api.tvmaze.com';
 
@@ -510,8 +510,44 @@ export async function hydrateSerieFromTvmaze(aiData: AIWorkData): Promise<Tvmaze
 export interface TvmazeRefresh {
   /** Only the fields TVmaze owns, compared against the current values. */
   updatedData: Partial<AIWorkData>;
+  /**
+   * Tracking fields the refresh may also own. Present only when the user has not
+   * touched the structure yet; see `resolveSeasonCountSync`.
+   */
+  updatedTracking?: Partial<UserTrackingData>;
   hasChanges: boolean;
 }
+
+/**
+ * The season count TVmaze reports is structural data, but `totalSeasons` is the
+ * user's field. A five-season show may legitimately be tracked as one season,
+ * and TVmaze counts unnumbered specials differently from a person.
+ *
+ * Persisted state cannot tell "still at the default" from "set to 1 on purpose",
+ * so this only writes while every structural field still holds the value a
+ * brand-new item has: season 1 of 1, no episodes logged, no archived history.
+ * The first logged episode or season change marks it as the user's, and this
+ * never touches it again. A completed work is excluded as well — promoting its
+ * season count would demote a status the user set explicitly.
+ */
+export const resolveSeasonCountSync = (
+  tracking: UserTrackingData,
+  seasons: number | undefined,
+): Partial<UserTrackingData> | null => {
+  if (typeof seasons !== 'number' || !Number.isFinite(seasons) || seasons <= 0) return null;
+  if (tracking.status === 'Completado') return null;
+
+  const untouched =
+    tracking.currentSeason === 1 &&
+    tracking.totalSeasons === 1 &&
+    tracking.watchedEpisodes === 0 &&
+    !tracking.accumulated_consumption;
+
+  if (!untouched) return null;
+  if (tracking.totalSeasons === seasons) return null;
+
+  return { totalSeasons: seasons };
+};
 
 /**
  * The explicit "ACTUALIZAR" pass for a Serie: TVmaze owns status, structure,
@@ -521,8 +557,15 @@ export interface TvmazeRefresh {
  *
  * Unlike `applyTvmazeMetadata` this is NOT fill-only: the whole point is to
  * replace a stale `En emisión` with `Finalizado`.
+ *
+ * `tracking` is optional so the pure metadata diff can still be asked for on its
+ * own, but the card passes it: without the user's progress there is no way to
+ * tell whether the season count is still a default or already theirs.
  */
-export async function refreshSerieFromTvmaze(aiData: AIWorkData): Promise<TvmazeRefresh> {
+export async function refreshSerieFromTvmaze(
+  aiData: AIWorkData,
+  tracking?: UserTrackingData,
+): Promise<TvmazeRefresh> {
   const storedId = aiData.tvmaze?.id;
   const hasStoredId = typeof storedId === 'number' && Number.isFinite(storedId) && storedId > 0;
 
@@ -575,7 +618,13 @@ export async function refreshSerieFromTvmaze(aiData: AIWorkData): Promise<Tvmaze
     updatedData.tvmaze = { id: detail.id };
   }
 
-  return { updatedData, hasChanges: Object.keys(updatedData).length > 0 };
+  const updatedTracking = tracking ? resolveSeasonCountSync(tracking, detail.seasons) : null;
+
+  return {
+    updatedData,
+    ...(updatedTracking ? { updatedTracking } : {}),
+    hasChanges: Object.keys(updatedData).length > 0 || updatedTracking !== null,
+  };
 }
 
 // --- Pure projection ----------------------------------------------------------

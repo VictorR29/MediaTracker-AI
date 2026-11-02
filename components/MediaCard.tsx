@@ -16,6 +16,7 @@ import {
 import { EditActionBar, AiringBlock, AniListLinkModal, AniListLinkRow, CharacterPickerModal, ManhwaWebLinkModal, ManhwaWebLinkRow, TvmazeLinkModal, TvmazeLinkRow } from './media-card';
 import { resolveAniListScope } from '../services/anilistService';
 import { refreshSerieFromTvmaze } from '../services/tvmazeService';
+import type { TvmazeRefresh } from '../services/tvmazeService';
 import { MANHWAWEB_SITE_BASE } from '../services/manhwawebService';
 import { useAiringSnapshot } from '../hooks/useAiringSnapshot';
 import { useAuthStore } from '../stores/useAuthStore';
@@ -245,11 +246,20 @@ export const MediaCard: React.FC<MediaCardProps> = ({
     if (!isSerie && !apiKey) return showToast("Falta API Key", "error");
     setIsUpdatingInfo(true);
     try {
-      const { updatedData, hasChanges } = isSerie
-        ? await refreshSerieFromTvmaze(aiData)
+      // The Gemini path has no tracking diff; only the TVmaze refresh can own a
+      // structural field, and only while the user never set one.
+      const refreshed: TvmazeRefresh = isSerie
+        ? await refreshSerieFromTvmaze(aiData, tracking)
         : await updateMediaInfo(aiData, apiKey);
-      if (hasChanges) {
-        const newData = { ...localData, aiData: { ...localData.aiData, ...updatedData } };
+      const updatedTracking = refreshed.updatedTracking;
+      if (refreshed.hasChanges) {
+        const newData = {
+          ...localData,
+          aiData: { ...localData.aiData, ...refreshed.updatedData },
+          trackingData: updatedTracking
+            ? { ...localData.trackingData, ...updatedTracking }
+            : localData.trackingData,
+        };
         setLocalData(newData);
         onUpdate(newData);
         showToast("Info actualizada", "success");
