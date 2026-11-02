@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { MediaItem } from '../types';
 import { saveMediaItem, getLibrary, deleteMediaItem, clearLibrary as clearLib } from '../services/storage';
 import { FilterState } from '../components/LibraryFilters';
-import { getGenres } from '../utils/genres';
+import { getGenreFacet } from '../utils/genres';
+import { getTropes } from '../utils/tropes';
 
 interface LibraryState {
   library: MediaItem[];
@@ -20,6 +21,7 @@ interface LibraryState {
   importItems: (items: MediaItem[], existingIds: Set<string>) => Promise<number>;
   getDisplayedLibrary: (view: string) => MediaItem[];
   getAvailableGenres: () => string[];
+  getAvailableTropes: () => string[];
 }
 
 export const useLibraryStore = create<LibraryState>((set, get) => ({
@@ -30,6 +32,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     status: 'All',
     rating: 'All',
     genre: 'All',
+    trope: 'All',
     sortBy: 'updated',
     onlyFavorites: false
   },
@@ -131,7 +134,10 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       filtered = filtered.filter(i => i.trackingData.rating === filters.rating);
     }
     if (filters.genre !== 'All') {
-      filtered = filtered.filter(i => getGenres(i).some(g => g.toLowerCase() === filters.genre.toLowerCase()));
+      filtered = filtered.filter(i => getGenreFacet(i).some(g => g.toLowerCase() === filters.genre.toLowerCase()));
+    }
+    if (filters.trope !== 'All') {
+      filtered = filtered.filter(i => getTropes(i).some(t => t.toLowerCase() === filters.trope.toLowerCase()));
     }
     if (filters.onlyFavorites) {
       filtered = filtered.filter(i => i.trackingData.is_favorite);
@@ -150,6 +156,11 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
 
   getAvailableGenres: () => {
     const { library } = get();
-    return Array.from(new Set(library.flatMap(i => getGenres(i)).map(g => g.toLowerCase())));
+    return Array.from(new Set(library.flatMap(i => getGenreFacet(i)).map(g => g.toLowerCase())));
+  },
+
+  getAvailableTropes: () => {
+    const { library } = get();
+    return Array.from(new Set(library.flatMap(i => getTropes(i)).map(t => t.toLowerCase())));
   },
 }));

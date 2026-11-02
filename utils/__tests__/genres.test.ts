@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { MediaItem } from '../../types';
-import { getGenres } from '../genres';
+import { getGenreFacet, getGenres } from '../genres';
 
 // --- Fixtures -----------------------------------------------------------------
 
@@ -94,5 +94,25 @@ describe('getGenres', () => {
     expect(aiResult).not.toBe(aiGenres);
     expect(aiResult).toEqual(aiGenres);
     expect(linkedResult).not.toBe(linkedGenres);
+  });
+});
+
+describe('getGenreFacet', () => {
+  it('drops trope names from a linked work while keeping real genres', () => {
+    const item = makeItem([], ['Action', 'Isekai', 'Time Loop', 'Drama']);
+
+    expect(getGenreFacet(item)).toEqual(['acción', 'drama']);
+  });
+
+  it('drops trope names from an unlinked work while keeping real genres', () => {
+    const item = makeItem(['Isekai', 'Battle Royale', 'Fantasía', 'Acción']);
+
+    expect(getGenreFacet(item)).toEqual(['Fantasía', 'Acción']);
+  });
+
+  it('keeps values that belong to neither axis untouched', () => {
+    const item = makeItem(['Acción', 'Drama']);
+
+    expect(getGenreFacet(item)).toEqual(['Acción', 'Drama']);
   });
 });

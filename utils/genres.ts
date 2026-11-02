@@ -1,5 +1,6 @@
 import type { MediaItem } from '../types';
 import { normalizeGenre } from '../types';
+import { normalizeTrope } from './tropes';
 
 /**
  * Resolves the genres shown by read-only surfaces (filters, stats, catalog
@@ -45,3 +46,14 @@ export const getGenres = (item: MediaItem): string[] => {
 
   return (item.aiData?.genres ?? []).slice();
 };
+
+/**
+ * The genre facet used by library filters: `getGenres` minus any value that
+ * belongs to the trope axis. Genres and tropes must not appear in the same
+ * dropdown, or "isekai" would be listed twice.
+ *
+ * Stats and catalog shelving deliberately keep using `getGenres`, so a work
+ * whose only label is a trope still counts somewhere.
+ */
+export const getGenreFacet = (item: MediaItem): string[] =>
+  getGenres(item).filter(genre => normalizeTrope(genre) === null);

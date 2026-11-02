@@ -21,11 +21,30 @@ const mockItem: MediaItem = {
   lastInteraction: 2000,
 };
 
+const mockTropeItem: MediaItem = {
+  ...mockItem,
+  id: 'test-trope',
+  aiData: {
+    ...mockItem.aiData,
+    title: 'Trope Anime',
+    genres: ['Isekai'],
+    anilist: {
+      id: 21,
+      matchedTitle: 'Trope Anime',
+      matchedBy: 'manual',
+      confidence: 'manual',
+      resolvedAt: 1000,
+      genres: [],
+      tags: [{ name: 'Isekai' }, { name: 'Time Loop' }],
+    },
+  },
+};
+
 describe('useLibraryStore', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
-    useLibraryStore.setState({ library: [], loadError: null, filters: { query: '', type: 'All', status: 'All', rating: 'All', genre: 'All', sortBy: 'updated', onlyFavorites: false } });
+    useLibraryStore.setState({ library: [], loadError: null, filters: { query: '', type: 'All', status: 'All', rating: 'All', genre: 'All', trope: 'All', sortBy: 'updated', onlyFavorites: false } });
   });
 
   it('starts with empty library', () => {
@@ -78,20 +97,20 @@ describe('useLibraryStore', () => {
   });
 
   it('getDisplayedLibrary filters by type', () => {
-    useLibraryStore.setState({ library: [mockItem], filters: { query: '', type: 'Anime', status: 'All', rating: 'All', genre: 'All', sortBy: 'updated', onlyFavorites: false } });
+    useLibraryStore.setState({ library: [mockItem], filters: { query: '', type: 'Anime', status: 'All', rating: 'All', genre: 'All', trope: 'All', sortBy: 'updated', onlyFavorites: false } });
     const displayed = useLibraryStore.getState().getDisplayedLibrary('library');
     expect(displayed).toHaveLength(1);
   });
 
   it('getDisplayedLibrary excludes non-matching type', () => {
-    useLibraryStore.setState({ library: [mockItem], filters: { query: '', type: 'Manga', status: 'All', rating: 'All', genre: 'All', sortBy: 'updated', onlyFavorites: false } });
+    useLibraryStore.setState({ library: [mockItem], filters: { query: '', type: 'Manga', status: 'All', rating: 'All', genre: 'All', trope: 'All', sortBy: 'updated', onlyFavorites: false } });
     const displayed = useLibraryStore.getState().getDisplayedLibrary('library');
     expect(displayed).toHaveLength(0);
   });
 
   it('getDisplayedLibrary filters by favorites', () => {
     const favItem = { ...mockItem, id: 'fav-1', trackingData: { ...mockItem.trackingData, is_favorite: true } };
-    useLibraryStore.setState({ library: [mockItem, favItem], filters: { query: '', type: 'All', status: 'All', rating: 'All', genre: 'All', sortBy: 'updated', onlyFavorites: true } });
+    useLibraryStore.setState({ library: [mockItem, favItem], filters: { query: '', type: 'All', status: 'All', rating: 'All', genre: 'All', trope: 'All', sortBy: 'updated', onlyFavorites: true } });
     const displayed = useLibraryStore.getState().getDisplayedLibrary('library');
     expect(displayed).toHaveLength(1);
     expect(displayed[0].id).toBe('fav-1');
@@ -101,5 +120,43 @@ describe('useLibraryStore', () => {
     useLibraryStore.setState({ library: [mockItem] });
     const genres = useLibraryStore.getState().getAvailableGenres();
     expect(genres).toContain('acción');
+  });
+
+  it('getAvailableGenres no longer includes a trope name', () => {
+    useLibraryStore.setState({ library: [mockItem, mockTropeItem] });
+    const genres = useLibraryStore.getState().getAvailableGenres();
+
+    expect(genres).toContain('acción');
+    expect(genres).not.toContain('isekai');
+    expect(genres).not.toContain('bucle temporal');
+  });
+
+  it('getAvailableTropes returns the trope labels present in the library', () => {
+    useLibraryStore.setState({ library: [mockItem, mockTropeItem] });
+    const tropes = useLibraryStore.getState().getAvailableTropes();
+
+    expect(tropes).toEqual(expect.arrayContaining(['isekai', 'bucle temporal']));
+    expect(tropes).toHaveLength(2);
+  });
+
+  it('getDisplayedLibrary filters by trope', () => {
+    useLibraryStore.setState({
+      library: [mockItem, mockTropeItem],
+      filters: { query: '', type: 'All', status: 'All', rating: 'All', genre: 'All', trope: 'isekai', sortBy: 'updated', onlyFavorites: false },
+    });
+
+    const displayed = useLibraryStore.getState().getDisplayedLibrary('library');
+
+    expect(displayed).toHaveLength(1);
+    expect(displayed[0].id).toBe('test-trope');
+  });
+
+  it('getDisplayedLibrary genre filter ignores trope values', () => {
+    useLibraryStore.setState({
+      library: [mockItem, mockTropeItem],
+      filters: { query: '', type: 'All', status: 'All', rating: 'All', genre: 'isekai', trope: 'All', sortBy: 'updated', onlyFavorites: false },
+    });
+
+    expect(useLibraryStore.getState().getDisplayedLibrary('library')).toHaveLength(0);
   });
 });

@@ -31,7 +31,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const view = location.pathname === '/wishlist' ? 'upcoming' : 'library';
 
   const userProfile = useAuthStore(s => s.userProfile);
-  const { library, filters, setFilters, getDisplayedLibrary, getAvailableGenres } = useLibraryStore();
+  const { library, filters, setFilters, getDisplayedLibrary, getAvailableGenres, getAvailableTropes } = useLibraryStore();
   const { libraryViewMode, toggleLibraryViewMode, libraryScrollY, setLibraryScrollY, lastOpenedItemId, setLastOpenedItemId } = useUIStore();
 
   // Restore scroll position on mount (returning from detail view)
@@ -74,11 +74,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
   const displayedLibrary = useMemo(() => getDisplayedLibrary(view), [library, filters, view, getDisplayedLibrary]);
   const availableGenres = useMemo(() => getAvailableGenres(), [library, getAvailableGenres]);
+  const availableTropes = useMemo(() => getAvailableTropes(), [library, getAvailableTropes]);
 
   // Trigger stagger re-entrance on filter/view change (mount is handled locally by each card)
   React.useEffect(() => {
     setStaggerTrigger(t => t + 1);
-  }, [view, filters.query, filters.status, filters.genre, filters.sortBy]);
+  }, [view, filters.query, filters.status, filters.genre, filters.trope, filters.sortBy]);
 
   return (
     <div>
@@ -88,6 +89,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         filters={filters}
         onChange={setFilters}
         availableGenres={availableGenres}
+        availableTropes={availableTropes}
         viewMode={libraryViewMode}
         onToggleViewMode={toggleLibraryViewMode}
       />

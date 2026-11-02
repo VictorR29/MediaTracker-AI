@@ -11,6 +11,7 @@ export interface FilterState {
   status: string;
   rating: string;
   genre: string;
+  trope: string;
   sortBy: 'updated' | 'title' | 'progress';
   onlyFavorites: boolean;
 }
@@ -19,11 +20,12 @@ interface LibraryFiltersProps {
   filters: FilterState;
   onChange: (filters: FilterState) => void;
   availableGenres: string[];
+  availableTropes: string[];
   viewMode: 'grid' | 'catalog'; // New Prop
   onToggleViewMode: () => void; // New Prop
 }
 
-export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChange, availableGenres, viewMode, onToggleViewMode }) => {
+export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChange, availableGenres, availableTropes, viewMode, onToggleViewMode }) => {
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
   const modalRef = useFocusTrap<HTMLDivElement>(isMobileModalOpen, () => setIsMobileModalOpen(false));
 
@@ -39,6 +41,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
       filters.status !== 'All',
       filters.rating !== 'All',
       filters.genre !== 'All',
+      filters.trope !== 'All',
       filters.onlyFavorites
   ].filter(Boolean).length;
 
@@ -100,7 +103,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
             </div>
 
             {/* Desktop Grid Layout (Hidden on Mobile) */}
-            <div className="hidden md:grid grid-cols-5 gap-3">
+            <div className="hidden md:grid md:grid-cols-6 gap-3">
                 {/* Type */}
                 <div className="space-y-1.5">
                 <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider pl-1">Tipo</label>
@@ -151,6 +154,23 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
                     <option value="All">Todos</option>
                     {availableGenres.map(genre => (
                     <option key={genre} value={genre}>{capitalize(genre)}</option>
+                    ))}
+                </select>
+                </div>
+
+                {/* Trope */}
+                <div className="space-y-1.5">
+                <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider pl-1 flex items-center gap-1">
+                    <Tags className="w-3 h-3"/> Tropo
+                </label>
+                <select
+                    className="w-full bg-zinc-800/50 ring-1 ring-white/[0.06] rounded-xl px-3 py-2.5 text-sm text-zinc-300 outline-none focus:ring-white/20 transition-colors cursor-pointer appearance-none shadow-sm hover:bg-zinc-800"
+                    value={filters.trope}
+                    onChange={(e) => handleChange('trope', e.target.value)}
+                >
+                    <option value="All">Todos</option>
+                    {availableTropes.map(trope => (
+                    <option key={trope} value={trope}>{capitalize(trope)}</option>
                     ))}
                 </select>
                 </div>
@@ -271,6 +291,21 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({ filters, onChang
               <option value="All">Todos</option>
               {availableGenres.map(genre => (
                 <option key={genre} value={genre}>{capitalize(genre)}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tropo */}
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Tropo</label>
+            <select
+              className="w-full bg-zinc-800 ring-1 ring-white/[0.06] rounded-xl px-4 py-3 text-white outline-none focus:ring-white/20"
+              value={filters.trope}
+              onChange={(e) => handleChange('trope', e.target.value)}
+            >
+              <option value="All">Todos</option>
+              {availableTropes.map(trope => (
+                <option key={trope} value={trope}>{capitalize(trope)}</option>
               ))}
             </select>
           </div>

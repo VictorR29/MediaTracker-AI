@@ -6,6 +6,7 @@ import { applySeasonCountChange, computeNextSeason, createCustomLink, mergeChara
 import { useToast } from '../context/ToastContext';
 import { extractColorFromImage, hexToRgb, vibrify } from './media-card/colorUtils';
 import { compressImage } from '../utils/imageCompression';
+import { getTropes } from '../utils/tropes';
 import {
   Edit3, X, Trash2, Star, Link as LinkIcon,
   Plus, Layout, Globe, Upload, Image as ImageIcon,
@@ -76,6 +77,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   }, [item]);
 
   const { aiData, trackingData: tracking } = localData;
+  const tropes = getTropes(localData);
 
   const airing = useAiringSnapshot(localData, {
     enabled:
@@ -587,6 +589,20 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Tropes — derived read-only data: no editing affordance on purpose. */}
+              {tropes.length > 0 && (
+                <div>
+                  <span className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Tropos</span>
+                  <div className="flex flex-wrap gap-2">
+                    {tropes.map(t => (
+                      <span key={t} className="px-3 py-1.5 bg-zinc-800/50 ring-1 ring-white/[0.06] rounded-lg text-zinc-300 text-xs flex items-center gap-1.5">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Structure */}
               <div>
