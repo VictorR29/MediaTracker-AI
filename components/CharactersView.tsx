@@ -652,6 +652,7 @@ export const CharactersView: React.FC = () => {
                           e.stopPropagation();
                           setEditingId(entry.mediaId);
                         }}
+                        aria-label={`Cambiar imagen de ${entry.character.name}`}
                         className="absolute top-3 right-3 p-2 min-w-[36px] min-h-[36px] flex items-center justify-center bg-black/60 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
                       >
                         <Camera className="w-3.5 h-3.5 text-white" />
