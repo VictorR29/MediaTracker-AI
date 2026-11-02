@@ -37,6 +37,7 @@ interface MediaNodeFixture {
   status?: string;
   isAdult?: boolean;
   genres?: string[];
+  tags?: { name: string; rank?: number }[];
   coverLarge?: string;
   nextAiringEpisode?: { episode: number; airingAt: number } | null;
   relations?: { edges: unknown[] };
@@ -59,6 +60,7 @@ const mediaNode = (fixture: MediaNodeFixture) => ({
   isAdult: fixture.isAdult ?? false,
   coverImage: { medium: `https://img.example/${fixture.id}.jpg`, large: fixture.coverLarge },
   genres: fixture.genres ?? [],
+  tags: fixture.tags ?? [],
   nextAiringEpisode: fixture.nextAiringEpisode ?? null,
   relations: fixture.relations ?? { edges: [] },
 });
@@ -341,6 +343,24 @@ describe('resolveAniListMatch', () => {
 
     expect(result.status).toBe('matched');
     expect(result.match?.season).toBe(1);
+  });
+
+  it('carries the candidate tags into the stored match', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        searchPayload([
+          mediaNode({ id: 32, romaji: 'Isekai Show', tags: [{ name: 'Isekai', rank: 80 }, { name: 'Time Loop', rank: 40 }] }),
+        ]),
+      ),
+    );
+
+    const result = await resolveAniListMatch(makeItem({ title: 'Isekai Show' }));
+
+    expect(result.status).toBe('matched');
+    expect(result.match?.tags).toEqual([
+      { name: 'Isekai', rank: 80 },
+      { name: 'Time Loop', rank: 40 },
+    ]);
   });
 
   it('sends a POST GraphQL request to the AniList endpoint', async () => {
@@ -693,7 +713,7 @@ describe('fetchAiringSnapshots meta', () => {
 
     const details = (await fetchAiringSnapshots([1])).get(1);
 
-    expect(details?.meta).toEqual({ genres: ['Action', 'Drama', 'Sci-Fi'] });
+    expect(details?.meta).toEqual({ genres: ['Action', 'Drama', 'Sci-Fi'], tags: [] });
   });
 
   it('carries the large poster url of the matched node', async () => {
@@ -756,13 +776,13 @@ describe('applyAiringSnapshots', () => {
       ...aiData,
     });
 
-  const detailsFor = (meta?: { genres: string[]; coverImage?: string }): Map<number, AiringDetails> =>
+  const detailsFor = (meta?: { genres: string[]; tags?: { name: string; rank?: number }[]; coverImage?: string }): Map<number, AiringDetails> =>
     new Map([
       [
         ANILIST_ID,
         {
           snapshot: { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 },
-          ...(meta ? { meta } : {}),
+          ...(meta ? { meta: { ...meta, tags: meta.tags ?? [] } } : {}),
         },
       ],
     ]);
@@ -893,7 +913,7 @@ describe('applyAiringSnapshots', () => {
           21,
           {
             snapshot: { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 },
-            meta: { genres: ['Action', 'Drama', 'Sci-Fi'] },
+            meta: { genres: ['Action', 'Drama', 'Sci-Fi'], tags: [{ name: 'Isekai', rank: 80 }] },
           },
         ],
       ]),
@@ -921,6 +941,59 @@ describe('applyAiringSnapshots', () => {
     );
 
     expect(result.aiData.anilist?.genres).toEqual(['Action', 'Drama']);
+  });
+
+  it('writes tags from the snapshot meta', () => {
+    const item = makeItem({
+      anilist: {
+        id: 21,
+        matchedTitle: 'Shingeki no Kyojin',
+        matchedBy: 'title',
+        confidence: 'exact',
+        resolvedAt: 5_000,
+        genres: ['Action'],
+        tags: [{ name: 'Survival', rank: 60 }],
+      },
+    });
+
+    const result = applyAiringSnapshots(
+      item,
+      new Map([
+        [
+          21,
+          {
+            snapshot: { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 },
+            meta: { genres: ['Action'], tags: [{ name: 'Isekai', rank: 80 }, { name: 'Time Loop', rank: 40 }] },
+          },
+        ],
+      ]),
+    );
+
+    expect(result.aiData.anilist?.tags).toEqual([
+      { name: 'Isekai', rank: 80 },
+      { name: 'Time Loop', rank: 40 },
+    ]);
+  });
+
+  it('keeps stored tags when the details carry no meta', () => {
+    const item = makeItem({
+      anilist: {
+        id: 21,
+        matchedTitle: 'Shingeki no Kyojin',
+        matchedBy: 'title',
+        confidence: 'exact',
+        resolvedAt: 5_000,
+        genres: ['Action', 'Drama'],
+        tags: [{ name: 'Isekai', rank: 80 }],
+      },
+    });
+
+    const result = applyAiringSnapshots(
+      item,
+      new Map([[21, { snapshot: { status: 'FINISHED' as const, isAiring: false, fetchedAt: 9_000 } }]]),
+    );
+
+    expect(result.aiData.anilist?.tags).toEqual([{ name: 'Isekai', rank: 80 }]);
   });
 
   it('fills aiData.coverImage when it is undefined', () => {
@@ -1107,6 +1180,7 @@ describe('applyMatchResult', () => {
             status: 'FINISHED',
             isAdult: false,
             genres: [],
+            tags: [],
           },
         ],
       }),
@@ -1123,6 +1197,7 @@ const makeCandidate = (overrides: Partial<AniListCandidate> = {}): AniListCandid
   status: 'FINISHED',
   isAdult: false,
   genres: [],
+  tags: [],
   ...overrides,
 });
 
@@ -1140,6 +1215,14 @@ describe('createManualMatch', () => {
     expect(typeof match.resolvedAt).toBe('number');
     expect(match).not.toHaveProperty('airing');
     expect(match).not.toHaveProperty('sequel');
+  });
+
+  it('copies the candidate tags so a fresh link carries them', () => {
+    const tags = [{ name: 'Isekai', rank: 80 }];
+    const match = createManualMatch(makeCandidate({ tags }));
+
+    expect(match.tags).toEqual(tags);
+    expect(match.tags).not.toBe(tags);
   });
 
   it('falls back to the english title, then to the native title', () => {

@@ -3,6 +3,7 @@ import type {
   AniListData,
   AniListMediaStatus,
   AniListSequel,
+  AniListTag,
   MediaItem,
 } from '../types';
 
@@ -78,6 +79,8 @@ export interface AniListCandidate {
   isAdult: boolean;
   /** Canonical AniList genres (English enum values). */
   genres: string[];
+  /** Raw AniList community tags (feed the trope facet). */
+  tags: AniListTag[];
 }
 
 export interface MatchResult {
@@ -181,6 +184,7 @@ interface MediaNode {
   isAdult?: boolean | null;
   coverImage?: { medium?: string | null; large?: string | null } | null;
   genres?: string[] | null;
+  tags?: { name?: string | null; rank?: number | null }[] | null;
   nextAiringEpisode?: { episode?: number | null; airingAt?: number | null } | null;
   relations?: { edges?: (RelationEdge | null)[] | null } | null;
 }
@@ -269,7 +273,7 @@ const buildSearchQuery = (withCountry: boolean): string => `
 query (${withCountry ? '$country: CountryCode, ' : ''}$search: String, $perPage: Int, $type: MediaType) {
   Page(perPage: $perPage) {
     media(search: $search, type: $type, ${withCountry ? 'countryOfOrigin: $country, ' : ''}sort: SEARCH_MATCH) {
-      id title { romaji english native } synonyms format seasonYear genres
+      id title { romaji english native } synonyms format seasonYear genres tags { name rank }
       startDate { year month day } episodes chapters countryOfOrigin status isAdult coverImage { medium }
     }
   }
@@ -282,7 +286,7 @@ const BATCH_AIRING_QUERY = `
 query ($ids: [Int]) {
   Page(perPage: 50) {
     media(id_in: $ids) {
-      id status episodes genres coverImage { large } nextAiringEpisode { episode airingAt timeUntilAiring }
+      id status episodes genres tags { name rank } coverImage { large } nextAiringEpisode { episode airingAt timeUntilAiring }
       relations {
         edges {
           relationType
@@ -292,6 +296,29 @@ query ($ids: [Int]) {
     }
   }
 }`;
+
+/** AniList community ranks are always 0-100; anything else is clamped, not trusted. */
+const AIRING_TAG_RANK_MAX = 100;
+
+const toAniListTags = (tags?: MediaNode['tags']): AniListTag[] => {
+  if (!Array.isArray(tags)) return [];
+
+  const clean: AniListTag[] = [];
+  for (const tag of tags) {
+    const name = typeof tag?.name === 'string' ? tag.name.trim() : '';
+    if (!name) continue;
+
+    // Rank is optional: a tag without a usable rank is still a valid trope.
+    const rank = tag?.rank;
+    clean.push(
+      isFiniteNumber(rank)
+        ? { name, rank: Math.min(AIRING_TAG_RANK_MAX, Math.max(0, rank)) }
+        : { name },
+    );
+  }
+
+  return clean;
+};
 
 const toCandidate = (node: MediaNode): AniListCandidate => ({
   id: node.id,
@@ -312,6 +339,7 @@ const toCandidate = (node: MediaNode): AniListCandidate => ({
   coverImage: node.coverImage?.medium ?? undefined,
   isAdult: node.isAdult === true,
   genres: Array.isArray(node.genres) ? node.genres : [],
+  tags: toAniListTags(node.tags),
 });
 
 export async function searchAniListCandidates(
@@ -527,6 +555,7 @@ export async function resolveAniListMatch(item: MediaItem): Promise<MatchResult>
       confidence: topScore === 100 ? 'exact' : 'high',
       resolvedAt: Date.now(),
       genres: winner.genres,
+      tags: winner.tags,
     };
 
     return { status: 'matched', match };
@@ -645,7 +674,7 @@ export interface AiringDetails {
   snapshot: AniListAiringSnapshot;
   sequel?: AniListSequel;
   /** Extra media fields carried by the same response. Absent when not fetched. */
-  meta?: { genres: string[]; coverImage?: string };
+  meta?: { genres: string[]; tags: AniListTag[]; coverImage?: string };
 }
 
 export async function fetchAiringSnapshots(ids: number[]): Promise<Map<number, AiringDetails>> {
@@ -673,6 +702,7 @@ export async function fetchAiringSnapshots(ids: number[]): Promise<Map<number, A
       const sequel = pickSequel(node.id, node);
       const meta = {
         genres: Array.isArray(node.genres) ? node.genres : [],
+        tags: toAniListTags(node.tags),
         coverImage: node.coverImage?.large ?? undefined,
       };
       // `sequel` is omitted entirely when nothing qualifies, so a refresh can
@@ -730,6 +760,8 @@ export function applyAiringSnapshots(
         airing: details.snapshot,
         // A refresh without meta must never wipe genres stored by a previous one.
         genres: details.meta?.genres ?? existing.genres,
+        // Same contract as genres: a refresh without meta must never wipe stored tags.
+        tags: details.meta?.tags ?? existing.tags,
         // Explicit `undefined` drops any persisted sequel so a stale one cannot
         // survive a refresh that found nothing directly related.
         sequel: details.sequel,
@@ -781,6 +813,7 @@ export function createManualMatch(candidate: AniListCandidate, baseTitle?: strin
     confidence: 'manual',
     resolvedAt: Date.now(),
     genres: Array.isArray(candidate.genres) ? candidate.genres : [],
+    tags: Array.isArray(candidate.tags) ? candidate.tags.map(t => ({ ...t })) : [],
   };
 }
 

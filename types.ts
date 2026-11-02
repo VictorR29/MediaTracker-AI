@@ -47,6 +47,15 @@ export interface AniListData {
   sequel?: AniListSequel;
   /** Canonical AniList genres: English enum values as returned by the API. */
   genres?: string[];
+  /** Raw AniList community tags. Genres and tropes are separate axes: tags feed the trope facet. */
+  tags?: AniListTag[];
+}
+
+/** One AniList community tag, as returned by `tags { name rank }`. */
+export interface AniListTag {
+  name: string;
+  /** Community confidence 0-100. Kept for future scoring; the trope facet ignores it. */
+  rank?: number;
 }
 
 export interface AIWorkData {
