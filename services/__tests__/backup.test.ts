@@ -147,6 +147,82 @@ describe('backup service', () => {
     });
   });
 
+  describe('numeric normalization at the import boundary', () => {
+    const withTracking = (overrides: Record<string, unknown>) =>
+      ({ ...mockLibrary[0], trackingData: { ...mockLibrary[0].trackingData, ...overrides } });
+
+    const parseOne = (entry: unknown) => {
+      const result = parseCatalogFile(JSON.stringify([entry]));
+      expect(result).not.toBeNull();
+      return result!.items[0];
+    };
+
+    it('turns a hand-written string counter into a number', () => {
+      // A backup edited by hand can hold "12". The stats screen sums this field,
+      // so a string there returns "123" instead of 15 and every total downstream
+      // inherits the concatenation.
+      const item = parseOne(withTracking({ watchedEpisodes: '12', accumulated_consumption: 3 }));
+
+      expect(item.trackingData.watchedEpisodes).toBe(12);
+      // The exact expression the stats screen totals consumption with.
+      expect(item.trackingData.watchedEpisodes + item.trackingData.accumulated_consumption!).toBe(15);
+    });
+
+    it('falls back to 0 for a counter that cannot be a number', () => {
+      // JSON has no NaN: an unparseable value arrives as null or as a word.
+      expect(parseOne(withTracking({ watchedEpisodes: null })).trackingData.watchedEpisodes).toBe(0);
+      expect(parseOne(withTracking({ watchedEpisodes: 'n/a' })).trackingData.watchedEpisodes).toBe(0);
+      expect(parseOne(withTracking({ watchedEpisodes: -5 })).trackingData.watchedEpisodes).toBe(0);
+      expect(parseOne(withTracking({ accumulated_consumption: -2 })).trackingData.accumulated_consumption).toBe(0);
+    });
+
+    it('floors a fractional counter instead of storing half an episode', () => {
+      expect(parseOne(withTracking({ watchedEpisodes: 12.7 })).trackingData.watchedEpisodes).toBe(12);
+    });
+
+    it('keeps totalSeasons 0, which is how a movie says it has no seasons', () => {
+      const item = parseOne(withTracking({ totalSeasons: 0, totalEpisodesInSeason: 0 }));
+
+      expect(item.trackingData.totalSeasons).toBe(0);
+      expect(item.trackingData.totalEpisodesInSeason).toBe(0);
+    });
+
+    it('repairs a missing season index without claiming a season count', () => {
+      const item = parseOne(withTracking({ currentSeason: null, totalSeasons: null }));
+
+      expect(item.trackingData.currentSeason).toBe(1);
+      expect(item.trackingData.totalSeasons).toBe(0);
+    });
+
+    it('does not invent accumulated_consumption when the item never had it', () => {
+      const item = parseOne(withTracking({ accumulated_consumption: undefined }));
+
+      expect(item.trackingData).not.toHaveProperty('accumulated_consumption');
+    });
+
+    it('leaves a large counter alone: a 1200-chapter manhwa is not a typo', () => {
+      expect(parseOne(withTracking({ watchedEpisodes: 1200 })).trackingData.watchedEpisodes).toBe(1200);
+    });
+
+    it('normalizes the backup path too, not only the catalog path', () => {
+      const json = JSON.stringify({
+        profile: mockProfile,
+        library: [withTracking({ watchedEpisodes: '7' })],
+      });
+      const result = parseBackupFile(json);
+
+      expect(result!.library[0].trackingData.watchedEpisodes).toBe(7);
+    });
+
+    it('keeps every non-numeric field untouched', () => {
+      const item = parseOne(withTracking({ watchedEpisodes: '7', comment: 'me gustó', favoriteCharacters: [{ name: 'A' }] }));
+
+      expect(item.trackingData.comment).toBe('me gustó');
+      expect(item.trackingData.favoriteCharacters).toEqual([{ name: 'A' }]);
+      expect(item.aiData.title).toBe('Test');
+    });
+  });
+
   describe('createBackupBlob', () => {
     it('creates a blob with correct type', () => {
       const blob = createBackupBlob(mockProfile, mockLibrary);
