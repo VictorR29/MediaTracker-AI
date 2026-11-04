@@ -132,7 +132,12 @@ export async function runAniListBackfill(options: RunBackfillOptions): Promise<B
 
     for (const item of candidates) {
       const anilist = item.aiData.anilist;
-      if (anilist?.airing && deps.isFresh(anilist.airing, nowTs)) fresh.push(item);
+      // Tags arrive with the same response as the airing snapshot, so a linked
+      // item that never fetched them is stale even when its snapshot is fresh.
+      // Without this, the trope axis stays empty for every work that was
+      // refreshed in the hours before it shipped.
+      const tagsFetched = anilist ? anilist.tags !== undefined : false;
+      if (anilist?.airing && tagsFetched && deps.isFresh(anilist.airing, nowTs)) fresh.push(item);
       else if (anilist) staleLinked.push(item);
       else unlinked.push(item);
     }

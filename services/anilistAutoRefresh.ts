@@ -48,6 +48,12 @@ export function isAiringRefreshCandidate(item: MediaItem, now: number, maxAgeMs:
   const anilist = item.aiData.anilist;
   if (!anilist) return false;
 
+  // Tags travel in the same response as the airing snapshot, so an item that
+  // never fetched them has no trope data at all. Treating it as fresh would
+  // keep the trope axis empty for the whole pre-existing library forever,
+  // because snapshots are refreshed on a 24h loop and never miss a beat.
+  if (anilist.tags === undefined) return true;
+
   const airing = anilist.airing;
   if (!airing) return true;
   if (!Number.isFinite(airing.fetchedAt)) return true;

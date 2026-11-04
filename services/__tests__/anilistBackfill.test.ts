@@ -49,6 +49,9 @@ const makeAniList = (id: number, fetchedAt: number): AniListData => ({
   matchedBy: 'title',
   confidence: 'exact',
   resolvedAt: fetchedAt,
+  // Current code always writes a tag list; a fixture that wants the pre-tag
+  // shape spreads `tags: undefined` over this default.
+  tags: [],
   airing: {
     status: 'RELEASING',
     isAiring: true,
@@ -172,6 +175,27 @@ describe('runAniListBackfill', () => {
     expect(harness.deps.fetchSnapshots).not.toHaveBeenCalled();
     expect(harness.deps.resolve).not.toHaveBeenCalled();
     expect(harness.persist).not.toHaveBeenCalled();
+  });
+
+  it('refreshes a fresh item whose tags were never fetched', async () => {
+    const now = 1_000_000_000;
+    const items = [
+      makeItem({
+        id: 'untagged',
+        title: 'Untagged',
+        anilist: { ...makeAniList(43, now - AIRING_TTL_MS / 2), tags: undefined },
+      }),
+    ];
+    const snapshots = new Map<number, AiringDetails>([[43, makeDetails(43)]]);
+    const harness = createHarness({
+      isFresh: snapshot => !!snapshot && snapshot.fetchedAt > 0,
+      fetchSnapshots: vi.fn(async () => snapshots),
+    });
+
+    const summary = await run(items, harness);
+
+    expect(harness.deps.fetchSnapshots).toHaveBeenCalledWith([43]);
+    expect(summary).toMatchObject({ total: 1, done: 1, skipped: 0, matched: 1 });
   });
 
   it('refreshes every stale link with a single batch request', async () => {

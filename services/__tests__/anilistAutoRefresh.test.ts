@@ -27,6 +27,9 @@ const makeAniList = (overrides: Partial<AniListData> & { id: number }): AniListD
   matchedBy: 'title',
   confidence: 'exact',
   resolvedAt: NOW,
+  // A linked item written by the current code always carries a tag list, even
+  // an empty one. Tests that need the pre-tag shape must set `tags: undefined`.
+  tags: [],
   ...overrides,
 });
 
@@ -113,6 +116,23 @@ describe('refreshStaleAiring', () => {
     expect(result.requestedIds).toEqual([]);
     expect(result.updated).toEqual([]);
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('requests a fresh item that never fetched tags', async () => {
+    const items = [
+      makeItem({
+        id: 'untagged',
+        title: 'Untagged',
+        anilist: makeAniList({ id: 3, airing: makeAiring(NOW - HOUR_MS), tags: undefined }),
+      }),
+    ];
+    const fetcher = makeFetcher(new Map([[3, makeDetails()]]));
+
+    const result = await refreshStaleAiring({ items, now: NOW, fetchSnapshots: fetcher });
+
+    expect(fetcher).toHaveBeenCalledWith([3]);
+    expect(result.requestedIds).toEqual([3]);
+    expect(result.updated.map(item => item.id)).toEqual(['untagged']);
   });
 
   it('requests only the stale id when stale and fresh items coexist', async () => {
